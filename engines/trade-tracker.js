@@ -128,10 +128,26 @@ const TradeTracker = (() => {
     const { dir, entry, sl, tp1, tp2, tp3, markPrice } = t;
     const target = tp3 || tp2 || tp1;
     const stop   = sl;
-    if (!target || !stop) return { pct: 50, entryPct: 50, color: 'var(--text3)' };
+
+    // SL veya TP yoksa: entry merkez, fiyat hareketine göre göster
+    if (!target || !stop) {
+      const isLong  = dir === 'LONG';
+      const diff    = markPrice - entry;
+      const pctMove = entry > 0 ? (diff / entry) * 100 : 0;
+      // -10% ile +10% arasını 0-100'e map et
+      const pct     = Math.max(0, Math.min(100, 50 + pctMove * 5));
+      const isProfit= isLong ? markPrice >= entry : markPrice <= entry;
+      return {
+        pct,
+        entryPct: 50,
+        color: isProfit ? 'var(--green)' : 'var(--red)',
+        isProfit,
+        tp1Pct: null, tp2Pct: null, tp3Pct: null,
+      };
+    }
 
     const totalRange = Math.abs(target - stop);
-    if (totalRange === 0) return { pct: 50, entryPct: 50, color: 'var(--text3)' };
+    if (totalRange === 0) return { pct: 50, entryPct: 50, color: 'var(--text3)', tp1Pct:null, tp2Pct:null, tp3Pct:null };
 
     const entryDist = dir === 'LONG' ? entry - stop : stop - entry;
     const curDist   = dir === 'LONG' ? markPrice - stop : stop - markPrice;
@@ -141,7 +157,6 @@ const TradeTracker = (() => {
     const isProfit  = pct >= entryPct;
     const color     = isProfit ? 'var(--green)' : 'var(--red)';
 
-    // TP seviyeleri
     const tp1Pct = tp1 ? Math.max(0,Math.min(100,(dir==='LONG'?tp1-stop:stop-tp1)/totalRange*100)) : null;
     const tp2Pct = tp2 ? Math.max(0,Math.min(100,(dir==='LONG'?tp2-stop:stop-tp2)/totalRange*100)) : null;
     const tp3Pct = tp3 ? Math.max(0,Math.min(100,(dir==='LONG'?tp3-stop:stop-tp3)/totalRange*100)) : null;
@@ -408,7 +423,6 @@ const TradeTracker = (() => {
     const sym    = item.sym || window.SYM || 'BTCUSDT';
     const price  = item.price || 0;
     const dir    = item.dir  || 'LONG';
-    const dirCol = dir === 'LONG' ? '#00e5a0' : '#ff3d6b';
     const sl     = item.sl   || '';
     const tp1    = item.tp1  || '';
     const tp2    = item.tp2  || '';
@@ -417,18 +431,50 @@ const TradeTracker = (() => {
     modal.id = 'ttModal';
     modal.style.cssText = 'position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px';
     modal.innerHTML = `
-      <div style="background:rgba(5,10,20,.99);border:1px solid rgba(255,255,255,.1);border-top:2px solid ${dirCol};border-radius:14px;padding:20px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.9)">
+      <div style="background:rgba(5,10,20,.99);border:1px solid rgba(255,255,255,.1);border-top:2px solid #00e5a0;border-radius:14px;padding:20px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.9)" id="ttModalInner">
 
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+        <!-- Başlık -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <span style="font-size:15px;font-weight:900;color:#fff">${sym.replace('USDT','')}/USDT</span>
-          <span style="padding:3px 10px;background:${dirCol}20;border:1px solid ${dirCol}44;border-radius:20px;font-size:10px;font-weight:800;color:${dirCol}">${dir==='LONG'?'▲ LONG':'▼ SHORT'}</span>
           <button onclick="document.getElementById('ttModal').remove()" style="margin-left:auto;background:none;border:none;color:#555;font-size:18px;cursor:pointer">✕</button>
         </div>
 
+        <!-- Long / Short seçimi -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <button id="tt_btn_long" onclick="TradeTracker._setDir('LONG')"
+            style="padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;border:2px solid #00e5a0;background:rgba(0,229,160,.15);color:#00e5a0;letter-spacing:1px">
+            ▲ LONG
+          </button>
+          <button id="tt_btn_short" onclick="TradeTracker._setDir('SHORT')"
+            style="padding:10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#555;letter-spacing:1px">
+            ▼ SHORT
+          </button>
+        </div>
+
+        <!-- Cross / Isolated seçimi -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <button id="tt_btn_cross" onclick="TradeTracker._setMarginMode('CROSS')"
+            style="padding:7px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;border:2px solid #00d4ff;background:rgba(0,212,255,.1);color:#00d4ff;letter-spacing:1px">
+            CROSS
+          </button>
+          <button id="tt_btn_isolated" onclick="TradeTracker._setMarginMode('ISOLATED')"
+            style="padding:7px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#555;letter-spacing:1px">
+            ISOLATED
+          </button>
+        </div>
+
+        <!-- Cross bakiye (sadece Cross modda görünür) -->
+        <div id="tt_wallet_wrap" style="margin-bottom:10px">
+          <div style="font-size:9px;color:#555;letter-spacing:1px;margin-bottom:4px">TOPLAM BAKIYE ($) <span style="color:#00d4ff;font-size:8px">— Cross likidasyon için</span></div>
+          <input id="tt_wallet" type="number" value="" placeholder="Örn: 1000" step="any" oninput="TradeTracker.calcModal()"
+            style="width:100%;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:9px 12px;color:#00d4ff;font-size:12px;font-family:'Courier New',monospace;box-sizing:border-box">
+        </div>
+
+        <!-- Form alanları -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           ${_input('tt_entry','GİRİŞ FİYATI',price,'#fff')}
           ${_input('tt_lev','KALDIРАÇ',10,'#fff','oninput="TradeTracker.calcModal()"')}
-          ${_input('tt_margin','MARGİN ($)',100,dirCol,'oninput="TradeTracker.calcModal()"')}
+          ${_input('tt_margin','MARGİN ($)',100,'#00e5a0','oninput="TradeTracker.calcModal()"')}
           <div>
             <div style="font-size:9px;color:#555;letter-spacing:1px;margin-bottom:4px">POZİSYON (OTOMATİK)</div>
             <div id="tt_pos" style="padding:9px 12px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:8px;color:#00d4ff;font-size:12px;font-weight:700">$1,000</div>
@@ -443,15 +489,86 @@ const TradeTracker = (() => {
           Likidasyon hesaplanıyor...
         </div>
 
-        <button onclick="TradeTracker.confirmOpen('${sym}','${dir}')"
-          style="width:100%;padding:13px;background:linear-gradient(90deg,${dirCol}22,${dirCol}11);border:1px solid ${dirCol}55;border-radius:10px;color:${dirCol};font-size:13px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:1px">
-          ${dir==='LONG'?'▲ LONG':'▼ SHORT'} İŞLEMİ AÇ
+        <button id="tt_confirm_btn" onclick="TradeTracker.confirmOpen('${sym}', TradeTracker._currentDir(), TradeTracker._currentMarginMode())"
+          style="width:100%;padding:13px;background:linear-gradient(90deg,rgba(0,229,160,.22),rgba(0,229,160,.11));border:1px solid rgba(0,229,160,.55);border-radius:10px;color:#00e5a0;font-size:13px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:1px">
+          ▲ LONG İŞLEMİ AÇ
         </button>
       </div>`;
 
     document.body.appendChild(modal);
+    // Başlangıç yönünü ayarla
+    _modalDir = dir;
+    _modalMarginMode = 'CROSS';
+    _updateModalUI();
     calcModal();
     modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+  }
+
+  // Modal yön state
+  let _modalDir = 'LONG';
+  let _modalMarginMode = 'CROSS';
+
+  function _setDir(dir) {
+    _modalDir = dir;
+    _updateModalUI();
+    calcModal();
+  }
+
+  function _setMarginMode(mode) {
+    _modalMarginMode = mode;
+    _updateModalUI();
+    calcModal();
+  }
+
+  function _currentDir() { return _modalDir; }
+  function _currentMarginMode() { return _modalMarginMode; }
+
+  function _updateModalUI() {
+    const isLong = _modalDir === 'LONG';
+    const isCross = _modalMarginMode === 'CROSS';
+    const dirCol = isLong ? '#00e5a0' : '#ff3d6b';
+
+    const inner = document.getElementById('ttModalInner');
+    if(inner) inner.style.borderTopColor = dirCol;
+
+    const btnLong  = document.getElementById('tt_btn_long');
+    const btnShort = document.getElementById('tt_btn_short');
+    if(btnLong && btnShort){
+      btnLong.style.border  = isLong  ? `2px solid #00e5a0` : '1px solid rgba(255,255,255,.1)';
+      btnLong.style.background  = isLong  ? 'rgba(0,229,160,.15)'  : 'rgba(255,255,255,.03)';
+      btnLong.style.color   = isLong  ? '#00e5a0' : '#555';
+      btnShort.style.border = !isLong ? `2px solid #ff3d6b` : '1px solid rgba(255,255,255,.1)';
+      btnShort.style.background = !isLong ? 'rgba(255,61,107,.15)' : 'rgba(255,255,255,.03)';
+      btnShort.style.color  = !isLong ? '#ff3d6b' : '#555';
+    }
+
+    const btnCross    = document.getElementById('tt_btn_cross');
+    const btnIsolated = document.getElementById('tt_btn_isolated');
+    if(btnCross && btnIsolated){
+      btnCross.style.border    = isCross  ? '2px solid #00d4ff' : '1px solid rgba(255,255,255,.1)';
+      btnCross.style.background= isCross  ? 'rgba(0,212,255,.1)' : 'rgba(255,255,255,.03)';
+      btnCross.style.color     = isCross  ? '#00d4ff' : '#555';
+      btnIsolated.style.border = !isCross ? '2px solid #f0a500' : '1px solid rgba(255,255,255,.1)';
+      btnIsolated.style.background=!isCross?'rgba(240,165,0,.1)' : 'rgba(255,255,255,.03)';
+      btnIsolated.style.color  = !isCross ? '#f0a500' : '#555';
+    }
+
+    // Cross modda bakiye göster
+    const walletWrap = document.getElementById('tt_wallet_wrap');
+    if(walletWrap) walletWrap.style.display = isCross ? 'block' : 'none';
+
+    // Margin input rengi
+    const marginEl = document.getElementById('tt_margin');
+    if(marginEl) marginEl.style.color = dirCol;
+
+    // Confirm butonu
+    const btn = document.getElementById('tt_confirm_btn');
+    if(btn){
+      btn.textContent = `${isLong?'▲ LONG':'▼ SHORT'} İŞLEMİ AÇ`;
+      btn.style.background = isLong ? 'linear-gradient(90deg,rgba(0,229,160,.22),rgba(0,229,160,.11))' : 'linear-gradient(90deg,rgba(255,61,107,.22),rgba(255,61,107,.11))';
+      btn.style.borderColor = isLong ? 'rgba(0,229,160,.55)' : 'rgba(255,61,107,.55)';
+      btn.style.color = dirCol;
+    }
   }
 
   function _input(id, label, val, col, extra='') {
@@ -466,17 +583,37 @@ const TradeTracker = (() => {
     const entry  = +document.getElementById('tt_entry')?.value  || 0;
     const lev    = +document.getElementById('tt_lev')?.value    || 1;
     const margin = +document.getElementById('tt_margin')?.value || 0;
+    const wallet = +document.getElementById('tt_wallet')?.value || 0;
     const posEl  = document.getElementById('tt_pos');
     const liqEl  = document.getElementById('tt_liq_info');
     const pos    = margin * lev;
     if (posEl) posEl.textContent = '$' + pos.toLocaleString('en',{maximumFractionDigits:2});
     if (entry && lev && liqEl) {
-      const d  = 1/lev*0.9;
-      liqEl.innerHTML = `⚡ Likidasyon: LONG ~$${(entry*(1-d)).toFixed(2)} &nbsp;·&nbsp; SHORT ~$${(entry*(1+d)).toFixed(2)}`;
+      const isCross = _modalMarginMode === 'CROSS';
+      const isLong  = _modalDir === 'LONG';
+      let liqLong, liqShort;
+      if(isCross && wallet > 0){
+        // Cross: likidasyon wallet bakiyesine göre
+        const mmr = 0.004; // maintenance margin rate ~%0.4
+        if(isLong){
+          liqLong  = entry - (wallet - margin * mmr) / (pos / entry);
+          liqShort = entry + (wallet - margin * mmr) / (pos / entry);
+        } else {
+          liqLong  = entry - (wallet - margin * mmr) / (pos / entry);
+          liqShort = entry + (wallet - margin * mmr) / (pos / entry);
+        }
+        liqEl.innerHTML = `⚡ Cross Likidasyon: LONG ~$${Math.max(0,liqLong).toFixed(4)} &nbsp;·&nbsp; SHORT ~$${liqShort.toFixed(4)} <span style="color:#555">(Bakiye: $${wallet})</span>`;
+      } else {
+        // Isolated: klasik formül
+        const d = 1/lev*0.9;
+        liqEl.innerHTML = `⚡ Isolated Likidasyon: LONG ~$${(entry*(1-d)).toFixed(4)} &nbsp;·&nbsp; SHORT ~$${(entry*(1+d)).toFixed(4)}`;
+      }
     }
   }
 
-  function confirmOpen(sym, dir) {
+  function confirmOpen(sym, dir, marginMode) {
+    dir = dir || _modalDir || 'LONG';
+    marginMode = marginMode || _modalMarginMode || 'CROSS';
     const entry  = +document.getElementById('tt_entry')?.value;
     const lev    = +document.getElementById('tt_lev')?.value;
     const margin = +document.getElementById('tt_margin')?.value;
@@ -485,10 +622,9 @@ const TradeTracker = (() => {
     const tp2    = +document.getElementById('tt_tp2')?.value  || null;
     const tp3    = +document.getElementById('tt_tp3')?.value  || null;
     if (!entry||!lev||!margin) { alert('Giriş fiyatı, kaldıraç ve margin zorunlu!'); return; }
-    openTrade({sym,dir,entry,lev,margin,sl,tp1,tp2,tp3});
+    openTrade({sym, dir, entry, lev, margin, sl, tp1, tp2, tp3, marginMode});
     document.getElementById('ttModal')?.remove();
-    // Terminal'e scroll
-    setTimeout(()=>{ document.getElementById('tradeTerminalWrap')?.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 300);
+    setTimeout(()=>{ document.getElementById('tradeTrackerWrap')?.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 300);
   }
 
   // ── Güncelleme döngüsü ────────────────────────────────────────────
@@ -501,7 +637,8 @@ const TradeTracker = (() => {
         try {
           if (typeof WSEngine !== 'undefined') {
             const d = WSEngine.getData(t.symFull);
-            if (d?.lastPrice) updatePrice(t.symFull, d.lastPrice);
+            const p = d?.price || d?.lastPrice || d?.markPrice;
+            if (p) updatePrice(t.symFull, p);
           }
         } catch {}
       });
@@ -515,6 +652,6 @@ const TradeTracker = (() => {
     if (active.length) { _showTerminal(); _renderAll(); _startUpdates(); }
   }
 
-  return { openTrade, closeTrade, updatePrice, showOpenModal, calcModal, confirmOpen, init };
+  return { openTrade, closeTrade, updatePrice, showOpenModal, calcModal, confirmOpen, init, _setDir, _setMarginMode, _currentDir, _currentMarginMode };
 
 })();
