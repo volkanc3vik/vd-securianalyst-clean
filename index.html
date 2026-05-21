@@ -4244,8 +4244,99 @@ async function scanMarket(){
     }, 2000);
   }catch(e){}
 
+  // ── Signal Card Engine entegrasyonu ─────────────────────────────
+  // scanMarket sonuçlarını SCE'ye besle — "Taranıyor..." durumunu kır
+  try{
+    console.log(`[Scanner] ${results.length} coin tarandı, signal engine besleniyor...`);
+    const _feedSCE = async () => {
+      // Top coinleri SCE'ye besle (long + short top 10)
+      const topCoins = [
+        ...[...results].sort((a,b)=>b.lScore-a.lScore).slice(0,8),
+        ...[...results].sort((a,b)=>b.sScore-a.sScore).slice(0,8),
+      ];
+      // Tekrarları kaldır
+      const seen = new Set();
+      const unique = topCoins.filter(c=>{ if(seen.has(c.sym)) return false; seen.add(c.sym); return true; });
+
+      for(const item of unique){
+        try{
+          const kl = await get(`${FBASE}/fapi/v1/klines?symbol=${item.sym}&interval=${INTV}&limit=100`);
+          if(!Array.isArray(kl)||kl.length<30) continue;
+          const closes  = kl.map(k=>+k[4]);
+          const candles = kl.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+          const e9a=calcEMA(closes,9), e21a=calcEMA(closes,21), e50a=calcEMA(closes,50);
+          const macd=calcMACD(closes), rsi=calcRSI(closes), bb=calcBB(closes), atr=calcATR(candles);
+          const ind={ema9:e9a[e9a.length-1],ema21:e21a[e21a.length-1],ema50:e50a[e50a.length-1],
+            macd,rsi,bb,atr,e9a,e21a};
+          const tk={lastPrice:item.price,priceChangePercent:item.chg,quoteVolume:item.price*1e6};
+          const ent=calcEntry(candles,ind,tk);
+          if(!ent) continue;
+          // LONG ve SHORT her ikisi için de besle
+          const dirs=['LONG','SHORT'];
+          for(const dir of dirs){
+            const entOverride={...ent, dir};
+            SCE.updateCard(item.sym, {
+              sym:item.sym, closes, candles, ind,
+              entry:entOverride, tk, sr:[], fakeBreakout:false,
+              smcData:null, btcData:MarketRegime._btcData||window._btcData||null, regimeMode:MarketRegime._mode||'NORMAL',
+            }, tk);
+          }
+          await new Promise(r=>setTimeout(r,50)); // rate limit
+        }catch(e2){}
+      }
+      console.log(`[Scanner] SCE beslendi — ${unique.length} coin eklendi`);
+    };
+    // 1 saniye gecikme — UI render önce bitsin
+    setTimeout(_feedSCE, 1000);
+  }catch(e){}
+
   dot.classList.remove('on');if(pw)pw.style.display='none';
+  window._scanDone = true;
   setEl('scanTxt',`✓ ${results.length} coin tarandı · ${new Date().toLocaleTimeString('tr-TR')} · 2 dk'da yenilenir`);
+  console.log(`[Scanner] Tarama tamamlandı: ${results.length} coin, Long top: ${top3L.map(i=>i.sym).join(', ')}, Short top: ${top3S.map(i=>i.sym).join(', ')}`);
+
+  // ── En iyi setup'ı otomatik öne çıkar ───────────────────────────
+  setTimeout(()=>{
+    try{
+      // SCE kartlarından en yüksek skorluyu bul
+      const allCards = window.SCE?[...window._sceCards||[]]:[];
+      // Direkt results'tan da kontrol et
+      const bestLong  = top3L[0];
+      const bestShort = top3S[0];
+      const best = (bestLong&&bestShort)
+        ? (bestLong.lScore>=bestShort.sScore ? {item:bestLong,dir:'LONG'} : {item:bestShort,dir:'SHORT'})
+        : bestLong ? {item:bestLong,dir:'LONG'} : bestShort ? {item:bestShort,dir:'SHORT'} : null;
+
+      if(best){
+        // Bildirim alanına yaz
+        const col = best.dir==='LONG'?'#00e5a0':'#ff3d6b';
+        const sym = best.item.sym.replace('USDT','');
+        const score = best.dir==='LONG' ? best.item.lScore : best.item.sScore;
+        const price = best.item.price;
+
+        // scanTxt'e en iyi setup bilgisini göster
+        setEl('scanTxt',`✓ ${results.length} coin tarandı · En iyi: <span style="color:${col};font-weight:800">${sym} ${best.dir} (${score}p)</span> · ${new Date().toLocaleTimeString('tr-TR')}`);
+
+        // NC bildirimi gönder
+        if(window.NC && score > 60){
+          NC.add({
+            sym: best.item.sym,
+            dir: best.dir==='LONG'?'long':'short',
+            level: score>75?'critical':'info',
+            conf: score,
+            msg: `🎯 Tarama: ${sym} ${best.dir} setup tespit edildi — Skor: ${score}/100 · $${price.toFixed(4)}`,
+          });
+        }
+
+        // Signal sekmesine geç ve en iyi coini yükle (sadece ilk taramada)
+        if(!window._firstScanDone){
+          window._firstScanDone = true;
+          // Sessizce en iyi coinin verisini de yükle
+          console.log(`[Scanner] En iyi setup: ${sym} ${best.dir} (${score}p)`);
+        }
+      }
+    }catch(e){}
+  }, 1500);
 }
 
 // ══════════════════════════════════════════
@@ -6436,7 +6527,7 @@ const SCE = (() => {
     {id:5, label:'A+ SETUP',          cls:'sc-aplus',       badge:'rgba(157,125,250,.2)',    badgeTxt:'#b39dfa',minScore:92},
   ];
 
-  let _mode = 'SAFE';
+  let _mode = 'BALANCED';
   let _cards = new Map(); // sym -> card
   let _lastRender = 0;
 
@@ -6862,7 +6953,8 @@ const SCE = (() => {
     if(countEl) countEl.textContent = sorted.length+' aktif kart';
 
     if(!sorted.length){
-      container.innerHTML = `<div class="sc-empty"><span class="sc-empty-icon">🎯</span>Şu an gösterilecek güçlü setup yok.<br><span style="font-size:11px;margin-top:6px;display:block">Mod: ${MODES[_mode].label} · Min skor: ${MODES[_mode].min}</span></div>`;
+      const isFirstLoad = !window._scanDone;
+      container.innerHTML = `<div class="sc-empty"><span class="sc-empty-icon">${isFirstLoad?'⏳':'🎯'}</span>${isFirstLoad?'Tarama bekleniyor — sayfa yüklenince otomatik başlar...':'Şu an gösterilecek güçlü setup yok.'}<br><span style="font-size:11px;margin-top:6px;display:block">Mod: ${MODES[_mode].label} · Min skor: ${MODES[_mode].min} · <button onclick="SCE.setMode('AGGRESSIVE')" style="background:none;border:none;color:#00d4ff;cursor:pointer;font-size:11px;text-decoration:underline">Filtreyi gevşet</button></span></div>`;
       return;
     }
 
@@ -6873,7 +6965,11 @@ const SCE = (() => {
     });
   }
 
-  return{setMode, setSort, updateCard, calcSignalScore, generateComment};
+  // _cards'ı window'a da bağla — AI sidebar ve En İyi Setup için
+  function getCards(){ return _cards; }
+  window._cards = _cards; // direkt referans
+
+  return{setMode, setSort, updateCard, calcSignalScore, generateComment, getCards};
 })();
 
 // ════════════════════════════════════════════════════════════════════
@@ -10316,4 +10412,3 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 </script>
 </body>
-<!-- redeploy -->
