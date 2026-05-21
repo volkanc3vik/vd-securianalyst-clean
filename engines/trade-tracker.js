@@ -45,6 +45,8 @@ const TradeTracker = (() => {
     _showTerminal();
     _renderAll();
     _startUpdates();
+    _subscribeWS(t.symFull); // WS'e abone ol
+    setTimeout(() => _fetchPrice(t.symFull), 500); // İlk fiyatı hemen çek
     return t.id;
   }
 
@@ -492,6 +494,25 @@ const TradeTracker = (() => {
   }
 
   // ── Güncelleme döngüsü ────────────────────────────────────────────
+  // ── WS Subscribe ─────────────────────────────────────────────────
+  function _subscribeWS(symFull) {
+    if (typeof WSEngine === 'undefined') return;
+    try {
+      WSEngine.subscribe(symFull, function(data) {
+        if (data && data.lastPrice) updatePrice(symFull, +data.lastPrice);
+      });
+    } catch(e) {}
+  }
+
+  // ── Binance REST fallback (WS yoksa) ─────────────────────────────
+  async function _fetchPrice(symFull) {
+    try {
+      const r = await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=' + symFull);
+      const d = await r.json();
+      if (d && d.price) updatePrice(symFull, +d.price);
+    } catch(e) {}
+  }
+
   function _startUpdates() {
     if (_timer) return;
     _timer = setInterval(() => {
@@ -499,11 +520,32 @@ const TradeTracker = (() => {
       if (!active.length) { clearInterval(_timer); _timer=null; return; }
       active.forEach(t => {
         try {
+          let price = null;
+
+          // 1. WSEngine.getData — önce dene
           if (typeof WSEngine !== 'undefined') {
             const d = WSEngine.getData(t.symFull);
-            if (d?.lastPrice) updatePrice(t.symFull, d.lastPrice);
+            price = d?.lastPrice || d?.markPrice || null;
           }
-        } catch {}
+
+          // 2. window.TK — mevcut grafik coinse kullan
+          if (!price && window.TK && window.SYM === t.symFull) {
+            price = window.TK.lastPrice || window.TK.markPrice;
+          }
+
+          // 3. window.TK genel fiyat
+          if (!price && window.TK && window.TK.lastPrice) {
+            const tkSym = (window.SYM || '').toUpperCase();
+            if (tkSym === t.symFull.toUpperCase()) price = window.TK.lastPrice;
+          }
+
+          if (price) {
+            updatePrice(t.symFull, +price);
+          } else {
+            // Fallback: REST API'den çek
+            _fetchPrice(t.symFull);
+          }
+        } catch(e) {}
       });
     }, 1000);
   }
@@ -512,7 +554,16 @@ const TradeTracker = (() => {
   function init() {
     _load();
     const active = _trades.filter(t=>t.status==='ACTIVE');
-    if (active.length) { _showTerminal(); _renderAll(); _startUpdates(); }
+    if (active.length) {
+      _showTerminal();
+      _renderAll();
+      _startUpdates();
+      // Aktif işlemler için WS'e abone ol
+      active.forEach(t => {
+        _subscribeWS(t.symFull);
+        setTimeout(() => _fetchPrice(t.symFull), 500);
+      });
+    }
   }
 
   return { openTrade, closeTrade, updatePrice, showOpenModal, calcModal, confirmOpen, init };

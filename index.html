@@ -3231,6 +3231,15 @@ function startTimer() {
       <div id="liqPanel">Veri bekleniyor...</div>
     </div>
 
+    <!-- CoinGlass Likidasyon Cluster (sadece CoinGlass aktifse) -->
+    <div id="cgLiqClusterWrap" style="display:none;background:rgba(0,0,0,.2);border:1px solid rgba(255,61,107,.15);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase">🌡️ LİKİDASYON SEVİYELERİ</span>
+        <span style="font-size:8px;padding:1px 6px;background:rgba(0,212,255,.1);border-radius:6px;color:var(--cyan)">CoinGlass</span>
+      </div>
+      <div id="cgLiqClusterPanel">Yükleniyor...</div>
+    </div>
+
     <!-- Squeeze Risk -->
     <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,122,0,.2);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">⚡ SQUEEZE RİSKİ</div>
@@ -4912,13 +4921,29 @@ const MarketRegime = {
 async function fetchOIFunding(sym){
   const result={oi:null,fund:null,lsRatio:null,oiChange:null};
   try{
-    const [oi, fund] = await Promise.allSettled([
-      fetch(`${FBASE}/fapi/v1/openInterest?symbol=${sym}`).then(r=>r.json()),
-      fetch(`${FBASE}/fapi/v1/fundingRate?symbol=${sym}&limit=2`).then(r=>r.json()),
-    ]);
-    if(oi.status==='fulfilled')   result.oi=+oi.value.openInterest;
-    if(fund.status==='fulfilled'&&Array.isArray(fund.value)&&fund.value.length)
-      result.fund=+fund.value[fund.value.length-1].fundingRate*100;
+    // CoinGlass aktifse oradan al, değilse Binance
+    if(typeof CoinGlassService !== 'undefined' && CoinGlassService.isEnabled()){
+      const intel = await CoinGlassService.getMarketIntelligence(sym);
+      result.oi       = intel.oi?.oi        ?? null;
+      result.fund     = intel.fund?.fund     ?? null;
+      result.lsRatio  = intel.ls?.lsRatio   ?? null;
+      result.oiChange = intel.oi?.oiChange  ?? null;
+      result.liqClusters = intel.liq?.liqClusters ?? [];
+      result.liq24h   = intel.liq?.liq24h   ?? null;
+      result.liqBias  = intel.liq?.liqBias  ?? 'NEUTRAL';
+      result.source   = 'coinglass';
+    } else {
+      const [oi, fund] = await Promise.allSettled([
+        fetch(`${FBASE}/fapi/v1/openInterest?symbol=${sym}`).then(r=>r.json()),
+        fetch(`${FBASE}/fapi/v1/fundingRate?symbol=${sym}&limit=2`).then(r=>r.json()),
+      ]);
+      if(oi.status==='fulfilled')   result.oi=+oi.value.openInterest;
+      if(fund.status==='fulfilled'&&Array.isArray(fund.value)&&fund.value.length)
+        result.fund=+fund.value[fund.value.length-1].fundingRate*100;
+      result.source = 'binance';
+    }
+    // _lastOiData'yı güncelle — intelligence hook kullanır
+    window._lastOiData = result;
   }catch(e){}
   return result;
 }
@@ -7063,7 +7088,8 @@ const WSEngine = (() => {
     const streams = [
       `${key}@ticker`,
       `${key}@kline_15m`,
-      `${key}@depth5@500ms`,  // 100ms yerine 500ms — daha az paket
+      `${key}@aggTrade`,
+      `${key}@forceOrder`,
     ].join('/');
 
     const ws = new WebSocket(`${FWSS}${streams}`);
@@ -10267,8 +10293,35 @@ document.addEventListener('DOMContentLoaded', () => {
       // 6. CoinGlass kaynak badge
       const srcEl = document.getElementById('intelSource');
       if (srcEl) {
-        srcEl.textContent = CoinGlassService.isEnabled() ? '🔵 CoinGlass' : '🟡 Binance';
-        srcEl.style.color = CoinGlassService.isEnabled() ? 'var(--cyan)' : 'var(--yellow)';
+        const cgOn = CoinGlassService.isEnabled();
+        srcEl.textContent = cgOn ? '🔵 CoinGlass' : '🟡 Binance';
+        srcEl.style.color = cgOn ? 'var(--cyan)' : 'var(--yellow)';
+
+        // CoinGlass likidasyon cluster paneli
+        const cgWrap = document.getElementById('cgLiqClusterWrap');
+        const cgPanel = document.getElementById('cgLiqClusterPanel');
+        if (cgWrap && cgPanel && cgOn) {
+          cgWrap.style.display = 'block';
+          const oiData = window._lastOiData || {};
+          const clusters = oiData.liqClusters || [];
+          if (clusters.length) {
+            const fmt = v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'$0';
+            cgPanel.innerHTML = clusters.slice(0,8).map(c => {
+              const col = c.side==='LONG' ? 'var(--green)' : 'var(--red)';
+              const bg  = c.side==='LONG' ? 'rgba(0,229,160,.05)' : 'rgba(255,61,107,.05)';
+              return `<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:${bg};border-radius:5px;margin-bottom:3px">
+                <span style="font-size:9px;color:${col};min-width:35px">${c.side}</span>
+                <span style="font-size:10px;font-weight:700;color:${col};flex:1">$${(+c.price).toLocaleString('en',{maximumFractionDigits:2})}</span>
+                <span style="font-size:9px;color:var(--text3)">$${fmt(c.usd)}</span>
+                <span style="font-size:8px;padding:1px 5px;background:rgba(255,255,255,.06);border-radius:4px;color:var(--text3)">${c.strength}</span>
+              </div>`;
+            }).join('');
+          } else {
+            cgPanel.innerHTML = '<div style="font-size:10px;color:var(--text3)">Cluster verisi bekleniyor...</div>';
+          }
+        } else if (cgWrap) {
+          cgWrap.style.display = 'none';
+        }
       }
 
       // 7. AI Narrator — Anthropic Opus 4.7
