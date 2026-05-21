@@ -8912,40 +8912,9 @@ const AISidebar = (() => {
       btc    : ()=>{ if(typeof loadCoin==='function'){loadCoin('BTCUSDT',window.INTV||'15m');} addMsg('<b>BTC</b> analizi yüklendi. AI değerlendirme 1 saniye içinde hazır.','info'); close(); },
       eth    : ()=>{ if(typeof loadCoin==='function'){loadCoin('ETHUSDT',window.INTV||'15m');} addMsg('<b>ETH</b> analizi yüklendi.','info'); close(); },
       top    : ()=>{
-        const cards = [...(window._cards||[])];
-        if(!cards.length){ addMsg('Henüz analiz edilmiş setup yok. Önce <b>Tara</b> butonuna basın.','warn'); return; }
-        const topCard = cards.sort((a,b)=>b[1].result.score-a[1].result.score)[0];
-        if(topCard){
-          const r = topCard[1].result;
-          const dir = r.dir||'—';
-          const dirCol = dir==='LONG'?'#00e5a0':'#ff3d6b';
-          const grade = r.grade||'';
-          const score = r.score||0;
-          const conf = r.confidence||0;
-          const entry = r.entry ? `$${(+r.entry).toLocaleString('en',{maximumFractionDigits:4})}` : '—';
-          const sl    = r.sl    ? `$${(+r.sl).toLocaleString('en',{maximumFractionDigits:4})}`    : '—';
-          const tp1   = r.tp1   ? `$${(+r.tp1).toLocaleString('en',{maximumFractionDigits:4})}`   : '—';
-          addMsg(`
-            <div style="border:1px solid ${dirCol}44;border-radius:8px;padding:10px;background:${dirCol}08">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                <b style="font-size:13px;color:#fff">${topCard[0].replace('USDT','')}/USDT</b>
-                <span style="padding:2px 8px;background:${dirCol}22;border:1px solid ${dirCol}44;border-radius:12px;font-size:10px;font-weight:800;color:${dirCol}">${dir}</span>
-                <span style="font-size:10px;color:#b39dfa;margin-left:auto">Grade: ${grade}</span>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:10px;margin-bottom:6px">
-                <div><span style="color:#555">Skor:</span> <b style="color:#b39dfa">${score}/100</b></div>
-                <div><span style="color:#555">Güven:</span> <b style="color:#00e5a0">%${conf}</b></div>
-                <div><span style="color:#555">R/R:</span> <b style="color:#00d4ff">${r.rr||'—'}</b></div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:10px">
-                <div><span style="color:#555">Giriş:</span> <b style="color:#fff">${entry}</b></div>
-                <div><span style="color:#555">SL:</span> <b style="color:#ff3d6b">${sl}</b></div>
-                <div><span style="color:#555">TP1:</span> <b style="color:#00e5a0">${tp1}</b></div>
-              </div>
-            </div>`,'success');
-          // Coini yükle
-          if(typeof loadCoin==='function') loadCoin(topCard[0], window.INTV||'15m');
-        }
+        const topCard = [...(window._cards||[])].sort((a,b)=>b[1].result.score-a[1].result.score)[0];
+        if(topCard) addMsg(`<span class="good">En iyi setup: <b>${topCard[0]}</b> — Skor: ${topCard[1].result.score}/100</span>`,'success');
+        else addMsg('Henüz analiz edilmiş setup yok. Önce tarama yapın.','warn');
       },
       risk   : ()=>{
         const atrPct = window.IND ? (window.IND.atr/(window.KL?window.KL[window.KL.length-1].c:1)*100) : 0;
