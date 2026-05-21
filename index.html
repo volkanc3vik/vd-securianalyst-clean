@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
-<link rel="icon" href="data:,">
 <title>VD SecuriAnalyst</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -4295,49 +4294,6 @@ async function scanMarket(){
   window._scanDone = true;
   setEl('scanTxt',`✓ ${results.length} coin tarandı · ${new Date().toLocaleTimeString('tr-TR')} · 2 dk'da yenilenir`);
   console.log(`[Scanner] Tarama tamamlandı: ${results.length} coin, Long top: ${top3L.map(i=>i.sym).join(', ')}, Short top: ${top3S.map(i=>i.sym).join(', ')}`);
-
-  // ── En iyi setup'ı otomatik öne çıkar ───────────────────────────
-  setTimeout(()=>{
-    try{
-      // SCE kartlarından en yüksek skorluyu bul
-      const allCards = window.SCE?[...window._sceCards||[]]:[];
-      // Direkt results'tan da kontrol et
-      const bestLong  = top3L[0];
-      const bestShort = top3S[0];
-      const best = (bestLong&&bestShort)
-        ? (bestLong.lScore>=bestShort.sScore ? {item:bestLong,dir:'LONG'} : {item:bestShort,dir:'SHORT'})
-        : bestLong ? {item:bestLong,dir:'LONG'} : bestShort ? {item:bestShort,dir:'SHORT'} : null;
-
-      if(best){
-        // Bildirim alanına yaz
-        const col = best.dir==='LONG'?'#00e5a0':'#ff3d6b';
-        const sym = best.item.sym.replace('USDT','');
-        const score = best.dir==='LONG' ? best.item.lScore : best.item.sScore;
-        const price = best.item.price;
-
-        // scanTxt'e en iyi setup bilgisini göster
-        setEl('scanTxt',`✓ ${results.length} coin tarandı · En iyi: <span style="color:${col};font-weight:800">${sym} ${best.dir} (${score}p)</span> · ${new Date().toLocaleTimeString('tr-TR')}`);
-
-        // NC bildirimi gönder
-        if(window.NC && score > 60){
-          NC.add({
-            sym: best.item.sym,
-            dir: best.dir==='LONG'?'long':'short',
-            level: score>75?'critical':'info',
-            conf: score,
-            msg: `🎯 Tarama: ${sym} ${best.dir} setup tespit edildi — Skor: ${score}/100 · $${price.toFixed(4)}`,
-          });
-        }
-
-        // Signal sekmesine geç ve en iyi coini yükle (sadece ilk taramada)
-        if(!window._firstScanDone){
-          window._firstScanDone = true;
-          // Sessizce en iyi coinin verisini de yükle
-          console.log(`[Scanner] En iyi setup: ${sym} ${best.dir} (${score}p)`);
-        }
-      }
-    }catch(e){}
-  }, 1500);
 }
 
 // ══════════════════════════════════════════
@@ -6966,10 +6922,7 @@ const SCE = (() => {
     });
   }
 
-  function getCards(){ return _cards; }
-  window._cards = _cards;
-
-  return{setMode, setSort, updateCard, calcSignalScore, generateComment, getCards};
+  return{setMode, setSort, updateCard, calcSignalScore, generateComment};
 })();
 
 // ════════════════════════════════════════════════════════════════════
@@ -9008,34 +8961,9 @@ const AISidebar = (() => {
       btc    : ()=>{ if(typeof loadCoin==='function'){loadCoin('BTCUSDT',window.INTV||'15m');} addMsg('<b>BTC</b> analizi yüklendi. AI değerlendirme 1 saniye içinde hazır.','info'); close(); },
       eth    : ()=>{ if(typeof loadCoin==='function'){loadCoin('ETHUSDT',window.INTV||'15m');} addMsg('<b>ETH</b> analizi yüklendi.','info'); close(); },
       top    : ()=>{
-        // SCE'den tüm kartları al
-        const sceCards = typeof SCE !== 'undefined' ? [...SCE.getCards ? SCE.getCards() : (window._cards||new Map())] : [...(window._cards||new Map())];
-        if(!sceCards.length){ addMsg('Henüz analiz edilmiş setup yok. Önce <b>Tara</b> butonuna basın.','warn'); return; }
-        const topCard = sceCards.sort((a,b)=>b[1].result.score-a[1].result.score)[0];
-        if(topCard){
-          const r = topCard[1].result;
-          const dir = topCard[1].params?.entry?.dir || '—';
-          const dirCol = dir==='LONG'?'#00e5a0':'#ff3d6b';
-          const score = r.score||0;
-          const conf = r.rarity?.label||'—';
-          const entry = topCard[1].params?.entry?.entry ? `$${(+topCard[1].params.entry.entry).toLocaleString('en',{maximumFractionDigits:4})}` : '—';
-          const sl  = topCard[1].params?.entry?.stop  ? `$${(+topCard[1].params.entry.stop).toLocaleString('en',{maximumFractionDigits:4})}` : '—';
-          const tp1 = topCard[1].params?.entry?.tp1   ? `$${(+topCard[1].params.entry.tp1).toLocaleString('en',{maximumFractionDigits:4})}` : '—';
-          addMsg(`<div style="border:1px solid ${dirCol}44;border-radius:8px;padding:10px;background:${dirCol}08">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <b style="font-size:13px;color:#fff">${topCard[0].replace('USDT','')}/USDT</b>
-              <span style="padding:2px 8px;background:${dirCol}22;border:1px solid ${dirCol}44;border-radius:12px;font-size:10px;font-weight:800;color:${dirCol}">${dir}</span>
-              <span style="font-size:10px;color:#b39dfa;margin-left:auto">${conf}</span>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:10px;margin-bottom:6px">
-              <div><span style="color:#555">Skor:</span> <b style="color:#b39dfa">${score}/100</b></div>
-              <div><span style="color:#555">Giriş:</span> <b style="color:#fff">${entry}</b></div>
-              <div><span style="color:#555">SL:</span> <b style="color:#ff3d6b">${sl}</b></div>
-            </div>
-            <div style="font-size:10px"><span style="color:#555">TP1:</span> <b style="color:#00e5a0">${tp1}</b></div>
-          </div>`,'success');
-          if(typeof loadCoin==='function') loadCoin(topCard[0], window.INTV||'15m');
-        }
+        const topCard = [...(window._cards||[])].sort((a,b)=>b[1].result.score-a[1].result.score)[0];
+        if(topCard) addMsg(`<span class="good">En iyi setup: <b>${topCard[0]}</b> — Skor: ${topCard[1].result.score}/100</span>`,'success');
+        else addMsg('Henüz analiz edilmiş setup yok. Önce tarama yapın.','warn');
       },
       risk   : ()=>{
         const atrPct = window.IND ? (window.IND.atr/(window.KL?window.KL[window.KL.length-1].c:1)*100) : 0;
