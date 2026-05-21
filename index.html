@@ -2569,17 +2569,13 @@ function startTimer() {
 <div class="glass-card" id="tradeTrackerSection" style="margin-top:16px">
   <div class="gc-title" style="display:flex;align-items:center;gap:10px">
     <span>📊 Futures İşlem Takibi</span>
-    <span id="ttActiveCount" style="font-size:10px;padding:2px 10px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);border-radius:20px;color:var(--green)">0 Aktif</span>
-    <button onclick="TradeTracker.showOpenModal({})" 
-      style="margin-left:auto;padding:5px 14px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:8px;color:var(--cyan);font-size:10px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">
-      + Manuel İşlem Aç
-    </button>
+    <span id="ttActiveCount" style="font-size:10px;padding:2px 10px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);border-radius:20px;color:var(--green);margin-left:auto">0 Aktif</span>
   </div>
   <div id="tradeTrackerList">
     <div style="text-align:center;padding:24px;color:var(--text3)">
       <div style="font-size:28px;margin-bottom:8px">📊</div>
       <div style="font-size:12px;font-weight:600;margin-bottom:4px">Aktif işlem yok</div>
-      <div style="font-size:10px">Sinyal kartında <b style="color:var(--cyan)">⚡ İşlem Aç</b> butonuna bas<br>veya yukarıdan manuel ekle</div>
+      <div style="font-size:10px">Sinyal kartında <b style="color:var(--cyan)">⚡ İşlem Aç</b> butonuna bas</div>
     </div>
   </div>
 </div>
@@ -2689,10 +2685,6 @@ function startTimer() {
     <!-- Başlık -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 2px">
       <span style="font-size:9px;font-weight:700;letter-spacing:3px;color:var(--text3)">◈ FUTURES İŞLEM TERMİNALİ</span>
-      <button onclick="TradeTracker.showOpenModal(window._lastCardData||{})"
-        style="margin-left:auto;padding:5px 14px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:8px;color:var(--cyan);font-size:10px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">
-        + İşlem Aç
-      </button>
     </div>
 
     <!-- Aktif işlemler -->
@@ -2700,7 +2692,7 @@ function startTimer() {
       <div style="background:rgba(8,16,28,.8);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:20px;text-align:center;color:var(--text3)">
         <div style="font-size:22px;margin-bottom:6px">📊</div>
         <div style="font-size:11px;font-weight:600;margin-bottom:4px">Aktif işlem yok</div>
-        <div style="font-size:10px;opacity:.7">Sinyal kartındaki <b style="color:var(--cyan)">⚡ İşlem Aç</b> butonu ile veya yukarıdan ekle</div>
+        <div style="font-size:10px;opacity:.7">Sinyal kartındaki <b style="color:var(--cyan)">⚡ İşlem Aç</b> butonu ile ekle</div>
       </div>
     </div>
   </div>
