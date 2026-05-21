@@ -11,7 +11,6 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.COINGLASS_API_KEY || '';
   const queryStr = params ? '?' + decodeURIComponent(params) : '';
-  // V4 base URL
   const cgUrl = 'https://open-api-v4.coinglass.com' + decodeURIComponent(endpoint) + queryStr;
 
   try {
