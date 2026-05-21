@@ -675,20 +675,3 @@
 }
 .mini-bar:hover{opacity:.8;}
 
-
-/* ── Mobil AI Hızlı Butonlar ── */
-@media (max-width: 768px) {
-  .ai-quick-btns {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 6px !important;
-  }
-  .ai-quick-btn {
-    font-size: 11px !important;
-    padding: 8px 10px !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-}
