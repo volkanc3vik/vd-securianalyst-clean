@@ -2253,6 +2253,9 @@ function startTimer() {
 
 <div class="main">
 
+<!-- ══ TRADING INTELLIGENCE PANEL — yeni mimari ══ -->
+<div id="tiPanelMount"></div>
+
 <!-- MARKET OVERVIEW -->
 <div class="section">
   <div class="section-title">
@@ -9747,6 +9750,24 @@ const P10 = (() => {
 <script src="ui/futures/futures-card.js"></script>
 <script src="ui/futures/futures-panel.js"></script>
 <script src="modules/futures-init.js"></script>
+
+<!-- ══ TRADING INTELLIGENCE PANEL — yeni mimari ══ -->
+<link rel="stylesheet" href="styles/intelligence.css">
+<script src="engines/intelligence/ti-state.js"></script>
+<script src="engines/intelligence/ti-regime.js"></script>
+<script src="engines/intelligence/ti-mm-bias.js"></script>
+<script src="engines/intelligence/ti-setup-scorer.js"></script>
+<script src="engines/intelligence/ti-setup-maturity.js"></script>
+<script src="engines/intelligence/ti-narrator.js"></script>
+<script src="engines/intelligence/ti-feed.js"></script>
+<script src="engines/intelligence/ti-controller.js"></script>
+<script src="ui/intelligence/ti-regime-card.js"></script>
+<script src="ui/intelligence/ti-majors-card.js"></script>
+<script src="ui/intelligence/ti-best-setup-card.js"></script>
+<script src="ui/intelligence/ti-watchlist-card.js"></script>
+<script src="ui/intelligence/ti-warnings-card.js"></script>
+<script src="ui/intelligence/ti-panel.js"></script>
+<script src="modules/ti-init.js"></script>
 
 <script>
 // ── CoinGlass setup (API key eklenince devreye girer) ─────────────
