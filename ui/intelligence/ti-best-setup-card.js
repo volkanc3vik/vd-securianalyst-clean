@@ -28,14 +28,16 @@ window.TIBestSetupCard = (() => {
     return (+v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
   }
 
-  function render(setup) {
+  function render(setup, scanStats) {
     if (!setup) {
+      const tierLine = scanStats?.tierCounts ? _scanStatsLine(scanStats) : '';
       return `
         <div class="ti-card">
           <div class="ti-card-label"><span class="ti-card-label-dot"></span>MOST MATURE SETUP</div>
           <div class="ti-empty">
-            <div class="ti-empty-title">No qualifying setup yet</div>
-            <div>Waiting for next scan to identify a quality setup.</div>
+            <div class="ti-empty-title">No qualifying setup this cycle</div>
+            <div>No coin currently meets quality threshold. Market is being monitored.</div>
+            ${tierLine}
           </div>
         </div>
       `;
@@ -104,6 +106,20 @@ window.TIBestSetupCard = (() => {
         </div>
       </div>
     `;
+  }
+
+  function _scanStatsLine(scanStats) {
+    if (!scanStats || !scanStats.tierCounts) return '';
+    const c = scanStats.tierCounts;
+    const parts = [];
+    if (c.STRONG)  parts.push(`${c.STRONG} Strong`);
+    if (c.VALID)   parts.push(`${c.VALID} Valid`);
+    if (c.WEAK)    parts.push(`${c.WEAK} Weak`);
+    if (c.AVOID)   parts.push(`${c.AVOID} Avoid`);
+    if (parts.length === 0) return '';
+    return `<div style="font-size:10px;color:var(--text3);margin-top:8px;letter-spacing:.5px">
+      Scan: ${scanStats.scored || 0} coins evaluated · ${parts.join(' · ')}
+    </div>`;
   }
 
   return { render };

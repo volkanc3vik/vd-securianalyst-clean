@@ -376,7 +376,8 @@ function scoreLong(closes,chg){
   if(m.hist>0)s+=20;if(m.line>0&&m.hist>0)s+=5;
   if(b){if(p>b.mid)s+=10;if(p<=b.lower*1.005)s+=10;if(p>b.upper)s-=10;}
   if(chg>0)s+=5;if(chg>3)s+=5;
-  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v>e21v?(e21v>e50v?'▲▲▲':'▲▲'):'▼',p};
+  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v>e21v?(e21v>e50v?'▲▲▲':'▲▲'):'▼',p,
+    e9v,e21v,e50v,macdObj:m};
 }
 function scoreShort(closes,chg){
   const e9=calcEMA(closes,9),e21=calcEMA(closes,21),e50=calcEMA(closes,50);
@@ -388,7 +389,8 @@ function scoreShort(closes,chg){
   if(m.hist<0)s+=20;if(m.line<0&&m.hist<0)s+=5;
   if(b){if(p<b.mid)s+=10;if(p>=b.upper*0.995)s+=10;if(p<b.lower)s-=10;}
   if(chg<0)s+=5;if(chg<-3)s+=5;
-  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v<e21v?(e21v<e50v?'▼▼▼':'▼▼'):'▲',p};
+  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v<e21v?(e21v<e50v?'▼▼▼':'▼▼'):'▲',p,
+    e9v,e21v,e50v,macdObj:m};
 }
 function jokerScoreLong(closes,chg,atr,price){
   const r=calcRSI(closes),m=calcMACD(closes);
@@ -848,7 +850,7 @@ async function scanMarket(){
         get(`${FBASE}/fapi/v1/ticker/24hr?symbol=${sym}`),
       ]);
       if(!Array.isArray(kl)||kl.length<30)continue;
-      const closes=kl.map(k=>+k[4]),candles=kl.map(k=>({h:+k[2],l:+k[3],c:+k[4]}));
+      const closes=kl.map(k=>+k[4]),candles=kl.map(k=>({h:+k[2],l:+k[3],c:+k[4],o:+k[1],v:+k[5]}));
       const chg=+tk.priceChangePercent,price=+tk.lastPrice;
       const atr=calcATR(candles);
       const risk=calcRisk(closes,chg,atr,price);
@@ -869,6 +871,18 @@ async function scanMarket(){
         // SL/TP — renderCard'da kullanılır
         sl:slLong, tp1:tp1Long, tp2:tp2Long,
         slShort, tp1Short, tp2Short,
+        // ── Trading Intelligence için ek veri ──────────────────────
+        closes,
+        candles,
+        ind: {
+          rsi:   lSc.rsi,
+          ema9:  lSc.e9v   ?? null,
+          ema21: lSc.e21v  ?? null,
+          ema50: lSc.e50v  ?? null,
+          atr:   atr,
+          macd:  lSc.macdObj ? { histogram: lSc.macdObj.hist, line: lSc.macdObj.line } : null,
+        },
+        dir: lSc.score > sSc.score ? 'LONG' : (sSc.score > lSc.score ? 'SHORT' : null),
       });
     }catch(e){}
     await new Promise(r=>setTimeout(r,60));

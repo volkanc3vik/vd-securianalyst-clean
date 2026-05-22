@@ -39,6 +39,17 @@ window.TIPanel = (() => {
     `;
   }
 
+  function _renderVolObs(volObs) {
+    if (!volObs) return '';
+    return `
+      <div class="ti-card">
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>VOLATILITY OBSERVATION</div>
+        <div class="ti-mm-headline">${volObs.label}</div>
+        <div class="ti-mm-detail" style="margin-top:4px">${volObs.tone}</div>
+      </div>
+    `;
+  }
+
   function _buildShell() {
     if (!_mount) return;
     _mount.innerHTML = `
@@ -92,15 +103,17 @@ window.TIPanel = (() => {
     `;
 
     const majorsRow = window.TIMajorsCard.render(snap.btc, snap.eth);
-    const bestRow   = window.TIBestSetupCard.render(snap.bestSetup);
+    const bestRow   = window.TIBestSetupCard.render(snap.bestSetup, snap.scanStats);
     const watchRow  = window.TIWatchlistCard.render(snap.watchlist);
     const warnRow   = window.TIWarningsCard.render(snap.warnings);
+    const volRow    = _renderVolObs(snap.volatilityObs);
 
     grid.innerHTML = `
       ${regimeRow}
       ${majorsRow}
       ${bestRow}
       ${watchRow}
+      ${volRow}
       ${warnRow}
       ${_renderSources(snap.dataSources)}
     `;
