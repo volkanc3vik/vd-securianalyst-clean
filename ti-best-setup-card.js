@@ -1,0 +1,110 @@
+// ════════════════════════════════════════════════════════════════════
+// TI BEST SETUP CARD — Hero
+// Score + Tier + Maturity Bar + Confirmed Chips + "What Needs to Happen"
+// ════════════════════════════════════════════════════════════════════
+window.TIBestSetupCard = (() => {
+  'use strict';
+
+  function _esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function _autoDecimals(price) {
+    const p = Math.abs(+price);
+    if (!Number.isFinite(p) || p === 0) return 2;
+    if (p >= 1000) return 2;
+    if (p >= 10)   return 3;
+    if (p >= 1)    return 4;
+    if (p >= 0.01) return 5;
+    return 7;
+  }
+
+  function _fmtPrice(v) {
+    if (v == null || !Number.isFinite(+v)) return '—';
+    const d = _autoDecimals(v);
+    return (+v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+
+  function render(setup) {
+    if (!setup) {
+      return `
+        <div class="ti-card">
+          <div class="ti-card-label"><span class="ti-card-label-dot"></span>MOST MATURE SETUP</div>
+          <div class="ti-empty">
+            <div class="ti-empty-title">No qualifying setup yet</div>
+            <div>Waiting for next scan to identify a quality setup.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const tier      = setup.tier || {};
+    const tierCls   = 'tier-' + (tier.code || 'valid').toLowerCase();
+    const dirCls    = (setup.dir || 'LONG').toLowerCase();
+    const dirIcon   = setup.dir === 'LONG' ? '▲ LONG' : '▼ SHORT';
+    const score     = +setup.score || 0;
+    const matPct    = setup.maturity?.percent || 0;
+    const confirmed = setup.maturity?.confirmed || [];
+    const missing   = setup.maturity?.missing   || [];
+
+    const confirmChips = confirmed.length
+      ? `<div class="ti-conf-grid">${confirmed.map(c => `<span class="ti-conf-chip">${_esc(c)}</span>`).join('')}</div>`
+      : '';
+
+    const needsBlock = missing.length
+      ? `
+        <div class="ti-needs">
+          <div class="ti-needs-label">What Needs to Happen Next</div>
+          <ul class="ti-needs-list">
+            ${missing.map(m => `<li>${_esc(m)}</li>`).join('')}
+          </ul>
+        </div>
+      `
+      : '';
+
+    // Setup levels
+    const levelsHtml = (setup.entry || setup.sl || setup.tp1) ? `
+      <div class="ti-best-levels">
+        ${setup.entry ? `<div class="ti-best-level"><span class="ti-best-level-label">Entry</span><span class="ti-best-level-val entry">${_fmtPrice(setup.entry)}</span></div>` : ''}
+        ${setup.sl    ? `<div class="ti-best-level"><span class="ti-best-level-label">Stop</span><span class="ti-best-level-val sl">${_fmtPrice(setup.sl)}</span></div>` : ''}
+        ${setup.tp1   ? `<div class="ti-best-level"><span class="ti-best-level-label">TP1</span><span class="ti-best-level-val tp1">${_fmtPrice(setup.tp1)}</span></div>` : ''}
+        ${setup.tp2   ? `<div class="ti-best-level"><span class="ti-best-level-label">TP2</span><span class="ti-best-level-val tp2">${_fmtPrice(setup.tp2)}</span></div>` : ''}
+      </div>
+    ` : '';
+
+    return `
+      <div class="ti-card" style="padding:0;background:transparent;border:none">
+        <div class="ti-card-label" style="padding:0 4px"><span class="ti-card-label-dot"></span>MOST MATURE SETUP</div>
+        <div class="ti-best ${tierCls}">
+          <div class="ti-best-head">
+            <span class="ti-best-sym">${_esc(setup.sym || '—')}</span>
+            <span class="ti-best-dir ${dirCls}">${dirIcon}</span>
+            <div class="ti-best-score">
+              <span class="ti-best-score-num">${score}</span>
+              <span class="ti-best-tier">${_esc(tier.label || '')}</span>
+            </div>
+          </div>
+
+          <div class="ti-mat-wrap">
+            <div class="ti-mat-label">
+              <span>Setup Maturity</span>
+              <b>${matPct}%</b>
+            </div>
+            <div class="ti-mat-bar">
+              <div class="ti-mat-fill" style="width:${Math.max(0, Math.min(100, matPct))}%"></div>
+            </div>
+          </div>
+
+          ${confirmChips}
+          ${needsBlock}
+          ${levelsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  return { render };
+})();
