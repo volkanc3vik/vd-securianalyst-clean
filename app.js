@@ -895,9 +895,6 @@ async function scanMarket(){
   // ── PHASE 10: Priority Engine scan hook ──
   try{ P10.onScanComplete(results); }catch(e){}
 
-  // ── Trading Intelligence — scan sonuçlarını yayınla ──
-  try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
-
   // ── AI: Tarama sinyallerini kaydet ──────────────────────────────
   // Top 3 Long, Top 3 Short ve Jokerler için giriş/stop/tp hesapla
   // ve AI öğrenme motoruna kaydet — otomatik takip başlatılır
