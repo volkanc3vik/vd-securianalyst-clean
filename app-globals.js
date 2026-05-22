@@ -101,4 +101,4 @@ export function registerGlobals() {
   window.requestNotif = () => window._requestNotif?.();
 
   console.log('✅ Global bridge kuruldu');
-}
+}  s
