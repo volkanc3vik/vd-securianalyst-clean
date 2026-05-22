@@ -708,15 +708,6 @@ async function loadCoin(sym,intv){
   document.getElementById('ldr').style.display='block';
   document.getElementById('mainPanel').style.display='none';
 
-  // Terminal panelini göster (aktif trade varsa)
-  setTimeout(()=>{
-    const wrap = document.getElementById('tradeTerminalWrap');
-    if (wrap) {
-      const hasTrades = document.querySelectorAll('#tradeTrackerList .tt-card-wrap, #tradeTrackerList [style*="ACTIVE"]').length > 0
-        || (localStorage.getItem('vd_active_trades_v2') && JSON.parse(localStorage.getItem('vd_active_trades_v2')||'[]').some(t=>t.status==='ACTIVE'));
-      wrap.style.display = hasTrades ? 'block' : 'none';
-    }
-  }, 500);
   try{
     const{tk,candles,fund,ls}=await fetchCoin(sym,intv);
     updateUI(tk,candles,fund,ls);loadTV(sym,intv);
@@ -802,7 +793,7 @@ function renderCard(item,dir,container,isJoker=false){
         📈 Grafikte Aç
       </button>
       <button style="padding:7px 14px;background:${mainCol}20;border:1px solid ${mainCol}60;border-radius:8px;color:${mainCol};font-size:10px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif"
-        onclick="event.stopPropagation();TradeTracker.showOpenModal({sym:'${item.sym}',dir:'${dir.toUpperCase()}',price:${item.price||0},sl:${dir==='long'?(item.sl||0):(item.slShort||0)},tp1:${dir==='long'?(item.tp1||0):(item.tp1Short||0)},tp2:${dir==='long'?(item.tp2||0):(item.tp2Short||0)}})">
+        onclick="event.stopPropagation();FuturesPanel.openModal({sym:'${item.sym}',dir:'${dir.toUpperCase()}',price:${item.price||0},sl:${dir==='long'?(item.sl||0):(item.slShort||0)},tp1:${dir==='long'?(item.tp1||0):(item.tp1Short||0)},tp2:${dir==='long'?(item.tp2||0):(item.tp2Short||0)}})">
         ⚡ İşlem Aç
       </button>
     </div>`;

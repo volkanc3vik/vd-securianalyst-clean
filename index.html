@@ -2565,20 +2565,8 @@ function startTimer() {
   </div>
 </div>
 
-<!-- ══ FUTURES İŞLEM TAKİP PANELİ ══ -->
-<div class="glass-card" id="tradeTrackerSection" style="margin-top:16px">
-  <div class="gc-title" style="display:flex;align-items:center;gap:10px">
-    <span>📊 Futures İşlem Takibi</span>
-    <span id="ttActiveCount" style="font-size:10px;padding:2px 10px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);border-radius:20px;color:var(--green);margin-left:auto">0 Aktif</span>
-  </div>
-  <div id="tradeTrackerList">
-    <div style="text-align:center;padding:24px;color:var(--text3)">
-      <div style="font-size:28px;margin-bottom:8px">📊</div>
-      <div style="font-size:12px;font-weight:600;margin-bottom:4px">Aktif işlem yok</div>
-      <div style="font-size:10px">Sinyal kartında <b style="color:var(--cyan)">⚡ İşlem Aç</b> butonuna bas</div>
-    </div>
-  </div>
-</div>
+<!-- ══ FUTURES MANUEL İŞLEM PANELİ — yeni mimari ══ -->
+<div id="futuresPanelMount" style="margin-top:16px"></div>
 
 <!-- SEARCH -->
 <div class="search-card">
@@ -2676,24 +2664,6 @@ function startTimer() {
     </div>
     <div class="lwc-notes" id="lwcNotes">
       <span style="font-size:11px;color:var(--text3)">Coin seçince AI analiz notları görünecek...</span>
-    </div>
-  </div>
-
-  <!-- ══ PROFESSIONAL FUTURES TRADE TERMINAL ══ -->
-  <div id="tradeTerminalWrap" style="display:none;margin-bottom:16px">
-
-    <!-- Başlık -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 2px">
-      <span style="font-size:9px;font-weight:700;letter-spacing:3px;color:var(--text3)">◈ FUTURES İŞLEM TERMİNALİ</span>
-    </div>
-
-    <!-- Aktif işlemler -->
-    <div id="tradeTrackerList">
-      <div style="background:rgba(8,16,28,.8);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:20px;text-align:center;color:var(--text3)">
-        <div style="font-size:22px;margin-bottom:6px">📊</div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:4px">Aktif işlem yok</div>
-        <div style="font-size:10px;opacity:.7">Sinyal kartındaki <b style="color:var(--cyan)">⚡ İşlem Aç</b> butonu ile ekle</div>
-      </div>
     </div>
   </div>
 
@@ -3265,20 +3235,6 @@ function startTimer() {
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px;" id="tmStatus">Aktif pozisyon analizi için grafik açın.</div>
     <div class="tm-list" id="tmList">
       <div style="font-size:11px;color:var(--text3);padding:4px 0">Sinyal analiz ediliyor...</div>
-    </div>
-  </div>
-
-  <!-- TRADE TRACKER — Canlı Trade Takip -->
-  <div class="glass-card" id="tradeTrackerSection">
-    <div class="gc-title" style="display:flex;align-items:center;gap:8px">
-      📊 Canlı Trade Takip
-      <span id="ttActiveCount" style="font-size:10px;padding:2px 8px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);border-radius:8px;color:var(--green);margin-left:auto">0 Aktif</span>
-    </div>
-    <div id="tradeTrackerList">
-      <div style="text-align:center;padding:20px;color:var(--text3);font-size:11px">
-        <div style="font-size:24px;margin-bottom:8px">📊</div>
-        Aktif trade yok.<br>Sinyal kartındaki <b>İşlem Aç</b> butonu ile ekle.
-      </div>
     </div>
   </div>
 
@@ -10191,8 +10147,19 @@ const P10 = (() => {
 <script src="engines/crowd-engine.js"></script>
 <script src="engines/orderflow-engine.js"></script>
 <script src="engines/learning-engine.js"></script>
-<script src="engines/trade-tracker.js"></script>
 <script src="engines/ai-narrator.js"></script>
+
+<!-- ══ FUTURES MANUEL İŞLEM PANELİ — yeni mimari ══ -->
+<link rel="stylesheet" href="styles/futures.css">
+<script src="engines/futures/futures-state.js"></script>
+<script src="engines/futures/futures-calc.js"></script>
+<script src="engines/futures/futures-liquidation.js"></script>
+<script src="engines/futures/futures-pnl.js"></script>
+<script src="engines/futures/futures-controller.js"></script>
+<script src="ui/futures/futures-modal.js"></script>
+<script src="ui/futures/futures-card.js"></script>
+<script src="ui/futures/futures-panel.js"></script>
+<script src="modules/futures-init.js"></script>
 
 <script>
 // ── CoinGlass setup (API key eklenince devreye girer) ─────────────
@@ -10206,20 +10173,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof LearningEngine !== 'undefined') {
       LearningEngine.syncFromSupabase();
     }
-    // Trade Tracker başlat
-    if (typeof TradeTracker !== 'undefined') {
-      TradeTracker.init();
-    }
-  }, 2000);
-
-  // Trade Tracker aktif sayısını güncelle
-  setInterval(() => {
-    const list    = document.getElementById('tradeTrackerList');
-    const countEl = document.getElementById('ttActiveCount');
-    if (!list || !countEl) return;
-    const active = list.querySelectorAll('.tt-card').length;
-    countEl.textContent = active + ' Aktif';
-    countEl.style.color = active > 0 ? 'var(--green)' : 'var(--text3)';
   }, 2000);
 });
 
