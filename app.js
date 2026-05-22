@@ -895,6 +895,9 @@ async function scanMarket(){
   // ── PHASE 10: Priority Engine scan hook ──
   try{ P10.onScanComplete(results); }catch(e){}
 
+  // ── Trading Intelligence — scan sonuçlarını yayınla ──
+  try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
+
   // ── AI: Tarama sinyallerini kaydet ──────────────────────────────
   // Top 3 Long, Top 3 Short ve Jokerler için giriş/stop/tp hesapla
   // ve AI öğrenme motoruna kaydet — otomatik takip başlatılır
@@ -5535,143 +5538,6 @@ window.addEventListener('DOMContentLoaded',()=>{
 // Scan tamamlanınca badge güncelle
 const _origScanComplete = typeof scanMarket === 'function' ? scanMarket : null;
 
-
-// ════════════════════════════════════════════════════════════════════
-// PHASE 8: AI SİDEBAR + ONBOARDING + SİSTEM SAĞLIK + BİLDİRİM GRUPLAMA
-// ════════════════════════════════════════════════════════════════════
-
-// ── 1. AI SIDEBAR ────────────────────────────────────────────────────
-const AISidebar = (() => {
-  let _open = false;
-  let _msgCount = 0;
-
-  function toggle(){
-    _open ? close() : open();
-  }
-
-  function open(){
-    _open = true;
-    const el = document.getElementById('aiSidebar');
-    const ov = document.getElementById('aiSidebarOverlay');
-    if(el) el.classList.add('open');
-    if(ov) ov.style.display = 'block';
-    _updateHealth();
-    _updateLearnStats();
-  }
-
-  function close(){
-    _open = false;
-    const el = document.getElementById('aiSidebar');
-    const ov = document.getElementById('aiSidebarOverlay');
-    if(el) el.classList.remove('open');
-    if(ov) ov.style.display = 'none';
-  }
-
-  function addMsg(text, type){
-    const container = document.getElementById('aiSidebarMsgs');
-    if(!container) return;
-    const colors = {info:'rgba(157,125,250,.1)',success:'rgba(0,229,160,.08)',warn:'rgba(255,122,0,.08)',error:'rgba(255,61,107,.08)'};
-    const borders = {info:'rgba(157,125,250,.2)',success:'rgba(0,229,160,.2)',warn:'rgba(255,122,0,.2)',error:'rgba(255,61,107,.2)'};
-    const bg = colors[type]||colors.info;
-    const br = borders[type]||borders.info;
-    const d = document.createElement('div');
-    d.className='ai-msg';
-    d.innerHTML=`
-      <div class="ai-msg-bubble" style="background:${bg};border-color:${br}">${text}</div>
-      <div class="ai-msg-time">${new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
-    `;
-    container.insertBefore(d, container.firstChild);
-    // Max 20 mesaj
-    while(container.children.length > 20) container.removeChild(container.lastChild);
-    _msgCount++;
-  }
-
-  function quickAction(act){
-    const actions = {
-      scan   : ()=>{ if(typeof scanMarket==='function') scanMarket(); addMsg('Tarama başlatıldı. Tüm Binance Futures coinleri analiz ediliyor...','info'); },
-      btc    : ()=>{ if(typeof loadCoin==='function'){loadCoin('BTCUSDT',window.INTV||'15m');} addMsg('<b>BTC</b> analizi yüklendi. AI değerlendirme 1 saniye içinde hazır.','info'); close(); },
-      eth    : ()=>{ if(typeof loadCoin==='function'){loadCoin('ETHUSDT',window.INTV||'15m');} addMsg('<b>ETH</b> analizi yüklendi.','info'); close(); },
-      top    : ()=>{
-        const topCard = [...(window._cards||[])].sort((a,b)=>b[1].result.score-a[1].result.score)[0];
-        if(topCard) addMsg(`<span class="good">En iyi setup: <b>${topCard[0]}</b> — Skor: ${topCard[1].result.score}/100</span>`,'success');
-        else addMsg('Henüz analiz edilmiş setup yok. Önce tarama yapın.','warn');
-      },
-      risk   : ()=>{
-        const atrPct = window.IND ? (window.IND.atr/(window.KL?window.KL[window.KL.length-1].c:1)*100) : 0;
-        const msg = atrPct>4
-          ? `<span class="bad">⚠ Yüksek volatilite (%${atrPct.toFixed(2)}). Pozisyon boyutunu küçük tut!</span>`
-          : `<span class="good">✓ Volatilite normal (%${atrPct.toFixed(2)}). Normal risk yönetimi uygun.</span>`;
-        addMsg(msg, atrPct>4?'warn':'success');
-      },
-      regime : ()=>{
-        const m = typeof MarketRegime!=='undefined' ? MarketRegime.getMode() : '—';
-        const msgs = {
-          TREND:'<span class="good">✓ Trend marketi — momentum sinyalleri güvenilir.</span>',
-          SIDEWAYS:'<span class="warn">↔ Yatay market — breakout tuzaklarına dikkat.</span>',
-          VOLATILE:'<span class="bad">⚠ Volatil market — küçük pozisyon al.</span>',
-          PANIC:'<span class="bad">🔴 Panik modu — long açmaktan kaçın!</span>',
-          SQUEEZE:'<span class="warn">◎ Squeeze — büyük hareket yakın olabilir.</span>',
-        };
-        addMsg(msgs[m]||`Piyasa rejimi: ${m}`,'info');
-      },
-    };
-    if(actions[act]) actions[act]();
-  }
-
-  function _updateHealth(){
-    // WS durumu
-    const wsOk = typeof WSEngine!=='undefined' && WSEngine.getStatus()==='connected';
-    _setHealth('ws', wsOk?'ok':'warn', wsOk?'Bağlı':'Bağlantı yok');
-    // AI
-    _setHealth('ai', 'ok', 'Aktif');
-    // Scan
-    const scanEl=document.getElementById('scanStatus');
-    _setHealth('scan', 'ok', 'Hazır');
-    // DB
-    _setHealth('db', 'ok', 'Supabase bağlı');
-  }
-
-  function _setHealth(id, status, val){
-    const dot = document.getElementById('sh-'+id);
-    const valEl= document.getElementById('sh-'+id+'-val');
-    if(dot){ dot.className='sys-dot '+status; }
-    if(valEl) valEl.textContent = val;
-  }
-
-  function _updateLearnStats(){
-    if(typeof AI==='undefined') return;
-    const stats = AI.stats();
-    const wrEl  = document.getElementById('ai-wr-val');
-    const sigEl = document.getElementById('ai-sig-val');
-    const bestEl= document.getElementById('ai-best-val');
-    const sessEl= document.getElementById('ai-sess-val');
-    if(wrEl)   wrEl.textContent  = stats.winRate!==null ? stats.winRate+'%' : '—%';
-    if(sigEl)  sigEl.textContent = stats.total||0;
-    // En iyi coin
-    if(bestEl&&stats.coins){
-      const best = Object.entries(stats.coins).sort((a,b)=>b[1].wr-a[1].wr)[0];
-      bestEl.textContent = best ? best[0].replace('USDT','') : '—';
-    }
-    // Session
-    const sess = typeof SMC!=='undefined'?SMC.getSession():null;
-    if(sessEl) sessEl.textContent = sess?sess.name:'—';
-  }
-
-  // updateUI'da AI mesaj üret
-  function onCoinLoad(sym, ind, entry, reasoning){
-    if(!_open) return;
-    const sn = sym.replace('USDT','');
-    if(entry&&reasoning){
-      const isLong = entry.dir==='LONG';
-      const col    = isLong?'good':'bad';
-      const dir    = isLong?'▲ LONG':'▼ SHORT';
-      addMsg(`<b>${sn}</b> analizi tamamlandı. <span class="${col}">${dir}</span> — Güven: %${reasoning.confidence}. ${reasoning.summary[0]||''}`, isLong?'success':'warn');
-    }
-  }
-
-  return{toggle, open, close, addMsg, quickAction, onCoinLoad};
-})();
-
 // ── 2. ONBOARDING ────────────────────────────────────────────────────
 const Onboarding = (() => {
   const OB_KEY = 'vd_onboarded_v1';
@@ -5719,89 +5585,10 @@ const Onboarding = (() => {
 })();
 
 // ── 3. BİLDİRİM GRUPLAMA ────────────────────────────────────────────
-// NC renderList'i gruplama ile geliştir
-const _origRenderList = null; // NC içinde override
-
-// NC'ye AI Sidebar entegrasyonu
-const _origNCAdd = typeof NC !== 'undefined' ? NC.add.bind(NC) : null;
-if(typeof NC !== 'undefined' && _origNCAdd){
-  NC.add = function(opts){
-    _origNCAdd(opts);
-    // AI Sidebar'a da ilet (kritik bildirimleri)
-    if(opts.level==='critical'||opts.level==='high'){
-      AISidebar.addMsg(
-        `<span class="bad">🔴 ${opts.sym?opts.sym.replace('USDT',''):''} — ${opts.msg}</span>`,
-        'error'
-      );
-    }
-  };
-}
-
-// ── updateUI hook — Phase 8 entegre ──────────────────────────────────
-const _origUI_Phase8 = typeof updateUI === 'function' ? updateUI : null;
-if(_origUI_Phase8){
-  window.updateUI = async function(tk, candles, fund, ls){
-    _origUI_Phase8(tk, candles, fund, ls);
-    setTimeout(()=>{
-      try{
-        // AI Sidebar coin mesajı
-        if(window.IND && window.SYM){
-          const ent = calcEntry(window.KL||candles, window.IND, tk);
-          if(ent && typeof AIReasoning !== 'undefined'){
-            const reasoning = AIReasoning.buildReasoning({
-              sym:window.SYM, dir:ent.dir,
-              closes:(window.KL||candles).map(c=>c.c),
-              candles:window.KL||candles,
-              ind:window.IND, entry:ent,
-              btcData:typeof MarketRegime!=='undefined'?MarketRegime.getBTC():null,
-              regimeMode:typeof MarketRegime!=='undefined'?MarketRegime.getMode():null,
-              smcData:window._lastSMCData||null,
-              fakeBreak:false, conf:50,
-            });
-            AISidebar.onCoinLoad(window.SYM, window.IND, ent, reasoning);
-          }
-        }
-        // Sistem sağlık güncelle
-        SystemHealth.update();
-      }catch(e){}
-    }, 1500);
-  };
-}
-
-// ── 4. SİSTEM SAĞLIK MONİTÖRÜ ────────────────────────────────────────
-const SystemHealth = (() => {
-  let _interval = null;
-
-  function update(){
-    const wsOk = typeof WSEngine!=='undefined'&&WSEngine.getStatus()==='connected';
-    // Topbar'da durum dot (opsiyonel)
-    _setDot('sh-ws', wsOk?'ok':'warn', wsOk?'Bağlı':'Bağlantı yok');
-    _setDot('sh-api', 'ok', 'Aktif');
-    _setDot('sh-ai', 'ok', 'Çalışıyor');
-    _setDot('sh-scan', 'ok', 'Hazır');
-    _setDot('sh-db', 'ok', 'Bağlı');
-  }
-
-  function _setDot(id, status, val){
-    const dot=document.getElementById(id);
-    const valEl=document.getElementById(id+'-val');
-    if(dot){dot.className='sys-dot '+status;}
-    if(valEl) valEl.textContent=val;
-  }
-
-  function start(){
-    update();
-    _interval = setInterval(update, 10000);
-  }
-
-  return{update, start};
-})();
-
 // ── INIT ──────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
   setTimeout(()=>{
     Onboarding.init();
-    SystemHealth.start();
   }, 500);
 });
 
@@ -6164,11 +5951,8 @@ window._ECE2 = ECE2;
 window._FBDetector = FBDetector;
 window._SMCPro = SMCPro;
 window._RiskEnginePro = RiskEnginePro;
-window._AISidebar = AISidebar;
-window.AISidebar = AISidebar;
 window._Onboarding = Onboarding;
 window.Onboarding = Onboarding;
-window._SystemHealth = SystemHealth;
 window._Analytics = Analytics;
 window.Analytics = Analytics;
 window._startClock = startClock;

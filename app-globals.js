@@ -78,14 +78,6 @@ export function registerGlobals() {
     refresh:      () => window._Analytics?.refresh(),
   };
 
-  // ── AI Sidebar ────────────────────────────────────────────────
-  window.AISidebar = {
-    toggle:      () => window._AISidebar?.toggle(),
-    close:       () => window._AISidebar?.close(),
-    quickAction: (a) => window._AISidebar?.quickAction(a),
-    addMsg:      (msg, type) => window._AISidebar?.addMsg(msg, type),
-  };
-
   // ── Onboarding ────────────────────────────────────────────────
   window.Onboarding = {
     next: () => window._Onboarding?.next(),
