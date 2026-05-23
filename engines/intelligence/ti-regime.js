@@ -101,32 +101,32 @@ window.TIRegime = (() => {
     const balanced   = !longHeavy && !shortHeavy;
 
     if (trend.dir === 'FLAT' && (vol.quality === 'SQUEEZED' || vol.quality === 'HEALTHY') && balanced) {
-      code = 'CHOPPY'; label = 'Choppy / Uncertain Market'; color = 'yellow';
-      summary = 'No clear directional bias. Patience over breakout chasing.';
+      code = 'CHOPPY'; label = 'Yatay / Belirsiz Piyasa'; color = 'yellow';
+      summary = 'Net bir yön yok. Kırılım kovalamak yerine sabırlı ol.';
     }
     else if (trend.dir === 'UP' && trend.strength > 40 && (vol.quality === 'HEALTHY' || vol.quality === 'ELEVATED') && longHeavy) {
-      code = 'RISK_ON'; label = 'Risk-On Environment'; color = 'green';
-      summary = 'Trend continuation favored. Pullbacks remain buyable.';
+      code = 'RISK_ON'; label = 'Risk-On Ortamı'; color = 'green';
+      summary = 'Trend devamı destekleniyor. Geri çekilmeler alım fırsatı.';
     }
     else if (trend.dir === 'DOWN' && trend.strength > 40 && shortHeavy) {
-      code = 'RISK_OFF'; label = 'Risk-Off Environment'; color = 'red';
-      summary = 'Downside pressure persists. Counter-trend longs high risk.';
+      code = 'RISK_OFF'; label = 'Risk-Off Ortamı'; color = 'red';
+      summary = 'Aşağı yönlü baskı sürüyor. Trende karşı long yüksek riskli.';
     }
     else if (vol.quality === 'EXTREME' || (trend.strength < 30 && vol.quality === 'ELEVATED' && !balanced)) {
-      code = 'LIQUIDITY_TRAP'; label = 'Liquidity Trap Environment'; color = 'orange';
-      summary = 'Volatility elevated without clean trend. Fakeout risk high.';
+      code = 'LIQUIDITY_TRAP'; label = 'Likidite Tuzağı'; color = 'orange';
+      summary = 'Net trend yok ama volatilite yüksek. Fakeout riski yüksek.';
     }
     else if (trend.dir === 'UP') {
-      code = 'RISK_ON_FRAGILE'; label = 'Cautious Risk-On'; color = 'green';
-      summary = 'Trend intact but breadth narrow. Selective longs only.';
+      code = 'RISK_ON_FRAGILE'; label = 'Temkinli Risk-On'; color = 'green';
+      summary = 'Trend var ama genişlik dar. Sadece seçici longlar.';
     }
     else if (trend.dir === 'DOWN') {
-      code = 'RISK_OFF_FRAGILE'; label = 'Cautious Risk-Off'; color = 'red';
-      summary = 'Downtrend present but signs of exhaustion. Avoid late shorts.';
+      code = 'RISK_OFF_FRAGILE'; label = 'Temkinli Risk-Off'; color = 'red';
+      summary = 'Aşağı yön korunuyor ama tükenme sinyalleri var. Geç shortlardan kaçın.';
     }
     else {
-      code = 'CHOPPY'; label = 'Choppy / Uncertain Market'; color = 'yellow';
-      summary = 'Mixed signals across timeframes. Wait for confluence.';
+      code = 'CHOPPY'; label = 'Yatay / Belirsiz Piyasa'; color = 'yellow';
+      summary = 'Karışık sinyaller. Konfluans için bekle.';
     }
 
     return {

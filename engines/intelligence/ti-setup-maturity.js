@@ -45,36 +45,36 @@ window.TIMaturity = (() => {
 
   function _strongPhrase(code) {
     switch (code) {
-      case 'STRUCTURE':  return 'Market structure aligned';
-      case 'LIQUIDITY':  return 'Liquidity sweep confirmed';
-      case 'FUNDING':    return 'Healthy funding';
-      case 'OI':         return 'Open interest supports trend';
-      case 'LIQS':       return 'Liquidations favor direction';
-      case 'VOLUME':     return 'Volume expansion';
-      case 'VOLATILITY': return 'Healthy volatility regime';
-      case 'MOMENTUM':   return 'Strong momentum';
-      case 'HTF':        return 'HTF alignment';
-      case 'SMC':        return 'SMC confluence';
-      case 'TREND':      return 'Trend alignment';
-      case 'RR':         return 'Premium risk/reward';
+      case 'STRUCTURE':  return 'Piyasa yapısı hizalı';
+      case 'LIQUIDITY':  return 'Likidite sweep onaylandı';
+      case 'FUNDING':    return 'Funding sağlıklı';
+      case 'OI':         return 'Open Interest trendi destekliyor';
+      case 'LIQS':       return 'Likidasyonlar yönü destekliyor';
+      case 'VOLUME':     return 'Hacim genişlemesi';
+      case 'VOLATILITY': return 'Sağlıklı volatilite';
+      case 'MOMENTUM':   return 'Güçlü momentum';
+      case 'HTF':        return 'HTF hizalama';
+      case 'SMC':        return 'SMC konfluans';
+      case 'TREND':      return 'Trend hizalama';
+      case 'RR':         return 'Premium risk/ödül';
       default:           return code;
     }
   }
 
   function _validPhrase(code) {
     switch (code) {
-      case 'STRUCTURE':  return 'Structure intact';
-      case 'LIQUIDITY':  return 'Liquidity in play';
-      case 'FUNDING':    return 'Funding acceptable';
-      case 'OI':         return 'OI mildly supportive';
-      case 'LIQS':       return 'Liquidations neutral-positive';
-      case 'VOLUME':     return 'Volume holding';
-      case 'VOLATILITY': return 'Volatility workable';
-      case 'MOMENTUM':   return 'Momentum present';
-      case 'HTF':        return 'Partial HTF alignment';
-      case 'SMC':        return 'SMC partial confluence';
-      case 'TREND':      return 'Trend bias supports';
-      case 'RR':         return 'Acceptable RR';
+      case 'STRUCTURE':  return 'Yapı korunuyor';
+      case 'LIQUIDITY':  return 'Likidite aktif';
+      case 'FUNDING':    return 'Funding kabul edilebilir';
+      case 'OI':         return 'OI ılımlı destek';
+      case 'LIQS':       return 'Likidasyonlar nötr-pozitif';
+      case 'VOLUME':     return 'Hacim korunuyor';
+      case 'VOLATILITY': return 'Volatilite uygun';
+      case 'MOMENTUM':   return 'Momentum mevcut';
+      case 'HTF':        return 'Kısmi HTF hizalama';
+      case 'SMC':        return 'SMC kısmi konfluans';
+      case 'TREND':      return 'Trend bias destekliyor';
+      case 'RR':         return 'Kabul edilebilir R/R';
       default:           return code;
     }
   }
@@ -86,28 +86,28 @@ window.TIMaturity = (() => {
     switch (code) {
       case 'STRUCTURE':
         return isLong
-          ? 'Higher high required to confirm structure shift.'
-          : 'Lower low required to confirm structure shift.';
-      case 'LIQUIDITY':  return 'Liquidity sweep still pending.';
-      case 'FUNDING':    return 'Funding must stabilize before continuation.';
+          ? 'Yapı değişimi için daha yüksek tepe gerekli.'
+          : 'Yapı değişimi için daha düşük dip gerekli.';
+      case 'LIQUIDITY':  return 'Likidite sweep henüz tamamlanmadı.';
+      case 'FUNDING':    return 'Devamlılık için funding\'in stabilize olması gerekli.';
       case 'OI':         return isLong
-          ? 'OI must expand on next push higher.'
-          : 'OI must expand on next push lower.';
-      case 'LIQS':       return 'Liquidation flow not yet favorable.';
+          ? 'OI bir sonraki yukarı harekette genişlemeli.'
+          : 'OI bir sonraki aşağı harekette genişlemeli.';
+      case 'LIQS':       return 'Likidasyon akışı henüz lehte değil.';
       case 'VOLUME':
         return entry
-          ? `Volume must expand on move through $${(+entry).toPrecision(4)}.`
-          : 'Volume expansion required on next move.';
-      case 'VOLATILITY': return 'Volatility expansion needed for clean breakout.';
+          ? `$${(+entry).toPrecision(4)} seviyesinde hacim genişlemesi gerekli.`
+          : 'Sonraki harekette hacim genişlemesi gerekli.';
+      case 'VOLATILITY': return 'Temiz kırılım için volatilite genişlemesi gerekli.';
       case 'MOMENTUM':   return isLong
-          ? 'Momentum still lacks confirmation.'
-          : 'Downside momentum incomplete.';
-      case 'HTF':        return 'HTF confirmation missing.';
-      case 'SMC':        return 'SMC confluence still developing.';
+          ? 'Momentum hâlâ onay bekliyor.'
+          : 'Aşağı yön momentum eksik.';
+      case 'HTF':        return 'HTF onayı eksik.';
+      case 'SMC':        return 'SMC konfluans gelişiyor.';
       case 'TREND':      return isLong
-          ? 'Price must reclaim trend filter.'
-          : 'Price must lose trend filter.';
-      case 'RR':         return 'Improved target placement would strengthen RR.';
+          ? 'Fiyat trend filtresini geri almalı.'
+          : 'Fiyat trend filtresini kaybetmeli.';
+      case 'RR':         return 'Hedef yerleşimi iyileştirilirse R/R güçlenir.';
       default:           return null;
     }
   }

@@ -73,53 +73,53 @@ window.TIMMBias = (() => {
     const detail = [];
 
     if (fund === 'OVERHEATED_LONG') {
-      headline = 'Funding overheating — long crowd at risk.';
-      detail.push('Late longs vulnerable to liquidation cascade.');
+      headline = 'Funding aşırı ısınmış — long kalabalığı risk altında.';
+      detail.push('Geç longlar likidasyon zincirine açık.');
     }
     else if (fund === 'OVERHEATED_SHORT') {
-      headline = 'Funding deeply negative — short squeeze setup forming.';
-      detail.push('Short side overextended; rallies can trap covers.');
+      headline = 'Funding aşırı negatif — short squeeze koşulları oluşuyor.';
+      detail.push('Short tarafı aşırı uzamış; ralliler shortları kapatmaya zorlayabilir.');
     }
     else if (oiSig === 'SQUEEZE_RALLY') {
-      headline = 'Rally driven by short covers, not new longs.';
-      detail.push('Rally quality questionable without OI confirmation.');
+      headline = 'Yükseliş short kapatmalarıyla sürüyor, yeni longlarla değil.';
+      detail.push('OI desteği olmadan ralli kalitesi şüpheli.');
     }
     else if (oiSig === 'SHORT_BUILDUP') {
-      headline = 'Shorts building into weakness — squeeze fuel accumulating.';
+      headline = 'Zayıflıkta shortlar birikiyor — squeeze yakıtı toplanıyor.';
     }
     else if (loc === 'ABOVE' && trend?.dir === 'UP') {
-      headline = 'Liquidity sits above price — natural magnet for continuation.';
-      detail.push('Buy-side liquidity targets remain unfilled.');
+      headline = 'Likidite fiyatın üzerinde — devamlılık için doğal hedef.';
+      detail.push('Üst taraftaki likidite hedefleri henüz vurulmadı.');
     }
     else if (loc === 'ABOVE' && trend?.dir !== 'UP') {
-      headline = 'Liquidity building above price — long traps possible.';
-      detail.push('Market may target aggressive longs before reversal.');
+      headline = 'Likidite fiyatın üzerinde birikiyor — long tuzakları mümkün.';
+      detail.push('Piyasa dönüş öncesi agresif longları avlayabilir.');
     }
     else if (loc === 'BELOW' && trend?.dir === 'DOWN') {
-      headline = 'Liquidity sits below price — downside targets unfilled.';
+      headline = 'Likidite fiyatın altında — aşağı yön hedefleri vurulmadı.';
     }
     else if (loc === 'BELOW' && trend?.dir !== 'DOWN') {
-      headline = 'Stops resting below — sweep risk before any reversal.';
-      detail.push('Late shorts likely to get hunted.');
+      headline = 'Altta stoplar bekliyor — dönüş öncesi sweep riski var.';
+      detail.push('Geç shortlar avlanabilir.');
     }
     else if (oiSig === 'TREND_HEALTHY_LONG') {
-      headline = 'Trend supported by genuine long positioning.';
+      headline = 'Trend gerçek long pozisyonlarıyla destekleniyor.';
     }
     else if (oiSig === 'TREND_HEALTHY_SHORT') {
-      headline = 'Trend supported by genuine short positioning.';
+      headline = 'Trend gerçek short pozisyonlarıyla destekleniyor.';
     }
     else if (trend?.dir === 'FLAT') {
-      headline = 'No directional conviction — wait for structure to develop.';
+      headline = 'Yön konvansiyonu yok — yapının oluşmasını bekle.';
     }
     else {
-      headline = 'Market behavior consistent with current trend.';
+      headline = 'Piyasa davranışı mevcut trendle uyumlu.';
     }
 
     if (fund === 'ELEVATED_LONG' && !headline.includes('Funding')) {
-      detail.push('Funding elevated on the long side.');
+      detail.push('Funding long tarafında yüksek seviyede.');
     }
     if (fund === 'ELEVATED_SHORT' && !headline.includes('Funding')) {
-      detail.push('Funding elevated on the short side.');
+      detail.push('Funding short tarafında yüksek seviyede.');
     }
 
     return { headline, detail };

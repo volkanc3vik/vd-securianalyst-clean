@@ -33,10 +33,10 @@ window.TIBestSetupCard = (() => {
       const tierLine = scanStats?.tierCounts ? _scanStatsLine(scanStats) : '';
       return `
         <div class="ti-card">
-          <div class="ti-card-label"><span class="ti-card-label-dot"></span>MOST MATURE SETUP</div>
+          <div class="ti-card-label"><span class="ti-card-label-dot"></span>EN OLGUN SETUP</div>
           <div class="ti-empty">
-            <div class="ti-empty-title">No qualifying setup this cycle</div>
-            <div>No coin currently meets quality threshold. Market is being monitored.</div>
+            <div class="ti-empty-title">Bu döngüde kaliteli setup bulunmadı</div>
+            <div>Hiçbir coin kalite eşiğini geçmedi. Piyasa izleniyor.</div>
             ${tierLine}
           </div>
         </div>
@@ -51,15 +51,24 @@ window.TIBestSetupCard = (() => {
     const matPct    = setup.maturity?.percent || 0;
     const confirmed = setup.maturity?.confirmed || [];
     const missing   = setup.maturity?.missing   || [];
+    const rationale = setup.rationale || null;
+    const risk      = setup.risk || null;
 
     const confirmChips = confirmed.length
       ? `<div class="ti-conf-grid">${confirmed.map(c => `<span class="ti-conf-chip">${_esc(c)}</span>`).join('')}</div>`
       : '';
 
+    const rationaleBlock = rationale ? `
+      <div class="ti-rationale">
+        <div class="ti-rationale-label">Neden Güçlü</div>
+        <div class="ti-rationale-text">${_esc(rationale)}</div>
+      </div>
+    ` : '';
+
     const needsBlock = missing.length
       ? `
         <div class="ti-needs">
-          <div class="ti-needs-label">What Needs to Happen Next</div>
+          <div class="ti-needs-label">Sıradaki Gerekenler</div>
           <ul class="ti-needs-list">
             ${missing.map(m => `<li>${_esc(m)}</li>`).join('')}
           </ul>
@@ -67,10 +76,26 @@ window.TIBestSetupCard = (() => {
       `
       : '';
 
+    // Confidence + Risk satırları (B opsiyonu — clean institutional)
+    const riskLevel = risk?.level || '—';
+    const riskCls = 'risk-' + (riskLevel || 'orta').toLowerCase();
+    const metricsRow = `
+      <div class="ti-metrics-row">
+        <div class="ti-metric">
+          <span class="ti-metric-label">Setup Confidence</span>
+          <span class="ti-metric-val ti-metric-confidence">${score}</span>
+        </div>
+        <div class="ti-metric">
+          <span class="ti-metric-label">Risk Seviyesi</span>
+          <span class="ti-metric-val ti-metric-risk ${riskCls}">${_esc(riskLevel)}</span>
+        </div>
+      </div>
+    `;
+
     // Setup levels
     const levelsHtml = (setup.entry || setup.sl || setup.tp1) ? `
       <div class="ti-best-levels">
-        ${setup.entry ? `<div class="ti-best-level"><span class="ti-best-level-label">Entry</span><span class="ti-best-level-val entry">${_fmtPrice(setup.entry)}</span></div>` : ''}
+        ${setup.entry ? `<div class="ti-best-level"><span class="ti-best-level-label">Giriş</span><span class="ti-best-level-val entry">${_fmtPrice(setup.entry)}</span></div>` : ''}
         ${setup.sl    ? `<div class="ti-best-level"><span class="ti-best-level-label">Stop</span><span class="ti-best-level-val sl">${_fmtPrice(setup.sl)}</span></div>` : ''}
         ${setup.tp1   ? `<div class="ti-best-level"><span class="ti-best-level-label">TP1</span><span class="ti-best-level-val tp1">${_fmtPrice(setup.tp1)}</span></div>` : ''}
         ${setup.tp2   ? `<div class="ti-best-level"><span class="ti-best-level-label">TP2</span><span class="ti-best-level-val tp2">${_fmtPrice(setup.tp2)}</span></div>` : ''}
@@ -79,20 +104,19 @@ window.TIBestSetupCard = (() => {
 
     return `
       <div class="ti-card" style="padding:0;background:transparent;border:none">
-        <div class="ti-card-label" style="padding:0 4px"><span class="ti-card-label-dot"></span>MOST MATURE SETUP</div>
+        <div class="ti-card-label" style="padding:0 4px"><span class="ti-card-label-dot"></span>EN OLGUN SETUP</div>
         <div class="ti-best ${tierCls}">
           <div class="ti-best-head">
             <span class="ti-best-sym">${_esc(setup.sym || '—')}</span>
             <span class="ti-best-dir ${dirCls}">${dirIcon}</span>
-            <div class="ti-best-score">
-              <span class="ti-best-score-num">${score}</span>
-              <span class="ti-best-tier">${_esc(tier.label || '')}</span>
-            </div>
+            <span class="ti-best-tier">${_esc(tier.label || '')}</span>
           </div>
+
+          ${metricsRow}
 
           <div class="ti-mat-wrap">
             <div class="ti-mat-label">
-              <span>Setup Maturity</span>
+              <span>Setup Olgunluğu</span>
               <b>${matPct}%</b>
             </div>
             <div class="ti-mat-bar">
@@ -100,6 +124,7 @@ window.TIBestSetupCard = (() => {
             </div>
           </div>
 
+          ${rationaleBlock}
           ${confirmChips}
           ${needsBlock}
           ${levelsHtml}
@@ -112,13 +137,13 @@ window.TIBestSetupCard = (() => {
     if (!scanStats || !scanStats.tierCounts) return '';
     const c = scanStats.tierCounts;
     const parts = [];
-    if (c.STRONG)  parts.push(`${c.STRONG} Strong`);
-    if (c.VALID)   parts.push(`${c.VALID} Valid`);
-    if (c.WEAK)    parts.push(`${c.WEAK} Weak`);
-    if (c.AVOID)   parts.push(`${c.AVOID} Avoid`);
+    if (c.STRONG)  parts.push(`${c.STRONG} Güçlü`);
+    if (c.VALID)   parts.push(`${c.VALID} Geçerli`);
+    if (c.WEAK)    parts.push(`${c.WEAK} Zayıf`);
+    if (c.AVOID)   parts.push(`${c.AVOID} Kaçın`);
     if (parts.length === 0) return '';
     return `<div style="font-size:10px;color:var(--text3);margin-top:8px;letter-spacing:.5px">
-      Scan: ${scanStats.scored || 0} coins evaluated · ${parts.join(' · ')}
+      Tarama: ${scanStats.scored || 0} coin değerlendirildi · ${parts.join(' · ')}
     </div>`;
   }
 

@@ -16,8 +16,8 @@ window.TIRegimeCard = (() => {
     if (!regime) {
       return `
         <div class="ti-card">
-          <div class="ti-card-label"><span class="ti-card-label-dot"></span>MARKET REGIME</div>
-          <div class="ti-empty">Awaiting scan data...</div>
+          <div class="ti-card-label"><span class="ti-card-label-dot"></span>PİYASA REJİMİ</div>
+          <div class="ti-empty">Tarama verisi bekleniyor...</div>
         </div>
       `;
     }
@@ -25,11 +25,11 @@ window.TIRegimeCard = (() => {
     const color = regime.color || 'yellow';
     return `
       <div class="ti-card">
-        <div class="ti-card-label"><span class="ti-card-label-dot"></span>MARKET REGIME</div>
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>PİYASA REJİMİ</div>
         <div class="ti-regime">
           <span class="ti-regime-badge ${_esc(color)}">
             <span class="ti-regime-badge-dot"></span>
-            ${_esc(regime.label || regime.code || 'Unknown')}
+            ${_esc(regime.label || regime.code || 'Bilinmiyor')}
           </span>
           <div class="ti-regime-summary">${_esc(regime.summary || '')}</div>
         </div>
@@ -41,8 +41,8 @@ window.TIRegimeCard = (() => {
     if (!mmBias || !mmBias.headline) {
       return `
         <div class="ti-card">
-          <div class="ti-card-label"><span class="ti-card-label-dot"></span>MARKET MAKER BIAS</div>
-          <div class="ti-empty">No clear positioning yet.</div>
+          <div class="ti-card-label"><span class="ti-card-label-dot"></span>MARKET MAKER YÖNELİMİ</div>
+          <div class="ti-empty">Henüz net konumlanma yok.</div>
         </div>
       `;
     }
@@ -53,7 +53,7 @@ window.TIRegimeCard = (() => {
 
     return `
       <div class="ti-card">
-        <div class="ti-card-label"><span class="ti-card-label-dot"></span>MARKET MAKER BIAS</div>
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>MARKET MAKER YÖNELİMİ</div>
         <div class="ti-mm-headline">${_esc(mmBias.headline)}</div>
         ${details}
       </div>

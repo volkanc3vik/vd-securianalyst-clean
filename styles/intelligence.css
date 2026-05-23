@@ -622,7 +622,198 @@
   background: var(--text3);
 }
 
-.ti-source-dot.active i { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.ti-source-dot.active i  { background: var(--green);  box-shadow: 0 0 4px var(--green); }
+.ti-source-dot.partial i { background: var(--orange); box-shadow: 0 0 4px var(--orange); }
+.ti-source-dot.partial   { color: var(--text2); }
+
+/* ── Confidence / Risk metrics row (B opsiyonu) ────────────────── */
+.ti-metrics-row {
+  display: flex;
+  gap: 32px;
+  padding: 10px 0 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .05);
+}
+
+.ti-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ti-metric-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  font-weight: 600;
+}
+
+.ti-metric-val {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+.ti-metric-confidence {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.ti-best.tier-elite  .ti-metric-confidence { color: var(--purple); }
+.ti-best.tier-strong .ti-metric-confidence { color: var(--cyan); }
+.ti-best.tier-valid  .ti-metric-confidence { color: var(--green); }
+
+.ti-metric-risk.risk-düşük,
+.ti-metric-risk.risk-low       { color: var(--green); }
+.ti-metric-risk.risk-orta,
+.ti-metric-risk.risk-moderate  { color: var(--orange); }
+.ti-metric-risk.risk-yüksek,
+.ti-metric-risk.risk-high      { color: var(--red); }
+
+/* ── Why It's Strong rationale ─────────────────────────────────── */
+.ti-rationale {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: rgba(157, 125, 250, .04);
+  border-left: 2px solid rgba(157, 125, 250, .35);
+  border-radius: 4px;
+}
+
+.ti-rationale-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--purple);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ti-rationale-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+/* ── Market Pressure card ──────────────────────────────────────── */
+.ti-pressure-intensity {
+  margin-left: auto;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: .5px;
+}
+
+.ti-pressure-intensity.low  { background: rgba(0, 229, 160, .1);  color: var(--green); }
+.ti-pressure-intensity.med  { background: rgba(255, 122, 0, .1);  color: var(--orange); }
+.ti-pressure-intensity.high { background: rgba(255, 61, 107, .12); color: var(--red); }
+
+.ti-pressure-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.ti-pressure-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(255, 255, 255, .04);
+}
+
+.ti-pressure-row:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.ti-pressure-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ti-pressure-row.sev-high  .ti-pressure-label { color: var(--red); }
+.ti-pressure-row.sev-med   .ti-pressure-label { color: var(--orange); }
+
+.ti-pressure-detail {
+  font-size: 10px;
+  color: var(--text2);
+  line-height: 1.45;
+}
+
+/* ── Activity Feed ─────────────────────────────────────────────── */
+.ti-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ti-activity-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, .04);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ti-activity-row:first-child { border-top: none; padding-top: 2px; }
+
+.ti-activity-ts {
+  font-size: 9px;
+  color: var(--text3);
+  font-family: 'Courier New', monospace;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.ti-activity-cat {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .04);
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.ti-cat-system     { color: var(--text2); }
+.ti-cat-regime     { background: rgba(0, 212, 255, .1);   color: var(--cyan); }
+.ti-cat-volatility { background: rgba(255, 122, 0, .08);  color: var(--orange); }
+.ti-cat-setup      { background: rgba(157, 125, 250, .1); color: var(--purple); }
+.ti-cat-pressure   { background: rgba(255, 61, 107, .08); color: var(--red); }
+.ti-cat-btc        { background: rgba(247, 147, 26, .08); color: #f7931a; }
+.ti-cat-eth        { background: rgba(0, 229, 160, .08);  color: var(--green); }
+
+.ti-activity-msg {
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.ti-activity-row.sev-high .ti-activity-msg { color: var(--text); font-weight: 500; }
+.ti-activity-row.sev-info .ti-activity-msg { color: var(--text2); }
+
+/* ── Partial badge (bootstrap state) ───────────────────────────── */
+.ti-partial-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 122, 0, .15);
+  color: var(--orange);
+  border: 1px solid rgba(255, 122, 0, .3);
+  margin-right: 6px;
+}
 
 /* ── Mobile ────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -634,4 +825,7 @@
   .ti-best-levels { flex-wrap: wrap; }
   .ti-watch-row { flex-wrap: wrap; gap: 8px; }
   .ti-watch-mat { width: 100%; text-align: left; margin-top: 4px; }
+  .ti-metrics-row { gap: 20px; }
+  .ti-activity-row { flex-wrap: wrap; }
+  .ti-activity-msg { width: 100%; padding-left: 66px; }
 }

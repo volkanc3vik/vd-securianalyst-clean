@@ -53,16 +53,16 @@ window.TIController = (() => {
 
     if (regime?.code === 'LIQUIDITY_TRAP') {
       warnings.push({ code:'LIQ_TRAP', severity:'high',
-        msg:'Liquidity trap conditions — breakouts unreliable.' });
+        msg:'Likidite tuzağı koşulları — kırılımlar güvenilmez.' });
     }
     if (regime?.code === 'CHOPPY' && regime.diagnostics?.vol?.quality === 'ELEVATED') {
       warnings.push({ code:'CHOP_VOL', severity:'med',
-        msg:'Choppy market with elevated volatility — patience required.' });
+        msg:'Yatay piyasada yüksek volatilite — sabır gerekli.' });
     }
 
     if (mmBias?.headline) {
       const h = mmBias.headline.toLowerCase();
-      if (h.includes('overheating') || h.includes('overextended')) {
+      if (h.includes('aşırı ısınmış') || h.includes('aşırı uzamış') || h.includes('aşırı negatif')) {
         warnings.push({ code:'FUNDING_OH', severity:'high', msg: mmBias.headline });
       }
     }
@@ -71,12 +71,12 @@ window.TIController = (() => {
       const fbr = bestSetup.factors.find(f => f.code === 'FBR');
       if (fbr?.available && fbr.score >= 7) {
         warnings.push({ code:'BS_FBR', severity:'high',
-          msg:`${bestSetup.sym}: high fakeout risk on entry candle.` });
+          msg:`${bestSetup.sym}: giriş mumunda yüksek fakeout riski.` });
       }
       const fund = bestSetup.factors.find(f => f.code === 'FUNDING');
       if (fund?.available && fund.score <= 3) {
         warnings.push({ code:'BS_FUNDING', severity:'med',
-          msg:`${bestSetup.sym}: funding stressed — late entry risk.` });
+          msg:`${bestSetup.sym}: funding stres altında — geç giriş riski.` });
       }
     }
 
@@ -102,9 +102,12 @@ window.TIController = (() => {
       const Maturity = window.TIMaturity;
       const Narrator = window.TINarrator;
       const State    = window.TIState;
+      const Pressure = window.TIMarketPressure;
+      const RiskAss  = window.TIRiskAssessor;
+      const Activity = window.TIActivityLog;
 
       if (!Feed || !Regime || !MMBias || !Scorer || !Maturity || !Narrator || !State) {
-        _warn('missing engines:',
+        _warn('missing core engines:',
           { Feed:!!Feed, Regime:!!Regime, MMBias:!!MMBias, Scorer:!!Scorer,
             Maturity:!!Maturity, Narrator:!!Narrator, State:!!State });
         return;
@@ -112,6 +115,9 @@ window.TIController = (() => {
 
       _log('────────── PIPELINE START ──────────');
       _log('Input: ' + scanResults.length + ' coins');
+
+      // Önceki snapshot — diff için
+      const prevSnapshot = State.get();
 
       // 1. BTC/ETH ayır
       const { btc: btcRaw, eth: ethRaw, others } = Feed.splitMajors(scanResults);
@@ -122,29 +128,41 @@ window.TIController = (() => {
       // 2. Regime
       const regime = Regime.detect(btcRaw, scanResults);
       _log('Regime: ' + regime.code + ' / ' + regime.label);
-      _log('  trend:', regime.diagnostics?.trend);
-      _log('  vol:',   regime.diagnostics?.vol);
-      _log('  breadth:', regime.diagnostics?.breadth);
 
-      // 3. MM Bias
+      // 3. Funding/OI çöz
+      const btcFunding = _resolveFunding(btcRaw);
+      const btcOI      = _resolveOI(btcRaw);
+
+      // 4. MM Bias
       const mmBias = MMBias.build({
         btcData:    btcRaw,
         regimeDiag: regime.diagnostics,
-        funding:    _resolveFunding(btcRaw),
-        oi:         _resolveOI(btcRaw),
+        funding:    btcFunding,
+        oi:         btcOI,
       });
       _log('MM Bias: ' + (mmBias?.headline || '(none)'));
 
-      // 4. BTC + ETH narrator
+      // 5. BTC + ETH narrator
       const btcAnalysis = btcRaw ? Narrator.analyzeCoin(btcRaw) : null;
       const ethAnalysis = ethRaw ? Narrator.analyzeCoin(ethRaw) : null;
       if (ethAnalysis && btcAnalysis) {
         ethAnalysis.vsBTC = Narrator.compareETHvsBTC(btcAnalysis, ethAnalysis);
       }
-      _log('BTC: ' + (btcAnalysis ? btcAnalysis.dir+'/'+btcAnalysis.momentum : '(none)'));
-      _log('ETH: ' + (ethAnalysis ? ethAnalysis.dir+'/'+ethAnalysis.momentum : '(none)'));
 
-      // 5. Tüm coinleri skorla
+      // 6. Market Pressure (yeni)
+      let marketPressure = null;
+      if (Pressure) {
+        marketPressure = Pressure.build({
+          btc:        btcRaw,
+          eth:        ethRaw,
+          btcFunding,
+          btcOI,
+        });
+        _log('Pressure: ' + (marketPressure?.headline || '(none)') +
+             ' · ' + (marketPressure?.signals?.length || 0) + ' signals');
+      }
+
+      // 7. Tüm coinleri skorla
       const scored = [];
       let scoreFailed = 0;
       let scoreSucceeded = 0;
@@ -159,7 +177,6 @@ window.TIController = (() => {
       }
       _log('Scored: ' + scoreSucceeded + ' / Failed: ' + scoreFailed);
 
-      // 6. Sırala ve tier kategorize
       scored.sort((a, b) => b.score - a.score);
       const tierCounts = {};
       scored.forEach(s => {
@@ -168,16 +185,10 @@ window.TIController = (() => {
       });
       _log('Tier dağılımı:', tierCounts);
 
-      // Top 5 skorlu coin — debug için
-      const top5 = scored.slice(0, 5).map(s => `${s.sym}:${s.score}(${s.tier?.code})`);
-      _log('Top 5:', top5);
-
-      // 7. Best Setup + Watchlist seçimi
-      // Esnek strateji: önce VALID+ ara, yoksa WEAK kabul et, yoksa en yüksek skorluyu al
+      // 8. Best Setup + Watchlist
       let bestSetup = null;
       const watchlist = [];
       const eligibleTiers = ['ELITE', 'STRONG', 'VALID', 'WEAK'];
-
       for (const s of scored) {
         const t = s.tier?.code;
         if (!eligibleTiers.includes(t)) continue;
@@ -185,41 +196,51 @@ window.TIController = (() => {
         if (watchlist.length < 2) watchlist.push(s);
         else break;
       }
-
-      // Hala yoksa — en yüksek skorlu olanı al (sadece AVOID değilse)
       if (!bestSetup && scored.length > 0 && scored[0].score >= 30) {
         bestSetup = scored[0];
-        _log('Best fallback: top scored (' + bestSetup.sym + ':' + bestSetup.score + ')');
       }
 
-      _log('Best: ' + (bestSetup ? `${bestSetup.sym} ${bestSetup.dir} ${bestSetup.score} (${bestSetup.tier?.code})` : '(none)'));
-      _log('Watchlist: ' + watchlist.map(w => `${w.sym}:${w.score}`).join(', ') || '(empty)');
+      // 9. Risk Assessor — best setup için ayrı risk değerlendirmesi
+      if (bestSetup && RiskAss) {
+        bestSetup.risk = RiskAss.assess(bestSetup, regime.diagnostics);
+        _log('Best risk: ' + bestSetup.risk.level + ' (' + bestSetup.risk.score + ')');
+      }
 
-      // 8. Warnings
+      _log('Best: ' + (bestSetup ? `${bestSetup.sym} ${bestSetup.dir} ${bestSetup.score} (${bestSetup.tier?.code}) risk=${bestSetup.risk?.level || '—'}` : '(none)'));
+
+      // 10. Warnings
       const warnings = _buildWarnings(regime, mmBias, bestSetup);
-      _log('Warnings: ' + warnings.length);
 
-      // 9. Volatility observation (fallback intelligence)
+      // 11. Volatility observation
       const volObs = _buildVolatilityObservation(regime, btcAnalysis);
 
-      // 10. State commit — panel her zaman dolu
+      // 12. State commit
       State.commit({
         regime,
         mmBias,
-        btc:         btcAnalysis,
-        eth:         ethAnalysis,
+        btc:           btcAnalysis,
+        eth:           ethAnalysis,
         bestSetup,
         watchlist,
         warnings,
         volatilityObs: volObs,
-        scanStats:   {
+        marketPressure,
+        scanStats:     {
           total:     scanResults.length,
           scored:    scoreSucceeded,
           failed:    scoreFailed,
           tierCounts,
         },
-        dataSources: Feed.detectDataSources(),
+        dataSources:   Feed.detectDataSources(),
       });
+
+      // 13. Activity Log diff — commit'ten sonra
+      if (Activity) {
+        const nextSnapshot = State.get();
+        const events = Activity.diff(prevSnapshot, nextSnapshot);
+        events.forEach(ev => State.pushActivity(ev));
+        _log('Activity events: ' + events.length);
+      }
 
       _log('────────── PIPELINE END ──────────');
     } catch (e) {
@@ -233,10 +254,10 @@ window.TIController = (() => {
     const vol = regime?.diagnostics?.vol;
     if (!vol) return null;
     const map = {
-      'SQUEEZED': { label: 'Volatility compressed', tone: 'Awaiting expansion. Breakout likely soon.' },
-      'HEALTHY':  { label: 'Healthy volatility',    tone: 'Conditions favor structured trades.' },
-      'ELEVATED': { label: 'Elevated volatility',   tone: 'Wider stops required; size down.' },
-      'EXTREME':  { label: 'Extreme volatility',    tone: 'Hands-off zone; high noise.' },
+      'SQUEEZED': { label: 'Volatilite sıkışmış',    tone: 'Genişleme bekleniyor. Kırılım yakın olabilir.' },
+      'HEALTHY':  { label: 'Sağlıklı volatilite',    tone: 'Koşullar yapılandırılmış işlemler için uygun.' },
+      'ELEVATED': { label: 'Yüksek volatilite',      tone: 'Daha geniş stoplar gerekli; pozisyon küçült.' },
+      'EXTREME':  { label: 'Aşırı volatilite',       tone: 'El sürme bölgesi; gürültü çok yüksek.' },
       'UNKNOWN':  null,
     };
     return map[vol.quality] || null;
@@ -254,6 +275,42 @@ window.TIController = (() => {
     window.addEventListener('vd:scan:complete', _onScanEvent);
     _listenerAttached = true;
     _log('listener attached');
+
+    // Bootstrap event — sistem başlatıldı
+    const State    = window.TIState;
+    const Activity = window.TIActivityLog;
+    if (State && Activity) {
+      State.pushActivity(Activity.bootstrapEvent());
+    }
+
+    // Partial bootstrap — WSEngine cache'inde BTC/ETH varsa erken intelligence
+    _bootstrapPartial();
+  }
+
+  function _bootstrapPartial() {
+    try {
+      const Feed     = window.TIFeed;
+      const State    = window.TIState;
+      if (!Feed || !State) return;
+      const partial = Feed.bootstrapPartial?.();
+      if (!partial || (!partial.btc && !partial.eth && !partial.regime)) return;
+
+      const Regime = window.TIRegime;
+      const volObs = partial.regime
+        ? _buildVolatilityObservation(partial.regime, partial.btc)
+        : null;
+
+      State.commitPartial({
+        regime:        partial.regime,
+        btc:           partial.btc,
+        eth:           partial.eth,
+        volatilityObs: volObs,
+        dataSources:   Feed.detectDataSources(),
+      });
+      _log('Partial bootstrap committed');
+    } catch (e) {
+      _warn('Partial bootstrap error:', e);
+    }
   }
 
   function stop() {

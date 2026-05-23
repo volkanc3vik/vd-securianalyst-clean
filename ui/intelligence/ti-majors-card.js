@@ -18,9 +18,9 @@ window.TIMajorsCard = (() => {
   }
 
   function _dirIcon(d) {
-    if (d === 'UP')   return '▲ Trending up';
-    if (d === 'DOWN') return '▼ Trending down';
-    return '◇ Sideways';
+    if (d === 'UP')   return '▲ Yükseliş trendi';
+    if (d === 'DOWN') return '▼ Düşüş trendi';
+    return '◇ Yatay';
   }
 
   function _renderCoin(sym, analysis) {
@@ -28,7 +28,7 @@ window.TIMajorsCard = (() => {
       return `
         <div class="ti-card">
           <div class="ti-card-label"><span class="ti-card-label-dot"></span>${_esc(sym)}</div>
-          <div class="ti-empty">No data available.</div>
+          <div class="ti-empty">Veri yok.</div>
         </div>
       `;
     }
@@ -56,13 +56,34 @@ window.TIMajorsCard = (() => {
           <div class="ti-major-structure">${_esc(analysis.structure || '')}</div>
           <div class="ti-major-summary">${_esc(analysis.summary || '')}</div>
           <div class="ti-major-stats">
-            <span class="ti-major-stat">Momentum: <b class="${momClass}">${_esc(analysis.momentum || '—')}</b></span>
-            <span class="ti-major-stat">Risk: <b class="${riskClass}">${_esc(analysis.risk || '—')}</b></span>
+            <span class="ti-major-stat">Momentum: <b class="${momClass}">${_esc(_momentumTR(analysis.momentum))}</b></span>
+            <span class="ti-major-stat">Risk: <b class="${riskClass}">${_esc(_riskTR(analysis.risk))}</b></span>
           </div>
           ${vsLine}
         </div>
       </div>
     `;
+  }
+
+  function _momentumTR(m) {
+    switch (m) {
+      case 'Strong':     return 'Güçlü';
+      case 'Healthy':    return 'Sağlıklı';
+      case 'Weakening':  return 'Zayıflıyor';
+      case 'Exhausted':  return 'Tükenmiş';
+      case 'Building':   return 'Gelişiyor';
+      case 'Weak':       return 'Zayıf';
+      default:           return m || '—';
+    }
+  }
+
+  function _riskTR(r) {
+    switch (r) {
+      case 'Low':       return 'Düşük';
+      case 'Moderate':  return 'Orta';
+      case 'High':      return 'Yüksek';
+      default:          return r || '—';
+    }
   }
 
   function render(btcAnalysis, ethAnalysis) {

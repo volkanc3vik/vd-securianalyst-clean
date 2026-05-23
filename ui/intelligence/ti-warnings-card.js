@@ -37,7 +37,7 @@ window.TIWarningsCard = (() => {
 
     return `
       <div class="ti-card">
-        <div class="ti-card-label"><span class="ti-card-label-dot"></span>WARNINGS</div>
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>UYARILAR</div>
         <div class="ti-warnings">${rows}</div>
       </div>
     `;

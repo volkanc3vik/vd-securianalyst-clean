@@ -266,13 +266,13 @@ window.TISetupScorer = (() => {
   function _tierFor(score, factors) {
     if (score >= 90) {
       const strong = factors.filter(f => !f.negative && f.available && f.score >= 8).length;
-      if (strong >= 3) return { code: 'ELITE',  label: 'ELITE SETUP',  color: 'purple' };
-      return                  { code: 'STRONG', label: 'STRONG SETUP', color: 'cyan' };
+      if (strong >= 3) return { code: 'ELITE',  label: 'ELİTE SETUP',  color: 'purple' };
+      return                  { code: 'STRONG', label: 'GÜÇLÜ SETUP',  color: 'cyan' };
     }
-    if (score >= 80) return { code: 'STRONG', label: 'STRONG SETUP', color: 'cyan' };
-    if (score >= 70) return { code: 'VALID',  label: 'VALID SETUP',  color: 'green' };
-    if (score >= 60) return { code: 'WEAK',   label: 'WEAK SETUP',   color: 'yellow' };
-    return                  { code: 'AVOID',  label: 'AVOID',         color: 'red' };
+    if (score >= 80) return { code: 'STRONG', label: 'GÜÇLÜ SETUP',     color: 'cyan' };
+    if (score >= 70) return { code: 'VALID',  label: 'GEÇERLİ SETUP',   color: 'green' };
+    if (score >= 60) return { code: 'WEAK',   label: 'ZAYIF SETUP',     color: 'yellow' };
+    return                  { code: 'AVOID',  label: 'KAÇIN',           color: 'red' };
   }
 
   /**
@@ -318,6 +318,7 @@ window.TISetupScorer = (() => {
 
     finalScore = Math.round(finalScore);
     const tier = _tierFor(finalScore, factors);
+    const rationale = _buildRationale(ctx.sym, ctx.dir, factors, tier);
 
     return {
       sym:            ctx.sym,
@@ -325,11 +326,64 @@ window.TISetupScorer = (() => {
       score:          finalScore,
       tier,
       factors,
+      rationale,
       availableCount: factors.filter(f => f.available).length,
       missingFactors: missing,
       entry: ctx.entry, sl: ctx.sl, tp1: ctx.tp1, tp2: ctx.tp2, tp3: ctx.tp3,
       price: ctx.closes ? ctx.closes[ctx.closes.length - 1] : null,
     };
+  }
+
+  // ── Why It's Strong — rationale sentezi ──────────────────────────
+  // En güçlü 3 pozitif faktörü tek profesyonel cümleye dönüştürür.
+  // FBR (negatif) skor yüksekse uyarı ekler.
+  function _buildRationale(sym, dir, factors, tier) {
+    if (!factors || tier?.code === 'AVOID' || tier?.code === 'WEAK') return null;
+
+    // Pozitif faktörleri skor'a göre sırala (FBR hariç)
+    const positives = factors
+      .filter(f => f.available && !f.negative && f.score >= 7)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    if (positives.length === 0) return null;
+
+    const phrases = positives.map(f => _shortPhrase(f.code)).filter(Boolean);
+    if (phrases.length === 0) return null;
+
+    // Doğal Türkçe birleşim
+    let combined;
+    if (phrases.length === 1) combined = phrases[0];
+    else if (phrases.length === 2) combined = phrases[0] + ' + ' + phrases[1];
+    else combined = phrases[0] + ', ' + phrases[1] + ' + ' + phrases[2];
+
+    let sentence = `${sym} ${combined} kombinasyonunu sergiliyor.`;
+
+    // FBR uyarısı (negatif faktör)
+    const fbr = factors.find(f => f.code === 'FBR');
+    if (fbr?.available && fbr.score >= 6) {
+      sentence += ' Ancak giriş mumunda fakeout işaretleri mevcut — dikkat.';
+    }
+
+    return sentence;
+  }
+
+  function _shortPhrase(code) {
+    switch (code) {
+      case 'STRUCTURE':  return 'piyasa yapısı hizalaması';
+      case 'LIQUIDITY':  return 'likidite sweep konfirmasyonu';
+      case 'FUNDING':    return 'sağlıklı funding';
+      case 'OI':         return 'OI desteği';
+      case 'LIQS':       return 'likidasyon akışı lehte';
+      case 'VOLUME':     return 'hacim genişlemesi';
+      case 'VOLATILITY': return 'sağlıklı volatilite';
+      case 'MOMENTUM':   return 'güçlü momentum';
+      case 'HTF':        return 'HTF hizalama';
+      case 'SMC':        return 'SMC konfluans';
+      case 'TREND':      return 'trend hizalama';
+      case 'RR':         return 'premium R/R';
+      default:           return null;
+    }
   }
 
   return { score, FACTOR_DEFS };
