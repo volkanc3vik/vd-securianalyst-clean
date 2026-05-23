@@ -3296,6 +3296,23 @@ function beep(t){
   }catch(e){}
 }
 
+// AudioContext'i ilk kullanıcı etkileşiminde resume et — Chrome autoplay uyarısını engeller
+(function(){
+  const resume = () => {
+    try { if (AC && AC.state === 'suspended') AC.resume(); } catch(e){}
+    try { if (window._ncAC && window._ncAC.state === 'suspended') window._ncAC.resume(); } catch(e){}
+  };
+  const handler = () => {
+    resume();
+    document.removeEventListener('click', handler);
+    document.removeEventListener('keydown', handler);
+    document.removeEventListener('touchstart', handler);
+  };
+  document.addEventListener('click', handler, { once: false, passive: true });
+  document.addEventListener('keydown', handler, { once: false, passive: true });
+  document.addEventListener('touchstart', handler, { once: false, passive: true });
+})();
+
 function showPopup(sym,type,price){
   document.querySelectorAll('.popup').forEach(e=>e.remove());
   const d=document.createElement('div');
