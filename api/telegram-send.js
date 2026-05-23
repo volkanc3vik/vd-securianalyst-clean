@@ -17,7 +17,9 @@
 
 // ── Origin whitelist ────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
-  'https://vd-securianalyst.vercel.app',
+  'https://vd-securianalyst.com',
+  'https://www.vd-securianalyst.com',
+  'https://vd-securianalyst-clean.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
 ];
