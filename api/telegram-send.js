@@ -174,12 +174,22 @@ export default async function handler(req, res) {
 
   // 7. Telegram API'a gönder
   const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  // parse_mode mantığı:
+  //   - body.parseMode = 'HTML' veya undefined  → HTML (varsayılan, en esnek)
+  //   - body.parseMode = 'MarkdownV2'           → MarkdownV2 (strict escape gerekir)
+  //   - body.parseMode = 'none'                 → ham metin, parse yok
+  let parseMode;
+  if (body.parseMode === 'MarkdownV2') parseMode = 'MarkdownV2';
+  else if (body.parseMode === 'none')   parseMode = undefined;
+  else                                   parseMode = 'HTML';
+
   const tgPayload = {
-    chat_id:    chatId,
-    text:       body.text,
-    parse_mode: body.parseMode === 'HTML' ? 'HTML' : 'MarkdownV2',
+    chat_id:  chatId,
+    text:     body.text,
     disable_web_page_preview: true,
   };
+  if (parseMode) tgPayload.parse_mode = parseMode;
 
   try {
     const tgRes = await fetch(tgUrl, {
