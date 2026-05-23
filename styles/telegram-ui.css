@@ -226,6 +226,46 @@
   min-width: 0;
 }
 
+/* ══════════ TI BEST SETUP BUTONU (sağ üst) ══════════ */
+.vd-tg-ti-best-btn {
+  margin-left: auto;
+  padding: 5px 9px;
+  font-size: 10.5px;
+}
+
+.vd-tg-ti-best-btn .vd-tg-card-btn-label {
+  font-size: 10px;
+}
+
+/* ti-best-head: flex layout, butonu sağa yaslar */
+.ti-best-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ══════════ TI WATCHLIST BUTONU (kompakt ikon) ══════════ */
+.vd-tg-ti-watch-btn {
+  margin-left: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.vd-tg-ti-watch-btn .vd-tg-card-btn-ico {
+  font-size: 12px;
+}
+
+/* ti-watch-row: butonu doğru hizalamak için */
+.ti-watch-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 /* Mobil */
 @media (max-width: 640px) {
   .vd-tg-card-btn {
@@ -235,6 +275,14 @@
   .vd-tg-card-btn-label {
     font-size: 10px;
   }
+  .vd-tg-ti-best-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .vd-tg-ti-watch-btn {
+    padding: 4px 6px;
+    margin-left: 6px;
+  }
 }
 
 @media (max-width: 380px) {
@@ -243,6 +291,12 @@
   }
   .vd-tg-card-btn {
     padding: 6px 8px;
+  }
+  .vd-tg-ti-best-btn .vd-tg-card-btn-label {
+    display: none;
+  }
+  .vd-tg-ti-best-btn {
+    padding: 5px 8px;
   }
 }
 

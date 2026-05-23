@@ -910,6 +910,9 @@ async function scanMarket(){
   try{ P10.onScanComplete(results); }catch(e){}
 
   // ── Trading Intelligence — scan sonuçlarını yayınla ──
+  window.VD_STATE = window.VD_STATE || {};
+  window.VD_STATE.scanResults = results;
+  window._lastScanResults = results; // geriye dönük uyumluluk
   try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
 
   // ── AI: Tarama sinyallerini kaydet ──────────────────────────────

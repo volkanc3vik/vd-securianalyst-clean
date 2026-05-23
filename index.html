@@ -4141,6 +4141,9 @@ async function scanMarket(){
   console.log(`[Scanner] Tarama tamamlandı: ${results.length} coin, Long top: ${top3L.map(i=>i.sym).join(', ')}, Short top: ${top3S.map(i=>i.sym).join(', ')}`);
 
   // ── Trading Intelligence — scan sonuçlarını yayınla ──
+  window.VD_STATE = window.VD_STATE || {};
+  window.VD_STATE.scanResults = results;
+  window._lastScanResults = results; // geriye dönük uyumluluk
   try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
 }
 

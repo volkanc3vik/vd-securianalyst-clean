@@ -35,11 +35,13 @@ window.TelegramController = (() => {
   function _warn(...args) { console.warn('[TG-CTRL]', ...args); }
 
   // ── Sayfadaki sinyal verisini bul ─────────────────────────────────
-  // SCE, window._lastScanResults veya benzer kaynaklardan sym/dir'e
+  // SCE, window.VD_STATE.scanResults veya benzer kaynaklardan sym/dir'e
   // göre güncel sinyal objesini arar. Sırayla şu kaynakları dener:
   //   1. window.SCE?.getCard(sym, dir)         - Signal Card Engine
-  //   2. window._lastScanResults               - scanMarket sonucu
+  //   2. window.VD_STATE.scanResults           - scanMarket sonucu (yeni namespace)
+  //      fallback: window._lastScanResults     - geriye dönük uyumluluk
   //   3. window.TIState?.get()?.bestSetup      - TI engine
+  //   4. window.TIState?.get()?.watchlist      - TI izleme listesi
   function _findSignalData(sym, dir) {
     const symU = (sym || '').toUpperCase();
     const dirU = (dir || '').toUpperCase();
@@ -55,13 +57,18 @@ window.TelegramController = (() => {
       }
     } catch (e) { /* yut */ }
 
-    // 2. _lastScanResults global
+    // 2. Scan sonuçları — önce VD_STATE.scanResults, fallback _lastScanResults
     try {
-      const results = window._lastScanResults;
+      // VD_STATE öncelikli ama boş array varsa fallback'a düş
+      const primary = window.VD_STATE?.scanResults;
+      const secondary = window._lastScanResults;
+      const results = (Array.isArray(primary) && primary.length > 0) ? primary
+                     : (Array.isArray(secondary) ? secondary : null);
       if (Array.isArray(results)) {
         const item = results.find(r => (r.sym || '').toUpperCase() === symU);
         if (item) {
-          _log('signal source: _lastScanResults');
+          const source = (results === primary) ? 'VD_STATE.scanResults' : '_lastScanResults';
+          _log('signal source:', source);
           return _mergeScanItem(item, dirU);
         }
       }
@@ -75,6 +82,21 @@ window.TelegramController = (() => {
         if ((bs.sym || '').toUpperCase() === symU && (bs.dir || '').toUpperCase() === dirU) {
           _log('signal source: TI BestSetup');
           return _mergeTISetup(bs);
+        }
+      }
+    } catch (e) { /* yut */ }
+
+    // 4. TI Watchlist
+    try {
+      const snap = window.TIState?.get?.();
+      const watchlist = snap?.watchlist;
+      if (Array.isArray(watchlist)) {
+        const match = watchlist.find(w =>
+          (w.sym || '').toUpperCase() === symU && (w.dir || '').toUpperCase() === dirU
+        );
+        if (match) {
+          _log('signal source: TI Watchlist');
+          return _mergeTISetup(match);
         }
       }
     } catch (e) { /* yut */ }
