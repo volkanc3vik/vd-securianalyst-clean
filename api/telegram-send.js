@@ -137,7 +137,27 @@ export default async function handler(req, res) {
     return res.status(403).json({ ok: false, error: 'origin_not_allowed' });
   }
 
-  // 3. Rate limit
+  // 3. Admin key guard
+  //   - ADMIN_KEY_1 ve ADMIN_KEY_2 env'de tanımlı değilse endpoint kapalı
+  //   - x-admin-key header'ı yoksa veya hiçbiriyle eşleşmiyorsa 403
+  //   - Hata mesajları hangi key'in beklendiğini ifşa etmez
+  const adminKey1 = process.env.ADMIN_KEY_1;
+  const adminKey2 = process.env.ADMIN_KEY_2;
+  const validAdminKeys = [adminKey1, adminKey2].filter(
+    k => typeof k === 'string' && k.length > 0
+  );
+  if (validAdminKeys.length === 0) {
+    return res.status(500).json({ ok: false, error: 'server_misconfigured' });
+  }
+  const providedKey = req.headers['x-admin-key'];
+  if (typeof providedKey !== 'string' || providedKey.length === 0) {
+    return res.status(403).json({ ok: false, error: 'unauthorized' });
+  }
+  if (!validAdminKeys.includes(providedKey)) {
+    return res.status(403).json({ ok: false, error: 'unauthorized' });
+  }
+
+  // 4. Rate limit
   const ip = getClientIp(req);
   const rl = checkRateLimit(ip);
   if (!rl.ok) {
@@ -150,13 +170,13 @@ export default async function handler(req, res) {
     });
   }
 
-  // 4. Token env var kontrolü
+  // 5. Token env var kontrolü
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) {
     return res.status(500).json({ ok: false, error: 'server_misconfigured' });
   }
 
-  // 5. Body parse + validation
+  // 6. Body parse + validation
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch { body = null; }
@@ -166,13 +186,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: v.error });
   }
 
-  // 6. Kanal çözümle
+  // 7. Kanal çözümle
   const chatId = resolveChannel(body.channel);
   if (!chatId) {
     return res.status(400).json({ ok: false, error: 'invalid_channel' });
   }
 
-  // 7. Telegram API'a gönder
+  // 8. Telegram API'a gönder
   const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
 
   // parse_mode mantığı:

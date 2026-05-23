@@ -24,11 +24,33 @@ window.TelegramDispatcher = (() => {
   const MAX_RETRY = 1;
   const _cooldownMap = new Map(); // key: 'BTCUSDT|LONG|free' → timestamp
 
+  // ── Session-only admin key ────────────────────────────────────────
+  // Modül scope'unda tutulur, dışarıdan _adminKey olarak erişilemez.
+  // localStorage/sessionStorage'a YAZILMAZ — sayfa kapanınca uçar.
+  // console.log'da hiç görünmez.
+  let _adminKey = null;
+
   function _log(...args) { console.log('[TG]', ...args); }
   function _warn(...args) { console.warn('[TG]', ...args); }
 
   function _cooldownKey(sym, dir, channel) {
     return `${(sym || '').toUpperCase()}|${(dir || '').toUpperCase()}|${(channel || '').toLowerCase()}`;
+  }
+
+  // ── Admin Key API ─────────────────────────────────────────────────
+  function setAdminKey(key) {
+    if (typeof key !== 'string' || key.length === 0) {
+      _adminKey = null;
+      return false;
+    }
+    _adminKey = key;
+    return true;
+  }
+  function hasAdminKey() {
+    return typeof _adminKey === 'string' && _adminKey.length > 0;
+  }
+  function clearAdminKey() {
+    _adminKey = null;
   }
 
   // ── Cooldown API ──────────────────────────────────────────────────
@@ -147,9 +169,15 @@ window.TelegramDispatcher = (() => {
   // ── Düşük seviye fetch + retry ────────────────────────────────────
   async function _doFetch(body, attempt) {
     try {
+      // Header'lar — admin key varsa eklenir, asla loglanmaz
+      const headers = { 'Content-Type': 'application/json' };
+      if (_adminKey) {
+        headers['x-admin-key'] = _adminKey;
+      }
+
       const res = await fetch(ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
       });
 
@@ -193,5 +221,8 @@ window.TelegramDispatcher = (() => {
     isOnCooldown,
     getCooldownRemaining,
     clearCooldown,
+    setAdminKey,
+    hasAdminKey,
+    clearAdminKey,
   };
 })();
