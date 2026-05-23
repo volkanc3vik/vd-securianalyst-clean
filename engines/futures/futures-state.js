@@ -94,9 +94,15 @@ window.FuturesState = (() => {
   function setBalance(amount) {
     const v = +amount;
     if (!Number.isFinite(v) || v < 0) return false;
-    _state.balance = v;
+    // Aktif pozisyon margin'inin altına düşmeye izin verme — likidasyon riski
+    const used = (_state.positions || []).reduce((s, p) => s + (+p.margin || 0), 0);
+    if (v < used) {
+      _notify('balance:rejected', { reason: 'below_used_margin', requested: v, minimum: used });
+      return false;
+    }
+    _state.balance = +v.toFixed(2);
     _save();
-    _notify('balance:changed', { balance: v });
+    _notify('balance:changed', { balance: _state.balance });
     return true;
   }
 

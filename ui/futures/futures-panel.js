@@ -21,7 +21,19 @@ window.FuturesPanel = (() => {
         <div class="fp-header">
           <span class="fp-title">📊 FUTURES İŞLEM TAKİBİ</span>
           <span class="fp-count zero" id="fpCount">0 AKTİF</span>
-          <span class="fp-balance">Bakiye: <b id="fpBalance">$0.00</b></span>
+          <span class="fp-balance">
+            Bakiye:
+            <span class="fp-balance-view" id="fpBalanceView">
+              <b id="fpBalance">$0.00</b>
+              <button class="fp-balance-edit" id="fpBalanceEdit" title="Bakiyeyi düzenle" aria-label="Bakiyeyi düzenle">✎</button>
+            </span>
+            <span class="fp-balance-edit-wrap" id="fpBalanceEditWrap" style="display:none">
+              <span class="fp-balance-prefix">$</span>
+              <input type="number" inputmode="decimal" step="0.01" min="0" class="fp-balance-input" id="fpBalanceInput">
+              <button class="fp-balance-ok" id="fpBalanceOk" title="Kaydet">✓</button>
+              <button class="fp-balance-cancel" id="fpBalanceCancel" title="Vazgeç">×</button>
+            </span>
+          </span>
           <button class="fp-btn-open" id="fpOpenBtn">+ Manuel İşlem Aç</button>
         </div>
         <div id="fpList"></div>
@@ -30,6 +42,73 @@ window.FuturesPanel = (() => {
     _mount.querySelector('#fpOpenBtn').addEventListener('click', () => {
       window.FuturesModal.open({});
     });
+
+    // Bakiye edit handler'ları
+    _wireBalanceEdit();
+  }
+
+  // ── Bakiye düzenleme (inline) ─────────────────────────────────────
+  function _wireBalanceEdit() {
+    const view       = _mount.querySelector('#fpBalanceView');
+    const wrap       = _mount.querySelector('#fpBalanceEditWrap');
+    const btnEdit    = _mount.querySelector('#fpBalanceEdit');
+    const btnOk      = _mount.querySelector('#fpBalanceOk');
+    const btnCancel  = _mount.querySelector('#fpBalanceCancel');
+    const input      = _mount.querySelector('#fpBalanceInput');
+    if (!view || !wrap || !btnEdit || !btnOk || !btnCancel || !input) return;
+
+    function openEdit() {
+      const cur = window.FuturesState.getBalance();
+      input.value = (+cur).toFixed(2);
+      view.style.display = 'none';
+      wrap.style.display = 'inline-flex';
+      // input'a focus + içerik seç
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+    }
+
+    function cancelEdit() {
+      wrap.style.display = 'none';
+      view.style.display = 'inline-flex';
+      input.classList.remove('error');
+    }
+
+    function commitEdit() {
+      const v = parseFloat(input.value);
+      if (!Number.isFinite(v) || v < 0) {
+        input.classList.add('error');
+        return;
+      }
+      const ok = window.FuturesState.setBalance(v);
+      if (!ok) {
+        // setBalance reddetti — büyük olasılıkla kullanılan margin'in altına düşürüldü
+        input.classList.add('error');
+        _flashTooltip(input, 'Bakiye, aktif pozisyon marginin altına düşemez');
+        return;
+      }
+      cancelEdit();
+    }
+
+    btnEdit.addEventListener('click', openEdit);
+    btnOk.addEventListener('click', commitEdit);
+    btnCancel.addEventListener('click', cancelEdit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter')        { e.preventDefault(); commitEdit(); }
+      else if (e.key === 'Escape')  { e.preventDefault(); cancelEdit(); }
+    });
+    input.addEventListener('input', () => input.classList.remove('error'));
+  }
+
+  function _flashTooltip(target, text) {
+    let tip = target.parentElement.querySelector('.fp-balance-tip');
+    if (!tip) {
+      tip = document.createElement('span');
+      tip.className = 'fp-balance-tip';
+      target.parentElement.appendChild(tip);
+    }
+    tip.textContent = text;
+    tip.style.display = 'block';
+    clearTimeout(tip._t);
+    tip._t = setTimeout(() => { tip.style.display = 'none'; }, 2200);
   }
 
   // ── Render ────────────────────────────────────────────────────────
@@ -49,7 +128,12 @@ window.FuturesPanel = (() => {
       countEl.classList.toggle('zero', positions.length === 0);
     }
     if (balanceEl) {
-      balanceEl.textContent = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Edit modu açık değilse görüntüyü güncelle
+      const wrap = _mount.querySelector('#fpBalanceEditWrap');
+      const editing = wrap && wrap.style.display !== 'none';
+      if (!editing) {
+        balanceEl.textContent = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
     }
 
     // Liste

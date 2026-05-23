@@ -92,12 +92,16 @@ window.FuturesModal = (() => {
       _setText('#fmLiq', '⚡ Likidasyon hesaplanıyor...');
     }
 
-    // Kullanılabilir bakiye
+    // Kullanılabilir bakiye — edit modu açık değilse yenile
     const balance    = FS.getBalance();
     const activePos  = FS.getActivePositions();
     const usedMargin = activePos.reduce((s, p) => s + (+p.margin || 0), 0);
     const avail      = balance - usedMargin;
-    _setText('#fmAvail', '$' + _fmt(avail, 2));
+    const editWrap   = _root && _root.querySelector('#fmBalanceEditWrap');
+    const editing    = editWrap && editWrap.style.display !== 'none';
+    if (!editing) {
+      _setText('#fmAvail', '$' + _fmt(avail, 2));
+    }
 
     _showError(null);
   }
@@ -189,7 +193,19 @@ window.FuturesModal = (() => {
         <div class="fm-mode">
           <button class="fm-mode-btn ${_currentMode === 'CROSS'    ? 'active' : ''}" data-mode="CROSS">CROSS</button>
           <button class="fm-mode-btn ${_currentMode === 'ISOLATED' ? 'active' : ''}" data-mode="ISOLATED">ISOLATED</button>
-          <span class="fm-balance-disp">Bakiye: <b id="fmAvail">$0.00</b></span>
+          <span class="fm-balance-disp">
+            Bakiye:
+            <span class="fm-balance-view" id="fmBalanceView">
+              <b id="fmAvail">$0.00</b>
+              <button class="fm-balance-edit" id="fmBalanceEdit" type="button" title="Bakiyeyi düzenle" aria-label="Bakiyeyi düzenle">✎</button>
+            </span>
+            <span class="fm-balance-edit-wrap" id="fmBalanceEditWrap" style="display:none">
+              <span class="fm-balance-prefix">$</span>
+              <input type="number" inputmode="decimal" step="0.01" min="0" class="fm-balance-input" id="fmBalanceInput">
+              <button class="fm-balance-ok" id="fmBalanceOk" type="button" title="Kaydet">✓</button>
+              <button class="fm-balance-cancel" id="fmBalanceCancel" type="button" title="Vazgeç">×</button>
+            </span>
+          </span>
         </div>
 
         <!-- Form -->
@@ -273,6 +289,9 @@ window.FuturesModal = (() => {
 
     $('#fmCta').addEventListener('click', _submit, { signal: sig });
 
+    // Bakiye inline edit
+    _wireModalBalanceEdit(sig);
+
     // Entry boşsa canlı fiyat çek
     if (!prefill.price) {
       _fetchCurrentPrice(_currentSym).then(price => {
@@ -291,6 +310,69 @@ window.FuturesModal = (() => {
       const focusEl = prefill.price ? $('#fmMargin') : $('#fmEntry');
       if (focusEl) focusEl.focus();
     }, 50);
+  }
+
+  // ── Modal Bakiye inline edit ──────────────────────────────────────
+  function _wireModalBalanceEdit(sig) {
+    const $ = (sel) => _root.querySelector(sel);
+    const view      = $('#fmBalanceView');
+    const wrap      = $('#fmBalanceEditWrap');
+    const btnEdit   = $('#fmBalanceEdit');
+    const btnOk     = $('#fmBalanceOk');
+    const btnCancel = $('#fmBalanceCancel');
+    const input     = $('#fmBalanceInput');
+    if (!view || !wrap || !btnEdit || !btnOk || !btnCancel || !input) return;
+
+    function openEdit() {
+      const cur = window.FuturesState.getBalance();
+      input.value = (+cur).toFixed(2);
+      view.style.display = 'none';
+      wrap.style.display = 'inline-flex';
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+    }
+    function cancelEdit() {
+      wrap.style.display = 'none';
+      view.style.display = 'inline-flex';
+      input.classList.remove('error');
+    }
+    function commitEdit() {
+      const v = parseFloat(input.value);
+      if (!Number.isFinite(v) || v < 0) {
+        input.classList.add('error');
+        return;
+      }
+      const ok = window.FuturesState.setBalance(v);
+      if (!ok) {
+        input.classList.add('error');
+        _flashModalTooltip(input, 'Bakiye, aktif pozisyon marginin altına düşemez');
+        return;
+      }
+      cancelEdit();
+      _recalc(); // pozisyon/likidasyon hesabını tazele
+    }
+
+    btnEdit.addEventListener('click', openEdit, { signal: sig });
+    btnOk.addEventListener('click', commitEdit, { signal: sig });
+    btnCancel.addEventListener('click', cancelEdit, { signal: sig });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter')        { e.preventDefault(); commitEdit(); }
+      else if (e.key === 'Escape')  { e.preventDefault(); cancelEdit(); }
+    }, { signal: sig });
+    input.addEventListener('input', () => input.classList.remove('error'), { signal: sig });
+  }
+
+  function _flashModalTooltip(target, text) {
+    const parent = target.parentElement;
+    let tip = parent.querySelector('.fm-balance-tip');
+    if (!tip) {
+      tip = document.createElement('span');
+      tip.className = 'fm-balance-tip';
+      parent.appendChild(tip);
+    }
+    tip.textContent = text;
+    tip.style.display = 'block';
+    clearTimeout(tip._t);
+    tip._t = setTimeout(() => { tip.style.display = 'none'; }, 2400);
   }
 
   // ── Gönder ────────────────────────────────────────────────────────

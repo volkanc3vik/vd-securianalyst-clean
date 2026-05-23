@@ -52,12 +52,114 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
 }
 
 .fp-balance b {
   color: var(--text);
   font-family: 'Courier New', monospace;
   font-weight: 700;
+}
+
+.fp-balance-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fp-balance-edit {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  transition: all .15s;
+  line-height: 1;
+}
+
+.fp-balance-edit:hover {
+  color: var(--cyan);
+  border-color: rgba(0, 212, 255, .3);
+  background: rgba(0, 212, 255, .06);
+}
+
+.fp-balance-edit-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(0, 212, 255, .35);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.fp-balance-prefix {
+  color: var(--text3);
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+}
+
+.fp-balance-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  width: 90px;
+  padding: 2px 0;
+  -moz-appearance: textfield;
+}
+
+.fp-balance-input::-webkit-outer-spin-button,
+.fp-balance-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.fp-balance-input.error {
+  color: var(--red);
+  animation: fpShakeX .25s ease-in-out;
+}
+
+@keyframes fpShakeX {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-3px); }
+  75%      { transform: translateX(3px); }
+}
+
+.fp-balance-ok,
+.fp-balance-cancel {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 3px;
+  line-height: 1;
+}
+
+.fp-balance-ok      { color: var(--green); }
+.fp-balance-ok:hover { color: #00ffb0; }
+.fp-balance-cancel   { color: var(--text3); }
+.fp-balance-cancel:hover { color: var(--red); }
+
+.fp-balance-tip {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: rgba(255, 61, 107, .14);
+  color: var(--red);
+  border: 1px solid rgba(255, 61, 107, .35);
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  z-index: 50;
+  display: none;
 }
 
 .fp-btn-open {
@@ -571,9 +673,107 @@
   font-size: 11px;
   color: var(--text2);
   font-family: 'Courier New', monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
 }
 
 .fm-balance-disp b { color: var(--text); }
+
+.fm-balance-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fm-balance-edit {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all .15s;
+  line-height: 1;
+}
+
+.fm-balance-edit:hover {
+  color: var(--cyan);
+  border-color: rgba(0, 212, 255, .3);
+  background: rgba(0, 212, 255, .06);
+}
+
+.fm-balance-edit-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(0, 212, 255, .35);
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+
+.fm-balance-prefix {
+  color: var(--text3);
+  font-size: 11px;
+}
+
+.fm-balance-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  width: 100px;
+  padding: 2px 0;
+  -moz-appearance: textfield;
+}
+
+.fm-balance-input::-webkit-outer-spin-button,
+.fm-balance-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.fm-balance-input.error {
+  color: var(--red);
+  animation: fpShakeX .25s ease-in-out;
+}
+
+.fm-balance-ok,
+.fm-balance-cancel {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.fm-balance-ok       { color: var(--green); }
+.fm-balance-ok:hover  { color: #00ffb0; }
+.fm-balance-cancel    { color: var(--text3); }
+.fm-balance-cancel:hover { color: var(--red); }
+
+.fm-balance-tip {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: rgba(255, 61, 107, .14);
+  color: var(--red);
+  border: 1px solid rgba(255, 61, 107, .35);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  z-index: 50;
+  display: none;
+  font-family: system-ui, -apple-system, sans-serif;
+}
 
 /* Form */
 .fm-form {
