@@ -159,6 +159,16 @@ window.TelegramDispatcher = (() => {
     if (result.ok) {
       _setCooldown(sym, dir, ch);
       _log(`sent ✓ msgId=${result.messageId}, cooldown set for ${sym} ${dir} ${ch}`);
+      // Event yayını — VIP Tracker veya diğer modüller dinleyebilir
+      try {
+        window.dispatchEvent(new CustomEvent('vd:telegram:sent', {
+          detail: {
+            signal,
+            channel: ch,
+            messageId: result.messageId,
+          }
+        }));
+      } catch (e) { /* yut */ }
     } else {
       _warn(`send failed: ${result.error}`, result.detail || '');
     }
