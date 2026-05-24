@@ -1,159 +1,184 @@
-// ═══════════════════════════════════════════════
-// SMART MONEY ENGINE — BOS, CHoCH, OB, FVG, Sweeps
-// UI'dan tamamen bağımsız
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// TI FEED — Adaptör
+// scan sonuçlarını + CoinGlass cache'i engine'lerin "ctx" formatına çevirir.
+// Yeni WS aboneliği YOK. Yeni interval YOK. Yeni scan YOK.
+//
+// CoinGlass disabled ise funding/oi göndermez — scorer o faktörü dışar.
+// ════════════════════════════════════════════════════════════════════
+window.TIFeed = (() => {
+  'use strict';
 
-class SmartMoneyEngine {
-
-  // ── Liquidity Sweep (Likidite Süpürmesi) ──────
-  detectLiquiditySweep(candles) {
-    const sweeps = [];
-    const n = candles.length;
-    for (let i = 5; i < n; i++) {
-      const c    = candles[i];
-      const prev = candles.slice(i - 5, i);
-      const maxH = Math.max(...prev.map(p => p.h));
-      const minL = Math.min(...prev.map(p => p.l));
-      const body = Math.abs(c.c - c.o);
-      const total = c.h - c.l;
-      const wickR = total > 0 ? body / total : 1;
-
-      if (c.h > maxH && c.c < maxH && wickR < 0.4 && total > 0) {
-        sweeps.push({ type: 'bearish_sweep', price: c.h, idx: i, msg: 'Buy-side likidite toplandı' });
-      }
-      if (c.l < minL && c.c > minL && wickR < 0.4 && total > 0) {
-        sweeps.push({ type: 'bullish_sweep', price: c.l, idx: i, msg: 'Sell-side likidite toplandı' });
-      }
+  function splitMajors(scanResults) {
+    if (!Array.isArray(scanResults)) return { btc: null, eth: null, others: [] };
+    let btc = null, eth = null;
+    const others = [];
+    for (const r of scanResults) {
+      const s = (r.sym || '').toUpperCase();
+      if (s === 'BTCUSDT' || s === 'BTC') { btc = r; continue; }
+      if (s === 'ETHUSDT' || s === 'ETH') { eth = r; continue; }
+      others.push(r);
     }
-    return sweeps.slice(-5);
+    return { btc, eth, others };
   }
 
-  // ── Order Blocks ──────────────────────────────
-  detectOrderBlocks(candles) {
-    const obs = [];
-    const n   = candles.length;
-    for (let i = 2; i < n - 1; i++) {
-      const c    = candles[i];
-      const next = candles[i + 1];
-      const body = Math.abs(c.c - c.o);
-      const avgB = candles.slice(i - 5, i).map(x => Math.abs(x.c - x.o)).reduce((a, b) => a + b, 0) / 5;
-
-      if (c.c < c.o && next.c > next.o && body > avgB * 1.5 && next.c > c.h) {
-        obs.push({ type: 'bullish', high: c.o, low: c.l, idx: i, desc: 'Kurumsal alım bölgesi' });
-      }
-      if (c.c > c.o && next.c < next.o && body > avgB * 1.5 && next.c < c.l) {
-        obs.push({ type: 'bearish', high: c.h, low: c.o, idx: i, desc: 'Kurumsal satış bölgesi' });
-      }
-    }
-    return obs.slice(-4);
+  function _resolveDir(item) {
+    const explicit = (item.dir || item.direction || '').toString().toUpperCase();
+    if (explicit === 'LONG' || explicit === 'SHORT') return explicit;
+    const l = +item.lScore || 0;
+    const s = +item.sScore || 0;
+    if (l > s) return 'LONG';
+    if (s > l) return 'SHORT';
+    return null;
   }
 
-  // ── Fair Value Gaps ───────────────────────────
-  detectFVG(candles) {
-    const fvgs = [];
-    const n    = candles.length;
-    for (let i = 1; i < n - 1; i++) {
-      const prev = candles[i - 1];
-      const next = candles[i + 1];
-
-      if (prev.h < next.l && (next.l - prev.h) / prev.h > 0.001) {
-        const filled = candles.slice(i + 1).some(c => c.l <= prev.h);
-        if (!filled) fvgs.push({ type: 'bullish', high: next.l, low: prev.h, idx: i });
-      }
-      if (prev.l > next.h && (prev.l - next.h) / prev.l > 0.001) {
-        const filled = candles.slice(i + 1).some(c => c.h >= prev.l);
-        if (!filled) fvgs.push({ type: 'bearish', high: prev.l, low: next.h, idx: i });
-      }
+  function _resolveFunding(item) {
+    if (item.funding && Number.isFinite(+item.funding.rate)) return item.funding;
+    if (Number.isFinite(+item.fundingRate)) return { rate: +item.fundingRate };
+    if (typeof window.CoinGlassService !== 'undefined' && window.CoinGlassService.isEnabled?.()) {
+      try {
+        const cg = window.CoinGlassService.getCachedFunding?.(item.sym);
+        if (cg && Number.isFinite(+cg.rate)) return { rate: +cg.rate };
+      } catch {}
     }
-    return fvgs.slice(-4);
+    return null;
   }
 
-  // ── CHoCH / BOS ───────────────────────────────
-  detectMarketStructure(candles) {
-    const n   = candles.length;
-    const pts = [];
-    let pH = null, pL = null;
-
-    for (let i = 2; i < n - 2; i++) {
-      const c = candles[i], p = candles[i-1], pp = candles[i-2], nx = candles[i+1];
-      if (p.h >= pp.h && p.h >= c.h && p.h >= nx.h) {
-        pts.push({ type: pH !== null ? (p.h > pH ? 'HH' : 'LH') : 'HH', price: p.h, idx: i-1 });
-        pH = p.h;
-      }
-      if (p.l <= pp.l && p.l <= c.l && p.l <= nx.l) {
-        pts.push({ type: pL !== null ? (p.l < pL ? 'LL' : 'HL') : 'LL', price: p.l, idx: i-1 });
-        pL = p.l;
-      }
+  function _resolveOI(item) {
+    if (item.oi && (Number.isFinite(+item.oi.change24h) || Number.isFinite(+item.oi.changePercent))) {
+      return item.oi;
     }
+    if (Number.isFinite(+item.oiChange24h)) return { change24h: +item.oiChange24h };
+    if (typeof window.CoinGlassService !== 'undefined' && window.CoinGlassService.isEnabled?.()) {
+      try {
+        const cg = window.CoinGlassService.getCachedOI?.(item.sym);
+        if (cg) return cg;
+      } catch {}
+    }
+    return null;
+  }
 
-    const recent = pts.slice(-6);
-    const highs  = recent.filter(p => p.type === 'HH' || p.type === 'LH');
-    const lows   = recent.filter(p => p.type === 'LL' || p.type === 'HL');
-    const bullish = highs.some(h => h.type === 'HH') && lows.some(l => l.type === 'HL');
-    const bearish = highs.some(h => h.type === 'LH') && lows.some(l => l.type === 'LL');
+  function toScorerContext(item) {
+    if (!item) return null;
+    const dir = _resolveDir(item);
+    if (!dir) return null;
 
-    // CHoCH
-    const lastTypes = recent.slice(-4).map(p => p.type);
-    const choch = (lastTypes.includes('HH') && lastTypes.includes('LL')) ||
-                  (lastTypes.includes('HL') && lastTypes.includes('LH'));
-    const bos   = lastTypes.slice(-2).every(t => t === 'HH') ||
-                  lastTypes.slice(-2).every(t => t === 'LL');
-
+    const isLong = dir === 'LONG';
     return {
-      points: recent,
-      trend:  bullish ? 'BULLISH' : bearish ? 'BEARISH' : 'NEUTRAL',
-      choch,
-      bos,
-      eqHighs: highs.filter(h => h.type === 'LH').length >= 2,
-      eqLows:  lows.filter(l => l.type === 'HL').length >= 2,
+      sym:     item.sym,
+      dir,
+      closes:  item.closes  || (item.candles ? item.candles.map(c => c.c) : null),
+      candles: item.candles || null,
+      ind:     item.ind     || null,
+      smcData: item.smcData || item._smcData || null,
+      entry:   +(isLong ? (item.entry || item.price)        : (item.entryShort || item.price))     || null,
+      sl:      +(isLong ? (item.sl    || item.slLong)       : (item.slShort    || item.sl))         || null,
+      tp1:     +(isLong ? (item.tp1   || item.tp1Long)      : (item.tp1Short   || item.tp1))        || null,
+      tp2:     +(isLong ? (item.tp2   || item.tp2Long)      : (item.tp2Short   || item.tp2))        || null,
+      tp3:     +(isLong ? (item.tp3   || item.tp3Long)      : (item.tp3Short   || item.tp3))        || null,
+      funding: _resolveFunding(item),
+      oi:      _resolveOI(item),
     };
   }
 
-  // ── Stop Hunt ─────────────────────────────────
-  detectStopHunt(candles) {
-    const n     = candles.length;
-    const hunts = [];
-    for (let i = 3; i < n; i++) {
-      const c    = candles[i];
-      const prev = candles.slice(i - 3, i);
-      const body = Math.abs(c.c - c.o);
-      const total = c.h - c.l;
-      const wickU = c.h - Math.max(c.o, c.c);
-      const wickL = Math.min(c.o, c.c) - c.l;
-
-      if (wickU > body * 2 && wickU > total * 0.4 && total > 0) {
-        const swept = Math.max(...prev.map(p => p.h));
-        if (c.h > swept) {
-          hunts.push({ type: 'bearish_hunt', price: c.h, idx: i,
-            desc: `Stop hunt yukarı — %${(wickU/c.c*100).toFixed(2)} wick` });
-        }
-      }
-      if (wickL > body * 2 && wickL > total * 0.4 && total > 0) {
-        const swept = Math.min(...prev.map(p => p.l));
-        if (c.l < swept) {
-          hunts.push({ type: 'bullish_hunt', price: c.l, idx: i,
-            desc: `Stop hunt aşağı — %${(wickL/c.c*100).toFixed(2)} wick` });
-        }
-      }
-    }
-    return hunts.slice(-3);
-  }
-
-  // ── Tam SMC Analizi ───────────────────────────
-  analyze(candles, price) {
-    if (!candles?.length) return null;
+  function detectDataSources() {
     return {
-      sweeps:  this.detectLiquiditySweep(candles),
-      obs:     this.detectOrderBlocks(candles),
-      fvgs:    this.detectFVG(candles),
-      ms:      this.detectMarketStructure(candles),
-      hunts:   this.detectStopHunt(candles),
-      // Shorthand flags for confirmation engine
-      ob:      this.detectOrderBlocks(candles).length > 0,
-      choch:   this.detectMarketStructure(candles).choch,
-      bos:     this.detectMarketStructure(candles).bos,
+      binance:   typeof window.Binance !== 'undefined' || typeof window.BinanceService !== 'undefined' || true,
+      coinglass: _coinglassStatus(),
+      ws:        typeof window.WSEngine !== 'undefined' || typeof window.WSService !== 'undefined',
     };
   }
-}
 
-export const SMCEngine = new SmartMoneyEngine();
+  function _coinglassStatus() {
+    if (typeof window.CoinGlassService === 'undefined') return 'OFF';
+    if (!window.CoinGlassService.isEnabled?.()) return 'OFF';
+    // Hobbyist / Free tier mı, full mü?
+    if (window.CoinGlassService.getTier) {
+      const tier = window.CoinGlassService.getTier();
+      if (tier === 'PRO' || tier === 'FULL') return 'FULL';
+      return 'PARTIAL';
+    }
+    // Tier API yoksa, açık olduğu için PARTIAL kabul et
+    return 'PARTIAL';
+  }
+
+  /**
+   * Partial bootstrap — sayfa açılışında ilk scan'den önce gösterilecek
+   * erken intelligence. WSEngine veya cache'de mevcut BTC/ETH verisini
+   * kullanır. Yeni WS aboneliği YOK.
+   *
+   * @returns {Object|null} { btc, eth, regime, volObs } | null
+   */
+  function bootstrapPartial() {
+    if (typeof window.WSEngine === 'undefined' && typeof window.WSService === 'undefined') {
+      return null;
+    }
+
+    const btcCache = _readWSCache('BTCUSDT');
+    const ethCache = _readWSCache('ETHUSDT');
+
+    if (!btcCache && !ethCache) return null;
+
+    // Erken Narrator + Regime için minimum veri
+    const partial = { btc: null, eth: null };
+    if (btcCache && typeof window.TINarrator !== 'undefined') {
+      partial.btc = window.TINarrator.analyzeCoin(btcCache);
+    }
+    if (ethCache && typeof window.TINarrator !== 'undefined') {
+      partial.eth = window.TINarrator.analyzeCoin(ethCache);
+      if (partial.btc && partial.eth) {
+        partial.eth.vsBTC = window.TINarrator.compareETHvsBTC(partial.btc, partial.eth);
+      }
+    }
+
+    // Erken regime — BTC bazlı (scan yok ama BTC ind var)
+    if (btcCache && typeof window.TIRegime !== 'undefined') {
+      // Tek BTC ile minimal scanResults simüle et
+      const earlyResults = [btcCache];
+      if (ethCache) earlyResults.push(ethCache);
+      partial.regime = window.TIRegime.detect(btcCache, earlyResults);
+    }
+
+    return partial;
+  }
+
+  function _readWSCache(sym) {
+    // WSEngine veya WSService'in cache yapısı projeye göre değişir.
+    // Genel pattern: window.WSEngine.getCoinData?.(sym) veya benzeri.
+    const candidates = [
+      () => window.WSEngine?.getCoinData?.(sym),
+      () => window.WSEngine?.getCache?.(sym),
+      () => window.WSEngine?.cache?.[sym],
+      () => window.WSService?.getCoinData?.(sym),
+      () => window.WSService?.getCache?.(sym),
+    ];
+
+    for (const fn of candidates) {
+      try {
+        const data = fn();
+        if (data && (data.closes || data.candles)) {
+          return _normalizeWSData(sym, data);
+        }
+      } catch {}
+    }
+    return null;
+  }
+
+  function _normalizeWSData(sym, raw) {
+    // Farklı WS engine'leri farklı yapı kullanır. En yaygın 2'yi destekle.
+    const closes  = raw.closes || (raw.candles ? raw.candles.map(c => +c.c || +c.close) : null);
+    const candles = raw.candles || null;
+    if (!closes || closes.length < 20) return null;
+
+    return {
+      sym,
+      closes,
+      candles,
+      price:   raw.price || raw.lastPrice || closes[closes.length - 1],
+      chg:     raw.chg || raw.priceChangePercent || 0,
+      ind:     raw.ind || null,
+      smcData: null,
+    };
+  }
+
+  return { splitMajors, toScorerContext, detectDataSources, bootstrapPartial };
+})();

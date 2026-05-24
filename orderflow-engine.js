@@ -1,111 +1,119 @@
 // ═══════════════════════════════════════════════
-// MARKET REGIME ENGINE — Trend/Range/Panic tespiti
+// RISK ENGINE — Dinamik kaldıraç, pozisyon boyutu,
+// portfolio exposure, drawdown koruması
 // ═══════════════════════════════════════════════
-import { calcATR, calcBB, calcRSI } from '../modules/indicators.js';
+import { clamp } from '../modules/helpers.js';
+import { Storage } from '../services/storage-service.js';
 
-class MarketRegimeEngine {
+// Korelasyon grupları
+const HIGH_CORR_BTC = ['ETH','BNB','SOL','AVAX','MATIC','ARB','OP'];
+const CORR_GROUPS   = [
+  ['ETH','ARB','OP','MATIC'],
+  ['BNB','CAKE'],
+  ['SOL','RAY','JTO'],
+  ['AVAX','JOE'],
+];
 
-  /**
-   * Piyasa rejimini tespit et
-   * @returns {string} TREND | RANGE | BREAKOUT | VOLATILE | SQUEEZE | PANIC | SIDEWAYS
-   */
-  detect(closes, candles, oiData = null) {
-    if (!closes?.length || !candles?.length) return 'SIDEWAYS';
+class RiskEngine {
 
-    const price  = closes[closes.length - 1];
-    const atr    = calcATR(candles);
-    const atrPct = (atr / price) * 100;
-    const bb     = calcBB(closes);
-    const rsi    = calcRSI(closes);
+  // ── Volatilite Ayarlı Kaldıraç ────────────────
+  calcDynamicLeverage(atrPct, conf, regimeMode, setupGrade) {
+    let base = atrPct > 5 ? 2 : atrPct > 4 ? 3 : atrPct > 3 ? 5 : atrPct > 2 ? 7 : atrPct > 1 ? 10 : 12;
 
-    // EMA trend kontrolü
-    const ema20  = this._ema(closes, 20);
-    const ema50  = this._ema(closes, 50);
-    const ema200 = this._ema(closes, 200);
+    // Güven skoru
+    if (conf >= 85) base += 3;
+    else if (conf >= 75) base += 1;
+    else if (conf < 55) base -= 2;
+    else if (conf < 45) base -= 4;
 
-    // Son 20 mum yön analizi
-    const recentCloses = closes.slice(-20);
-    const priceChange  = ((recentCloses[recentCloses.length - 1] - recentCloses[0]) / recentCloses[0]) * 100;
+    // Rejim
+    if (regimeMode === 'PANIC')    base = Math.min(base, 2);
+    if (regimeMode === 'VOLATILE') base = Math.min(base, 3);
+    if (regimeMode === 'TREND' && conf > 70) base += 2;
 
-    // PANIC — sert düşüş + yüksek volatilite
-    if (rsi < 25 && priceChange < -8 && atrPct > 4) return 'PANIC';
+    // Grade
+    if (setupGrade === 'S') base += 2;
+    else if (setupGrade === 'D') base -= 3;
 
-    // SQUEEZE — BB çok dar
-    if (bb.width < 2) return 'SQUEEZE';
-
-    // VOLATILE
-    if (atrPct > 4) return 'VOLATILE';
-
-    // TREND — EMA hizalama
-    if (ema20 > ema50 && ema50 > ema200 && priceChange > 2) return 'TREND';
-    if (ema20 < ema50 && ema50 < ema200 && priceChange < -2) return 'TREND';
-
-    // BREAKOUT — BB dışına çıkış
-    if (price > bb.upper * 0.998 || price < bb.lower * 1.002) return 'BREAKOUT';
-
-    // RANGE
-    if (Math.abs(priceChange) < 1.5 && atrPct < 2) return 'RANGE';
-
-    // Yeni: DISTRIBUTION
-    if(ema20 > ema50 && priceChange < -1 && rsi > 55 && atrPct > 2)
-      return 'DISTRIBUTION';
-    // Yeni: ACCUMULATION  
-    if(ema20 < ema50 && priceChange > 1 && rsi < 50 && atrPct < 2.5)
-      return 'ACCUMULATION';
-    // Yeni: CHOP
-    if(Math.abs(priceChange) < 1 && atrPct < 1.5 && bb.width < 3)
-      return 'CHOP';
-
-    return 'SIDEWAYS';
+    return clamp(Math.round(base), 1, 15);
   }
 
-  /**
-   * Rejim rengini döndür
-   */
-  getColor(regime) {
-    const colors = {
-      TREND:    'var(--green)',
-      RANGE:    'var(--yellow)',
-      BREAKOUT: 'var(--cyan)',
-      VOLATILE: 'var(--orange)',
-      SQUEEZE:  'var(--purple)',
-      PANIC:    'var(--red)',
-      SIDEWAYS:     'var(--text3)',
-      DISTRIBUTION: '#ff9f43',
-      ACCUMULATION: '#48dbfb',
-      CHOP:         '#a29bfe',
-    };
-    return colors[regime] || 'var(--text3)';
+  // ── ATR Bazlı Pozisyon Boyutu ─────────────────
+  calcPositionSize(portfolio, atr, price, riskPct) {
+    if (!atr || !price || !portfolio) return null;
+    const riskAmount  = portfolio * (riskPct / 100);
+    const stopDist    = atr * 1.5;
+    const stopPct     = (stopDist / price) * 100;
+    const posSize     = riskAmount / stopDist;
+    const posValue    = posSize * price;
+    const posValuePct = (posValue / portfolio) * 100;
+    return { riskAmount, stopDist, stopPct, posSize, posValue, posValuePct };
   }
 
-  /**
-   * Rejim açıklaması
-   */
-  getDesc(regime) {
-    const descs = {
-      TREND:    'Güçlü trend — momentum sinyalleri geçerli',
-      RANGE:    'Range market — kırılım bekleniyor',
-      BREAKOUT: 'Kırılım modu — momentum yüksek',
-      VOLATILE: 'Yüksek volatilite — stop aralığını genişlet',
-      SQUEEZE:  'Bollinger sıkışması — büyük hareket bekle',
-      PANIC:    'Panik satış — long girişlerden kaçın',
-      SIDEWAYS:     'Yön belirsiz — konfirmasyon bekle',
-      DISTRIBUTION: 'Dağıtım modu — büyük oyuncular satıyor',
-      ACCUMULATION: 'Birikim modu — büyük oyuncular topluyor',
-      CHOP:         'Yatay hareket — kırılım bekle',
-    };
-    return descs[regime] || '—';
-  }
+  // ── Korelasyon Kontrolü ───────────────────────
+  checkCorrelation(sym, openPositions = []) {
+    const clean    = sym.replace('USDT', '').replace('PERP', '');
+    const warnings = [];
+    let corrCount  = 0;
 
-  _ema(closes, period) {
-    if (closes.length < period) return closes[closes.length - 1];
-    const k = 2 / (period + 1);
-    let ema = closes.slice(0, period).reduce((a, b) => a + b) / period;
-    for (let i = period; i < closes.length; i++) {
-      ema = closes[i] * k + ema * (1 - k);
+    // BTC grubu
+    if (HIGH_CORR_BTC.includes(clean)) {
+      const openBTCCorr = openPositions.filter(p => HIGH_CORR_BTC.includes(p.sym?.replace('USDT', ''))).length;
+      if (openBTCCorr >= 2) {
+        warnings.push(`⚠ ${clean} BTC korelasyonlu — ${openBTCCorr} açık pozisyon var`);
+        corrCount += openBTCCorr;
+      }
     }
-    return ema;
+
+    // Alt gruplar
+    CORR_GROUPS.forEach(group => {
+      if (group.includes(clean)) {
+        const groupOpen = openPositions.filter(p => group.includes(p.sym?.replace('USDT', ''))).length;
+        if (groupOpen > 0) {
+          warnings.push(`⚠ ${clean} ile aynı gruptaki ${groupOpen} pozisyon açık`);
+          corrCount += groupOpen;
+        }
+      }
+    });
+
+    return {
+      warnings,
+      corrCount,
+      risk: corrCount >= 3 ? 'HIGH' : corrCount >= 1 ? 'MEDIUM' : 'LOW',
+    };
+  }
+
+  // ── Drawdown Koruması ─────────────────────────
+  checkDrawdown() {
+    const trades  = Storage.getTrades();
+    const last10  = trades.slice(-10);
+    if (last10.length < 3) return { block: false, warning: null };
+
+    const losses = last10.filter(t => !t.win).length;
+    const cumPnl = last10.reduce((s, t) => s + t.pnlPct, 0);
+
+    if (losses >= 5 && cumPnl < -8) {
+      return { block: true, warning: `🛑 Drawdown koruması — Son 10T: ${losses} kayıp, -%${Math.abs(cumPnl).toFixed(1)} PNL` };
+    }
+    if (losses >= 4 && cumPnl < -5) {
+      return { block: false, warning: `⚠ Düşük performans — Boyutu küçült` };
+    }
+    if (losses >= 7) {
+      return { block: true, warning: `🛑 ${losses}/10 kayıp — Dur, stratejiyi gözden geçir` };
+    }
+    return { block: false, warning: null };
+  }
+
+  // ── Tam Risk Analizi ──────────────────────────
+  analyze({ sym, atrPct, conf, regimeMode, setupGrade, portfolio = 10000, price, atr }) {
+    const lev    = this.calcDynamicLeverage(atrPct, conf, regimeMode, setupGrade);
+    const riskPct = conf >= 80 ? 2 : conf >= 70 ? 1.5 : conf >= 55 ? 1 : 0.5;
+    const pos    = this.calcPositionSize(portfolio, atr, price, riskPct);
+    const corr   = this.checkCorrelation(sym);
+    const dd     = this.checkDrawdown();
+
+    return { lev, riskPct, pos, corr, dd, atrPct, conf, regimeMode, setupGrade, sym };
   }
 }
 
-export const RegimeEngine = new MarketRegimeEngine();
+export const RiskEng = new RiskEngine();

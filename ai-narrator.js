@@ -1,215 +1,126 @@
-// ═══════════════════════════════════════════════
-// AI ENGINE — Ağırlıklı konfirmasyon + karar motoru
-// ═══════════════════════════════════════════════
-import { CONFIRMATION_WEIGHTS, SETUP_GRADES } from '../modules/constants.js';
-import { clamp, getCurrentSession } from '../modules/helpers.js';
+// ════════════════════════════════════════════════════════════════════
+// LIQUIDATION ENGINE — Spike, Cascade, Pressure, Bias
+// ════════════════════════════════════════════════════════════════════
+const LiquidationEngine = (() => {
 
-class AIEngine {
+  const _history = [];   // {ts, value, side, sym}
+  const MAX_HIST  = 200;
+  let   _stats    = { longTotal:0, shortTotal:0, lastSpike:null };
 
-  // ── Ağırlıklı Konfirmasyon Sistemi ───────────
-  evaluate({ closes, candles, ind, entry, oiData, btcData, wsData, regimeMode, smcData, fakeBreak, sym }) {
-    if (!entry || !ind) return null;
+  // WSEngine'den gelen her likidasyon buraya gelir
+  function onLiquidation(liq) {
+    _history.push({ ...liq, ts: liq.ts || Date.now() });
+    if (_history.length > MAX_HIST) _history.shift();
 
-    const isLong = entry.dir === 'LONG';
-    const price  = closes[closes.length - 1];
+    if (liq.side === 'BUY')  _stats.shortTotal += liq.value || 0; // BUY = short liq
+    else                     _stats.longTotal  += liq.value || 0;
 
-    // Hacim hesapla
-    const vols = candles.slice(-10).map(c => c.v);
-    const avgV = vols.slice(0, -1).reduce((a, b) => a + b, 0) / 9;
-    const volR = candles[candles.length - 1].v / avgV;
+    // Spike kontrolü
+    const recentWindow = _history.filter(h => Date.now() - h.ts < 60000);
+    const recentTotal  = recentWindow.reduce((s,h) => s + (h.value||0), 0);
+    const avgHourly    = _history.length > 10
+      ? _history.reduce((s,h) => s+(h.value||0), 0) / _history.length * 60
+      : recentTotal;
 
-    // Her koşulu değerlendir
-    const results = this._evalConditions({ isLong, ind, volR, oiData, btcData, wsData, entry, smcData, fakeBreak, regimeMode, price });
-
-    // Toplam skor
-    const maxScore   = Object.values(CONFIRMATION_WEIGHTS).reduce((a, b) => a + b, 0);
-    const totalScore = results.reduce((s, r) => s + r.score, 0);
-    const pct        = clamp(Math.round(totalScore / maxScore * 100), 0, 100);
-
-    const confirmed = results.filter(r => r.status === 'confirmed').length;
-    const pending   = results.filter(r => r.status === 'pending').length;
-    const failed    = results.filter(r => r.status === 'failed').length;
-    const critFailed = results.filter(r => r.critical && r.status === 'failed');
-
-    const grade = this._grade(pct, confirmed, critFailed.length > 0);
-    const aiSummary = this._buildSummary(entry.dir, grade, confirmed, results.length, pct, results, sym);
-
-    return { conditions: results, score: pct, confirmed, pending, failed, grade, aiSummary, critFailed };
-  }
-
-  _evalConditions({ isLong, ind, volR, oiData, btcData, wsData, entry, smcData, fakeBreak, regimeMode }) {
-    const checks = [
-      {
-        id: 'ema_full', weight: CONFIRMATION_WEIGHTS.ema_full, label: 'EMA Hizalama', critical: false,
-        eval: () => {
-          if (isLong) {
-            if (ind.ema9 > ind.ema21 && ind.ema21 > ind.ema50) return { status: 'confirmed', score: 12, detail: '9>21>50 ✓' };
-            if (ind.ema9 > ind.ema21) return { status: 'pending', score: 6, detail: '9>21, 50 bekleniyor' };
-            return { status: 'failed', score: 0, detail: 'EMA negatif' };
-          } else {
-            if (ind.ema9 < ind.ema21 && ind.ema21 < ind.ema50) return { status: 'confirmed', score: 12, detail: '9<21<50 ✓' };
-            if (ind.ema9 < ind.ema21) return { status: 'pending', score: 6, detail: '9<21, 50 bekleniyor' };
-            return { status: 'failed', score: 0, detail: 'EMA yükseliş hizası' };
-          }
-        },
-      },
-      {
-        id: 'macd', weight: CONFIRMATION_WEIGHTS.macd, label: 'MACD', critical: false,
-        eval: () => {
-          const ok = isLong ? ind.macd.hist > 0 : ind.macd.hist < 0;
-          return ok
-            ? { status: 'confirmed', score: 10, detail: `Hist: ${ind.macd.hist > 0 ? '+' : ''}${ind.macd.hist.toFixed(4)}` }
-            : { status: 'failed',    score: 0,  detail: `Hist: ${ind.macd.hist.toFixed(4)}` };
-        },
-      },
-      {
-        id: 'rsi', weight: CONFIRMATION_WEIGHTS.rsi, label: 'RSI Bölge', critical: false,
-        eval: () => {
-          const r = ind.rsi;
-          if (isLong) {
-            if (r >= 45 && r <= 65) return { status: 'confirmed', score: 8,  detail: `RSI: ${r.toFixed(1)} ✓` };
-            if (r > 72)             return { status: 'failed',    score: 0,  detail: `RSI: ${r.toFixed(1)} aşırı alım` };
-            return                         { status: 'pending',   score: 4,  detail: `RSI: ${r.toFixed(1)}` };
-          } else {
-            if (r >= 32 && r <= 55) return { status: 'confirmed', score: 8,  detail: `RSI: ${r.toFixed(1)} ✓` };
-            if (r < 28)             return { status: 'failed',    score: 0,  detail: `RSI: ${r.toFixed(1)} aşırı satım` };
-            return                         { status: 'pending',   score: 4,  detail: `RSI: ${r.toFixed(1)}` };
-          }
-        },
-      },
-      {
-        id: 'volume', weight: CONFIRMATION_WEIGHTS.volume, label: 'Hacim Onayı', critical: false,
-        eval: () => {
-          if (volR >= 1.5) return { status: 'confirmed', score: 10, detail: `${volR.toFixed(1)}x ort.` };
-          if (volR >= 1.2) return { status: 'pending',   score: 6,  detail: `${volR.toFixed(1)}x artıyor` };
-          return                  { status: 'failed',    score: 0,  detail: `${volR.toFixed(1)}x yetersiz` };
-        },
-      },
-      {
-        id: 'rr', weight: CONFIRMATION_WEIGHTS.rr, label: 'R/R Oranı', critical: true,
-        eval: () => {
-          const rr = entry?.rr || 0;
-          if (rr >= 2.5) return { status: 'confirmed', score: 10, detail: `1:${rr} ✓` };
-          if (rr >= 2.0) return { status: 'confirmed', score: 8,  detail: `1:${rr}` };
-          if (rr >= 1.5) return { status: 'pending',   score: 5,  detail: `1:${rr} düşük` };
-          return                { status: 'failed',    score: 0,  detail: `1:${rr} yetersiz` };
-        },
-      },
-      {
-        id: 'no_fake', weight: CONFIRMATION_WEIGHTS.no_fake, label: 'Fake Breakout Yok', critical: true,
-        eval: () => fakeBreak
-          ? { status: 'failed',    score: 0,  detail: 'Fake breakout tespit edildi' }
-          : { status: 'confirmed', score: 10, detail: 'Fake breakout riski yok' },
-      },
-      {
-        id: 'smc', weight: CONFIRMATION_WEIGHTS.smc, label: 'SMC Yapı', critical: false,
-        eval: () => {
-          if (!smcData) return { status: 'pending', score: 4, detail: 'SMC analizi bekleniyor' };
-          const pts = (smcData.sweeps?.length ? 1 : 0) + (smcData.ob ? 1 : 0) + (smcData.choch ? 1 : 0);
-          if (pts >= 2) return { status: 'confirmed', score: 8, detail: `${pts} SMC sinyali` };
-          if (pts >= 1) return { status: 'pending',   score: 5, detail: `${pts} SMC sinyali` };
-          return              { status: 'failed',    score: 0, detail: 'SMC yapı yok' };
-        },
-      },
-      {
-        id: 'regime', weight: CONFIRMATION_WEIGHTS.regime, label: 'Market Rejimi', critical: false,
-        eval: () => {
-          if (regimeMode === 'TREND')                         return { status: 'confirmed', score: 8, detail: 'Trend modu ✓' };
-          if (regimeMode === 'PANIC' && isLong)               return { status: 'failed',    score: 0, detail: 'Panik modu' };
-          if (regimeMode === 'VOLATILE')                      return { status: 'pending',   score: 3, detail: 'Volatil market' };
-          return                                                     { status: 'pending',   score: 5, detail: regimeMode || '—' };
-        },
-      },
-      {
-        id: 'btc', weight: CONFIRMATION_WEIGHTS.btc, label: 'BTC Korelasyon', critical: false,
-        eval: () => {
-          if (!btcData) return { status: 'pending', score: 4, detail: 'BTC verisi bekleniyor' };
-          const chg = btcData.chg || 0;
-          if ((isLong && chg > 0.5) || (!isLong && chg < -0.5))
-            return { status: 'confirmed', score: 8, detail: `BTC ${chg > 0 ? '+' : ''}${chg.toFixed(2)}%` };
-          if (Math.abs(chg) < 0.5)
-            return { status: 'pending',   score: 4, detail: `BTC nötr` };
-          return { status: 'failed', score: 0, detail: `BTC ters yön` };
-        },
-      },
-      {
-        id: 'ob_imbalance', weight: CONFIRMATION_WEIGHTS.ob_imbalance, label: 'Order Book', critical: false,
-        eval: () => {
-          if (!wsData?.obImbalance) return { status: 'pending', score: 4, detail: 'WS bekleniyor' };
-          const obi = wsData.obImbalance;
-          if ((isLong && obi > 0.6) || (!isLong && obi < 0.4))
-            return { status: 'confirmed', score: 8, detail: `${isLong ? 'Alım' : 'Satış'} baskısı %${(obi * 100).toFixed(0)}` };
-          return { status: 'pending', score: 4, detail: `OB dengeli` };
-        },
-      },
-      {
-        id: 'funding', weight: CONFIRMATION_WEIGHTS.funding, label: 'Funding Sağlıklı', critical: false,
-        eval: () => {
-          if (!oiData?.fund && oiData?.fund !== 0) return { status: 'pending', score: 4, detail: 'Funding bekleniyor' };
-          const f = oiData.fund;
-          if ((isLong && f > 0.08) || (!isLong && f < -0.08))
-            return { status: 'failed',    score: 0, detail: `Funding aşırı: %${f.toFixed(3)}` };
-          if (Math.abs(f) < 0.05)
-            return { status: 'confirmed', score: 8, detail: `Funding: %${f.toFixed(3)} ✓` };
-          return { status: 'pending', score: 5, detail: `Funding: %${f.toFixed(3)}` };
-        },
-      },
-    ];
-
-    return checks.map(c => {
-      const result = c.eval();
-      return { ...c, ...result, eval: undefined };
-    });
-  }
-
-  _grade(pct, confirmed, hasCritFailed) {
-    if (hasCritFailed) return SETUP_GRADES.D;
-    if (pct >= 85 && confirmed >= 8) return SETUP_GRADES.S;
-    if (pct >= 72 && confirmed >= 7) return SETUP_GRADES.A;
-    if (pct >= 58 && confirmed >= 5) return SETUP_GRADES.B;
-    if (pct >= 42 && confirmed >= 4) return SETUP_GRADES.C;
-    return SETUP_GRADES.D;
-  }
-
-  _buildSummary(dir, grade, confirmed, total, pct, results, sym) {
-    const sn = (sym || '—').replace('USDT', '');
-    const missing = results.filter(r => r.status !== 'confirmed').map(r => r.label).slice(0, 3);
-
-    if (grade === SETUP_GRADES.S)
-      return `${sn} — ${confirmed}/${total} onay (%${pct}). Kurumsal kalite ${dir} setup.`;
-    if (grade === SETUP_GRADES.A)
-      return `${sn} — ${confirmed}/${total} onay (%${pct}). Güçlü ${dir} setup. ${missing.join(', ')} bekleniyor.`;
-    if (grade === SETUP_GRADES.B)
-      return `${sn} — ${confirmed}/${total} onay (%${pct}). Erken momentum. ${missing.join(', ')} eksik.`;
-    if (grade === SETUP_GRADES.C)
-      return `${sn} — ${confirmed}/${total} onay (%${pct}). Agresif giriş — stop sıkı tutulmalı.`;
-    return `${sn} — ${confirmed}/${total} onay (%${pct}). Zayıf setup — konfirmasyon bekle.`;
-  }
-
-  // ── Adaptif skor modifiyeri (geçmiş performans) ──
-  getScoreModifier(sym, setupGrade) {
-    const trades = [];
-    try { JSON.parse(localStorage.getItem('vd_trade_memory') || '[]').slice(-100).forEach(t => trades.push(t)); } catch {}
-    if (trades.length < 3) return 0;
-
-    const sn  = sym?.replace('USDT', '') || '';
-    let mod   = 0;
-
-    const ct  = trades.filter(t => t.sym === sn);
-    if (ct.length >= 3) {
-      const wr = ct.filter(t => t.win).length / ct.length;
-      if (wr >= 0.7) mod += 5; else if (wr <= 0.35) mod -= 8;
+    if (recentTotal > avgHourly * 2.5 && recentTotal > 500000) {
+      _stats.lastSpike = { ts: Date.now(), value: recentTotal, side: liq.side };
     }
-
-    const session = getCurrentSession();
-    const st = trades.filter(t => t.session === session);
-    if (st.length >= 3) {
-      const wr = st.filter(t => t.win).length / st.length;
-      if (wr >= 0.65) mod += 3; else if (wr <= 0.35) mod -= 5;
-    }
-
-    return clamp(mod, -20, 15);
   }
-}
 
-export const AIEng = new AIEngine();
+  // Ana analiz
+  function analyze(wsData) {
+    const now = Date.now();
+    const win5m  = _history.filter(h => now - h.ts < 300000);
+    const win1h  = _history.filter(h => now - h.ts < 3600000);
+
+    const longLiq5m  = win5m.filter(h => h.side==='SELL').reduce((s,h)=>s+(h.value||0),0);
+    const shortLiq5m = win5m.filter(h => h.side==='BUY').reduce((s,h)=>s+(h.value||0),0);
+    const total5m    = longLiq5m + shortLiq5m;
+
+    const longLiq1h  = win1h.filter(h => h.side==='SELL').reduce((s,h)=>s+(h.value||0),0);
+    const shortLiq1h = win1h.filter(h => h.side==='BUY').reduce((s,h)=>s+(h.value||0),0);
+    const total1h    = longLiq1h + shortLiq1h;
+
+    // Spike tespiti
+    const liqSpike = _stats.lastSpike && (now - _stats.lastSpike.ts < 120000);
+
+    // Cascade: 3 dakika içinde birden fazla büyük likidasyon
+    const bigLiqs = win5m.filter(h => (h.value||0) > 100000);
+    const cascade = bigLiqs.length >= 3;
+
+    // Pressure skoru (0-100)
+    let liquidationPressure = 0;
+    if (total5m > 5_000_000)  liquidationPressure = 90;
+    else if (total5m > 1_000_000) liquidationPressure = 70;
+    else if (total5m > 500_000)   liquidationPressure = 50;
+    else if (total5m > 100_000)   liquidationPressure = 30;
+    else if (total5m > 0)         liquidationPressure = 15;
+
+    // Bias
+    const liquidationBias = total5m === 0 ? 'NEUTRAL' :
+      longLiq5m > shortLiq5m * 1.5 ? 'LONG_LIQ' :
+      shortLiq5m > longLiq5m * 1.5 ? 'SHORT_LIQ' : 'BALANCED';
+
+    // squeezeRisk — büyük short likidasyon → short squeeze
+    const squeezeRisk = shortLiq5m > longLiq5m * 2 && total5m > 500000 ? 'SHORT_SQUEEZE' :
+                        longLiq5m > shortLiq5m * 2 && total5m > 500000 ? 'LONG_SQUEEZE' : null;
+
+    // WS'den son likidasyon
+    const wsLiq = wsData?.lastLiquidation;
+    const recentLiq = wsLiq && (now - wsLiq.ts < 60000) ? wsLiq : null;
+
+    return {
+      liquidationPressure,
+      liquidationBias,
+      squeezeRisk,
+      liqSpike,
+      cascade,
+      longLiq5m, shortLiq5m, total5m,
+      longLiq1h, shortLiq1h, total1h,
+      recentLiq,
+      history: _history.slice(-20),
+    };
+  }
+
+  function renderUI(result, panelId='liqPanel') {
+    const el = document.getElementById(panelId);
+    if (!el) return;
+
+    const { liquidationPressure:lp, liquidationBias:lb, squeezeRisk:sr,
+            liqSpike, cascade, longLiq5m, shortLiq5m, total5m, recentLiq } = result;
+
+    const lpCol = lp>=70?'var(--red)':lp>=50?'var(--orange)':lp>=30?'var(--yellow)':'var(--green)';
+    const fmt   = v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'$0';
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">BASINÇ</div>
+          <div style="font-size:20px;font-weight:800;color:${lpCol}">${lp}%</div>
+        </div>
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">5dk TOPLAM</div>
+          <div style="font-size:14px;font-weight:800;color:var(--cyan)">$${fmt(total5m)}</div>
+        </div>
+      </div>
+      ${liqSpike?`<div style="padding:6px 10px;background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:var(--red)">⚡ LİKİDASYON SPIKE TESPİT EDİLDİ</div>`:''}
+      ${cascade?`<div style="padding:6px 10px;background:rgba(255,122,0,.1);border:1px solid rgba(255,122,0,.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:var(--orange)">🌊 CASCADE RİSKİ — Zincirleme likidasyon</div>`:''}
+      ${sr?`<div style="padding:6px 10px;background:rgba(${sr==='SHORT_SQUEEZE'?'0,229,160':'255,61,107'},.1);border:1px solid rgba(${sr==='SHORT_SQUEEZE'?'0,229,160':'255,61,107'},.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:${sr==='SHORT_SQUEEZE'?'var(--green)':'var(--red)'}">⚡ ${sr.replace('_',' ')} BAŞLAYAB\u0130L\u0130R</div>`:''}
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;background:rgba(255,61,107,.07);border-radius:7px;padding:6px 8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">LONG LİK.</div>
+          <div style="font-size:11px;font-weight:700;color:var(--red)">$${fmt(longLiq5m)}</div>
+        </div>
+        <div style="flex:1;background:rgba(0,229,160,.07);border-radius:7px;padding:6px 8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">SHORT LİK.</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green)">$${fmt(shortLiq5m)}</div>
+        </div>
+      </div>
+      ${recentLiq?`<div style="margin-top:8px;font-size:10px;color:var(--text3);padding:5px 8px;background:rgba(0,0,0,.2);border-radius:6px">
+        Son: ${recentLiq.side==='BUY'?'🔵 Short':'🔴 Long'} likidasyon — $${fmt(recentLiq.value||0)} @ $${(+recentLiq.price||0).toFixed(2)}
+      </div>`:''}
+    `;
+  }
+
+  return { onLiquidation, analyze, renderUI };
+})();
