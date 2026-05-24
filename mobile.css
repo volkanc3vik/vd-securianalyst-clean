@@ -1,107 +1,151 @@
-/* ── TV WRAP ── */
-.tv-wrap{
-  background:rgba(3,8,15,.95);border:1px solid var(--border);
-  border-radius:16px;overflow:hidden;margin-bottom:16px;
+   SMART MONEY + LIQUIDITY ENGINE — CSS
+   ════════════════════════════════════════════════════ */
+
+/* SMC Ana Panel */
+.smc-panel{
+  background:linear-gradient(135deg,rgba(0,229,160,.04),rgba(157,125,250,.04));
+  border:1px solid rgba(0,229,160,.18);border-radius:14px;
+  padding:16px 18px;margin-bottom:14px;
 }
-.tv-top{
-  display:flex;align-items:center;gap:14px;padding:14px 18px;
-  border-bottom:1px solid var(--border);
-  background:var(--glass);backdrop-filter:blur(20px);flex-wrap:wrap;
+.smc-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.smc-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase;}
+.smc-pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:smcPulse 2s infinite;flex-shrink:0;}
+@keyframes smcPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{box-shadow:0 0 0 6px rgba(0,229,160,0)}}
+
+/* SMC Grid */
+.smc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:500px){.smc-grid{grid-template-columns:1fr;}}
+.smc-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;}
+.smc-card-title{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:6px;text-transform:uppercase;}
+.smc-card-val{font-size:13px;font-weight:800;margin-bottom:3px;}
+.smc-card-sub{font-size:10px;color:var(--text3);line-height:1.4;}
+.smc-tag{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:4px;margin-right:3px;}
+.smc-bull{background:rgba(0,229,160,.12);border:1px solid rgba(0,229,160,.25);color:var(--green);}
+.smc-bear{background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.25);color:var(--red);}
+.smc-warn{background:rgba(255,122,0,.1);border:1px solid rgba(255,122,0,.25);color:var(--orange);}
+.smc-info{background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.25);color:var(--purple);}
+.smc-neu {background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text2);}
+
+/* LWC üzerinde SMC katmanları */
+.smc-liq-zone{
+  position:absolute;pointer-events:none;
+  border-left:3px solid;padding-left:6px;
+  font-size:9px;font-weight:700;white-space:nowrap;
+  display:flex;align-items:center;
 }
-.tv-sym-lbl{font-size:20px;font-weight:800;letter-spacing:-.5px;}
-.tv-price-lbl{font-size:24px;font-weight:800;letter-spacing:-.5px;}
-.tv-chg-lbl{font-size:13px;font-weight:600;}
-#tvContainer{width:100%;height:540px;}
-/* ── ANALYSIS PANEL ── */
-.analysis-panel{
-  background:var(--glass);border:1px solid var(--border);
-  border-radius:16px;padding:20px;margin-bottom:16px;
+
+/* Session badge */
+.session-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;
+}
+.sess-asia  {background:rgba(157,125,250,.12);border:1px solid rgba(157,125,250,.3);color:var(--purple);}
+.sess-london{background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.3);color:var(--yellow);}
+.sess-ny    {background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--green);}
+.sess-off   {background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text3);}
+
+/* Quality Score */
+.quality-bar{height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-top:6px;}
+.quality-fill{height:100%;border-radius:4px;transition:width .5s;}
+.qf-high  {background:linear-gradient(90deg,var(--green),#00c070);}
+.qf-medium{background:linear-gradient(90deg,var(--yellow),#e6a800);}
+.qf-low   {background:linear-gradient(90deg,var(--red),#cc2244);}
+
+/* SMC yorum kutusu */
+.smc-comment{
+  background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.12);
+  border-radius:10px;padding:11px 14px;
+  font-size:12px;color:var(--text2);line-height:1.65;
+  margin-bottom:10px;
+}
+.smc-comment b{color:var(--green);}
+.smc-comment .warn{color:var(--orange);}
+.smc-comment .bull{color:var(--green);}
+.smc-comment .bear{color:var(--red);}
+.smc-comment .info{color:var(--cyan);}
+
+/* FVG göstergesi */
+.fvg-list{display:flex;flex-direction:column;gap:5px;}
+.fvg-item{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(0,0,0,.2);border-radius:7px;padding:7px 11px;
+  font-size:10px;border:1px solid rgba(255,255,255,.05);
+}
+.fvg-bull{border-left:3px solid var(--green);}
+.fvg-bear{border-left:3px solid var(--red);}
+.fvg-sym{font-weight:700;color:var(--text);width:70px;flex-shrink:0;}
+.fvg-range{color:var(--text3);flex:1;}
+.fvg-status{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
+
+/* Liquidity heatmap */
+.liq-heatmap{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.liq-row{display:flex;align-items:center;gap:8px;font-size:10px;}
+.liq-label{width:90px;color:var(--text3);flex-shrink:0;font-weight:500;}
+.liq-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;}
+.liq-bar-fill{height:100%;border-radius:3px;transition:width .5s;}
+.liq-val{width:50px;text-align:right;font-weight:700;}
+
+/* ════════════════════════════════════════════════════
+   AŞAMA 2 — SMC PRO + RISK ENGINE CSS
+   ════════════════════════════════════════ */
+
+/* SMC Pro Panel */
+.smc-pro-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:500px){.smc-pro-grid{grid-template-columns:1fr;}}
+.smc-pro-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;}
+.smc-pro-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:5px;text-transform:uppercase;}
+.smc-pro-val{font-size:13px;font-weight:800;margin-bottom:3px;}
+.smc-pro-sub{font-size:10px;color:var(--text3);line-height:1.4;}
+
+/* Fake Breakout Detector */
+.fb-meter{height:8px;border-radius:4px;overflow:hidden;margin:6px 0;background:rgba(255,255,255,.06);}
+.fb-fill{height:100%;border-radius:4px;transition:width .5s;}
+.fb-low {background:linear-gradient(90deg,var(--green),#00c070);}
+.fb-med {background:linear-gradient(90deg,var(--yellow),#e6a800);}
+.fb-high{background:linear-gradient(90deg,var(--orange),var(--red));}
+
+/* Risk Engine */
+.risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+/* SMC Structure Badge */
+.smc-struct-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.smc-struct-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;}
+
+/* Whale detector */
+.whale-alert{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(157,125,250,.08);border:1px solid rgba(157,125,250,.25);
+  border-radius:10px;padding:10px 13px;margin-bottom:8px;
+  animation:whaleGlow 2s infinite;
+}
+@keyframes whaleGlow{0%,100%{box-shadow:0 0 0 0 rgba(157,125,250,.2)}50%{box-shadow:0 0 12px rgba(157,125,250,.4)}}
+.whale-alert-icon{font-size:20px;flex-shrink:0;}
+.whale-alert-txt{font-size:11px;color:var(--text2);line-height:1.5;}
+.whale-alert-txt b{color:var(--purple);}
+
+/* ════════════════════════════════════════════════════
+.glass-card,.opp,.mkt-card,.signal-card,.ece-panel,.smc-panel,.ai-panel{
+  will-change:transform;
+  transform:translateZ(0);
+}
+.ticker-track,.blob{will-change:transform;}
+
+/* ── Safe Area (iPhone notch) ── */
+@supports(padding:max(0px)){
+  body{
+    padding-left:max(0px,env(safe-area-inset-left));
+    padding-right:max(0px,env(safe-area-inset-right));
+    padding-bottom:max(70px,calc(env(safe-area-inset-bottom) + 70px));
+  }
+}
+
+/* ── Alt Navigasyon (Mobil) ── */
+#bottomNav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:9990;
+  background:rgba(2,7,14,.97);
+  border-top:1px solid rgba(255,255,255,.07);
   backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  padding:8px 0;
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
 }
-.ap-header{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.sig-badge{padding:9px 22px;border-radius:12px;font-size:15px;font-weight:800;letter-spacing:2px;}
-.sig-badge.long{background:linear-gradient(135deg,rgba(0,229,160,.15),rgba(0,229,160,.05));border:1px solid rgba(0,229,160,.4);color:var(--green);box-shadow:0 0 20px rgba(0,229,160,.1);}
-.sig-badge.short{background:linear-gradient(135deg,rgba(255,61,107,.15),rgba(255,61,107,.05));border:1px solid rgba(255,61,107,.4);color:var(--red);box-shadow:0 0 20px rgba(255,61,107,.1);}
-.sig-badge.wait{background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.35);color:var(--yellow);}
-.conf-wrap{text-align:center;}
-.conf-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:2px;}
-.conf-val{font-size:28px;font-weight:900;background:linear-gradient(135deg,var(--yellow),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.conf-sub{font-size:9px;color:var(--text3);}
-
-/* Entry grid */
-.entry-title{font-size:10px;font-weight:600;letter-spacing:3px;color:var(--text3);text-transform:uppercase;margin-bottom:12px;}
-.entry-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
-.ind-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
-.ind-card{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;transition:all .15s;}
-.ind-card:hover{border-color:var(--border2);}
-.ind-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:5px;text-transform:uppercase;}
-.ind-val{font-size:16px;font-weight:700;}
-.ind-note{font-size:10px;color:var(--text3);margin-top:4px;font-weight:400;}
-.rsi-wrap{height:5px;border-radius:3px;background:rgba(255,255,255,.06);margin-top:6px;overflow:hidden;}
-.rsi-fill{height:100%;border-radius:3px;}
-
-/* ── LS BAR ── */
-.ls-row{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
-.ls-bar{display:flex;height:28px;border-radius:8px;overflow:hidden;margin-bottom:5px;}
-.ls-l{background:rgba(0,229,160,.12);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--green);font-weight:700;transition:width .4s;}
-.ls-s{background:rgba(255,61,107,.12);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--red);font-weight:700;transition:width .4s;}
-
-/* ── COPY ── */
-.copy-desc{font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6;font-weight:400;}
-.copy-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-#copyOk{font-size:11px;color:var(--green);display:none;font-weight:600;}
-.paste-area{width:100%;height:160px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--text2);font-size:12px;font-family:'Inter',sans-serif;resize:vertical;outline:none;margin-top:12px;font-weight:400;}
-.paste-area:focus{border-color:rgba(0,229,160,.3);}
-
-/* ── POPUP ── */
-.popup{
-  position:fixed;bottom:20px;right:20px;
-  background:rgba(3,8,15,.95);border-radius:16px;
-  padding:16px 20px;z-index:9999;
-  box-shadow:0 8px 40px rgba(0,0,0,.7),0 0 0 1px var(--border);
-  animation:pop .3s cubic-bezier(.4,0,.2,1);max-width:280px;
-  backdrop-filter:blur(20px);
-}
-.popup.sell{box-shadow:0 8px 40px rgba(255,61,107,.2),0 0 0 1px rgba(255,61,107,.3);}
-.popup.buy{box-shadow:0 8px 40px rgba(0,229,160,.2),0 0 0 1px rgba(0,229,160,.3);}
-@keyframes pop{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}
-
-/* ── JOKER SECTION ── */
-.joker-section{
-  background:linear-gradient(135deg,rgba(0,212,255,.04),rgba(157,125,250,.04));
-  border:1px solid rgba(0,212,255,.15);
-  border-radius:16px;padding:18px;margin-bottom:20px;
-  backdrop-filter:blur(20px);
-}
-.joker-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
-.joker-header h2{font-size:13px;font-weight:700;letter-spacing:3px;background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase;}
-.joker-warning{font-size:11px;color:var(--orange);background:rgba(255,122,0,.07);border:1px solid rgba(255,122,0,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;line-height:1.6;font-weight:400;}
-
-/* ── UP DN COLORS ── */
-.up{color:var(--green)!important;}
-.dn{color:var(--red)!important;}
-.yl{color:var(--yellow)!important;}
-
-/* ── FOOTER ── */
-.footer{text-align:center;font-size:10px;color:var(--text3);padding:16px 20px 4px;border-top:1px solid var(--border);margin-top:8px;font-weight:400;}
-
-.ts{font-size:10px;color:var(--text3);text-align:right;margin-top:8px;font-weight:400;}
-#mainPanel{display:none;}
-
-/* SCROLLBAR */
-::-webkit-scrollbar{width:6px;height:6px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
-::-webkit-scrollbar-thumb:hover{background:var(--text3);}
-
-/* ════════════════════════════════════════════
-   AI LEARNING ENGINE + OTOMATİK TAKİP — CSS
-   ════════════════════════════════════════════ */
-.ai-panel{background:linear-gradient(135deg,rgba(157,125,250,.06),rgba(0,212,255,.04));border:1px solid rgba(157,125,250,.2);border-radius:16px;padding:20px;margin-bottom:16px;backdrop-filter:blur(20px);}
-.ai-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06);}
-.ai-hdr h3{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;background:linear-gradient(90deg,var(--purple),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.ai-brain{width:9px;height:9px;border-radius:50%;background:var(--purple);flex-shrink:0;animation:aiBrain 2s infinite;}
-@keyframes aiBrain{0%,100%{box-shadow:0 0 0 0 rgba(157,125,250,.5)}50%{box-shadow:0 0 0 6px rgba(157,125,250,0)}}
-.ai-live-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--green);animation:liveBadge 2s infinite;}
-@keyframes liveBadge{0%,100%{opacity:1}50%{opacity:.6}}
-.ai-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}

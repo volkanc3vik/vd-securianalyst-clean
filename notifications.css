@@ -1,207 +1,177 @@
-// ════════════════════════════════════════════════════════════════════
-// COINGLASS SERVICE — V4 API, Hobbyist Plan uyumlu
-// Çalışan: exchange-list endpoints (anlık veri)
-// Çalışmayan: history endpoints → sessiz Binance fallback
-// ════════════════════════════════════════════════════════════════════
-const CoinGlassService = (() => {
+// ═══════════════════════════════════════════════
+// SUPABASE SERVICE — Auth + Database
+// signals ve ai_weights tablolarını yönetir
+// ═══════════════════════════════════════════════
 
-  const CONFIG = {
-    enabled: false,
-    timeout: 8000,
+const SupabaseDB = (() => {
+
+  const URL = 'https://affgbrpwuikpqgsapuvh.supabase.co';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZmdicnB3dWlrcHFnc2FwdXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzA4MDAsImV4cCI6MjA5NDcwNjgwMH0.8o0msNt9OQXJMbfLm8L0ipzPghCrAcvx1wKXBGT36Ds';
+
+  const HEADERS = {
+    'Content-Type' : 'application/json',
+    'apikey'       : KEY,
+    'Authorization': 'Bearer ' + KEY,
+    'Prefer'       : 'return=representation',
   };
 
-  const _cache = new Map();
-  const TTL = { fund: 120000, oi: 60000, ls: 120000, liq: 60000 };
-
-  // Hobbyist'te çalışmayan endpoint'ler — sessizce atla
-  const UNAVAILABLE = new Set([
-    '/api/futures/fundingRate/ohlc-history',
-    '/api/futures/fundingRate/oi-weight-ohlc-history',
-    '/api/futures/fundingRate/chart',
-    '/api/futures/openInterest/ohlc-history',
-    '/api/futures/openInterest/ohlc-aggregated-history',
-    '/api/futures/openInterest/chart',
-    '/api/futures/globalLongShortAccountRatio/history',
-    '/api/futures/globalLongShortAccountRatio/chart',
-    '/api/futures/liquidation/history',
-    '/api/futures/liquidation/symbol/chart',
-    '/api/futures/liquidation/level',
-    '/api/futures/liquidation/heatmap',
-    '/api/futures/coins-markets',
-  ]);
-
-  function _getCached(k) {
-    const c = _cache.get(k);
-    if (!c || Date.now() - c.ts > c.ttl) { _cache.delete(k); return null; }
-    return c.data;
-  }
-  function _setCache(k, data, ttl) { _cache.set(k, { data, ts: Date.now(), ttl }); }
-
-  async function _fetch(endpoint, params = {}) {
-    if (UNAVAILABLE.has(endpoint)) throw new Error('UNAVAILABLE');
-    const proxyUrl = '/api/coinglass';
-    const paramStr = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-    const url = `${proxyUrl}?endpoint=${encodeURIComponent(endpoint)}${paramStr ? '&params=' + encodeURIComponent(paramStr) : ''}`;
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), CONFIG.timeout);
+  // ── Temel CRUD ────────────────────────────────
+  async function _insert(table, data) {
     try {
-      const r = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(tid);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const json = await r.json();
-      if (json.code !== '0' && json.code !== 0) {
-        const msg = json.msg || '';
-        if (msg.toLowerCase().includes('upgrade') || msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('endpoint')) {
-          UNAVAILABLE.add(endpoint); // Dinamik olarak işaretle
-        }
-        throw new Error(msg || 'API error');
-      }
-      return json.data;
-    } catch (e) { clearTimeout(tid); throw e; }
+      const r = await fetch(`${URL}/rest/v1/${table}`, {
+        method:  'POST',
+        headers: HEADERS,
+        body:    JSON.stringify(data),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch(e) { console.warn(`DB insert ${table}:`, e.message); return null; }
   }
 
-  const FB = 'https://fapi.binance.com';
-  async function _binance(url) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+  async function _update(table, data, filter) {
+    try {
+      const r = await fetch(`${URL}/rest/v1/${table}?${filter}`, {
+        method:  'PATCH',
+        headers: HEADERS,
+        body:    JSON.stringify(data),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch(e) { console.warn(`DB update ${table}:`, e.message); return null; }
+  }
+
+  async function _select(table, filter = '', limit = 100) {
+    try {
+      const r = await fetch(`${URL}/rest/v1/${table}?${filter}&limit=${limit}`, {
+        headers: { ...HEADERS, 'Prefer': 'return=representation' },
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch(e) { console.warn(`DB select ${table}:`, e.message); return []; }
+  }
+
+  // ── SIGNALS TABLOSU ──────────────────────────
+
+  // Yeni sinyal kaydet
+  async function saveSignal(sig) {
+    return _insert('signals', {
+      sym:           sig.sym,
+      direction:     sig.direction,
+      entry:         sig.entry || null,
+      confidence:    sig.confidence || null,
+      funding:       sig.funding || null,
+      oi:            sig.oi || null,
+      ls_ratio:      sig.lsRatio || null,
+      squeeze_risk:  sig.squeezeRisk || 0,
+      crowd_risk:    sig.crowdRisk || 0,
+      liq_pressure:  sig.liqPressure || 0,
+      regime:        sig.regime || 'UNKNOWN',
+      smc_structure: sig.smcStructure || null,
+      tp:            sig.tp || null,
+      sl:            sig.sl || null,
+      status:        'OPEN',
+      open_ts:       Date.now(),
+    });
+  }
+
+  // Sinyal sonucunu güncelle
+  async function closeSignal(id, { status, pnl, durationMin }) {
+    return _update('signals', {
+      status,
+      pnl:          pnl || null,
+      duration_min: durationMin || null,
+      close_ts:     Date.now(),
+    }, `id=eq.${id}`);
+  }
+
+  // Son sinyalleri getir
+  async function getSignals(limit = 50) {
+    return _select('signals', 'order=created_at.desc', limit);
+  }
+
+  // Açık sinyalleri getir
+  async function getOpenSignals() {
+    return _select('signals', 'status=eq.OPEN&order=created_at.desc', 100);
+  }
+
+  // İstatistik hesapla
+  async function getStats() {
+    const signals = await _select('signals', 'status=neq.OPEN&order=created_at.desc', 500);
+    if (!signals.length) return null;
+
+    const wins   = signals.filter(s => s.status === 'TP_HIT').length;
+    const total  = signals.length;
+    const wr     = (wins / total * 100).toFixed(1);
+    const pnls   = signals.filter(s => s.pnl !== null).map(s => +s.pnl);
+    const avgPnl = pnls.length ? (pnls.reduce((a,b)=>a+b,0)/pnls.length).toFixed(2) : null;
+
+    // Regime bazlı
+    const byRegime = {};
+    signals.forEach(s => {
+      if (!byRegime[s.regime]) byRegime[s.regime] = { wins:0, total:0 };
+      byRegime[s.regime].total++;
+      if (s.status === 'TP_HIT') byRegime[s.regime].wins++;
+    });
+
+    return { total, wins, wr, avgPnl, byRegime };
+  }
+
+  // ── AI_WEIGHTS TABLOSU ───────────────────────
+
+  // Ağırlıkları Supabase'den yükle
+  async function loadWeights() {
+    const rows = await _select('ai_weights', '', 50);
+    if (!rows.length) return null;
+    const w = {};
+    rows.forEach(r => { w[r.indicator] = +r.weight; });
+    return w;
+  }
+
+  // Ağırlığı güncelle
+  async function updateWeight(indicator, weight, win) {
+    // Önce var mı kontrol et
+    const existing = await _select('ai_weights', `indicator=eq.${indicator}`, 1);
+
+    if (existing.length) {
+      return _update('ai_weights', {
+        weight,
+        win_count:  win ? existing[0].win_count + 1 : existing[0].win_count,
+        loss_count: win ? existing[0].loss_count : existing[0].loss_count + 1,
+        updated_at: new Date().toISOString(),
+      }, `indicator=eq.${indicator}`);
+    } else {
+      return _insert('ai_weights', {
+        indicator,
+        weight,
+        win_count:  win ? 1 : 0,
+        loss_count: win ? 0 : 1,
+      });
+    }
+  }
+
+  // Tüm ağırlıkları toplu güncelle
+  async function saveWeights(weightsObj) {
+    const promises = Object.entries(weightsObj).map(([k, v]) =>
+      updateWeight(k, v, null)
+    );
+    return Promise.allSettled(promises);
+  }
+
+  // ── AUTH (mevcut) ────────────────────────────
+  async function verifyCode(kod) {
+    const r = await fetch(`${URL}/functions/v1/verify-code`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ kod }),
+    });
+    if (!r.ok) throw new Error('Sunucu hatası');
     return r.json();
   }
 
-  // ── Funding Rate ─────────────────────────────────────────────────
-  // exchange-list: Hobbyist'te çalışan anlık veri
-  async function getFundingExtreme(sym) {
-    const k = 'fund_' + sym;
-    const c = _getCached(k); if (c) return c;
-    let result = { fund: null, history: [], extreme: false, bias: 'NEUTRAL', source: 'binance' };
-    try {
-      if (CONFIG.enabled) {
-        const data = await _fetch('/api/futures/fundingRate/exchange-list', {
-          symbol: sym.replace('USDT', ''),
-        });
-        if (Array.isArray(data) && data.length > 0) {
-          const binRow = data.find(d => (d.exchangeName || d.exchange || '').toLowerCase() === 'binance') || data[0];
-          const rate = +(+(binRow?.fundingRate ?? binRow?.rate ?? 0) * 100).toFixed(4);
-          result = {
-            fund: rate,
-            history: [rate],
-            extreme: Math.abs(rate) > 0.1,
-            bias: rate > 0.05 ? 'LONG_CROWDED' : rate < -0.05 ? 'SHORT_CROWDED' : 'NEUTRAL',
-            source: 'coinglass',
-          };
-        }
-      } else throw new Error('disabled');
-    } catch (e) {
-      try {
-        const data = await _binance(`${FB}/fapi/v1/fundingRate?symbol=${sym}&limit=8`);
-        const arr = Array.isArray(data) ? data : [];
-        const latest = arr[arr.length - 1]?.fundingRate ?? 0;
-        result = {
-          fund: +(+latest * 100).toFixed(4),
-          history: arr.map(d => +(+d.fundingRate * 100).toFixed(4)),
-          extreme: Math.abs(+latest * 100) > 0.1,
-          bias: +latest > 0.05 ? 'LONG_CROWDED' : +latest < -0.05 ? 'SHORT_CROWDED' : 'NEUTRAL',
-          source: 'binance',
-        };
-      } catch {}
-    }
-    _setCache(k, result, TTL.fund);
-    return result;
-  }
-
-  // ── Open Interest ─────────────────────────────────────────────────
-  // exchange-list: Hobbyist'te çalışan anlık veri
-  async function getLiquidationClusters(sym) {
-    // Hobbyist'te liquidation endpoint'leri çalışmıyor — sessiz fallback
-    const k = 'liq_' + sym;
-    const c = _getCached(k); if (c) return c;
-    const result = { clusters: [], source: 'unavailable' };
-    _setCache(k, result, TTL.liq);
-    return result;
-  }
-
-  // ── Open Interest ─────────────────────────────────────────────────
-  async function getOI(sym) {
-    const k = 'oi_' + sym;
-    const c = _getCached(k); if (c) return c;
-    let result = { oi: null, oiChange: null, oiExpanding: false, source: 'binance' };
-    try {
-      if (CONFIG.enabled) {
-        const data = await _fetch('/api/futures/openInterest/exchange-list', {
-          symbol: sym.replace('USDT', ''),
-        });
-        if (Array.isArray(data)) {
-          const total = data.reduce((s, d) => s + (+d.openInterestAmount || +d.openInterest || 0), 0);
-          result = { oi: total || null, oiChange: null, oiExpanding: false, source: 'coinglass' };
-        }
-      } else throw new Error('disabled');
-    } catch (e) {
-      try {
-        const data = await _binance(`${FB}/fapi/v1/openInterest?symbol=${sym}`);
-        result = { oi: data?.openInterest ? +data.openInterest : null, oiChange: null, oiExpanding: false, source: 'binance' };
-      } catch {}
-    }
-    _setCache(k, result, TTL.oi);
-    return result;
-  }
-
-  // ── Long/Short Ratio — Binance direkt ────────────────────────────
-  async function getLSRatio(sym) {
-    const k = 'ls_' + sym;
-    const c = _getCached(k); if (c) return c;
-    let result = { lsRatio: null, longPct: null, shortPct: null, crowding: 'NEUTRAL', source: 'binance' };
-    try {
-      const data = await _binance(`${FB}/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`);
-      const latest = Array.isArray(data) ? data[0] : null;
-      if (latest) {
-        const ratio = +latest.longShortRatio;
-        result = {
-          lsRatio: ratio,
-          longPct: +(+latest.longAccount * 100).toFixed(1),
-          shortPct: +(+latest.shortAccount * 100).toFixed(1),
-          crowding: ratio > 1.5 ? 'LONG_CROWDED' : ratio < 0.67 ? 'SHORT_CROWDED' : 'NEUTRAL',
-          source: 'binance',
-        };
-      }
-    } catch {}
-    _setCache(k, result, TTL.ls);
-    return result;
-  }
-
-  // ── Heatmap — Professional plan, sessiz fallback ─────────────────
-  async function getHeatmap(sym) {
-    return { levels: [], source: 'unavailable' };
-  }
-
-  // ── Market Intelligence — tek çağrı ──────────────────────────────
-  async function getMarketIntelligence(sym) {
-    const [fund, oi, ls, liq] = await Promise.allSettled([
-      getFundingExtreme(sym),
-      getOI(sym),
-      getLSRatio(sym),
-      getLiquidationClusters(sym),
-    ]);
-    return {
-      fund: fund.status === 'fulfilled' ? fund.value : { fund: null },
-      oi: oi.status === 'fulfilled' ? oi.value : { oi: null },
-      ls: ls.status === 'fulfilled' ? ls.value : { lsRatio: null },
-      liq: liq.status === 'fulfilled' ? liq.value : { clusters: [] },
-      source: CONFIG.enabled ? 'coinglass+binance' : 'binance',
-      ts: Date.now(),
-    };
-  }
-
-  function setup(apiKey) {
-    CONFIG.enabled = true;
-    console.log('✅ CoinGlass V4 aktif (Hobbyist: exchange-list endpoints)');
-  }
-
-  function isEnabled() { return CONFIG.enabled; }
-  function clearCache() { _cache.clear(); }
-
   return {
-    setup, isEnabled, clearCache,
-    getLiquidationClusters, getFundingExtreme,
-    getOI, getLSRatio, getHeatmap, getMarketIntelligence,
+    saveSignal, closeSignal, getSignals, getOpenSignals, getStats,
+    loadWeights, updateWeight, saveWeights,
+    verifyCode,
   };
 
 })();

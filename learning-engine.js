@@ -1,118 +1,159 @@
-// ════════════════════════════════════════════════════════════════════
-// SQUEEZE ENGINE — Funding + OI + LS Ratio kombinasyonu
-// ════════════════════════════════════════════════════════════════════
-const SqueezeEngine = (() => {
+// ═══════════════════════════════════════════════
+// SMART MONEY ENGINE — BOS, CHoCH, OB, FVG, Sweeps
+// UI'dan tamamen bağımsız
+// ═══════════════════════════════════════════════
 
-  function analyze({ fund, oiChange, lsRatio, liqResult, wsData, closes }) {
-    const signals  = [];
-    let   shortSqueeze = 0;
-    let   longSqueeze  = 0;
+class SmartMoneyEngine {
 
-    // ── Funding extreme ──────────────────────────────────────────
-    if (fund !== null) {
-      if (fund < -0.1) { shortSqueeze += 35; signals.push({ type:'SHORT', reason:`Funding aşırı negatif (%${fund.toFixed(3)}) — short'lar sıkışacak`, w:35 }); }
-      else if (fund < -0.05) { shortSqueeze += 20; signals.push({ type:'SHORT', reason:`Funding negatif (%${fund.toFixed(3)})`, w:20 }); }
-      else if (fund > 0.1) { longSqueeze += 35; signals.push({ type:'LONG', reason:`Funding aşırı pozitif (%${fund.toFixed(3)}) — long'lar sıkışacak`, w:35 }); }
-      else if (fund > 0.05) { longSqueeze += 20; signals.push({ type:'LONG', reason:`Funding pozitif (%${fund.toFixed(3)})`, w:20 }); }
+  // ── Liquidity Sweep (Likidite Süpürmesi) ──────
+  detectLiquiditySweep(candles) {
+    const sweeps = [];
+    const n = candles.length;
+    for (let i = 5; i < n; i++) {
+      const c    = candles[i];
+      const prev = candles.slice(i - 5, i);
+      const maxH = Math.max(...prev.map(p => p.h));
+      const minL = Math.min(...prev.map(p => p.l));
+      const body = Math.abs(c.c - c.o);
+      const total = c.h - c.l;
+      const wickR = total > 0 ? body / total : 1;
+
+      if (c.h > maxH && c.c < maxH && wickR < 0.4 && total > 0) {
+        sweeps.push({ type: 'bearish_sweep', price: c.h, idx: i, msg: 'Buy-side likidite toplandı' });
+      }
+      if (c.l < minL && c.c > minL && wickR < 0.4 && total > 0) {
+        sweeps.push({ type: 'bullish_sweep', price: c.l, idx: i, msg: 'Sell-side likidite toplandı' });
+      }
     }
+    return sweeps.slice(-5);
+  }
 
-    // ── OI genişleme ─────────────────────────────────────────────
-    if (oiChange !== null) {
-      const oiNum = parseFloat(oiChange);
-      if (oiNum > 8) {
-        if (lsRatio < 0.7)  { shortSqueeze += 25; signals.push({ type:'SHORT', reason:`OI +%${oiNum.toFixed(1)} + short kalabalık`, w:25 }); }
-        if (lsRatio > 1.5)  { longSqueeze  += 25; signals.push({ type:'LONG',  reason:`OI +%${oiNum.toFixed(1)} + long kalabalık`, w:25 }); }
+  // ── Order Blocks ──────────────────────────────
+  detectOrderBlocks(candles) {
+    const obs = [];
+    const n   = candles.length;
+    for (let i = 2; i < n - 1; i++) {
+      const c    = candles[i];
+      const next = candles[i + 1];
+      const body = Math.abs(c.c - c.o);
+      const avgB = candles.slice(i - 5, i).map(x => Math.abs(x.c - x.o)).reduce((a, b) => a + b, 0) / 5;
+
+      if (c.c < c.o && next.c > next.o && body > avgB * 1.5 && next.c > c.h) {
+        obs.push({ type: 'bullish', high: c.o, low: c.l, idx: i, desc: 'Kurumsal alım bölgesi' });
+      }
+      if (c.c > c.o && next.c < next.o && body > avgB * 1.5 && next.c < c.l) {
+        obs.push({ type: 'bearish', high: c.h, low: c.o, idx: i, desc: 'Kurumsal satış bölgesi' });
+      }
+    }
+    return obs.slice(-4);
+  }
+
+  // ── Fair Value Gaps ───────────────────────────
+  detectFVG(candles) {
+    const fvgs = [];
+    const n    = candles.length;
+    for (let i = 1; i < n - 1; i++) {
+      const prev = candles[i - 1];
+      const next = candles[i + 1];
+
+      if (prev.h < next.l && (next.l - prev.h) / prev.h > 0.001) {
+        const filled = candles.slice(i + 1).some(c => c.l <= prev.h);
+        if (!filled) fvgs.push({ type: 'bullish', high: next.l, low: prev.h, idx: i });
+      }
+      if (prev.l > next.h && (prev.l - next.h) / prev.l > 0.001) {
+        const filled = candles.slice(i + 1).some(c => c.h >= prev.l);
+        if (!filled) fvgs.push({ type: 'bearish', high: prev.l, low: next.h, idx: i });
+      }
+    }
+    return fvgs.slice(-4);
+  }
+
+  // ── CHoCH / BOS ───────────────────────────────
+  detectMarketStructure(candles) {
+    const n   = candles.length;
+    const pts = [];
+    let pH = null, pL = null;
+
+    for (let i = 2; i < n - 2; i++) {
+      const c = candles[i], p = candles[i-1], pp = candles[i-2], nx = candles[i+1];
+      if (p.h >= pp.h && p.h >= c.h && p.h >= nx.h) {
+        pts.push({ type: pH !== null ? (p.h > pH ? 'HH' : 'LH') : 'HH', price: p.h, idx: i-1 });
+        pH = p.h;
+      }
+      if (p.l <= pp.l && p.l <= c.l && p.l <= nx.l) {
+        pts.push({ type: pL !== null ? (p.l < pL ? 'LL' : 'HL') : 'LL', price: p.l, idx: i-1 });
+        pL = p.l;
       }
     }
 
-    // ── LS Ratio ─────────────────────────────────────────────────
-    if (lsRatio !== null) {
-      if (lsRatio < 0.5)  { shortSqueeze += 25; signals.push({ type:'SHORT', reason:`Short kalabalık (L/S: ${lsRatio.toFixed(2)})`, w:25 }); }
-      else if (lsRatio < 0.7)  { shortSqueeze += 15; signals.push({ type:'SHORT', reason:`Short ağır (L/S: ${lsRatio.toFixed(2)})`, w:15 }); }
-      else if (lsRatio > 2.0)  { longSqueeze  += 25; signals.push({ type:'LONG',  reason:`Long kalabalık (L/S: ${lsRatio.toFixed(2)})`, w:25 }); }
-      else if (lsRatio > 1.5)  { longSqueeze  += 15; signals.push({ type:'LONG',  reason:`Long ağır (L/S: ${lsRatio.toFixed(2)})`, w:15 }); }
-    }
+    const recent = pts.slice(-6);
+    const highs  = recent.filter(p => p.type === 'HH' || p.type === 'LH');
+    const lows   = recent.filter(p => p.type === 'LL' || p.type === 'HL');
+    const bullish = highs.some(h => h.type === 'HH') && lows.some(l => l.type === 'HL');
+    const bearish = highs.some(h => h.type === 'LH') && lows.some(l => l.type === 'LL');
 
-    // ── Likidasyon baskısı ───────────────────────────────────────
-    if (liqResult) {
-      if (liqResult.liquidationBias === 'SHORT_LIQ') { shortSqueeze += 15; signals.push({ type:'SHORT', reason:'Short likidasyon baskısı', w:15 }); }
-      if (liqResult.liquidationBias === 'LONG_LIQ')  { longSqueeze  += 15; signals.push({ type:'LONG',  reason:'Long likidasyon baskısı',  w:15 }); }
-    }
-
-    // ── OB baskısı ───────────────────────────────────────────────
-    if (wsData?.obImbalance !== undefined) {
-      const obi = wsData.obImbalance;
-      if (obi > 0.7 && lsRatio < 0.7)  { shortSqueeze += 10; signals.push({ type:'SHORT', reason:'OB alım baskısı + short kalabalık', w:10 }); }
-      if (obi < 0.3 && lsRatio > 1.5)  { longSqueeze  += 10; signals.push({ type:'LONG',  reason:'OB satış baskısı + long kalabalık', w:10 }); }
-    }
-
-    // ── Fiyat durağanlığı (squeeze hazırlık) ─────────────────────
-    if (closes?.length >= 10) {
-      const last10 = closes.slice(-10);
-      const hi = Math.max(...last10), lo = Math.min(...last10);
-      const range = (hi - lo) / lo * 100;
-      if (range < 1.5 && (shortSqueeze > 30 || longSqueeze > 30)) {
-        const dominant = shortSqueeze > longSqueeze ? 'SHORT' : 'LONG';
-        signals.push({ type: dominant, reason: `Fiyat sıkışık (%${range.toFixed(1)} range) — squeeze tetiklenebilir`, w:10 });
-        if (dominant === 'SHORT') shortSqueeze += 10; else longSqueeze += 10;
-      }
-    }
-
-    const maxRisk   = Math.max(shortSqueeze, longSqueeze);
-    const riskType  = shortSqueeze >= longSqueeze ? 'SHORT_SQUEEZE' : 'LONG_SQUEEZE';
-    const squeezeRisk = Math.min(100, maxRisk);
-    const level     = squeezeRisk >= 70 ? 'CRITICAL' : squeezeRisk >= 50 ? 'HIGH' : squeezeRisk >= 30 ? 'MEDIUM' : 'LOW';
+    // CHoCH
+    const lastTypes = recent.slice(-4).map(p => p.type);
+    const choch = (lastTypes.includes('HH') && lastTypes.includes('LL')) ||
+                  (lastTypes.includes('HL') && lastTypes.includes('LH'));
+    const bos   = lastTypes.slice(-2).every(t => t === 'HH') ||
+                  lastTypes.slice(-2).every(t => t === 'LL');
 
     return {
-      squeezeRisk,
-      shortSqueeze: Math.min(100, shortSqueeze),
-      longSqueeze:  Math.min(100, longSqueeze),
-      dominantType: riskType,
-      level,
-      signals: signals.filter(s => s.type === (riskType === 'SHORT_SQUEEZE' ? 'SHORT' : 'LONG')),
-      allSignals: signals,
+      points: recent,
+      trend:  bullish ? 'BULLISH' : bearish ? 'BEARISH' : 'NEUTRAL',
+      choch,
+      bos,
+      eqHighs: highs.filter(h => h.type === 'LH').length >= 2,
+      eqLows:  lows.filter(l => l.type === 'HL').length >= 2,
     };
   }
 
-  function renderUI(result, panelId='squeezePanel') {
-    const el = document.getElementById(panelId);
-    if (!el) return;
-    const { squeezeRisk:sr, shortSqueeze:ss, longSqueeze:ls, dominantType:dt, level, signals } = result;
-    const col = sr>=70?'var(--red)':sr>=50?'var(--orange)':sr>=30?'var(--yellow)':'var(--green)';
-    const isShort = dt === 'SHORT_SQUEEZE';
+  // ── Stop Hunt ─────────────────────────────────
+  detectStopHunt(candles) {
+    const n     = candles.length;
+    const hunts = [];
+    for (let i = 3; i < n; i++) {
+      const c    = candles[i];
+      const prev = candles.slice(i - 3, i);
+      const body = Math.abs(c.c - c.o);
+      const total = c.h - c.l;
+      const wickU = c.h - Math.max(c.o, c.c);
+      const wickL = Math.min(c.o, c.c) - c.l;
 
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="flex:1;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">SQUEEZE RİSKİ</div>
-          <div style="font-size:22px;font-weight:900;color:${col}">${sr}%</div>
-          <div style="font-size:9px;color:${col}">${level}</div>
-        </div>
-        <div style="flex:1">
-          <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
-            <span style="color:var(--red)">LONG SQUEEZE</span>
-            <span style="color:var(--red);font-weight:700">${ls}%</span>
-          </div>
-          <div style="height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden;margin-bottom:6px">
-            <div style="height:100%;width:${ls}%;background:var(--red);border-radius:3px"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
-            <span style="color:var(--green)">SHORT SQUEEZE</span>
-            <span style="color:var(--green);font-weight:700">${ss}%</span>
-          </div>
-          <div style="height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${ss}%;background:var(--green);border-radius:3px"></div>
-          </div>
-        </div>
-      </div>
-      ${sr>=50?`<div style="padding:7px 10px;background:rgba(${isShort?'0,229,160':'255,61,107'},.08);border:1px solid rgba(${isShort?'0,229,160':'255,61,107'},.3);border-radius:8px;margin-bottom:8px;font-size:10px;font-weight:700;color:${isShort?'var(--green)':'var(--red)'}">
-        ⚡ ${dt.replace('_',' ')} RİSKİ YÜKSEK
-      </div>`:''}
-      <div style="display:flex;flex-direction:column;gap:4px">
-        ${signals.map(s=>`<div style="font-size:9px;color:var(--text2);padding:4px 8px;background:rgba(0,0,0,.2);border-radius:5px">• ${s.reason}</div>`).join('')}
-      </div>
-    `;
+      if (wickU > body * 2 && wickU > total * 0.4 && total > 0) {
+        const swept = Math.max(...prev.map(p => p.h));
+        if (c.h > swept) {
+          hunts.push({ type: 'bearish_hunt', price: c.h, idx: i,
+            desc: `Stop hunt yukarı — %${(wickU/c.c*100).toFixed(2)} wick` });
+        }
+      }
+      if (wickL > body * 2 && wickL > total * 0.4 && total > 0) {
+        const swept = Math.min(...prev.map(p => p.l));
+        if (c.l < swept) {
+          hunts.push({ type: 'bullish_hunt', price: c.l, idx: i,
+            desc: `Stop hunt aşağı — %${(wickL/c.c*100).toFixed(2)} wick` });
+        }
+      }
+    }
+    return hunts.slice(-3);
   }
 
-  return { analyze, renderUI };
-})();
+  // ── Tam SMC Analizi ───────────────────────────
+  analyze(candles, price) {
+    if (!candles?.length) return null;
+    return {
+      sweeps:  this.detectLiquiditySweep(candles),
+      obs:     this.detectOrderBlocks(candles),
+      fvgs:    this.detectFVG(candles),
+      ms:      this.detectMarketStructure(candles),
+      hunts:   this.detectStopHunt(candles),
+      // Shorthand flags for confirmation engine
+      ob:      this.detectOrderBlocks(candles).length > 0,
+      choch:   this.detectMarketStructure(candles).choch,
+      bos:     this.detectMarketStructure(candles).bos,
+    };
+  }
+}
+
+export const SMCEngine = new SmartMoneyEngine();

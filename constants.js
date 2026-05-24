@@ -1,188 +1,158 @@
 // ════════════════════════════════════════════════════════════════════
-// AI NARRATOR — Anthropic Claude API ile gerçek market yorumu
-// API key eklenince otomatik devreye girer
+// CROWD PSYCHOLOGY ENGINE — Kalabalık tuzak, aşırı pozisyon tespiti
 // ════════════════════════════════════════════════════════════════════
-const AINarrator = (() => {
+const CrowdEngine = (() => {
 
-  const CONFIG = {
-    apiKey:  '', // ← Yarın buraya ekle
-    model:   'claude-opus-4-20250514',
-    enabled: false,
-    maxTokens: 400,
-    lastCallTs: 0,
-    minInterval: 30000, // 30 saniyede bir max 1 çağrı
-  };
+  function analyze({ fund, lsRatio, oiChange, liqResult, smcData, wsData }) {
+    const traps   = [];
+    let   crowdRisk = 0;
+    let   trapProb  = 0;
+    let   crowdType = 'NEUTRAL';
 
-  // ── Setup ────────────────────────────────────────────────────────
-  function setup(apiKey) {
-    if (apiKey?.length > 10) {
-      CONFIG.apiKey  = apiKey;
-      CONFIG.enabled = true;
-      console.log('✅ AI Narrator (Opus 4.7) aktif');
-      _updateBadge(true);
-    } else {
-      CONFIG.enabled = false;
-      _updateBadge(false);
-    }
-  }
-
-  function _updateBadge(enabled) {
-    const badge = document.getElementById('aiNarratorBadge');
-    if (!badge) return;
-    badge.textContent  = enabled ? '🔵 Opus 4.7' : '⚪ API Key Yok';
-    badge.style.color  = enabled ? 'var(--cyan)' : 'var(--text3)';
-  }
-
-  // ── Market verisini prompt'a çevir ───────────────────────────────
-  function _buildPrompt(data) {
-    const {
-      sym, dir, price, chg,
-      ind, oiData, btcData, wsData,
-      regimeMode, smcData, fakeBreak,
-      liqResult, squeezeResult, crowdResult,
-      conf, entry,
-    } = data;
-
-    const symClean = (sym || 'BTCUSDT').replace('USDT', '');
-
-    return `Sen profesyonel bir kripto futures trading analistsin. Aşağıdaki piyasa verisini analiz et ve Türkçe, net, kısa bir yorum yap.
-
-COIN: ${symClean}/USDT Perpetual
-FİYAT: $${price} (${chg >= 0 ? '+' : ''}${chg?.toFixed(2)}%)
-YÖN SİNYALİ: ${dir || '—'}
-GÜVEN SKORU: ${conf || 0}/100
-
-TEKNİK ANALİZ:
-- RSI: ${ind?.rsi?.toFixed(1) || '—'}
-- EMA Hizalama: ${ind?.emaAlign || '—'}
-- MACD Histogram: ${ind?.macd?.hist > 0 ? 'Pozitif' : 'Negatif'} (${ind?.macd?.hist?.toFixed(4) || '—'})
-- ATR: ${ind?.atr?.toFixed(2) || '—'}
-
-PİYASA VERİSİ:
-- Funding Rate: ${oiData?.fund !== null ? '%' + oiData?.fund?.toFixed(3) : '—'}
-- L/S Ratio: ${oiData?.lsRatio?.toFixed(2) || '—'}
-- OI Değişim: ${oiData?.oiChange ? '%' + oiData.oiChange : '—'}
-- BTC: ${btcData?.chg !== undefined ? (btcData.chg >= 0 ? '+' : '') + btcData.chg?.toFixed(2) + '%' : '—'}
-
-MARKET REJIMI: ${regimeMode || 'SIDEWAYS'}
-
-SMART MONEY:
-- Likidite Süpürmesi: ${smcData?.sweeps?.length > 0 ? 'VAR' : 'YOK'}
-- CHoCH: ${smcData?.choch ? 'VAR' : 'YOK'}
-- Order Block: ${smcData?.ob ? 'VAR' : 'YOK'}
-- Fake Breakout Riski: ${fakeBreak ? 'YÜKSEK' : 'DÜŞÜK'}
-
-INTELLIGENCE:
-- Squeeze Riski: ${squeezeResult?.squeezeRisk || 0}% (${squeezeResult?.dominantType?.replace('_', ' ') || '—'})
-- Crowd Riski: ${crowdResult?.crowdRisk || 0}%
-- Likidasyon Baskısı: ${liqResult?.liquidationPressure || 0}%
-
-${entry ? `GİRİŞ SETEBİ: ${dir} @ $${entry.entry} | Stop: $${entry.stop} | TP1: $${entry.tp1} | R/R: 1:${entry.rr}` : ''}
-
-Lütfen şunları yap:
-1. Piyasanın şu an ne yaptığını 1-2 cümle ile anlat
-2. En önemli riski belirt
-3. En önemli fırsatı belirt
-4. Net bir öneri ver (gir / bekle / kaçın)
-
-Maksimum 4 cümle. Teknik jargon kullan ama anlaşılır ol. Direkt ve özlü ol.`;
-  }
-
-  // ── Ana analiz fonksiyonu ─────────────────────────────────────────
-  async function analyze(data) {
-    if (!CONFIG.enabled) {
-      return {
-        text: null,
-        source: 'disabled',
-      };
-    }
-
-    // Rate limiting
-    const now = Date.now();
-    if (now - CONFIG.lastCallTs < CONFIG.minInterval) {
-      return { text: null, source: 'rate_limited' };
-    }
-    CONFIG.lastCallTs = now;
-
-    try {
-      _setLoading(true);
-
-      const prompt = _buildPrompt(data);
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type':      'application/json',
-          'x-api-key':         CONFIG.apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model:      CONFIG.model,
-          max_tokens: CONFIG.maxTokens,
-          messages: [{
-            role:    'user',
-            content: prompt,
-          }],
-        }),
+    // ── OVERLEVERAGED LONGS ──────────────────────────────────────
+    if (lsRatio > 1.8 && fund > 0.05) {
+      crowdRisk += 40;
+      trapProb  += 35;
+      crowdType  = 'OVERLEVERAGED_LONGS';
+      traps.push({
+        type: 'OVERLEVERAGED_LONGS',
+        confidence: 75,
+        desc: `Long kalabalık (L/S: ${lsRatio?.toFixed(2)}) + yüksek funding — long flush riski`,
+        action: 'Long girişten kaçın, kısa vadeli short fırsatı izle',
+        col: 'var(--red)',
       });
+    }
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || 'API hatası');
+    // ── OVERLEVERAGED SHORTS ─────────────────────────────────────
+    if (lsRatio < 0.55 && fund < -0.05) {
+      crowdRisk += 40;
+      trapProb  += 35;
+      crowdType  = 'OVERLEVERAGED_SHORTS';
+      traps.push({
+        type: 'OVERLEVERAGED_SHORTS',
+        confidence: 75,
+        desc: `Short kalabalık (L/S: ${lsRatio?.toFixed(2)}) + negatif funding — short squeeze riski`,
+        action: 'Short girişten kaçın, kısa vadeli long fırsatı izle',
+        col: 'var(--green)',
+      });
+    }
+
+    // ── CROWD TRAP — SMC sweep + kalabalık ──────────────────────
+    if (smcData?.sweeps?.length > 0) {
+      if (lsRatio > 1.5 && fund > 0.03) {
+        crowdRisk += 30;
+        trapProb  += 40;
+        traps.push({
+          type: 'CROWD_TRAP',
+          confidence: 82,
+          desc: 'Likidite süpürmesi + kalabalık long — klasik bull trap',
+          action: 'Long pozisyon açma, stop hunt gerçekleşiyor olabilir',
+          col: 'var(--orange)',
+        });
       }
-
-      const result = await response.json();
-      const text   = result.content?.[0]?.text || '';
-
-      _renderNarrative(text, data.sym);
-      _setLoading(false);
-
-      return { text, source: 'opus' };
-
-    } catch (e) {
-      console.warn('AI Narrator hata:', e.message);
-      _setLoading(false);
-      _renderError(e.message);
-      return { text: null, source: 'error', error: e.message };
+      if (lsRatio < 0.65 && fund < -0.03) {
+        crowdRisk += 30;
+        trapProb  += 40;
+        traps.push({
+          type: 'CROWD_TRAP',
+          confidence: 82,
+          desc: 'Likidite süpürmesi + kalabalık short — klasik bear trap',
+          action: 'Short pozisyon açma, stop hunt gerçekleşiyor olabilir',
+          col: 'var(--cyan)',
+        });
+      }
     }
+
+    // ── LIQUIDITY BAIT ───────────────────────────────────────────
+    if (wsData?.obImbalance !== undefined) {
+      const obi = wsData.obImbalance;
+      // Görünen güçlü alım ama kalabalık long — sahte talep
+      if (obi > 0.65 && lsRatio > 1.5 && fund > 0.05) {
+        crowdRisk += 20;
+        trapProb  += 25;
+        traps.push({
+          type: 'LIQUIDITY_BAIT',
+          confidence: 65,
+          desc: 'OB alım baskısı görünüyor ama kalabalık long — sahte talep ihtimali',
+          action: 'Kırılım onaylanmadan long açma',
+          col: 'var(--yellow)',
+        });
+      }
+      // Görünen güçlü satış ama kalabalık short — sahte arz
+      if (obi < 0.35 && lsRatio < 0.65 && fund < -0.05) {
+        crowdRisk += 20;
+        trapProb  += 25;
+        traps.push({
+          type: 'LIQUIDITY_BAIT',
+          confidence: 65,
+          desc: 'OB satış baskısı görünüyor ama kalabalık short — sahte arz ihtimali',
+          action: 'Kırılım onaylanmadan short açma',
+          col: 'var(--yellow)',
+        });
+      }
+    }
+
+    // ── PANIC ZONE ───────────────────────────────────────────────
+    if (liqResult?.liquidationPressure >= 70 && lsRatio > 1.3) {
+      crowdRisk += 15;
+      trapProb  += 15;
+      traps.push({
+        type: 'PANIC_ZONE',
+        confidence: 60,
+        desc: 'Yüksek likidasyon baskısı + kalabalık pozisyon — panik satış riski',
+        action: 'Stop seviyelerini gözden geçir',
+        col: 'var(--orange)',
+      });
+    }
+
+    // Crowd tipi belirleme
+    if (traps.length === 0) {
+      if (lsRatio > 1.2)      crowdType = 'BULLISH_CROWD';
+      else if (lsRatio < 0.8) crowdType = 'BEARISH_CROWD';
+      else                    crowdType = 'NEUTRAL';
+    }
+
+    return {
+      crowdRisk:  Math.min(100, crowdRisk),
+      trapProb:   Math.min(100, trapProb),
+      crowdType,
+      traps,
+      dominantTrap: traps.sort((a,b)=>b.confidence-a.confidence)[0] || null,
+    };
   }
 
-  // ── UI Render ─────────────────────────────────────────────────────
-  function _setLoading(loading) {
-    const el = document.getElementById('aiNarratorText');
+  function renderUI(result, panelId='crowdPanel') {
+    const el = document.getElementById(panelId);
     if (!el) return;
-    if (loading) {
-      el.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;color:var(--text3)">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:aiPulse 1s infinite"></div>
-          Opus 4.7 analiz ediyor...
-        </div>`;
-    }
-  }
+    const { crowdRisk:cr, trapProb:tp, crowdType:ct, traps, dominantTrap:dt } = result;
 
-  function _renderNarrative(text, sym) {
-    const el  = document.getElementById('aiNarratorText');
-    const tsEl = document.getElementById('aiNarratorTs');
-    if (!el) return;
+    const crCol = cr>=70?'var(--red)':cr>=50?'var(--orange)':cr>=30?'var(--yellow)':'var(--green)';
+    const tpCol = tp>=70?'var(--red)':tp>=50?'var(--orange)':tp>=30?'var(--yellow)':'var(--green)';
 
-    const symClean = (sym || '').replace('USDT', '');
-    const time     = new Date().toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+    const trapsHtml = traps.map(t=>`
+      <div style="padding:6px 10px;background:rgba(0,0,0,.2);border-left:3px solid ${t.col};border-radius:0 7px 7px 0;margin-bottom:5px">
+        <div style="font-size:10px;font-weight:700;color:${t.col}">🪤 ${t.type.replace(/_/g,' ')}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px">${t.desc}</div>
+        <div style="font-size:9px;color:var(--cyan);margin-top:2px">→ ${t.action}</div>
+      </div>`).join('');
 
     el.innerHTML = `
-      <div style="font-size:11px;line-height:1.7;color:var(--text2)">
-        ${text.replace(/\n/g, '<br>')}
-      </div>`;
-
-    if (tsEl) tsEl.textContent = `${symClean} · ${time}`;
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">CROWD RİSKİ</div>
+          <div style="font-size:20px;font-weight:800;color:${crCol}">${cr}%</div>
+        </div>
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">TUZAK OLASILIK</div>
+          <div style="font-size:20px;font-weight:800;color:${tpCol}">${tp}%</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:6px">
+        Kalabalık Tipi: <span style="color:${cr>=50?crCol:'var(--text2)'}">${ct.replace(/_/g,' ')}</span>
+      </div>
+      ${trapsHtml || '<div style="font-size:10px;color:var(--text3)">Aktif tuzak sinyali yok</div>'}
+    `;
   }
 
-  function _renderError(msg) {
-    const el = document.getElementById('aiNarratorText');
-    if (!el) return;
-    el.innerHTML = `<div style="font-size:10px;color:var(--red)">⚠ ${msg}</div>`;
-  }
-
-  function isEnabled() { return CONFIG.enabled; }
-
-  return { setup, analyze, isEnabled };
+  return { analyze, renderUI };
 })();

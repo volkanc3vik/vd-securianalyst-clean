@@ -1,348 +1,617 @@
+.opp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+   PROFESSIONAL SIGNAL CARD ENGINE — CSS
+   ════════════════════════════════════════════════════ */
 
-// ══════════════════════════════════════════════════════
-// SUPABASE GİRİŞ SİSTEMİ
-// ══════════════════════════════════════════════════════
-const SB_URL = 'https://affgbrpwuikpqgsapuvh.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZmdicnB3dWlrcHFnc2FwdXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzA4MDAsImV4cCI6MjA5NDcwNjgwMH0.8o0msNt9OQXJMbfLm8L0ipzPghCrAcvx1wKXBGT36Ds';
-const LS_KEY = 'aap_access_v1';
+/* Trade Mode Selector */
+.trade-mode-bar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 16px;background:rgba(0,0,0,.25);
+  border-bottom:1px solid var(--border);
+}
+.trade-mode-label{font-size:10px;font-weight:600;letter-spacing:2px;color:var(--text3);text-transform:uppercase;flex-shrink:0;}
+.tm-btns{display:flex;gap:5px;flex-wrap:wrap;}
+.tm-btn{
+  font-size:10px;font-weight:700;padding:4px 11px;border-radius:20px;
+  cursor:pointer;font-family:'Inter',sans-serif;border:none;
+  transition:all .15s;letter-spacing:.5px;
+}
+.tm-btn.active{opacity:1;transform:scale(1.02);}
+.tm-btn:not(.active){opacity:.4;}
+.tm-btn:hover{opacity:.8;}
+.tm-safe      {background:rgba(0,229,160,.12);color:var(--green);border:1px solid rgba(0,229,160,.3);}
+.tm-balanced  {background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid rgba(0,212,255,.3);}
+.tm-aggressive{background:rgba(255,122,0,.12);color:var(--orange);border:1px solid rgba(255,122,0,.3);}
+.tm-scalp     {background:rgba(255,193,7,.1);color:var(--yellow);border:1px solid rgba(255,193,7,.3);}
+.tm-sniper    {background:rgba(157,125,250,.12);color:var(--purple);border:1px solid rgba(157,125,250,.3);}
 
-// ════════════════════════════════════════════════════
-// PHASE 1 — SECURE SUPABASE CLIENT
-// ════════════════════════════════════════════════════
+/* Signal Card Container */
+.sc-container{padding:14px 0 0 0;}
+.sc-section-title{
+  font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text3);
+  text-transform:uppercase;padding:0 0 10px 0;display:flex;align-items:center;gap:8px;
+}
+.sc-rarity-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 
-// ── Rate Limiting (Brute Force Koruması) ──
-const RateLimit = (() => {
-  const KEY    = 'vd_rl_v1';
-  const MAX    = 5;    // max deneme
-  const WINDOW = 300;  // 5 dakika (saniye)
-  const BLOCK  = 900;  // 15 dakika blok
+/* Signal Card */
+.signal-card{
+  border-radius:14px;padding:18px;margin-bottom:12px;
+  position:relative;overflow:hidden;
+  transition:transform .2s;cursor:pointer;
+}
+.signal-card:hover{transform:translateY(-2px);}
 
-  function _get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
-  function _set(d){ try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){} }
-
-  function check(){
-    const d   = _get();
-    const now = Math.floor(Date.now()/1000);
-    // Blok kontrolü
-    if(d.blockedUntil && now < d.blockedUntil){
-      const left = Math.ceil((d.blockedUntil - now)/60);
-      throw new Error(`Çok fazla deneme. ${left} dakika sonra tekrar deneyin.`);
-    }
-    // Window sıfırla
-    if(d.windowStart && now - d.windowStart > WINDOW){
-      _set({});
-      return;
-    }
-    // Limit kontrolü
-    if(d.count >= MAX){
-      const blockedUntil = now + BLOCK;
-      _set({...d, blockedUntil});
-      throw new Error('Çok fazla hatalı deneme. 15 dakika bekleyin.');
-    }
-  }
-
-  function fail(){
-    const d   = _get();
-    const now = Math.floor(Date.now()/1000);
-    _set({ count:(d.count||0)+1, windowStart:d.windowStart||now });
-  }
-
-  function success(){
-    _set({});
-  }
-
-  function getRemainingTime(){
-    const d = _get();
-    if(!d.blockedUntil) return 0;
-    return Math.max(0, d.blockedUntil - Math.floor(Date.now()/1000));
-  }
-
-  return{check, fail, success, getRemainingTime};
-})();
-
-// ── Secure Supabase API ──────────────────────────────
-// Sadece anon key kullanır — service_role asla frontend'e gelmez
-// Tüm işlemler RLS policy'lerle korunur
-async function sbQuery(table, filters, method='GET', body=null) {
-  const url = `${SB_URL}/rest/v1/${table}?${filters}`;
-  const opts = {
-    method,
-    headers: {
-      'apikey'       : SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type' : 'application/json',
-      'Prefer'       : method==='PATCH' ? 'return=minimal' : 'return=representation',
-      'Accept'       : 'application/json',
-    },
-  };
-  if(body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  if(!r.ok){
-    const txt = await r.text();
-    throw new Error('API hatasi ' + r.status + ': ' + txt);
-  }
-  if(method==='PATCH') return true;
-  return await r.json();
+/* Kart seviyeleri */
+.sc-watchlist{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);
+}
+.sc-early{
+  background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.2);
+}
+.sc-confirmation{
+  background:rgba(255,193,7,.05);border:1px solid rgba(255,193,7,.25);
+  box-shadow:0 0 15px rgba(255,193,7,.05);
+}
+.sc-entry-ready{
+  background:linear-gradient(135deg,rgba(0,229,160,.08),rgba(0,229,160,.03));
+  border:1.5px solid rgba(0,229,160,.4);
+  box-shadow:0 0 20px rgba(0,229,160,.1);
+  animation:scEntryPulse 3s infinite;
+}
+@keyframes scEntryPulse{0%,100%{box-shadow:0 0 20px rgba(0,229,160,.1)}50%{box-shadow:0 0 35px rgba(0,229,160,.25)}}
+.sc-high-prob{
+  background:linear-gradient(135deg,rgba(0,229,160,.12),rgba(0,212,255,.06));
+  border:2px solid rgba(0,229,160,.55);
+  box-shadow:0 0 30px rgba(0,229,160,.18);
+  animation:scHighPulse 2.5s infinite;
+}
+@keyframes scHighPulse{0%,100%{box-shadow:0 0 30px rgba(0,229,160,.18)}50%{box-shadow:0 0 50px rgba(0,229,160,.35)}}
+.sc-aplus{
+  background:linear-gradient(135deg,rgba(157,125,250,.15),rgba(0,229,160,.1),rgba(0,212,255,.08));
+  border:2px solid rgba(157,125,250,.7);
+  box-shadow:0 0 40px rgba(157,125,250,.3);
+  animation:scAPlusPulse 2s infinite;
+}
+@keyframes scAPlusPulse{
+  0%,100%{box-shadow:0 0 40px rgba(157,125,250,.3),0 0 80px rgba(0,229,160,.1)}
+  50%{box-shadow:0 0 60px rgba(157,125,250,.5),0 0 120px rgba(0,229,160,.2)}
 }
 
-// ── Secure RPC çağrısı (stored procedure üzerinden) ──
-async function sbRPC(fnName, params={}){
-  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fnName}`, {
-    method : 'POST',
-    headers: {
-      'apikey'       : SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type' : 'application/json',
-      'Accept'       : 'application/json',
-    },
-    body: JSON.stringify(params),
-  });
-  if(!r.ok){
-    const txt = await r.text();
-    throw new Error('RPC hatasi ' + r.status + ': ' + txt);
+/* SHORT kartları */
+.signal-card.short-card.sc-entry-ready{
+  background:linear-gradient(135deg,rgba(255,61,107,.08),rgba(255,61,107,.03));
+  border-color:rgba(255,61,107,.4);
+  animation:scEntryPulseS 3s infinite;
+}
+@keyframes scEntryPulseS{0%,100%{box-shadow:0 0 20px rgba(255,61,107,.1)}50%{box-shadow:0 0 35px rgba(255,61,107,.25)}}
+.signal-card.short-card.sc-high-prob{
+  background:linear-gradient(135deg,rgba(255,61,107,.12),rgba(255,122,0,.06));
+  border-color:rgba(255,61,107,.55);
+  animation:scHighPulseS 2.5s infinite;
+}
+@keyframes scHighPulseS{0%,100%{box-shadow:0 0 30px rgba(255,61,107,.18)}50%{box-shadow:0 0 50px rgba(255,61,107,.35)}}
+.signal-card.short-card.sc-aplus{
+  background:linear-gradient(135deg,rgba(255,61,107,.15),rgba(255,122,0,.1));
+  border-color:rgba(255,61,107,.7);
+  animation:scAPlusPulseS 2s infinite;
+}
+@keyframes scAPlusPulseS{0%,100%{box-shadow:0 0 40px rgba(255,61,107,.3)}50%{box-shadow:0 0 60px rgba(255,61,107,.5)}}
+
+/* Kart içi elemanlar */
+.sc-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.sc-rarity-badge{
+  font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;
+  letter-spacing:1px;white-space:nowrap;
+}
+.sc-sym{font-size:20px;font-weight:900;letter-spacing:-.5px;}
+.sc-dir-badge{
+  font-size:11px;font-weight:800;padding:4px 12px;border-radius:8px;
+  display:inline-flex;align-items:center;gap:5px;
+}
+.sc-dir-long {background:rgba(0,229,160,.15);color:var(--green);border:1px solid rgba(0,229,160,.4);}
+.sc-dir-short{background:rgba(255,61,107,.12);color:var(--red);border:1px solid rgba(255,61,107,.4);}
+
+/* Stats grid */
+.sc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
+  .opp,.signal-card,.nc-item{
+    -webkit-tap-highlight-color:transparent;
+    cursor:pointer;
   }
-  return await r.json();
-}
-
-// ── Göz butonu ──
-function toggleLoginEye() {
-  const inp = document.getElementById('loginInput');
-  const eye = document.getElementById('loginEye');
-  if(inp.type==='password') { inp.type='text'; eye.textContent='🔒'; }
-  else { inp.type='password'; eye.textContent='👁'; }
-}
-
-// ── Input sanitize ──
-function sanitizeCode(raw){
-  // Sadece izin verilen karakterler: harf, rakam, tire, parantez, yıldız, nokta
-  return (raw||'').trim().slice(0,50); // Max 50 karakter
-}
-
-// ── Oturum kontrolü güvenlik hardening ──
-function _verifySession(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return false;
-    const data = JSON.parse(raw);
-    // Admin
-    if(data.isAdmin && data.kod) return true;
-    // Normal — süre kontrolü
-    if(data.bitis && Date.now() < data.bitis) return true;
-    // Süresi dolmuş
-    localStorage.removeItem(LS_KEY);
-    return false;
-  }catch(e){
-    localStorage.removeItem(LS_KEY);
-    return false;
+  .opp:active,.signal-card:active{
+    transform:scale(.98);
+    transition:transform .1s;
   }
-}
-
-// ── Blocked olup olmadığını sayfa yüklenince göster ──
-(function checkBlock(){
-  const rem = RateLimit.getRemainingTime();
-  if(rem > 0){
-    const err = document.getElementById('loginErr');
-    if(err){
-      err.textContent = `🔒 Hesap ${Math.ceil(rem/60)} dakika kilitli. Lütfen bekleyin.`;
-      err.classList.add('show');
-    }
-    const btn = document.getElementById('loginBtn');
-    if(btn){ btn.disabled=true; btn.textContent='Kilitli...'; }
-    // Geri sayım
-    const intv = setInterval(()=>{
-      const r2 = RateLimit.getRemainingTime();
-      if(r2<=0){
-        clearInterval(intv);
-        if(err) err.classList.remove('show');
-        if(btn){ btn.disabled=false; btn.textContent='Giriş Yap'; }
-      } else {
-        if(err) err.textContent=`🔒 Hesap ${Math.ceil(r2/60)} dakika kilitli.`;
-      }
-    }, 1000);
+  /* Scroll optimize */
+  .nc-list,.sig-history,.ai-hist,.lwc-notes{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
   }
-})();
-
-// ── Hata göster ──
-function showLoginErr(msg) {
-  const e = document.getElementById('loginErr');
-  const i = document.getElementById('loginInput');
-  e.textContent = msg;
-  e.classList.add('show');
-  i.classList.add('err');
-  setTimeout(()=>i.classList.remove('err'), 500);
+  /* Font scale fix */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  /* Yatay taşma engeli */
+  body{overflow-x:hidden;}
+  /* Mobilde padding */
+  .main{padding:0 10px;}
+  .glass-card{padding:14px;}
 }
 
-// ── Giriş yap ──
-async function doLogin() {
-  const inp = document.getElementById('loginInput');
-  const btn = document.getElementById('loginBtn');
-  const err = document.getElementById('loginErr');
-  const kod = sanitizeCode(inp.value);
+/* ── Overscroll fix ── */
+body{overscroll-behavior-y:none;}
 
-  if(!kod) { showLoginErr('⚠ Lütfen erişim kodunuzu girin.'); return; }
-
-  // Rate limit kontrolü
-  try{ RateLimit.check(); }
-  catch(e){ showLoginErr('🔒 ' + e.message); return; }
-
-  err.classList.remove('show');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="login-spinner"></span>Doğrulanıyor...';
-
-  try {
-    // Edge Function üzerinden güvenli doğrulama
-    // Tablo doğrudan sorgulanmıyor — tüm işlem sunucu tarafında
-    const resp = await fetch('https://affgbrpwuikpqgsapuvh.supabase.co/functions/v1/verify-code', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ kod }),
-    });
-
-    const result = await resp.json();
-
-    if(!result.success) {
-      RateLimit.fail();
-      const rem = RateLimit.getRemainingTime();
-      const errMsg = result.error || 'Geçersiz erişim kodu';
-      showLoginErr(rem > 60
-        ? `🔒 ${errMsg}. Hesap ${Math.ceil(rem/60)} dakika kilitlendi.`
-        : '❌ ' + errMsg + '. Lütfen tekrar deneyin.');
-      btn.disabled = false;
-      btn.innerHTML = 'Giriş Yap';
-      return;
-    }
-
-    // Başarılı — rate limit sıfırla
-    RateLimit.success();
-
-    // Admin ise sonsuz erişim
-    if(result.is_admin) {
-      localStorage.setItem(LS_KEY, JSON.stringify({
-        bitis  : Date.now() + (36500 * 24 * 60 * 60 * 1000),
-        isAdmin: true, kod,
-        sureLbl: 'Sınırsız Erişim',
-      }));
-      grantAccess(true);
-      return;
-    }
-
-    // Normal kullanıcı — süre hesapla
-    const sure_ms = result.sure_gun * 24 * 60 * 60 * 1000;
-    const bitis   = Date.now() + sure_ms;
-    const sg      = result.sure_gun;
-    const sureLbl = sg <= 0.5 ? '12 Saat'
-      : sg === 1 ? '1 Gün' : sg === 2 ? '2 Gün'
-      : sg === 3 ? '3 Gün' : sg === 4 ? '4 Gün'
-      : sg === 5 ? '5 Gün' : sg === 6 ? '6 Gün'
-      : sg === 7 ? '1 Hafta' : sg === 14 ? '2 Hafta'
-      : sg === 21 ? '3 Hafta' : sg === 30 ? '1 Ay'
-      : sg + ' Gün';
-
-    localStorage.setItem(LS_KEY, JSON.stringify({
-      bitis, isAdmin: false, kod, sureLbl,
-    }));
-
-    grantAccess(false);
-
-  } catch(e) {
-    showLoginErr('⚠ Bağlantı hatası: ' + e.message);
-    console.error('Login hata:', e);
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = 'Giriş Yap';
+/* ── Advanced Loading Screen ── */
+#advLoader{
+  position:fixed;inset:0;z-index:99998;
+  background:#02070e;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Inter',sans-serif;
+  transition:opacity .5s ease;pointer-events:none;
+}
+#advLoader.hide{opacity:0;}
+.adv-loader-logo{
+  font-size:32px;margin-bottom:16px;
+  animation:loaderPulse 2s infinite;
+}
+@keyframes loaderPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
+.adv-loader-title{
+  font-size:18px;font-weight:800;color:#fff;
+  letter-spacing:2px;margin-bottom:4px;
+}
+.adv-loader-sub{
+  font-size:11px;color:rgba(255,255,255,.4);
+  letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;
+}
+.adv-loader-bar{
+  width:200px;height:2px;background:rgba(255,255,255,.08);
+  border-radius:1px;overflow:hidden;
+}
+.adv-loader-fill{
+  height:100%;border-radius:1px;
+  background:linear-gradient(90deg,#1565ff,#00e5a0);
+  width:0%;transition:width .3s ease;
+}
+.adv-loader-txt{
+  font-size:10px;color:rgba(255,255,255,.25);
+  margin-top:12px;letter-spacing:1px;text-align:center;
 }
 
-// ── Erişim ver ──
-function grantAccess(isAdmin) {
-  const screen = document.getElementById('loginScreen');
-  if(screen){ screen.classList.add('hiding'); setTimeout(()=>{ screen.style.display='none'; }, 600); }
-  setTimeout(startTimer, 100);
+/* ── Mobil Topbar ── */
+   PHASE 9 — PRIORITY SIGNAL CARD SYSTEM
+   ════════════════════════════════════════════════════ */
 
-  // Ana uygulamayı başlat (2. script bloğundaki init fonksiyonu)
-  setTimeout(() => {
-    try {
-      if(typeof initApp === 'function') initApp(isAdmin);
-    } catch(e) {
-      // initApp yoksa eski yöntemi dene
-      try { if(typeof startClock === 'function') startClock(); } catch {}
-      try { if(typeof startScan  === 'function') startScan();  } catch {}
-      try { if(typeof loadCoin   === 'function') loadCoin(window.SYM || 'BTCUSDT', window.INTV || '15m'); } catch {}
-    }
-  }, 700);
+/* Confirmation progress bar */
+.sc-conf-bar{
+  display:flex;align-items:center;gap:6px;margin-bottom:10px;
+}
+.sc-conf-dots{display:flex;gap:3px;flex:1;}
+.sc-conf-dot{
+  flex:1;height:4px;border-radius:2px;
+  transition:all .3s ease;
+}
+.sc-conf-dot.filled{background:var(--green);}
+.sc-conf-dot.filled.warn{background:var(--orange);}
+.sc-conf-dot.filled.weak{background:rgba(0,229,160,.4);}
+.sc-conf-dot.empty{background:rgba(255,255,255,.08);}
+.sc-conf-label{font-size:9px;font-weight:700;color:var(--text3);white-space:nowrap;}
+
+/* Priority badge */
+.sc-priority-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;
+  letter-spacing:.5px;margin-bottom:8px;
 }
 
-// ── Çıkış yap ──
-function doLogout() {
-  if(!confirm('Çıkış yapmak istediğinizden emin misiniz?')) return;
-  localStorage.removeItem(LS_KEY);
-  location.reload();
+/* Setup grade */
+.sc-grade{
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:10px;
+  font-size:16px;font-weight:900;flex-shrink:0;
 }
 
-// ── Sayaç ──
-let _timerInterval = null;
-function startTimer() {
-  const bar        = document.getElementById('timerBar');
-  const txt        = document.getElementById('tbText');
-  const adminBadge = document.getElementById('tbAdmin');
-  if(!bar || !txt) return; // DOM henüz hazır değil
+/* Confirmation grid */
+.sc-conf-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+  margin-bottom:10px;
+}
+.sc-conf-item{
+  display:flex;align-items:center;gap:4px;
+  font-size:9px;padding:4px 6px;border-radius:6px;
+  font-weight:600;
+}
+.sc-conf-item.ok  {background:rgba(0,229,160,.08);color:var(--green);border:1px solid rgba(0,229,160,.2);}
+.sc-conf-item.fail{background:rgba(255,61,107,.06);color:rgba(255,61,107,.6);border:1px solid rgba(255,61,107,.15);}
+.sc-conf-item.pend{background:rgba(255,255,255,.04);color:var(--text3);border:1px solid rgba(255,255,255,.08);}
 
-  bar.classList.add('show');
-
-  const data = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
-  if(data.isAdmin) {
-    if(adminBadge) adminBadge.style.display = 'inline-flex';
-    txt.innerHTML = 'Yönetici erişimi — <b>Sınırsız</b>';
-    return;
-  }
-
-  function update() {
-    const kalan = data.bitis - Date.now();
-    if(kalan <= 0) {
-      localStorage.removeItem(LS_KEY);
-      location.reload();
-      return;
-    }
-    const gun  = Math.floor(kalan / 86400000);
-    const saat = Math.floor((kalan % 86400000) / 3600000);
-    const dk   = Math.floor((kalan % 3600000) / 60000);
-    const sn   = Math.floor((kalan % 60000) / 1000);
-
-    let kalanStr = '';
-    if(gun > 0)       kalanStr = `${gun} gün ${saat} saat`;
-    else if(saat > 0) kalanStr = `${saat} saat ${dk} dk`;
-    else              kalanStr = `${dk} dk ${sn} sn`;
-
-    txt.className = 'tb-text' + (gun===0&&saat<2?' warn':'') + (gun===0&&saat===0&&dk<30?' crit':'');
-    txt.innerHTML = `Kalan süre: <b>${kalanStr}</b>`;
-  }
-  update();
-  _timerInterval = setInterval(update, 1000);
+/* Elite setup glow */
+.sc-elite{
+  background:linear-gradient(135deg,rgba(157,125,250,.18),rgba(0,229,160,.12),rgba(0,212,255,.1));
+  border:2px solid rgba(157,125,250,.8);
+  box-shadow:0 0 50px rgba(157,125,250,.35),0 0 100px rgba(0,229,160,.15);
+  animation:eliteGlow 2s infinite;
+}
+@keyframes eliteGlow{
+  0%,100%{box-shadow:0 0 50px rgba(157,125,250,.35),0 0 100px rgba(0,229,160,.15)}
+  50%{box-shadow:0 0 70px rgba(157,125,250,.55),0 0 140px rgba(0,229,160,.25)}
+}
+.sc-elite.short-card{
+  background:linear-gradient(135deg,rgba(255,61,107,.18),rgba(255,122,0,.1));
+  border-color:rgba(255,61,107,.8);
+  animation:eliteGlowS 2s infinite;
+}
+@keyframes eliteGlowS{
+  0%,100%{box-shadow:0 0 50px rgba(255,61,107,.35)}
+  50%{box-shadow:0 0 70px rgba(255,61,107,.55)}
 }
 
-// ── Sayfa açılınca kontrol ──
-(function checkAccess() {
-  const raw = localStorage.getItem(LS_KEY);
-  if(!raw) return;
+/* Ranking badge */
+.sc-rank{
+  position:absolute;top:-8px;left:16px;
+  font-size:9px;font-weight:800;padding:2px 10px;border-radius:10px;
+  letter-spacing:1px;
+}
 
-  try {
-    const data = JSON.parse(raw);
-    if(data.isAdmin || (data.bitis && Date.now() < data.bitis)) {
-      const screen = document.getElementById('loginScreen');
-      if(screen) screen.style.display = 'none';
-      // DOM tamamen hazır olunca timer başlat
-      if(document.readyState === 'loading'){
-        document.addEventListener('DOMContentLoaded', startTimer);
-      } else {
-        setTimeout(startTimer, 50);
-      }
-    } else {
-      localStorage.removeItem(LS_KEY);
-    }
-  } catch(e) {
-    localStorage.removeItem(LS_KEY);
-  }
-})();
+/* Missing confirmations */
+.sc-missing{
+  background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.18);
+  border-radius:8px;padding:8px 11px;margin-bottom:8px;
+  font-size:10px;color:var(--yellow);line-height:1.5;
+}
+.sc-missing-lbl{font-size:9px;font-weight:700;letter-spacing:1px;margin-bottom:3px;color:rgba(255,193,7,.6);}
 
-// ── Exports ─────────────────────────────────────────────────────
-export { doLogin, doLogout, grantAccess, startTimer };
+/* AI Grade ribbon */
+.sc-ribbon{
+  position:absolute;top:0;right:0;
+  width:0;height:0;
+  border-style:solid;
+  border-width:0 50px 50px 0;
+}
+.sc-ribbon-txt{
+  position:absolute;top:6px;right:2px;
+  font-size:8px;font-weight:800;color:#fff;
+  transform:rotate(45deg);letter-spacing:.5px;
+}
+
+/* Sort bar */
+.sc-sort-bar{
+  display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;
+}
+.sc-sort-btn{
+  font-size:9px;font-weight:700;padding:3px 10px;border-radius:10px;
+  cursor:pointer;font-family:'Inter',sans-serif;border:none;
+  transition:all .15s;letter-spacing:.5px;
+  background:rgba(255,255,255,.05);color:var(--text3);
+  border:1px solid rgba(255,255,255,.08);
+}
+.sc-sort-btn.active{background:rgba(0,229,160,.1);color:var(--green);border-color:rgba(0,229,160,.3);}
+
+
+/* ════════════════════════════════════════════════════
+   PHASE 8 — UX + AI SİDEBAR + BİLDİRİM UPGRADE
+   ════════════════════════════════════════════════════ */
+
+/* ── AI Assistant Sidebar ── */
+#aiSidebar{
+  position:fixed;top:0;right:-380px;bottom:0;
+  width:360px;max-width:100vw;
+  background:rgba(2,7,14,.97);
+  border-left:1px solid rgba(255,255,255,.08);
+  z-index:9997;
+  display:flex;flex-direction:column;
+  transition:right .35s cubic-bezier(.4,0,.2,1);
+  backdrop-filter:blur(24px);
+}
+#aiSidebar.open{right:0;}
+.ai-sidebar-hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07);
+  flex-shrink:0;
+}
+.ai-sidebar-title{font-size:13px;font-weight:800;color:var(--text);letter-spacing:.5px;}
+.ai-sidebar-close{
+  margin-left:auto;background:none;border:none;
+  color:var(--text3);font-size:20px;cursor:pointer;padding:4px;
+  transition:color .15s;line-height:1;
+}
+.ai-sidebar-close:hover{color:var(--text);}
+.ai-sidebar-body{flex:1;overflow-y:auto;padding:14px 16px;}
+.ai-sidebar-body::-webkit-scrollbar{width:3px;}
+.ai-sidebar-body::-webkit-scrollbar-track{background:transparent;}
+.ai-sidebar-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+/* AI Sidebar overlay */
+#aiSidebarOverlay{
+  display:none;position:fixed;inset:0;z-index:9996;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
+}
+
+/* AI Sidebar buton (topbar) */
+.ai-sidebar-btn{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);
+  border-radius:8px;padding:6px 12px;cursor:pointer;
+  font-size:11px;font-weight:600;color:var(--purple);
+  font-family:'Inter',sans-serif;transition:all .2s;
+}
+.ai-sidebar-btn:hover{background:rgba(157,125,250,.18);border-color:rgba(157,125,250,.5);}
+.ai-sidebar-pulse{
+  width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:aiPulse 2s infinite;flex-shrink:0;
+}
+@keyframes aiPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{box-shadow:0 0 0 5px rgba(0,229,160,0)}}
+
+/* AI Chat benzeri mesajlar */
+.ai-msg{
+  margin-bottom:12px;
+}
+.ai-msg-bubble{
+  display:inline-block;
+  background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.2);
+  border-radius:12px 12px 12px 3px;
+  padding:10px 13px;font-size:11px;color:var(--text2);line-height:1.6;
+  max-width:90%;
+}
+.ai-msg-bubble b{color:var(--purple);}
+.ai-msg-bubble .good{color:var(--green);}
+.ai-msg-bubble .bad{color:var(--red);}
+.ai-msg-bubble .warn{color:var(--orange);}
+.ai-msg-time{font-size:9px;color:var(--text3);margin-top:4px;padding-left:4px;}
+.ai-msg-divider{
+  text-align:center;font-size:9px;color:var(--text3);
+  letter-spacing:2px;text-transform:uppercase;
+  margin:14px 0;display:flex;align-items:center;gap:8px;
+}
+.ai-msg-divider::before,.ai-msg-divider::after{
+  content:'';flex:1;height:1px;background:rgba(255,255,255,.06);
+}
+
+/* AI Sidebar hızlı aksiyon */
+.ai-quick-btns{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;
+}
+.ai-quick-btn{
+  font-size:10px;font-weight:600;padding:5px 12px;border-radius:20px;
+  cursor:pointer;font-family:'Inter',sans-serif;border:none;
+  background:rgba(255,255,255,.05);color:var(--text2);
+  border:1px solid rgba(255,255,255,.1);transition:all .15s;
+}
+.ai-quick-btn:hover{background:rgba(157,125,250,.1);border-color:rgba(157,125,250,.3);color:var(--purple);}
+
+/* ── Sistem Sağlık Paneli ── */
+.sys-health{
+  background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:12px 14px;margin-bottom:10px;
+}
+.sys-health-row{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:11px;
+}
+.sys-health-row:last-child{border-bottom:none;}
+.sys-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sys-dot.ok{background:var(--green);}
+.sys-dot.warn{background:var(--orange);}
+.sys-dot.err{background:var(--red);}
+.sys-health-lbl{color:var(--text2);flex:1;}
+.sys-health-val{color:var(--text3);font-size:10px;}
+
+/* ── Grup bildirim ── */
+.nc-group{border-bottom:1px solid rgba(255,255,255,.05);}
+.nc-group-hdr{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 16px;cursor:pointer;
+  font-size:10px;font-weight:700;color:var(--text3);
+  letter-spacing:1px;text-transform:uppercase;
+  background:rgba(255,255,255,.02);
+  transition:background .15s;
+}
+.nc-group-hdr:hover{background:rgba(255,255,255,.04);}
+.nc-group-count{
+  background:rgba(255,255,255,.08);border-radius:10px;
+  font-size:9px;padding:1px 7px;color:var(--text2);
+}
+.nc-group-toggle{margin-left:auto;font-size:12px;transition:transform .2s;}
+.nc-group.collapsed .nc-group-toggle{transform:rotate(-90deg);}
+.nc-group.collapsed .nc-group-items{display:none;}
+
+/* ── Sistem sağlık topbar badge ── */
+.sys-status-dot{
+  width:8px;height:8px;border-radius:50%;
+  display:inline-block;flex-shrink:0;
+}
+
+/* ── Onboarding ── */
+#onboardingModal{
+  position:fixed;inset:0;z-index:99998;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;
+}
+.ob-card{
+  background:rgba(2,7,14,.97);border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;padding:32px;max-width:440px;width:100%;
+  animation:obIn .3s ease;
+}
+@keyframes obIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.ob-step{display:none;}
+.ob-step.active{display:block;}
+.ob-icon{font-size:40px;margin-bottom:16px;}
+.ob-title{font-size:20px;font-weight:800;color:#fff;margin-bottom:8px;}
+.ob-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:24px;}
+.ob-dots{display:flex;gap:6px;justify-content:center;margin-bottom:20px;}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);transition:all .2s;}
+.ob-dot.active{background:var(--green);width:20px;border-radius:4px;}
+.ob-btn{
+  width:100%;padding:13px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,#1565ff,#00a878);
+  font-size:13px;font-weight:700;color:#fff;
+  font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;
+}
+.ob-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(21,101,255,.3);}
+.ob-skip{
+  margin-top:12px;text-align:center;font-size:11px;
+  color:rgba(255,255,255,.25);cursor:pointer;
+}
+.ob-skip:hover{color:rgba(255,255,255,.5);}
+
+
+/* ════════════════════════════════════════════════════
+   PHASE 7 — TRADE REPLAY + PERFORMANCE ANALYTICS
+   ════════════════════════════════════════════════════ */
+
+/* Analytics Panel */
+.analytics-panel{
+  background:var(--glass);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;margin-bottom:14px;
+  backdrop-filter:blur(20px);
+}
+.analytics-hdr{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 16px;background:rgba(0,0,0,.3);
+  border-bottom:1px solid var(--border);
+}
+.analytics-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase;}
+.analytics-body{padding:16px;}
+
+/* Stat cards */
+.perf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+/* ═══════════════════════════════════════
+   TRADE TRACKER — Canlı Trade Takip
+   ═══════════════════════════════════════ */
+
+.tt-card {
+  background: rgba(8,16,28,.95);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: border-color .3s;
+}
+.tt-card.tt-sl-warning {
+  border-color: rgba(255,61,107,.5);
+  box-shadow: 0 0 20px rgba(255,61,107,.15);
+  animation: ttSlWarn .8s infinite;
+}
+@keyframes ttSlWarn {
+  0%,100% { box-shadow: 0 0 10px rgba(255,61,107,.2); }
+  50%      { box-shadow: 0 0 30px rgba(255,61,107,.5); }
+}
+
+.tt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tt-dir   { font-size:12px; font-weight:800; }
+.tt-sym   { font-size:15px; font-weight:900; color:var(--text); }
+.tt-dur   { font-size:9px; color:var(--text3); }
+.tt-status {
+  margin-left:auto;
+  font-size:9px; font-weight:700;
+  padding:2px 8px; border-radius:8px;
+  background:rgba(0,229,160,.1);
+  color:var(--green);
+}
+.tt-status.tt-tp1 {
+  background:rgba(0,212,255,.1);
+  color:var(--cyan);
+}
+
+.tt-details {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.tt-detail-item {
+  background: rgba(0,0,0,.2);
+  border-radius: 7px;
+  padding: 6px 8px;
+}
+.tt-dl { display:block; font-size:8px; color:var(--text3); margin-bottom:2px; letter-spacing:.5px; }
+.tt-dv { display:block; font-size:11px; font-weight:700; color:var(--text); }
+
+/* Progress Bar */
+.tt-progress-wrap { margin-bottom:12px; }
+.tt-levels {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:4px;
+}
+.tt-bar-wrap {
+  position:relative;
+  height:12px;
+  border-radius:6px;
+  overflow:visible;
+}
+.tt-bar-bg {
+  position:absolute;inset:0;
+  background:rgba(255,255,255,.06);
+  border-radius:6px;
+}
+.tt-bar-fill {
+  position:absolute;top:0;left:0;bottom:0;
+  border-radius:6px;
+  transition:width .5s ease, background .3s;
+  min-width:4px;
+}
+.tt-bar-entry {
+  position:absolute;top:-3px;bottom:-3px;
+  width:2px;background:rgba(255,255,255,.5);
+  transform:translateX(-50%);
+  border-radius:1px;
+}
+.tt-bar-marker {
+  position:absolute;top:-4px;
+  width:3px;height:20px;
+  transform:translateX(-50%);
+  border-radius:2px;
+}
+.tt-tp1-marker { background:var(--green); opacity:.7; }
+.tt-tp2-marker { background:var(--cyan);  opacity:.7; }
+.tt-bar-dot {
+  position:absolute;top:50%;
+  width:14px;height:14px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  border:2px solid rgba(0,0,0,.5);
+  transition:left .5s ease;
+  z-index:2;
+}
+
+/* Butonlar */
+.tt-actions { display:flex; gap:8px; }
+.tt-btn {
+  flex:1; padding:8px;
+  border-radius:8px;
+  font-size:11px; font-weight:700;
+  cursor:pointer; font-family:Inter,sans-serif;
+  transition:all .2s;
+}
+.tt-btn-close {
+  background:rgba(255,61,107,.08);
+  border:1px solid rgba(255,61,107,.3);
+  color:var(--red);
+}
+.tt-btn-close:hover {
+  background:rgba(255,61,107,.15);
+}
+
+/* İşlem aç butonu (sinyal kartlarında) */
+.opp-trade-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  margin-top:8px; padding:6px 14px;
+  border-radius:8px; font-size:10px; font-weight:700;
+  cursor:pointer; font-family:Inter,sans-serif;
+  border:1px solid; transition:all .2s;
+}
+
+/* ═══════════════════════════════════════
+   PROFESSIONAL TRADE TERMINAL
+   ═══════════════════════════════════════ */
+@keyframes ttPulse {
+  0%,100% { box-shadow:0 0 10px rgba(255,61,107,.2); }
+  50%      { box-shadow:0 0 30px rgba(255,61,107,.5); }
+}
+@keyframes ttDotPulse {
+  0%,100% { transform:translateX(-50%) scale(1); opacity:1; }
+  50%      { transform:translateX(-50%) scale(1.3); opacity:.8; }
+}

@@ -1,119 +1,126 @@
-// ═══════════════════════════════════════════════
-// RISK ENGINE — Dinamik kaldıraç, pozisyon boyutu,
-// portfolio exposure, drawdown koruması
-// ═══════════════════════════════════════════════
-import { clamp } from '../modules/helpers.js';
-import { Storage } from '../services/storage-service.js';
+// ════════════════════════════════════════════════════════════════════
+// LIQUIDATION ENGINE — Spike, Cascade, Pressure, Bias
+// ════════════════════════════════════════════════════════════════════
+const LiquidationEngine = (() => {
 
-// Korelasyon grupları
-const HIGH_CORR_BTC = ['ETH','BNB','SOL','AVAX','MATIC','ARB','OP'];
-const CORR_GROUPS   = [
-  ['ETH','ARB','OP','MATIC'],
-  ['BNB','CAKE'],
-  ['SOL','RAY','JTO'],
-  ['AVAX','JOE'],
-];
+  const _history = [];   // {ts, value, side, sym}
+  const MAX_HIST  = 200;
+  let   _stats    = { longTotal:0, shortTotal:0, lastSpike:null };
 
-class RiskEngine {
+  // WSEngine'den gelen her likidasyon buraya gelir
+  function onLiquidation(liq) {
+    _history.push({ ...liq, ts: liq.ts || Date.now() });
+    if (_history.length > MAX_HIST) _history.shift();
 
-  // ── Volatilite Ayarlı Kaldıraç ────────────────
-  calcDynamicLeverage(atrPct, conf, regimeMode, setupGrade) {
-    let base = atrPct > 5 ? 2 : atrPct > 4 ? 3 : atrPct > 3 ? 5 : atrPct > 2 ? 7 : atrPct > 1 ? 10 : 12;
+    if (liq.side === 'BUY')  _stats.shortTotal += liq.value || 0; // BUY = short liq
+    else                     _stats.longTotal  += liq.value || 0;
 
-    // Güven skoru
-    if (conf >= 85) base += 3;
-    else if (conf >= 75) base += 1;
-    else if (conf < 55) base -= 2;
-    else if (conf < 45) base -= 4;
+    // Spike kontrolü
+    const recentWindow = _history.filter(h => Date.now() - h.ts < 60000);
+    const recentTotal  = recentWindow.reduce((s,h) => s + (h.value||0), 0);
+    const avgHourly    = _history.length > 10
+      ? _history.reduce((s,h) => s+(h.value||0), 0) / _history.length * 60
+      : recentTotal;
 
-    // Rejim
-    if (regimeMode === 'PANIC')    base = Math.min(base, 2);
-    if (regimeMode === 'VOLATILE') base = Math.min(base, 3);
-    if (regimeMode === 'TREND' && conf > 70) base += 2;
-
-    // Grade
-    if (setupGrade === 'S') base += 2;
-    else if (setupGrade === 'D') base -= 3;
-
-    return clamp(Math.round(base), 1, 15);
-  }
-
-  // ── ATR Bazlı Pozisyon Boyutu ─────────────────
-  calcPositionSize(portfolio, atr, price, riskPct) {
-    if (!atr || !price || !portfolio) return null;
-    const riskAmount  = portfolio * (riskPct / 100);
-    const stopDist    = atr * 1.5;
-    const stopPct     = (stopDist / price) * 100;
-    const posSize     = riskAmount / stopDist;
-    const posValue    = posSize * price;
-    const posValuePct = (posValue / portfolio) * 100;
-    return { riskAmount, stopDist, stopPct, posSize, posValue, posValuePct };
-  }
-
-  // ── Korelasyon Kontrolü ───────────────────────
-  checkCorrelation(sym, openPositions = []) {
-    const clean    = sym.replace('USDT', '').replace('PERP', '');
-    const warnings = [];
-    let corrCount  = 0;
-
-    // BTC grubu
-    if (HIGH_CORR_BTC.includes(clean)) {
-      const openBTCCorr = openPositions.filter(p => HIGH_CORR_BTC.includes(p.sym?.replace('USDT', ''))).length;
-      if (openBTCCorr >= 2) {
-        warnings.push(`⚠ ${clean} BTC korelasyonlu — ${openBTCCorr} açık pozisyon var`);
-        corrCount += openBTCCorr;
-      }
+    if (recentTotal > avgHourly * 2.5 && recentTotal > 500000) {
+      _stats.lastSpike = { ts: Date.now(), value: recentTotal, side: liq.side };
     }
+  }
 
-    // Alt gruplar
-    CORR_GROUPS.forEach(group => {
-      if (group.includes(clean)) {
-        const groupOpen = openPositions.filter(p => group.includes(p.sym?.replace('USDT', ''))).length;
-        if (groupOpen > 0) {
-          warnings.push(`⚠ ${clean} ile aynı gruptaki ${groupOpen} pozisyon açık`);
-          corrCount += groupOpen;
-        }
-      }
-    });
+  // Ana analiz
+  function analyze(wsData) {
+    const now = Date.now();
+    const win5m  = _history.filter(h => now - h.ts < 300000);
+    const win1h  = _history.filter(h => now - h.ts < 3600000);
+
+    const longLiq5m  = win5m.filter(h => h.side==='SELL').reduce((s,h)=>s+(h.value||0),0);
+    const shortLiq5m = win5m.filter(h => h.side==='BUY').reduce((s,h)=>s+(h.value||0),0);
+    const total5m    = longLiq5m + shortLiq5m;
+
+    const longLiq1h  = win1h.filter(h => h.side==='SELL').reduce((s,h)=>s+(h.value||0),0);
+    const shortLiq1h = win1h.filter(h => h.side==='BUY').reduce((s,h)=>s+(h.value||0),0);
+    const total1h    = longLiq1h + shortLiq1h;
+
+    // Spike tespiti
+    const liqSpike = _stats.lastSpike && (now - _stats.lastSpike.ts < 120000);
+
+    // Cascade: 3 dakika içinde birden fazla büyük likidasyon
+    const bigLiqs = win5m.filter(h => (h.value||0) > 100000);
+    const cascade = bigLiqs.length >= 3;
+
+    // Pressure skoru (0-100)
+    let liquidationPressure = 0;
+    if (total5m > 5_000_000)  liquidationPressure = 90;
+    else if (total5m > 1_000_000) liquidationPressure = 70;
+    else if (total5m > 500_000)   liquidationPressure = 50;
+    else if (total5m > 100_000)   liquidationPressure = 30;
+    else if (total5m > 0)         liquidationPressure = 15;
+
+    // Bias
+    const liquidationBias = total5m === 0 ? 'NEUTRAL' :
+      longLiq5m > shortLiq5m * 1.5 ? 'LONG_LIQ' :
+      shortLiq5m > longLiq5m * 1.5 ? 'SHORT_LIQ' : 'BALANCED';
+
+    // squeezeRisk — büyük short likidasyon → short squeeze
+    const squeezeRisk = shortLiq5m > longLiq5m * 2 && total5m > 500000 ? 'SHORT_SQUEEZE' :
+                        longLiq5m > shortLiq5m * 2 && total5m > 500000 ? 'LONG_SQUEEZE' : null;
+
+    // WS'den son likidasyon
+    const wsLiq = wsData?.lastLiquidation;
+    const recentLiq = wsLiq && (now - wsLiq.ts < 60000) ? wsLiq : null;
 
     return {
-      warnings,
-      corrCount,
-      risk: corrCount >= 3 ? 'HIGH' : corrCount >= 1 ? 'MEDIUM' : 'LOW',
+      liquidationPressure,
+      liquidationBias,
+      squeezeRisk,
+      liqSpike,
+      cascade,
+      longLiq5m, shortLiq5m, total5m,
+      longLiq1h, shortLiq1h, total1h,
+      recentLiq,
+      history: _history.slice(-20),
     };
   }
 
-  // ── Drawdown Koruması ─────────────────────────
-  checkDrawdown() {
-    const trades  = Storage.getTrades();
-    const last10  = trades.slice(-10);
-    if (last10.length < 3) return { block: false, warning: null };
+  function renderUI(result, panelId='liqPanel') {
+    const el = document.getElementById(panelId);
+    if (!el) return;
 
-    const losses = last10.filter(t => !t.win).length;
-    const cumPnl = last10.reduce((s, t) => s + t.pnlPct, 0);
+    const { liquidationPressure:lp, liquidationBias:lb, squeezeRisk:sr,
+            liqSpike, cascade, longLiq5m, shortLiq5m, total5m, recentLiq } = result;
 
-    if (losses >= 5 && cumPnl < -8) {
-      return { block: true, warning: `🛑 Drawdown koruması — Son 10T: ${losses} kayıp, -%${Math.abs(cumPnl).toFixed(1)} PNL` };
-    }
-    if (losses >= 4 && cumPnl < -5) {
-      return { block: false, warning: `⚠ Düşük performans — Boyutu küçült` };
-    }
-    if (losses >= 7) {
-      return { block: true, warning: `🛑 ${losses}/10 kayıp — Dur, stratejiyi gözden geçir` };
-    }
-    return { block: false, warning: null };
+    const lpCol = lp>=70?'var(--red)':lp>=50?'var(--orange)':lp>=30?'var(--yellow)':'var(--green)';
+    const fmt   = v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'$0';
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">BASINÇ</div>
+          <div style="font-size:20px;font-weight:800;color:${lpCol}">${lp}%</div>
+        </div>
+        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">5dk TOPLAM</div>
+          <div style="font-size:14px;font-weight:800;color:var(--cyan)">$${fmt(total5m)}</div>
+        </div>
+      </div>
+      ${liqSpike?`<div style="padding:6px 10px;background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:var(--red)">⚡ LİKİDASYON SPIKE TESPİT EDİLDİ</div>`:''}
+      ${cascade?`<div style="padding:6px 10px;background:rgba(255,122,0,.1);border:1px solid rgba(255,122,0,.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:var(--orange)">🌊 CASCADE RİSKİ — Zincirleme likidasyon</div>`:''}
+      ${sr?`<div style="padding:6px 10px;background:rgba(${sr==='SHORT_SQUEEZE'?'0,229,160':'255,61,107'},.1);border:1px solid rgba(${sr==='SHORT_SQUEEZE'?'0,229,160':'255,61,107'},.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:${sr==='SHORT_SQUEEZE'?'var(--green)':'var(--red)'}">⚡ ${sr.replace('_',' ')} BAŞLAYAB\u0130L\u0130R</div>`:''}
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;background:rgba(255,61,107,.07);border-radius:7px;padding:6px 8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">LONG LİK.</div>
+          <div style="font-size:11px;font-weight:700;color:var(--red)">$${fmt(longLiq5m)}</div>
+        </div>
+        <div style="flex:1;background:rgba(0,229,160,.07);border-radius:7px;padding:6px 8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">SHORT LİK.</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green)">$${fmt(shortLiq5m)}</div>
+        </div>
+      </div>
+      ${recentLiq?`<div style="margin-top:8px;font-size:10px;color:var(--text3);padding:5px 8px;background:rgba(0,0,0,.2);border-radius:6px">
+        Son: ${recentLiq.side==='BUY'?'🔵 Short':'🔴 Long'} likidasyon — $${fmt(recentLiq.value||0)} @ $${(+recentLiq.price||0).toFixed(2)}
+      </div>`:''}
+    `;
   }
 
-  // ── Tam Risk Analizi ──────────────────────────
-  analyze({ sym, atrPct, conf, regimeMode, setupGrade, portfolio = 10000, price, atr }) {
-    const lev    = this.calcDynamicLeverage(atrPct, conf, regimeMode, setupGrade);
-    const riskPct = conf >= 80 ? 2 : conf >= 70 ? 1.5 : conf >= 55 ? 1 : 0.5;
-    const pos    = this.calcPositionSize(portfolio, atr, price, riskPct);
-    const corr   = this.checkCorrelation(sym);
-    const dd     = this.checkDrawdown();
-
-    return { lev, riskPct, pos, corr, dd, atrPct, conf, regimeMode, setupGrade, sym };
-  }
-}
-
-export const RiskEng = new RiskEngine();
+  return { onLiquidation, analyze, renderUI };
+})();
