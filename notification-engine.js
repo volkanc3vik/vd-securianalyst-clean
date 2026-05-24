@@ -1,262 +1,159 @@
-// ════════════════════════════════════════════════════════════════════
-// LEARNING ENGINE — Adaptif ağırlıklar, sonuç takibi
-// ════════════════════════════════════════════════════════════════════
-const LearningEngine = (() => {
+// ═══════════════════════════════════════════════
+// SMART MONEY ENGINE — BOS, CHoCH, OB, FVG, Sweeps
+// UI'dan tamamen bağımsız
+// ═══════════════════════════════════════════════
 
-  const STORAGE_KEY = 'vd_learning_v1';
-  const SIG_KEY     = 'vd_signals_v1';
+class SmartMoneyEngine {
 
-  // Varsayılan ağırlıklar
-  const DEFAULT_WEIGHTS = {
-    ema:          1.0,
-    macd:         1.0,
-    rsi:          1.0,
-    volume:       1.0,
-    funding:      1.0,
-    oi:           1.0,
-    lsRatio:      1.0,
-    squeeze:      1.0,
-    crowd:        1.0,
-    liquidation:  1.0,
-    smc:          1.0,
-    regime:       1.0,
-    orderflow:    1.0,
-  };
+  // ── Liquidity Sweep (Likidite Süpürmesi) ──────
+  detectLiquiditySweep(candles) {
+    const sweeps = [];
+    const n = candles.length;
+    for (let i = 5; i < n; i++) {
+      const c    = candles[i];
+      const prev = candles.slice(i - 5, i);
+      const maxH = Math.max(...prev.map(p => p.h));
+      const minL = Math.min(...prev.map(p => p.l));
+      const body = Math.abs(c.c - c.o);
+      const total = c.h - c.l;
+      const wickR = total > 0 ? body / total : 1;
 
-  const BOUNDS = { min: 0.3, max: 2.5 };
-  const LEARN_RATE = 0.08; // Her sonuçta %8 güncelle
-
-  // ── Load/Save — localStorage + Supabase sync ────────────────────
-  function _loadWeights() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || { ...DEFAULT_WEIGHTS }; }
-    catch { return { ...DEFAULT_WEIGHTS }; }
-  }
-  function _saveWeights(w) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(w)); } catch {}
-    // Supabase'e async sync
-    if (typeof SupabaseDB !== 'undefined') {
-      SupabaseDB.saveWeights(w).catch(() => {});
-    }
-  }
-  function _loadSignals() {
-    try { return JSON.parse(localStorage.getItem(SIG_KEY) || '[]'); }
-    catch { return []; }
-  }
-  function _saveSignals(s) {
-    try { localStorage.setItem(SIG_KEY, JSON.stringify(s.slice(-300))); } catch {}
-  }
-
-  // Supabase'den ağırlıkları yükle (sayfa açılışında)
-  async function syncFromSupabase() {
-    if (typeof SupabaseDB === 'undefined') return;
-    try {
-      const w = await SupabaseDB.loadWeights();
-      if (w && Object.keys(w).length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(w));
-        console.log('✅ AI agirliklar Supabase\'den yuklendi');
+      if (c.h > maxH && c.c < maxH && wickR < 0.4 && total > 0) {
+        sweeps.push({ type: 'bearish_sweep', price: c.h, idx: i, msg: 'Buy-side likidite toplandı' });
       }
-    } catch(e) {}
-  }
-
-  // ── Sinyal Kaydet ─────────────────────────────────────────────────
-  function recordSignal({ sym, dir, entry, confidence, fund, oi, lsRatio,
-                          liquidationPressure, squeezeRisk, crowdRisk,
-                          regime, smcStructure, tp, sl }) {
-    const signals = _loadSignals();
-    const signal  = {
-      id:        Date.now(),
-      sym, dir, entry, confidence,
-      fund:      fund ?? null,
-      oi:        oi ?? null,
-      lsRatio:   lsRatio ?? null,
-      liquidationPressure: liquidationPressure ?? 0,
-      squeezeRisk:         squeezeRisk ?? 0,
-      crowdRisk:           crowdRisk ?? 0,
-      regime:    regime || 'UNKNOWN',
-      smcStructure: smcStructure || {},
-      tp, sl,
-      status:   'OPEN',    // OPEN | TP_HIT | SL_HIT | EXPIRED
-      pnl:       null,
-      duration:  null,
-      openTs:    Date.now(),
-      closeTs:   null,
-    };
-    signals.unshift(signal);
-    _saveSignals(signals);
-
-    // Supabase'e kaydet
-    if (typeof SupabaseDB !== 'undefined') {
-      SupabaseDB.saveSignal({
-        sym:          signal.sym,
-        direction:    signal.dir,
-        entry:        signal.entry,
-        confidence:   signal.confidence,
-        funding:      signal.fund,
-        oi:           signal.oi,
-        lsRatio:      signal.lsRatio,
-        squeezeRisk:  signal.squeezeRisk,
-        crowdRisk:    signal.crowdRisk,
-        liqPressure:  signal.liquidationPressure,
-        regime:       signal.regime,
-        smcStructure: signal.smcStructure,
-        tp:           signal.tp,
-        sl:           signal.sl,
-      }).then(rows => {
-        // Supabase ID'sini sakla
-        if (rows && rows[0]) signal._supabaseId = rows[0].id;
-      }).catch(() => {});
-    }
-
-    return signal.id;
-  }
-
-  // ── Sonuç Güncelle ────────────────────────────────────────────────
-  function closeSignal(id, { status, pnl, closePrice }) {
-    const signals = _loadSignals();
-    const sig     = signals.find(s => s.id === id);
-    if (!sig) return;
-
-    sig.status   = status;  // TP_HIT | SL_HIT | EXPIRED
-    sig.pnl      = pnl ?? null;
-    sig.closeTs  = Date.now();
-    sig.duration = Math.round((sig.closeTs - sig.openTs) / 60000); // dakika
-    _saveSignals(signals);
-
-    // Ağırlıkları güncelle
-    _updateWeights(sig);
-    return sig;
-  }
-
-  // ── Adaptif Ağırlık Güncelleme ────────────────────────────────────
-  function _updateWeights(sig) {
-    const weights = _loadWeights();
-    const success = sig.status === 'TP_HIT';
-    const fake    = sig.smcStructure?.fakeBreak === true;
-    const dir     = success ? 1 : -1;
-
-    // Başarılı sinyal → kullanılan indikatörlerin ağırlığını artır
-    // Başarısız sinyal → azalt
-    const updates = {};
-
-    // Squeeze başarısıysa squeeze ağırlığını artır
-    if (sig.squeezeRisk > 50) updates.squeeze = dir * LEARN_RATE * 1.5;
-
-    // Crowd riski doğru tahmin ettiyse artır
-    if (sig.crowdRisk > 50) updates.crowd = dir * LEARN_RATE;
-
-    // Likidasyon baskısı yüksekse
-    if (sig.liquidationPressure > 60) updates.liquidation = dir * LEARN_RATE;
-
-    // Funding doğru yöndeydiyse
-    if (sig.fund !== null) {
-      const fundCorrect = (sig.dir==='LONG' && sig.fund<0) || (sig.dir==='SHORT' && sig.fund>0);
-      updates.funding = fundCorrect ? LEARN_RATE * (success?1:-0.5) : -LEARN_RATE * 0.5;
-    }
-
-    // Fake breakout öğrenme — negatif
-    if (fake && !success) {
-      updates.smc = -LEARN_RATE * 1.5;
-    }
-
-    // Regime doğru tahminse
-    updates.regime = dir * LEARN_RATE * 0.5;
-
-    // Ağırlıkları uygula ve sınırlar içinde tut
-    Object.entries(updates).forEach(([k, delta]) => {
-      if (weights[k] !== undefined) {
-        weights[k] = Math.max(BOUNDS.min, Math.min(BOUNDS.max, weights[k] + delta));
+      if (c.l < minL && c.c > minL && wickR < 0.4 && total > 0) {
+        sweeps.push({ type: 'bullish_sweep', price: c.l, idx: i, msg: 'Sell-side likidite toplandı' });
       }
-    });
-
-    _saveWeights(weights);
-    return weights;
+    }
+    return sweeps.slice(-5);
   }
 
-  // ── Mevcut Ağırlıkları Al ─────────────────────────────────────────
-  function getWeights() { return _loadWeights(); }
+  // ── Order Blocks ──────────────────────────────
+  detectOrderBlocks(candles) {
+    const obs = [];
+    const n   = candles.length;
+    for (let i = 2; i < n - 1; i++) {
+      const c    = candles[i];
+      const next = candles[i + 1];
+      const body = Math.abs(c.c - c.o);
+      const avgB = candles.slice(i - 5, i).map(x => Math.abs(x.c - x.o)).reduce((a, b) => a + b, 0) / 5;
 
-  // ── İstatistikler ─────────────────────────────────────────────────
-  function getStats() {
-    const signals = _loadSignals();
-    const closed  = signals.filter(s => s.status !== 'OPEN');
-    if (!closed.length) return null;
+      if (c.c < c.o && next.c > next.o && body > avgB * 1.5 && next.c > c.h) {
+        obs.push({ type: 'bullish', high: c.o, low: c.l, idx: i, desc: 'Kurumsal alım bölgesi' });
+      }
+      if (c.c > c.o && next.c < next.o && body > avgB * 1.5 && next.c < c.l) {
+        obs.push({ type: 'bearish', high: c.h, low: c.o, idx: i, desc: 'Kurumsal satış bölgesi' });
+      }
+    }
+    return obs.slice(-4);
+  }
 
-    const wins    = closed.filter(s => s.status === 'TP_HIT').length;
-    const wr      = (wins / closed.length * 100).toFixed(1);
-    const avgPnl  = (closed.filter(s=>s.pnl!==null).reduce((a,s)=>a+s.pnl,0) / closed.length).toFixed(2);
+  // ── Fair Value Gaps ───────────────────────────
+  detectFVG(candles) {
+    const fvgs = [];
+    const n    = candles.length;
+    for (let i = 1; i < n - 1; i++) {
+      const prev = candles[i - 1];
+      const next = candles[i + 1];
 
-    // Regime bazlı winrate
-    const byRegime = {};
-    closed.forEach(s => {
-      if (!byRegime[s.regime]) byRegime[s.regime] = { wins:0, total:0 };
-      byRegime[s.regime].total++;
-      if (s.status === 'TP_HIT') byRegime[s.regime].wins++;
-    });
+      if (prev.h < next.l && (next.l - prev.h) / prev.h > 0.001) {
+        const filled = candles.slice(i + 1).some(c => c.l <= prev.h);
+        if (!filled) fvgs.push({ type: 'bullish', high: next.l, low: prev.h, idx: i });
+      }
+      if (prev.l > next.h && (prev.l - next.h) / prev.l > 0.001) {
+        const filled = candles.slice(i + 1).some(c => c.h >= prev.l);
+        if (!filled) fvgs.push({ type: 'bearish', high: prev.l, low: next.h, idx: i });
+      }
+    }
+    return fvgs.slice(-4);
+  }
 
-    // Squeeze başarı oranı
-    const squeezeSigs = closed.filter(s => s.squeezeRisk > 50);
-    const squeezeWR   = squeezeSigs.length
-      ? (squeezeSigs.filter(s=>s.status==='TP_HIT').length / squeezeSigs.length * 100).toFixed(1)
-      : null;
+  // ── CHoCH / BOS ───────────────────────────────
+  detectMarketStructure(candles) {
+    const n   = candles.length;
+    const pts = [];
+    let pH = null, pL = null;
+
+    for (let i = 2; i < n - 2; i++) {
+      const c = candles[i], p = candles[i-1], pp = candles[i-2], nx = candles[i+1];
+      if (p.h >= pp.h && p.h >= c.h && p.h >= nx.h) {
+        pts.push({ type: pH !== null ? (p.h > pH ? 'HH' : 'LH') : 'HH', price: p.h, idx: i-1 });
+        pH = p.h;
+      }
+      if (p.l <= pp.l && p.l <= c.l && p.l <= nx.l) {
+        pts.push({ type: pL !== null ? (p.l < pL ? 'LL' : 'HL') : 'LL', price: p.l, idx: i-1 });
+        pL = p.l;
+      }
+    }
+
+    const recent = pts.slice(-6);
+    const highs  = recent.filter(p => p.type === 'HH' || p.type === 'LH');
+    const lows   = recent.filter(p => p.type === 'LL' || p.type === 'HL');
+    const bullish = highs.some(h => h.type === 'HH') && lows.some(l => l.type === 'HL');
+    const bearish = highs.some(h => h.type === 'LH') && lows.some(l => l.type === 'LL');
+
+    // CHoCH
+    const lastTypes = recent.slice(-4).map(p => p.type);
+    const choch = (lastTypes.includes('HH') && lastTypes.includes('LL')) ||
+                  (lastTypes.includes('HL') && lastTypes.includes('LH'));
+    const bos   = lastTypes.slice(-2).every(t => t === 'HH') ||
+                  lastTypes.slice(-2).every(t => t === 'LL');
 
     return {
-      total: closed.length, wins, wr, avgPnl, byRegime, squeezeWR,
-      openCount: signals.filter(s=>s.status==='OPEN').length,
+      points: recent,
+      trend:  bullish ? 'BULLISH' : bearish ? 'BEARISH' : 'NEUTRAL',
+      choch,
+      bos,
+      eqHighs: highs.filter(h => h.type === 'LH').length >= 2,
+      eqLows:  lows.filter(l => l.type === 'HL').length >= 2,
     };
   }
 
-  // ── Ağırlık Sıfırla ───────────────────────────────────────────────
-  function resetWeights() {
-    _saveWeights({ ...DEFAULT_WEIGHTS });
-    return { ...DEFAULT_WEIGHTS };
+  // ── Stop Hunt ─────────────────────────────────
+  detectStopHunt(candles) {
+    const n     = candles.length;
+    const hunts = [];
+    for (let i = 3; i < n; i++) {
+      const c    = candles[i];
+      const prev = candles.slice(i - 3, i);
+      const body = Math.abs(c.c - c.o);
+      const total = c.h - c.l;
+      const wickU = c.h - Math.max(c.o, c.c);
+      const wickL = Math.min(c.o, c.c) - c.l;
+
+      if (wickU > body * 2 && wickU > total * 0.4 && total > 0) {
+        const swept = Math.max(...prev.map(p => p.h));
+        if (c.h > swept) {
+          hunts.push({ type: 'bearish_hunt', price: c.h, idx: i,
+            desc: `Stop hunt yukarı — %${(wickU/c.c*100).toFixed(2)} wick` });
+        }
+      }
+      if (wickL > body * 2 && wickL > total * 0.4 && total > 0) {
+        const swept = Math.min(...prev.map(p => p.l));
+        if (c.l < swept) {
+          hunts.push({ type: 'bullish_hunt', price: c.l, idx: i,
+            desc: `Stop hunt aşağı — %${(wickL/c.c*100).toFixed(2)} wick` });
+        }
+      }
+    }
+    return hunts.slice(-3);
   }
 
-  // ── UI Render ─────────────────────────────────────────────────────
-  function renderUI(panelId='learningPanel') {
-    const el = document.getElementById(panelId);
-    if (!el) return;
-
-    const weights = _loadWeights();
-    const stats   = getStats();
-
-    const weightRows = Object.entries(weights).map(([k,v]) => {
-      const pct = ((v - BOUNDS.min) / (BOUNDS.max - BOUNDS.min) * 100).toFixed(0);
-      const col = v >= 1.3 ? 'var(--green)' : v <= 0.7 ? 'var(--red)' : 'var(--yellow)';
-      return `
-        <div style="display:flex;align-items:center;gap:8px;padding:3px 0">
-          <span style="font-size:9px;color:var(--text3);min-width:80px;text-transform:uppercase">${k}</span>
-          <div style="flex:1;height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${col};border-radius:3px"></div>
-          </div>
-          <span style="font-size:10px;font-weight:700;color:${col};min-width:35px;text-align:right">${v.toFixed(2)}x</span>
-        </div>`;
-    }).join('');
-
-    const statsHtml = stats ? `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
-        <div style="background:rgba(0,0,0,.25);border-radius:7px;padding:6px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">TOPLAM</div>
-          <div style="font-size:16px;font-weight:800;color:var(--cyan)">${stats.total}</div>
-        </div>
-        <div style="background:rgba(0,0,0,.25);border-radius:7px;padding:6px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">WINRATE</div>
-          <div style="font-size:16px;font-weight:800;color:${+stats.wr>=55?'var(--green)':'var(--red)'}">%${stats.wr}</div>
-        </div>
-        <div style="background:rgba(0,0,0,.25);border-radius:7px;padding:6px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">ORT. PNL</div>
-          <div style="font-size:16px;font-weight:800;color:${+stats.avgPnl>=0?'var(--green)':'var(--red)'}">%${stats.avgPnl}</div>
-        </div>
-      </div>` : '<div style="font-size:10px;color:var(--text3);margin-bottom:10px">Henüz kapanan sinyal yok</div>';
-
-    el.innerHTML = `
-      ${statsHtml}
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ ADAPTİF AĞIRLIKLAR</div>
-      <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;margin-bottom:10px">${weightRows}</div>
-      <button onclick="LearningEngine.resetWeights();LearningEngine.renderUI('learningPanel')"
-        style="width:100%;padding:6px;background:rgba(255,61,107,.08);border:1px solid rgba(255,61,107,.25);border-radius:8px;color:var(--red);font-size:10px;cursor:pointer">
-        ↺ Ağırlıkları Sıfırla
-      </button>`;
+  // ── Tam SMC Analizi ───────────────────────────
+  analyze(candles, price) {
+    if (!candles?.length) return null;
+    return {
+      sweeps:  this.detectLiquiditySweep(candles),
+      obs:     this.detectOrderBlocks(candles),
+      fvgs:    this.detectFVG(candles),
+      ms:      this.detectMarketStructure(candles),
+      hunts:   this.detectStopHunt(candles),
+      // Shorthand flags for confirmation engine
+      ob:      this.detectOrderBlocks(candles).length > 0,
+      choch:   this.detectMarketStructure(candles).choch,
+      bos:     this.detectMarketStructure(candles).bos,
+    };
   }
+}
 
-  return { recordSignal, closeSignal, getWeights, getStats, resetWeights, renderUI, syncFromSupabase };
-})();
+export const SMCEngine = new SmartMoneyEngine();

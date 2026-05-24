@@ -1,108 +1,75 @@
-// ════════════════════════════════════════════════════════════════════
-// COINGLASS SERVICE — Plugin mimarisi
-// API key boşsa Binance kullanır, doluysa CoinGlass kullanır
-// ════════════════════════════════════════════════════════════════════
-const CoinGlassService = (() => {
+// ═══════════════════════════════════════════════
+// STORAGE SERVICE — localStorage merkezi yönetim
+// ═══════════════════════════════════════════════
+import { STORAGE_KEYS } from '../modules/constants.js';
+import { safeJSON } from '../modules/helpers.js';
 
-  const CONFIG = {
-    apiKey:  '',   // ← Buraya API key ekle
-    baseUrl: 'https://open-api-v3.coinglass.com',
-    enabled: false,
-    timeout: 8000,
-    retry:   2,
-  };
-
-  const _cache = new Map();
-  const TTL = { funding:60000, oi:30000, ls:60000, liq:30000 };
-
-  function _cached(k) {
-    const c = _cache.get(k);
-    if (!c || Date.now()-c.ts > c.ttl) { _cache.delete(k); return null; }
-    return c.data;
-  }
-  function _setCache(k, data, ttl) { _cache.set(k, { data, ts:Date.now(), ttl }); }
-
-  async function _fetch(endpoint, params={}) {
-    const url = new URL(CONFIG.baseUrl + endpoint);
-    Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
-    const ctrl = new AbortController();
-    const tid  = setTimeout(()=>ctrl.abort(), CONFIG.timeout);
+class StorageService {
+  get(key, fallback = null) {
     try {
-      const r = await fetch(url.toString(), {
-        headers: { 'coinglassSecret': CONFIG.apiKey },
-        signal: ctrl.signal,
-      });
-      clearTimeout(tid);
-      const json = await r.json();
-      if (json.code !== '0' && json.code !== 0) throw new Error(json.msg);
-      return json.data;
-    } catch(e) { clearTimeout(tid); throw e; }
-  }
-
-  async function _binance(url) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
-  }
-
-  const FBASE = 'https://fapi.binance.com';
-
-  // ── Public API ────────────────────────────────────────────────────
-  async function getLiquidationClusters(sym) {
-    if (!CONFIG.enabled) return { clusters:[], source:'binance' };
-    const k = `liqcluster_${sym}`;
-    const c = _cached(k);
-    if (c) return c;
-    try {
-      const data = await _fetch('/api/futures/liquidation/level', { symbol: sym.replace('USDT','') });
-      const result = {
-        clusters: (Array.isArray(data)?data:[]).slice(0,10).map(c=>({
-          price:+c.price, usd:+c.usdValue, side:c.side,
-          strength: +c.usdValue>10e6?'HIGH':+c.usdValue>1e6?'MEDIUM':'LOW',
-        })),
-        source: 'coinglass',
-      };
-      _setCache(k, result, TTL.liq);
-      return result;
-    } catch(e) { return { clusters:[], source:'binance' }; }
-  }
-
-  async function getFundingExtreme(sym) {
-    const k = `fund_${sym}`;
-    const c = _cached(k);
-    if (c) return c;
-    let result;
-    try {
-      if (CONFIG.enabled) {
-        const data = await _fetch('/api/futures/fundingRate/chart', {
-          symbol: sym.replace('USDT',''), interval:'1h', limit:8,
-        });
-        const arr    = Array.isArray(data) ? data : [];
-        const latest = arr[arr.length-1]?.fundingRate ?? 0;
-        result = { fund:+latest*100, history:arr.map(d=>+d.fundingRate*100), source:'coinglass' };
-      } else {
-        const data = await _binance(`${FBASE}/fapi/v1/fundingRate?symbol=${sym}&limit=8`);
-        const arr  = Array.isArray(data) ? data : [];
-        const latest = arr[arr.length-1]?.fundingRate ?? 0;
-        result = { fund:+latest*100, history:arr.map(d=>+d.fundingRate*100), source:'binance' };
-      }
-    } catch(e) { result = { fund:null, history:[], source:'binance' }; }
-    _setCache(k, result, TTL.funding);
-    return result;
-  }
-
-  function setup(apiKey) {
-    if (apiKey?.length > 10) {
-      CONFIG.apiKey  = apiKey;
-      CONFIG.enabled = true;
-      console.log('✅ CoinGlass aktif');
-    } else {
-      CONFIG.enabled = false;
+      const raw = localStorage.getItem(key);
+      if (raw === null) return fallback;
+      return safeJSON(raw, raw); // JSON ise parse et, değilse string döndür
+    } catch {
+      return fallback;
     }
   }
 
-  function isEnabled() { return CONFIG.enabled; }
-  function clearCache() { _cache.clear(); }
+  set(key, value) {
+    try {
+      localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
-  return { setup, isEnabled, getLiquidationClusters, getFundingExtreme, clearCache };
-})();
+  remove(key) {
+    try { localStorage.removeItem(key); return true; }
+    catch { return false; }
+  }
+
+  // Trade memory — max 500 kayıt
+  getTrades() {
+    return this.get(STORAGE_KEYS.TRADE_MEMORY, []);
+  }
+
+  saveTrades(trades) {
+    return this.set(STORAGE_KEYS.TRADE_MEMORY, trades.slice(-500));
+  }
+
+  // Bildirimler
+  getNotifications() {
+    return this.get(STORAGE_KEYS.NOTIF_STORE, []);
+  }
+
+  saveNotifications(notifs) {
+    return this.set(STORAGE_KEYS.NOTIF_STORE, notifs.slice(-200));
+  }
+
+  // Toast toggle
+  isToastEnabled() {
+    return this.get(STORAGE_KEYS.TOAST_ENABLED, 'true') !== 'false';
+  }
+
+  setToastEnabled(val) {
+    return this.set(STORAGE_KEYS.TOAST_ENABLED, val ? 'true' : 'false');
+  }
+
+  // User prefs
+  getPrefs() {
+    return this.get(STORAGE_KEYS.USER_PREFS, {});
+  }
+
+  setPref(key, value) {
+    const prefs = this.getPrefs();
+    prefs[key] = value;
+    return this.set(STORAGE_KEYS.USER_PREFS, prefs);
+  }
+
+  getPref(key, fallback = null) {
+    return this.getPrefs()[key] ?? fallback;
+  }
+}
+
+export const Storage = new StorageService();

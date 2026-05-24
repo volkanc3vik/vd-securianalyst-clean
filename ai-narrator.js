@@ -1,131 +1,215 @@
-// ════════════════════════════════════════════════════════════════════
-// ORDERFLOW ENGINE — Depth analizi, Walls, Absorption, Spoofing
-// ════════════════════════════════════════════════════════════════════
-const OrderflowEngine = (() => {
+// ═══════════════════════════════════════════════
+// AI ENGINE — Ağırlıklı konfirmasyon + karar motoru
+// ═══════════════════════════════════════════════
+import { CONFIRMATION_WEIGHTS, SETUP_GRADES } from '../modules/constants.js';
+import { clamp, getCurrentSession } from '../modules/helpers.js';
 
-  const _depthHistory = [];
-  let   _lastDepth    = null;
+class AIEngine {
 
-  function onDepthUpdate(bids, asks, price) {
-    if (!bids?.length || !asks?.length) return;
+  // ── Ağırlıklı Konfirmasyon Sistemi ───────────
+  evaluate({ closes, candles, ind, entry, oiData, btcData, wsData, regimeMode, smcData, fakeBreak, sym }) {
+    if (!entry || !ind) return null;
 
-    const bidVol = bids.slice(0,10).reduce((s,x)=>s+(+x[0])*(+x[1]),0);
-    const askVol = asks.slice(0,10).reduce((s,x)=>s+(+x[0])*(+x[1]),0);
-    const total  = bidVol + askVol;
-    const imbalance = total > 0 ? bidVol / total : 0.5;
+    const isLong = entry.dir === 'LONG';
+    const price  = closes[closes.length - 1];
 
-    // Duvar tespiti (tek seviyede büyük hacim)
-    const bidWalls = bids.slice(0,20).filter(b => +b[1]*+b[0] > total*0.15)
-      .map(b => ({ price:+b[0], vol:+b[1]*+b[0], type:'BID' }));
-    const askWalls = asks.slice(0,20).filter(a => +a[1]*+a[0] > total*0.15)
-      .map(a => ({ price:+a[0], vol:+a[1]*+a[0], type:'ASK' }));
+    // Hacim hesapla
+    const vols = candles.slice(-10).map(c => c.v);
+    const avgV = vols.slice(0, -1).reduce((a, b) => a + b, 0) / 9;
+    const volR = candles[candles.length - 1].v / avgV;
 
-    _lastDepth = { bids, asks, bidVol, askVol, imbalance, bidWalls, askWalls, price, ts:Date.now() };
-    _depthHistory.push({ imbalance, bidVol, askVol, ts: Date.now() });
-    if (_depthHistory.length > 100) _depthHistory.shift();
+    // Her koşulu değerlendir
+    const results = this._evalConditions({ isLong, ind, volR, oiData, btcData, wsData, entry, smcData, fakeBreak, regimeMode, price });
+
+    // Toplam skor
+    const maxScore   = Object.values(CONFIRMATION_WEIGHTS).reduce((a, b) => a + b, 0);
+    const totalScore = results.reduce((s, r) => s + r.score, 0);
+    const pct        = clamp(Math.round(totalScore / maxScore * 100), 0, 100);
+
+    const confirmed = results.filter(r => r.status === 'confirmed').length;
+    const pending   = results.filter(r => r.status === 'pending').length;
+    const failed    = results.filter(r => r.status === 'failed').length;
+    const critFailed = results.filter(r => r.critical && r.status === 'failed');
+
+    const grade = this._grade(pct, confirmed, critFailed.length > 0);
+    const aiSummary = this._buildSummary(entry.dir, grade, confirmed, results.length, pct, results, sym);
+
+    return { conditions: results, score: pct, confirmed, pending, failed, grade, aiSummary, critFailed };
   }
 
-  function analyze(wsData) {
-    const depth = _lastDepth;
-    if (!depth) return {
-      imbalance:0.5, obPressure:'NEUTRAL', liquidityWalls:[],
-      absorption:false, spoofing:false, aggressivePressure:'NEUTRAL',
-      imbalanceScore:50,
-    };
+  _evalConditions({ isLong, ind, volR, oiData, btcData, wsData, entry, smcData, fakeBreak, regimeMode }) {
+    const checks = [
+      {
+        id: 'ema_full', weight: CONFIRMATION_WEIGHTS.ema_full, label: 'EMA Hizalama', critical: false,
+        eval: () => {
+          if (isLong) {
+            if (ind.ema9 > ind.ema21 && ind.ema21 > ind.ema50) return { status: 'confirmed', score: 12, detail: '9>21>50 ✓' };
+            if (ind.ema9 > ind.ema21) return { status: 'pending', score: 6, detail: '9>21, 50 bekleniyor' };
+            return { status: 'failed', score: 0, detail: 'EMA negatif' };
+          } else {
+            if (ind.ema9 < ind.ema21 && ind.ema21 < ind.ema50) return { status: 'confirmed', score: 12, detail: '9<21<50 ✓' };
+            if (ind.ema9 < ind.ema21) return { status: 'pending', score: 6, detail: '9<21, 50 bekleniyor' };
+            return { status: 'failed', score: 0, detail: 'EMA yükseliş hizası' };
+          }
+        },
+      },
+      {
+        id: 'macd', weight: CONFIRMATION_WEIGHTS.macd, label: 'MACD', critical: false,
+        eval: () => {
+          const ok = isLong ? ind.macd.hist > 0 : ind.macd.hist < 0;
+          return ok
+            ? { status: 'confirmed', score: 10, detail: `Hist: ${ind.macd.hist > 0 ? '+' : ''}${ind.macd.hist.toFixed(4)}` }
+            : { status: 'failed',    score: 0,  detail: `Hist: ${ind.macd.hist.toFixed(4)}` };
+        },
+      },
+      {
+        id: 'rsi', weight: CONFIRMATION_WEIGHTS.rsi, label: 'RSI Bölge', critical: false,
+        eval: () => {
+          const r = ind.rsi;
+          if (isLong) {
+            if (r >= 45 && r <= 65) return { status: 'confirmed', score: 8,  detail: `RSI: ${r.toFixed(1)} ✓` };
+            if (r > 72)             return { status: 'failed',    score: 0,  detail: `RSI: ${r.toFixed(1)} aşırı alım` };
+            return                         { status: 'pending',   score: 4,  detail: `RSI: ${r.toFixed(1)}` };
+          } else {
+            if (r >= 32 && r <= 55) return { status: 'confirmed', score: 8,  detail: `RSI: ${r.toFixed(1)} ✓` };
+            if (r < 28)             return { status: 'failed',    score: 0,  detail: `RSI: ${r.toFixed(1)} aşırı satım` };
+            return                         { status: 'pending',   score: 4,  detail: `RSI: ${r.toFixed(1)}` };
+          }
+        },
+      },
+      {
+        id: 'volume', weight: CONFIRMATION_WEIGHTS.volume, label: 'Hacim Onayı', critical: false,
+        eval: () => {
+          if (volR >= 1.5) return { status: 'confirmed', score: 10, detail: `${volR.toFixed(1)}x ort.` };
+          if (volR >= 1.2) return { status: 'pending',   score: 6,  detail: `${volR.toFixed(1)}x artıyor` };
+          return                  { status: 'failed',    score: 0,  detail: `${volR.toFixed(1)}x yetersiz` };
+        },
+      },
+      {
+        id: 'rr', weight: CONFIRMATION_WEIGHTS.rr, label: 'R/R Oranı', critical: true,
+        eval: () => {
+          const rr = entry?.rr || 0;
+          if (rr >= 2.5) return { status: 'confirmed', score: 10, detail: `1:${rr} ✓` };
+          if (rr >= 2.0) return { status: 'confirmed', score: 8,  detail: `1:${rr}` };
+          if (rr >= 1.5) return { status: 'pending',   score: 5,  detail: `1:${rr} düşük` };
+          return                { status: 'failed',    score: 0,  detail: `1:${rr} yetersiz` };
+        },
+      },
+      {
+        id: 'no_fake', weight: CONFIRMATION_WEIGHTS.no_fake, label: 'Fake Breakout Yok', critical: true,
+        eval: () => fakeBreak
+          ? { status: 'failed',    score: 0,  detail: 'Fake breakout tespit edildi' }
+          : { status: 'confirmed', score: 10, detail: 'Fake breakout riski yok' },
+      },
+      {
+        id: 'smc', weight: CONFIRMATION_WEIGHTS.smc, label: 'SMC Yapı', critical: false,
+        eval: () => {
+          if (!smcData) return { status: 'pending', score: 4, detail: 'SMC analizi bekleniyor' };
+          const pts = (smcData.sweeps?.length ? 1 : 0) + (smcData.ob ? 1 : 0) + (smcData.choch ? 1 : 0);
+          if (pts >= 2) return { status: 'confirmed', score: 8, detail: `${pts} SMC sinyali` };
+          if (pts >= 1) return { status: 'pending',   score: 5, detail: `${pts} SMC sinyali` };
+          return              { status: 'failed',    score: 0, detail: 'SMC yapı yok' };
+        },
+      },
+      {
+        id: 'regime', weight: CONFIRMATION_WEIGHTS.regime, label: 'Market Rejimi', critical: false,
+        eval: () => {
+          if (regimeMode === 'TREND')                         return { status: 'confirmed', score: 8, detail: 'Trend modu ✓' };
+          if (regimeMode === 'PANIC' && isLong)               return { status: 'failed',    score: 0, detail: 'Panik modu' };
+          if (regimeMode === 'VOLATILE')                      return { status: 'pending',   score: 3, detail: 'Volatil market' };
+          return                                                     { status: 'pending',   score: 5, detail: regimeMode || '—' };
+        },
+      },
+      {
+        id: 'btc', weight: CONFIRMATION_WEIGHTS.btc, label: 'BTC Korelasyon', critical: false,
+        eval: () => {
+          if (!btcData) return { status: 'pending', score: 4, detail: 'BTC verisi bekleniyor' };
+          const chg = btcData.chg || 0;
+          if ((isLong && chg > 0.5) || (!isLong && chg < -0.5))
+            return { status: 'confirmed', score: 8, detail: `BTC ${chg > 0 ? '+' : ''}${chg.toFixed(2)}%` };
+          if (Math.abs(chg) < 0.5)
+            return { status: 'pending',   score: 4, detail: `BTC nötr` };
+          return { status: 'failed', score: 0, detail: `BTC ters yön` };
+        },
+      },
+      {
+        id: 'ob_imbalance', weight: CONFIRMATION_WEIGHTS.ob_imbalance, label: 'Order Book', critical: false,
+        eval: () => {
+          if (!wsData?.obImbalance) return { status: 'pending', score: 4, detail: 'WS bekleniyor' };
+          const obi = wsData.obImbalance;
+          if ((isLong && obi > 0.6) || (!isLong && obi < 0.4))
+            return { status: 'confirmed', score: 8, detail: `${isLong ? 'Alım' : 'Satış'} baskısı %${(obi * 100).toFixed(0)}` };
+          return { status: 'pending', score: 4, detail: `OB dengeli` };
+        },
+      },
+      {
+        id: 'funding', weight: CONFIRMATION_WEIGHTS.funding, label: 'Funding Sağlıklı', critical: false,
+        eval: () => {
+          if (!oiData?.fund && oiData?.fund !== 0) return { status: 'pending', score: 4, detail: 'Funding bekleniyor' };
+          const f = oiData.fund;
+          if ((isLong && f > 0.08) || (!isLong && f < -0.08))
+            return { status: 'failed',    score: 0, detail: `Funding aşırı: %${f.toFixed(3)}` };
+          if (Math.abs(f) < 0.05)
+            return { status: 'confirmed', score: 8, detail: `Funding: %${f.toFixed(3)} ✓` };
+          return { status: 'pending', score: 5, detail: `Funding: %${f.toFixed(3)}` };
+        },
+      },
+    ];
 
-    const { bidVol, askVol, imbalance, bidWalls, askWalls } = depth;
-    const total = bidVol + askVol;
-
-    // Baskı yönü
-    const obPressure = imbalance > 0.65 ? 'GÜÇLÜ_ALIM' :
-                       imbalance > 0.55 ? 'HAFİF_ALIM' :
-                       imbalance < 0.35 ? 'GÜÇLÜ_SATIŞ' :
-                       imbalance < 0.45 ? 'HAFİF_SATIŞ' : 'NÖTR';
-
-    // Duvarlar
-    const liquidityWalls = [...bidWalls, ...askWalls]
-      .sort((a,b) => b.vol - a.vol)
-      .slice(0,5);
-
-    // Absorption tespiti — imbalance hızlı değişiyorsa
-    let absorption = false;
-    if (_depthHistory.length >= 5) {
-      const recent = _depthHistory.slice(-5);
-      const changes = recent.map((d,i) => i>0 ? Math.abs(d.imbalance - recent[i-1].imbalance) : 0);
-      const avgChange = changes.reduce((a,b)=>a+b,0) / changes.length;
-      absorption = avgChange > 0.1; // Hızlı imbalance değişimi = absorption
-    }
-
-    // Spoofing tespiti — büyük duvar var ama fiyat o yönde gitmiyor
-    let spoofing = false;
-    if (liquidityWalls.length > 0 && _depthHistory.length >= 10) {
-      const bigWall = liquidityWalls[0];
-      const recentImb = _depthHistory.slice(-10);
-      const avgImb = recentImb.reduce((s,d)=>s+d.imbalance,0) / recentImb.length;
-      // Büyük bid wall ama ortalama imbalance satış yönünde
-      if (bigWall.type === 'BID' && avgImb < 0.4) spoofing = true;
-      if (bigWall.type === 'ASK' && avgImb > 0.6) spoofing = true;
-    }
-
-    // Agresif baskı (WS aggTrade'den)
-    let aggressivePressure = 'NEUTRAL';
-    if (wsData?.aggressiveBuyRatio !== undefined) {
-      const r = wsData.aggressiveBuyRatio;
-      aggressivePressure = r > 0.7 ? 'AGRESİF_ALIM' :
-                           r > 0.6 ? 'HAFİF_ALIM' :
-                           r < 0.3 ? 'AGRESİF_SATIŞ' :
-                           r < 0.4 ? 'HAFİF_SATIŞ' : 'NEUTRAL';
-    }
-
-    // İmbalance skoru (0-100)
-    const imbalanceScore = Math.round(imbalance * 100);
-
-    return {
-      imbalance, obPressure, liquidityWalls,
-      absorption, spoofing, aggressivePressure,
-      imbalanceScore, bidVol, askVol, total,
-    };
+    return checks.map(c => {
+      const result = c.eval();
+      return { ...c, ...result, eval: undefined };
+    });
   }
 
-  function renderUI(result, panelId='orderflowPanel') {
-    const el = document.getElementById(panelId);
-    if (!el) return;
-    const { imbalance:imb, obPressure:obp, liquidityWalls:lw,
-            absorption:abs, spoofing:sp, aggressivePressure:ap, imbalanceScore:is } = result;
-
-    const col = is>=65?'var(--green)':is>=55?'var(--cyan)':is<=35?'var(--red)':is<=45?'var(--orange)':'var(--text3)';
-    const fmt = v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'$0';
-
-    const wallsHtml = lw.length ? lw.slice(0,4).map(w=>`
-      <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;background:rgba(${w.type==='BID'?'0,229,160':'255,61,107'},.05);border-radius:5px;margin-bottom:3px">
-        <span style="font-size:9px;color:${w.type==='BID'?'var(--green)':'var(--red)'};min-width:30px">${w.type}</span>
-        <span style="font-size:10px;font-weight:700;color:var(--text);flex:1">$${w.price.toFixed(2)}</span>
-        <span style="font-size:9px;color:var(--text3)">$${fmt(w.vol)}</span>
-      </div>`).join('') : '<div style="font-size:10px;color:var(--text3)">Likidite duvarı yok</div>';
-
-    el.innerHTML = `
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px">
-          <span style="color:var(--text3)">Order Book İmbalance</span>
-          <span style="font-weight:700;color:${col}">${obp.replace('_',' ')}</span>
-        </div>
-        <div style="height:8px;background:rgba(255,61,107,.2);border-radius:4px;overflow:hidden">
-          <div style="height:100%;width:${is}%;background:linear-gradient(90deg,var(--green),var(--green));border-radius:4px;transition:width .3s"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:3px;color:var(--text3)">
-          <span>BID $${fmt(result.bidVol||0)}</span>
-          <span>ASK $${fmt(result.askVol||0)}</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        ${abs?`<span style="font-size:9px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);border-radius:8px;color:var(--cyan)">🧲 Absorpsiyon</span>`:''}
-        ${sp?`<span style="font-size:9px;padding:2px 8px;background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.25);border-radius:8px;color:var(--yellow)">⚠ Spoofing</span>`:''}
-        <span style="font-size:9px;padding:2px 8px;background:rgba(255,255,255,.06);border-radius:8px;color:var(--text3)">${ap.replace('_',' ')}</span>
-      </div>
-      <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text3);margin-bottom:6px">LİKİDİTE DUVARLARI</div>
-      ${wallsHtml}
-    `;
+  _grade(pct, confirmed, hasCritFailed) {
+    if (hasCritFailed) return SETUP_GRADES.D;
+    if (pct >= 85 && confirmed >= 8) return SETUP_GRADES.S;
+    if (pct >= 72 && confirmed >= 7) return SETUP_GRADES.A;
+    if (pct >= 58 && confirmed >= 5) return SETUP_GRADES.B;
+    if (pct >= 42 && confirmed >= 4) return SETUP_GRADES.C;
+    return SETUP_GRADES.D;
   }
 
-  return { onDepthUpdate, analyze, renderUI };
-})();
+  _buildSummary(dir, grade, confirmed, total, pct, results, sym) {
+    const sn = (sym || '—').replace('USDT', '');
+    const missing = results.filter(r => r.status !== 'confirmed').map(r => r.label).slice(0, 3);
+
+    if (grade === SETUP_GRADES.S)
+      return `${sn} — ${confirmed}/${total} onay (%${pct}). Kurumsal kalite ${dir} setup.`;
+    if (grade === SETUP_GRADES.A)
+      return `${sn} — ${confirmed}/${total} onay (%${pct}). Güçlü ${dir} setup. ${missing.join(', ')} bekleniyor.`;
+    if (grade === SETUP_GRADES.B)
+      return `${sn} — ${confirmed}/${total} onay (%${pct}). Erken momentum. ${missing.join(', ')} eksik.`;
+    if (grade === SETUP_GRADES.C)
+      return `${sn} — ${confirmed}/${total} onay (%${pct}). Agresif giriş — stop sıkı tutulmalı.`;
+    return `${sn} — ${confirmed}/${total} onay (%${pct}). Zayıf setup — konfirmasyon bekle.`;
+  }
+
+  // ── Adaptif skor modifiyeri (geçmiş performans) ──
+  getScoreModifier(sym, setupGrade) {
+    const trades = [];
+    try { JSON.parse(localStorage.getItem('vd_trade_memory') || '[]').slice(-100).forEach(t => trades.push(t)); } catch {}
+    if (trades.length < 3) return 0;
+
+    const sn  = sym?.replace('USDT', '') || '';
+    let mod   = 0;
+
+    const ct  = trades.filter(t => t.sym === sn);
+    if (ct.length >= 3) {
+      const wr = ct.filter(t => t.win).length / ct.length;
+      if (wr >= 0.7) mod += 5; else if (wr <= 0.35) mod -= 8;
+    }
+
+    const session = getCurrentSession();
+    const st = trades.filter(t => t.session === session);
+    if (st.length >= 3) {
+      const wr = st.filter(t => t.win).length / st.length;
+      if (wr >= 0.65) mod += 3; else if (wr <= 0.35) mod -= 5;
+    }
+
+    return clamp(mod, -20, 15);
+  }
+}
+
+export const AIEng = new AIEngine();

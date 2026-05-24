@@ -1,107 +1,133 @@
 // ═══════════════════════════════════════════════
-// DEBOUNCE / THROTTLE — Performance utilities
+// HELPERS — Genel yardımcı fonksiyonlar
 // ═══════════════════════════════════════════════
 
 /**
- * Debounce — son çağrıdan delay ms sonra çalışır
+ * Mevcut trading session'ı döndür
  */
-export function debounce(fn, delay = 300) {
-  let timer;
-  return function (...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
+export function getCurrentSession() {
+  const h = new Date().getUTCHours();
+  if (h < 8)  return 'ASIA';
+  if (h < 13) return 'LONDON';
+  if (h < 21) return 'NEW_YORK';
+  return 'AFTER';
 }
 
 /**
- * Throttle — en fazla interval ms'de bir çalışır
+ * Sayıyı belirli aralığa sıkıştır
  */
-export function throttle(fn, interval = 100) {
-  let lastCall = 0;
-  return function (...args) {
-    const now = Date.now();
-    if (now - lastCall >= interval) {
-      lastCall = now;
-      return fn.apply(this, args);
-    }
-  };
+export function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
 }
 
 /**
- * RAF throttle — requestAnimationFrame ile senkronize
- * UI güncellemeleri için ideal
+ * Dizi ortalaması
  */
-export function rafThrottle(fn) {
-  let pending = false;
-  return function (...args) {
-    if (pending) return;
-    pending = true;
-    requestAnimationFrame(() => {
-      fn.apply(this, args);
-      pending = false;
-    });
-  };
+export function average(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
 }
 
 /**
- * Once — sadece bir kez çalışır
+ * DOM element oluştur
  */
-export function once(fn) {
-  let called = false;
-  let result;
-  return function (...args) {
-    if (!called) {
-      called = true;
-      result = fn.apply(this, args);
-    }
-    return result;
-  };
+export function createElement(tag, attrs = {}, innerHTML = '') {
+  const el = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => {
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.style.cssText = v;
+    else el.setAttribute(k, v);
+  });
+  if (innerHTML) el.innerHTML = innerHTML;
+  return el;
 }
 
 /**
- * Timer yöneticisi — memory leak önler
- * Tüm interval/timeout'ları merkezi yönet
+ * Event listener'ı güvenli ekle/kaldır
  */
-export class TimerManager {
+export class EventBus {
   constructor() {
-    this._intervals = new Map();
-    this._timeouts  = new Set();
+    this._listeners = new Map();
   }
 
-  setInterval(key, fn, ms) {
-    this.clearInterval(key);
-    const id = setInterval(fn, ms);
-    this._intervals.set(key, id);
-    return id;
+  on(event, handler) {
+    if (!this._listeners.has(event)) {
+      this._listeners.set(event, new Set());
+    }
+    this._listeners.get(event).add(handler);
   }
 
-  clearInterval(key) {
-    if (this._intervals.has(key)) {
-      clearInterval(this._intervals.get(key));
-      this._intervals.delete(key);
+  off(event, handler) {
+    if (this._listeners.has(event)) {
+      this._listeners.get(event).delete(handler);
     }
   }
 
-  setTimeout(fn, ms) {
-    const id = setTimeout(() => {
-      this._timeouts.delete(id);
-      fn();
-    }, ms);
-    this._timeouts.add(id);
-    return id;
+  emit(event, data) {
+    if (this._listeners.has(event)) {
+      this._listeners.get(event).forEach(fn => {
+        try { fn(data); } catch (e) { console.warn(`EventBus error [${event}]:`, e); }
+      });
+    }
   }
 
-  clearAll() {
-    this._intervals.forEach(id => clearInterval(id));
-    this._intervals.clear();
-    this._timeouts.forEach(id => clearTimeout(id));
-    this._timeouts.clear();
-  }
-
-  get activeCount() {
-    return this._intervals.size + this._timeouts.size;
+  clear() {
+    this._listeners.clear();
   }
 }
 
-// Global timer manager
-export const Timers = new TimerManager();
+// Global event bus
+export const Bus = new EventBus();
+
+/**
+ * Lazy singleton — bir kez oluştur, hep kullan
+ */
+export function lazy(factory) {
+  let instance;
+  return {
+    get() {
+      if (!instance) instance = factory();
+      return instance;
+    },
+    reset() { instance = undefined; }
+  };
+}
+
+/**
+ * DOM hazır olunca çalıştır
+ */
+export function onReady(fn) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
+  }
+}
+
+/**
+ * Mobile mi?
+ */
+export function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+/**
+ * iOS Safari mi?
+ */
+export function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+/**
+ * Güvenli JSON parse
+ */
+export function safeJSON(str, fallback = null) {
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
+/**
+ * Benzersiz ID üret
+ */
+export function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
