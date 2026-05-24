@@ -1,348 +1,130 @@
+PROFESSIONAL AI TRADING TERMINAL — EXTRA CSS
+   ════════════════════════════════════════════════════ */
 
-// ══════════════════════════════════════════════════════
-// SUPABASE GİRİŞ SİSTEMİ
-// ══════════════════════════════════════════════════════
-const SB_URL = 'https://affgbrpwuikpqgsapuvh.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZmdicnB3dWlrcHFnc2FwdXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzA4MDAsImV4cCI6MjA5NDcwNjgwMH0.8o0msNt9OQXJMbfLm8L0ipzPghCrAcvx1wKXBGT36Ds';
-const LS_KEY = 'aap_access_v1';
-
-// ════════════════════════════════════════════════════
-// PHASE 1 — SECURE SUPABASE CLIENT
-// ════════════════════════════════════════════════════
-
-// ── Rate Limiting (Brute Force Koruması) ──
-const RateLimit = (() => {
-  const KEY    = 'vd_rl_v1';
-  const MAX    = 5;    // max deneme
-  const WINDOW = 300;  // 5 dakika (saniye)
-  const BLOCK  = 900;  // 15 dakika blok
-
-  function _get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
-  function _set(d){ try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){} }
-
-  function check(){
-    const d   = _get();
-    const now = Math.floor(Date.now()/1000);
-    // Blok kontrolü
-    if(d.blockedUntil && now < d.blockedUntil){
-      const left = Math.ceil((d.blockedUntil - now)/60);
-      throw new Error(`Çok fazla deneme. ${left} dakika sonra tekrar deneyin.`);
-    }
-    // Window sıfırla
-    if(d.windowStart && now - d.windowStart > WINDOW){
-      _set({});
-      return;
-    }
-    // Limit kontrolü
-    if(d.count >= MAX){
-      const blockedUntil = now + BLOCK;
-      _set({...d, blockedUntil});
-      throw new Error('Çok fazla hatalı deneme. 15 dakika bekleyin.');
-    }
-  }
-
-  function fail(){
-    const d   = _get();
-    const now = Math.floor(Date.now()/1000);
-    _set({ count:(d.count||0)+1, windowStart:d.windowStart||now });
-  }
-
-  function success(){
-    _set({});
-  }
-
-  function getRemainingTime(){
-    const d = _get();
-    if(!d.blockedUntil) return 0;
-    return Math.max(0, d.blockedUntil - Math.floor(Date.now()/1000));
-  }
-
-  return{check, fail, success, getRemainingTime};
-})();
-
-// ── Secure Supabase API ──────────────────────────────
-// Sadece anon key kullanır — service_role asla frontend'e gelmez
-// Tüm işlemler RLS policy'lerle korunur
-async function sbQuery(table, filters, method='GET', body=null) {
-  const url = `${SB_URL}/rest/v1/${table}?${filters}`;
-  const opts = {
-    method,
-    headers: {
-      'apikey'       : SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type' : 'application/json',
-      'Prefer'       : method==='PATCH' ? 'return=minimal' : 'return=representation',
-      'Accept'       : 'application/json',
-    },
-  };
-  if(body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  if(!r.ok){
-    const txt = await r.text();
-    throw new Error('API hatasi ' + r.status + ': ' + txt);
-  }
-  if(method==='PATCH') return true;
-  return await r.json();
+/* Market Regime Badge */
+.regime-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;padding:10px 16px;margin-bottom:14px;
 }
-
-// ── Secure RPC çağrısı (stored procedure üzerinden) ──
-async function sbRPC(fnName, params={}){
-  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fnName}`, {
-    method : 'POST',
-    headers: {
-      'apikey'       : SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type' : 'application/json',
-      'Accept'       : 'application/json',
-    },
-    body: JSON.stringify(params),
-  });
-  if(!r.ok){
-    const txt = await r.text();
-    throw new Error('RPC hatasi ' + r.status + ': ' + txt);
-  }
-  return await r.json();
+.regime-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;
+  letter-spacing:1px;text-transform:uppercase;
 }
+.regime-TREND      {background:rgba(0,229,160,.15);border:1px solid rgba(0,229,160,.4);color:var(--green);}
+.regime-SIDEWAYS   {background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.4);color:var(--yellow);}
+.regime-VOLATILE   {background:rgba(255,122,0,.15);border:1px solid rgba(255,122,0,.4);color:var(--orange);}
+.regime-SQUEEZE    {background:rgba(157,125,250,.15);border:1px solid rgba(157,125,250,.4);color:var(--purple);}
+.regime-PANIC      {background:rgba(255,61,107,.15);border:1px solid rgba(255,61,107,.4);color:var(--red);}
+.regime-ACCUMULATE {background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);color:var(--cyan);}
+.regime-DISTRIBUTE {background:rgba(255,122,0,.12);border:1px solid rgba(255,122,0,.35);color:var(--orange);}
+.regime-desc{font-size:11px;color:var(--text2);flex:1;}
+.regime-dot{width:7px;height:7px;border-radius:50%;animation:regimePulse 2s infinite;flex-shrink:0;}
+@keyframes regimePulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-// ── Göz butonu ──
-function toggleLoginEye() {
-  const inp = document.getElementById('loginInput');
-  const eye = document.getElementById('loginEye');
-  if(inp.type==='password') { inp.type='text'; eye.textContent='🔒'; }
-  else { inp.type='password'; eye.textContent='👁'; }
+/* AI Trade Decision */
+.ai-decision-card{
+  border-radius:14px;padding:16px 18px;margin-bottom:14px;
+  display:flex;align-items:flex-start;gap:14px;
 }
+.ai-decision-card.STRONG_LONG  {background:linear-gradient(135deg,rgba(0,229,160,.18),rgba(0,229,160,.05));border:2px solid rgba(0,229,160,.5);box-shadow:0 0 30px rgba(0,229,160,.15);}
+.ai-decision-card.LONG         {background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.3);}
+.ai-decision-card.WEAK_LONG    {background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.15);}
+.ai-decision-card.WAIT         {background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.25);}
+.ai-decision-card.WEAK_SHORT   {background:rgba(255,61,107,.04);border:1px solid rgba(255,61,107,.15);}
+.ai-decision-card.SHORT        {background:rgba(255,61,107,.08);border:1px solid rgba(255,61,107,.3);}
+.ai-decision-card.STRONG_SHORT {background:linear-gradient(135deg,rgba(255,61,107,.18),rgba(255,61,107,.05));border:2px solid rgba(255,61,107,.5);box-shadow:0 0 30px rgba(255,61,107,.15);}
+.ai-dec-icon{font-size:28px;flex-shrink:0;}
+.ai-dec-label{font-size:16px;font-weight:900;letter-spacing:1px;margin-bottom:4px;}
+.ai-dec-reason{font-size:12px;color:var(--text2);line-height:1.6;font-style:italic;}
+.ai-dec-sub{font-size:11px;color:var(--text3);margin-top:6px;font-weight:400;}
 
-// ── Input sanitize ──
-function sanitizeCode(raw){
-  // Sadece izin verilen karakterler: harf, rakam, tire, parantez, yıldız, nokta
-  return (raw||'').trim().slice(0,50); // Max 50 karakter
+/* Fake Breakout Warning */
+.fake-warning{
+  display:none;
+  background:rgba(255,122,0,.08);border:1px solid rgba(255,122,0,.35);
+  border-radius:10px;padding:10px 14px;margin-bottom:10px;
+  font-size:12px;color:var(--orange);line-height:1.55;
 }
+.fake-warning.show{display:block;animation:fakeWarn .5s ease;}
+@keyframes fakeWarn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
-// ── Oturum kontrolü güvenlik hardening ──
-function _verifySession(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return false;
-    const data = JSON.parse(raw);
-    // Admin
-    if(data.isAdmin && data.kod) return true;
-    // Normal — süre kontrolü
-    if(data.bitis && Date.now() < data.bitis) return true;
-    // Süresi dolmuş
-    localStorage.removeItem(LS_KEY);
-    return false;
-  }catch(e){
-    localStorage.removeItem(LS_KEY);
-    return false;
-  }
-}
+/* OI + Funding Panel */
+.oi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:600px){.oi-grid{grid-template-columns:repeat(2,1fr);}}
+.oi-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;}
+.oi-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:4px;text-transform:uppercase;}
+.oi-val{font-size:15px;font-weight:800;}
+.oi-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.oi-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:5px;}
+.oib-squeeze-s{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--green);}
+.oib-squeeze-l{background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);color:var(--red);}
+.oib-crowded-l{background:rgba(255,122,0,.1);border:1px solid rgba(255,122,0,.3);color:var(--orange);}
+.oib-crowded-s{background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);color:var(--purple);}
+.oib-neutral  {background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text2);}
 
-// ── Blocked olup olmadığını sayfa yüklenince göster ──
-(function checkBlock(){
-  const rem = RateLimit.getRemainingTime();
-  if(rem > 0){
-    const err = document.getElementById('loginErr');
-    if(err){
-      err.textContent = `🔒 Hesap ${Math.ceil(rem/60)} dakika kilitli. Lütfen bekleyin.`;
-      err.classList.add('show');
-    }
-    const btn = document.getElementById('loginBtn');
-    if(btn){ btn.disabled=true; btn.textContent='Kilitli...'; }
-    // Geri sayım
-    const intv = setInterval(()=>{
-      const r2 = RateLimit.getRemainingTime();
-      if(r2<=0){
-        clearInterval(intv);
-        if(err) err.classList.remove('show');
-        if(btn){ btn.disabled=false; btn.textContent='Giriş Yap'; }
-      } else {
-        if(err) err.textContent=`🔒 Hesap ${Math.ceil(r2/60)} dakika kilitli.`;
-      }
-    }, 1000);
-  }
-})();
+/* BTC Influence Meter */
+.btc-inf-wrap{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+.btc-inf-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.btc-inf-lbl{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:1px;}
+.btc-inf-val{font-size:13px;font-weight:800;}
+.btc-inf-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.btc-inf-fill{height:100%;border-radius:3px;transition:width .5s;}
 
-// ── Hata göster ──
-function showLoginErr(msg) {
-  const e = document.getElementById('loginErr');
-  const i = document.getElementById('loginInput');
-  e.textContent = msg;
-  e.classList.add('show');
-  i.classList.add('err');
-  setTimeout(()=>i.classList.remove('err'), 500);
-}
+/* Risk Engine */
+.risk-engine-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:500px){.risk-engine-grid{grid-template-columns:1fr 1fr;}}
+.re-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;text-align:center;}
+.re-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:6px;text-transform:uppercase;}
+.re-val{font-size:18px;font-weight:900;}
+.re-sub{font-size:10px;color:var(--text3);margin-top:3px;}
 
-// ── Giriş yap ──
-async function doLogin() {
-  const inp = document.getElementById('loginInput');
-  const btn = document.getElementById('loginBtn');
-  const err = document.getElementById('loginErr');
-  const kod = sanitizeCode(inp.value);
+/* Trade Management */
+.tm-list{display:flex;flex-direction:column;gap:6px;}
+.tm-item{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:8px;padding:10px 13px;border:1px solid rgba(255,255,255,.05);}
+.tm-icon{font-size:16px;flex-shrink:0;}
+.tm-text{font-size:12px;color:var(--text2);flex:1;line-height:1.4;}
+.tm-text b{color:var(--text);}
+.tm-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.tm-act{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--green);}
+.tm-warn{background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.3);color:var(--yellow);}
+.tm-crit{background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);color:var(--red);}
 
-  if(!kod) { showLoginErr('⚠ Lütfen erişim kodunuzu girin.'); return; }
+/* Volatility Meter */
+.vol-meter{height:8px;background:linear-gradient(90deg,var(--green),var(--yellow),var(--orange),var(--red));border-radius:4px;position:relative;margin:6px 0;}
+.vol-needle{position:absolute;top:-4px;width:3px;height:16px;background:white;border-radius:2px;transform:translateX(-50%);transition:left .5s;box-shadow:0 0 6px rgba(255,255,255,.5);}
 
-  // Rate limit kontrolü
-  try{ RateLimit.check(); }
-  catch(e){ showLoginErr('🔒 ' + e.message); return; }
+/* Squeeze Detector */
+.squeeze-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;}
+.sq-active{background:rgba(157,125,250,.15);border:1px solid rgba(157,125,250,.4);color:var(--purple);animation:sqPulse 1.5s infinite;}
+.sq-inactive{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text3);}
+@keyframes sqPulse{0%,100%{box-shadow:0 0 0 0 rgba(157,125,250,.4)}50%{box-shadow:0 0 0 6px rgba(157,125,250,0)}}
 
-  err.classList.remove('show');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="login-spinner"></span>Doğrulanıyor...';
+/* Glass card alt başlık */
+.gc-sub{font-size:10px;color:var(--text3);margin-bottom:10px;line-height:1.5;}
+@keyframes pulse2{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
 
-  try {
-    // Edge Function üzerinden güvenli doğrulama
-    // Tablo doğrudan sorgulanmıyor — tüm işlem sunucu tarafında
-    const resp = await fetch('https://affgbrpwuikpqgsapuvh.supabase.co/functions/v1/verify-code', {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ kod }),
-    });
+/* ── AI LWC PANEL ── */
+.lwc-panel{background:var(--glass);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px;backdrop-filter:blur(20px);}
+.lwc-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);}
+.lwc-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase;}
+.lwc-sym{font-size:15px;font-weight:800;color:var(--text);margin-left:4px;}
+.lwc-ctrls{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap;}
+.lwcBtn{font-size:10px;font-weight:700;padding:4px 9px;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all .15s;letter-spacing:.5px;}
+.lwcBtn.on{opacity:1;}.lwcBtn:not(.on){opacity:.35;}.lwcBtn:hover{opacity:1!important;}
+.lwcBtn.bsr{background:rgba(0,229,160,.12);color:var(--green);border:1px solid rgba(0,229,160,.3);}
+.lwcBtn.btp{background:rgba(21,101,255,.12);color:#6ab0ff;border:1px solid rgba(21,101,255,.4);}
+.lwcBtn.bms{background:rgba(157,125,250,.12);color:var(--purple);border:1px solid rgba(157,125,250,.3);}
+.lwcBtn.bpat{background:rgba(255,193,7,.1);color:var(--yellow);border:1px solid rgba(255,193,7,.3);}
+#lwcContainer{width:100%;height:460px;background:#010508;}
+@media(max-width:650px){#lwcContainer{height:320px;}}
+.lwc-legend{display:flex;gap:12px;flex-wrap:wrap;padding:7px 16px;background:rgba(0,0,0,.2);border-top:1px solid var(--border);font-size:10px;}
+.lwc-leg{display:flex;align-items:center;gap:4px;color:var(--text3);}
+.lwc-leg span{width:14px;height:2px;border-radius:1px;display:inline-block;}
+.lwc-notes{display:flex;flex-wrap:wrap;gap:5px;padding:9px 14px;background:rgba(0,0,0,.15);border-top:1px solid var(--border);min-height:34px;}
+.lwc-note{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;font-family:'Inter',sans-serif;animation:lwcNoteIn .3s ease;}
+@keyframes lwcNoteIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
 
-    const result = await resp.json();
-
-    if(!result.success) {
-      RateLimit.fail();
-      const rem = RateLimit.getRemainingTime();
-      const errMsg = result.error || 'Geçersiz erişim kodu';
-      showLoginErr(rem > 60
-        ? `🔒 ${errMsg}. Hesap ${Math.ceil(rem/60)} dakika kilitlendi.`
-        : '❌ ' + errMsg + '. Lütfen tekrar deneyin.');
-      btn.disabled = false;
-      btn.innerHTML = 'Giriş Yap';
-      return;
-    }
-
-    // Başarılı — rate limit sıfırla
-    RateLimit.success();
-
-    // Admin ise sonsuz erişim
-    if(result.is_admin) {
-      localStorage.setItem(LS_KEY, JSON.stringify({
-        bitis  : Date.now() + (36500 * 24 * 60 * 60 * 1000),
-        isAdmin: true, kod,
-        sureLbl: 'Sınırsız Erişim',
-      }));
-      grantAccess(true);
-      return;
-    }
-
-    // Normal kullanıcı — süre hesapla
-    const sure_ms = result.sure_gun * 24 * 60 * 60 * 1000;
-    const bitis   = Date.now() + sure_ms;
-    const sg      = result.sure_gun;
-    const sureLbl = sg <= 0.5 ? '12 Saat'
-      : sg === 1 ? '1 Gün' : sg === 2 ? '2 Gün'
-      : sg === 3 ? '3 Gün' : sg === 4 ? '4 Gün'
-      : sg === 5 ? '5 Gün' : sg === 6 ? '6 Gün'
-      : sg === 7 ? '1 Hafta' : sg === 14 ? '2 Hafta'
-      : sg === 21 ? '3 Hafta' : sg === 30 ? '1 Ay'
-      : sg + ' Gün';
-
-    localStorage.setItem(LS_KEY, JSON.stringify({
-      bitis, isAdmin: false, kod, sureLbl,
-    }));
-
-    grantAccess(false);
-
-  } catch(e) {
-    showLoginErr('⚠ Bağlantı hatası: ' + e.message);
-    console.error('Login hata:', e);
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = 'Giriş Yap';
-}
-
-// ── Erişim ver ──
-function grantAccess(isAdmin) {
-  const screen = document.getElementById('loginScreen');
-  if(screen){ screen.classList.add('hiding'); setTimeout(()=>{ screen.style.display='none'; }, 600); }
-  setTimeout(startTimer, 100);
-
-  // Ana uygulamayı başlat (2. script bloğundaki init fonksiyonu)
-  setTimeout(() => {
-    try {
-      if(typeof initApp === 'function') initApp(isAdmin);
-    } catch(e) {
-      // initApp yoksa eski yöntemi dene
-      try { if(typeof startClock === 'function') startClock(); } catch {}
-      try { if(typeof startScan  === 'function') startScan();  } catch {}
-      try { if(typeof loadCoin   === 'function') loadCoin(window.SYM || 'BTCUSDT', window.INTV || '15m'); } catch {}
-    }
-  }, 700);
-}
-
-// ── Çıkış yap ──
-function doLogout() {
-  if(!confirm('Çıkış yapmak istediğinizden emin misiniz?')) return;
-  localStorage.removeItem(LS_KEY);
-  location.reload();
-}
-
-// ── Sayaç ──
-let _timerInterval = null;
-function startTimer() {
-  const bar        = document.getElementById('timerBar');
-  const txt        = document.getElementById('tbText');
-  const adminBadge = document.getElementById('tbAdmin');
-  if(!bar || !txt) return; // DOM henüz hazır değil
-
-  bar.classList.add('show');
-
-  const data = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
-  if(data.isAdmin) {
-    if(adminBadge) adminBadge.style.display = 'inline-flex';
-    txt.innerHTML = 'Yönetici erişimi — <b>Sınırsız</b>';
-    return;
-  }
-
-  function update() {
-    const kalan = data.bitis - Date.now();
-    if(kalan <= 0) {
-      localStorage.removeItem(LS_KEY);
-      location.reload();
-      return;
-    }
-    const gun  = Math.floor(kalan / 86400000);
-    const saat = Math.floor((kalan % 86400000) / 3600000);
-    const dk   = Math.floor((kalan % 3600000) / 60000);
-    const sn   = Math.floor((kalan % 60000) / 1000);
-
-    let kalanStr = '';
-    if(gun > 0)       kalanStr = `${gun} gün ${saat} saat`;
-    else if(saat > 0) kalanStr = `${saat} saat ${dk} dk`;
-    else              kalanStr = `${dk} dk ${sn} sn`;
-
-    txt.className = 'tb-text' + (gun===0&&saat<2?' warn':'') + (gun===0&&saat===0&&dk<30?' crit':'');
-    txt.innerHTML = `Kalan süre: <b>${kalanStr}</b>`;
-  }
-  update();
-  _timerInterval = setInterval(update, 1000);
-}
-
-// ── Sayfa açılınca kontrol ──
-(function checkAccess() {
-  const raw = localStorage.getItem(LS_KEY);
-  if(!raw) return;
-
-  try {
-    const data = JSON.parse(raw);
-    if(data.isAdmin || (data.bitis && Date.now() < data.bitis)) {
-      const screen = document.getElementById('loginScreen');
-      if(screen) screen.style.display = 'none';
-      // DOM tamamen hazır olunca timer başlat
-      if(document.readyState === 'loading'){
-        document.addEventListener('DOMContentLoaded', startTimer);
-      } else {
-        setTimeout(startTimer, 50);
-      }
-    } else {
-      localStorage.removeItem(LS_KEY);
-    }
-  } catch(e) {
-    localStorage.removeItem(LS_KEY);
-  }
-})();
-
-// ── Exports ─────────────────────────────────────────────────────
-export { doLogin, doLogout, grantAccess, startTimer };
+/* ════════════════════════════════════════════════════
+   
