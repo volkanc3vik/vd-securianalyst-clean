@@ -1,19 +1,36 @@
 // ════════════════════════════════════════════════════════════════════
-// TELEGRAM FORMATTER
-// Sinyal objesini Telegram HTML mesajına çevirir.
+// TELEGRAM FORMATTER (Mini-Aşama A — Dil Dönüşümü)
 //
 // Public API:
 //   TelegramFormatter.format(signal, channelType) → { text } | { text:null, error }
 //
-// Onaylanmış Final Tasarım:
-//   FREE  → 8 satır, kısa, merak uyandırıcı, VIP CTA içerir
-//   VIP   → ~12 satır, fiyatlar (Entry/TP1/TP2/TP3/Stop) monospace
-//   Risk  → 🟢 Düşük · 🟡 Orta · 🔴 Yüksek (renk-kodlu)
-//   Setup → Phase 2 rationale dinamik kullanılır
-//   $ işareti kullanılmaz
+// HUKUKİ DÖNÜŞÜM KURALLARI:
+//   - "Sinyal" → "Analiz çıktısı"
+//   - "Entry / TP / SL" → ASLA TELEGRAM'DA GÖSTERİLMEZ
+//   - "LONG/SHORT" → "Yön eğilimi" altında bağlamlı kullanılır
+//   - "Confidence" → "Algoritmik güven seviyesi"
+//   - "Setup" → "Teknik koşullar"
+//   - VIP kanal CTA YOK — sadece web site CTA
+//   - Her mesajın altında: "Yatırım tavsiyesi değildir."
+//
+// FUNNEL STRATEJİSİ:
+//   - Tam fiyat seviyeleri ASLA Telegram'da yer almaz
+//   - "Detaylı analiz platformda" hissi
+//   - Web site CTA: vd-securianalyst.com/?sym=X&ref=tg
+//
+// NOT: Backend hâlâ 'free' ve 'vip' channel kabul ediyor (geriye uyumluluk).
+// Ama mesaj formatı tek tip. VIP kanal stratejik olarak kaldırılıyor.
 // ════════════════════════════════════════════════════════════════════
 window.TelegramFormatter = (() => {
   'use strict';
+
+  // ── Site funnel URL config ───────────────────────────────────────
+  const SITE_URL = 'https://vd-securianalyst.com';
+
+  function _funnelUrl(symBase) {
+    const sym = encodeURIComponent(symBase || '');
+    return `${SITE_URL}/?sym=${sym}&ref=tg&utm_source=telegram`;
+  }
 
   // ── HTML escape ──────────────────────────────────────────────────
   function escapeHtml(s) {
@@ -26,29 +43,6 @@ window.TelegramFormatter = (() => {
       .replace(/'/g, '&#39;');
   }
 
-  // ── Fiyat formatlama ─────────────────────────────────────────────
-  function fmtPrice(v) {
-    const n = +v;
-    if (!Number.isFinite(n)) return '—';
-    if (n >= 10000) return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
-    if (n >= 100)   return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
-    if (n >= 1)     return n.toLocaleString('en-US', { maximumFractionDigits: 4 });
-    if (n >= 0.01)  return n.toLocaleString('en-US', { maximumFractionDigits: 5 });
-    return n.toPrecision(4);
-  }
-
-  function fmtPct(v) {
-    const n = +v;
-    if (!Number.isFinite(n)) return '';
-    const sign = n >= 0 ? '+' : '−';
-    return `${sign}${Math.abs(n).toFixed(2)}%`;
-  }
-
-  function calcPct(price, target) {
-    if (!Number.isFinite(+price) || !Number.isFinite(+target) || +price === 0) return null;
-    return ((+target - +price) / +price) * 100;
-  }
-
   // ── Sembol görsel formatı (BTCUSDT → BTC/USDT) ───────────────────
   function cleanSymbol(sym) {
     if (!sym) return '—';
@@ -59,23 +53,13 @@ window.TelegramFormatter = (() => {
     return s;
   }
 
-  // ── Tier kararı ───────────────────────────────────────────────────
-  function tierLabel(score) {
-    const s = +score || 0;
-    if (s >= 90) return 'ELITE';
-    if (s >= 80) return 'STRONG';
-    if (s >= 70) return 'VALID';
-    if (s >= 60) return 'WEAK';
-    return 'AVOID';
-  }
-
   // ── Risk emoji (renk-kodlu) ──────────────────────────────────────
   function riskEmoji(level) {
     if (!level) return '⚪';
     const v = String(level).toLowerCase();
-    if (v === 'düşük' || v === 'dusuk' || v === 'low')          return '🟢';
-    if (v === 'orta'  || v === 'moderate' || v === 'medium')    return '🟡';
-    if (v === 'yüksek' || v === 'yuksek' || v === 'high')       return '🔴';
+    if (v === 'düşük' || v === 'dusuk' || v === 'low')       return '🟢';
+    if (v === 'orta'  || v === 'moderate' || v === 'medium') return '🟡';
+    if (v === 'yüksek' || v === 'yuksek' || v === 'high')    return '🔴';
     return '⚪';
   }
 
@@ -85,32 +69,29 @@ window.TelegramFormatter = (() => {
     return risk.level || '—';
   }
 
+  // ── Algoritmik güven seviyesi yorumlaması ────────────────────────
+  // Tier label artık "STRONG/ELITE" gibi vaatkâr değil, "yüksek destek" gibi nötr
+  function confidenceLabel(score) {
+    const s = +score || 0;
+    if (s >= 90) return 'Çok yüksek teknik destek';
+    if (s >= 80) return 'Yüksek teknik destek';
+    if (s >= 70) return 'Orta-yüksek teknik destek';
+    if (s >= 60) return 'Orta teknik destek';
+    return 'Düşük teknik destek';
+  }
+
   // ── Sinyalden temel veri çek ──────────────────────────────────────
+  // NOT: entry, sl, tp1/2/3 hâlâ extract ediliyor — internal kullanım için
+  // (controller bunları VIP tracker'a iletecek). AMA Telegram mesajında YOK.
   function _extractCore(signal) {
     const dir = (signal.dir || '').toUpperCase();
     const isLong  = dir === 'LONG';
     const isShort = dir === 'SHORT';
 
-    // Skor: yöne göre
     let score;
     if (isLong)       score = signal.score ?? signal.lScore ?? signal.confidence;
     else if (isShort) score = signal.score ?? signal.sScore ?? signal.confidence;
     else              score = signal.score ?? signal.confidence ?? 0;
-
-    // Fiyat seviyeleri — yön bazlı
-    const entry = signal.entry ?? signal.price;
-    let sl, tp1, tp2, tp3;
-    if (isShort) {
-      sl  = signal.slShort  ?? signal.sl;
-      tp1 = signal.tp1Short ?? signal.tp1;
-      tp2 = signal.tp2Short ?? signal.tp2;
-      tp3 = signal.tp3Short ?? signal.tp3;
-    } else {
-      sl  = signal.sl;
-      tp1 = signal.tp1;
-      tp2 = signal.tp2;
-      tp3 = signal.tp3;
-    }
 
     return {
       sym:     signal.sym || '',
@@ -121,143 +102,80 @@ window.TelegramFormatter = (() => {
       isShort,
       score:   +score || 0,
       risk:    signal.risk,
-      entry,
-      sl, tp1, tp2, tp3,
       rationale: signal.rationale || null,
     };
   }
 
-  // ── FREE Format ──────────────────────────────────────────────────
-  // Onaylanan tasarım:
-  //   🚀 BTC/USDT LONG
-  //   📊 Confidence: 87/100 · STRONG
-  //   🟡 Risk: Orta
-  //   💬 [Setup teaser, max ~80 char]
-  //   👉 Detaylı giriş seviyeleri VIP kanalda: @vdaisignalsvip
-  //   #BTC #LONG
-  function _formatFree(c) {
-    const sym = escapeHtml(c.symDisp);
-    const dir = c.isLong ? 'LONG' : c.isShort ? 'SHORT' : c.dir;
-    const dirEmoji = c.isLong ? '🚀' : '📉';
-    const tier = tierLabel(c.score);
-    const rEmoji = riskEmoji(riskText(c.risk));
-    const rText = escapeHtml(riskText(c.risk));
-
-    // Teaser cümlesi (rationale'i kısalt)
-    let teaser;
-    if (c.rationale && c.rationale.length > 0) {
-      teaser = c.rationale.length > 90
-        ? c.rationale.slice(0, 87) + '...'
-        : c.rationale;
-    } else {
-      teaser = 'Çoklu indikatör konfluansı.';
+  // ── Teknik koşullar listesi (rationale'dan çıkar) ────────────────
+  // Rationale örneği: "HTF momentum + likidite sweep + sağlıklı funding"
+  // → ['HTF hizalama', 'Likidite testi', 'Funding desteği']
+  function _technicalConditions(rationale) {
+    if (!rationale || typeof rationale !== 'string') {
+      return ['Çoklu indikatör konfluansı'];
     }
-    teaser = escapeHtml(teaser);
+    // " + " veya "," ile ayır, max 4 koşul
+    const parts = rationale.split(/\s*[+,]\s*/).map(p => p.trim()).filter(Boolean);
+    if (parts.length === 0) return ['Çoklu indikatör konfluansı'];
+    // Riskli kelimeleri yumuşat
+    return parts.slice(0, 4).map(p =>
+      p.replace(/\bsweep\b/gi, 'testi')
+       .replace(/\bmomentum\b/gi, 'momentum desteği')
+       .replace(/\bfunding\b/gi, 'funding seviyesi')
+    );
+  }
 
-    const tagBase = escapeHtml(c.symBase || 'CRYPTO');
-    const tagDir  = escapeHtml(dir);
+  // ── ANA FORMAT (eski Free formatın evrilmiş hali) ────────────────
+  // Bu format hem 'free' hem 'vip' channel için kullanılır.
+  // VIP kanal kaldırılıyor ama backend hâlâ kabul ediyor.
+  function _formatAnalysis(c) {
+    const sym      = escapeHtml(c.symDisp);
+    const dir      = c.isLong ? 'LONG' : c.isShort ? 'SHORT' : c.dir;
+    const dirEmoji = c.isLong ? '▲' : c.isShort ? '▼' : '◆';
+    const rEmoji   = riskEmoji(riskText(c.risk));
+    const rText    = escapeHtml(riskText(c.risk));
+    const confLabel = confidenceLabel(c.score);
+
+    const conditions = _technicalConditions(c.rationale);
+    const conditionsBlock = conditions.map(t => `✓ ${escapeHtml(t)}`).join('\n');
+
+    const funnelUrl = _funnelUrl(c.symBase);
+    const tagBase = escapeHtml(c.symBase || 'KRIPTO');
 
     return [
-      `${dirEmoji} <b>${sym} ${dir}</b>`,
+      `📊 <b>${sym}</b> · Algoritmik yön eğilimi: <b>${dirEmoji} ${dir}</b>`,
       ``,
-      `📊 Confidence: <b>${c.score}/100</b> · ${tier}`,
-      `${rEmoji} Risk: ${rText}`,
+      `⚡ Algoritmik güven seviyesi: <b>${c.score}/100</b>`,
+      `<i>${escapeHtml(confLabel)}</i>`,
       ``,
-      `💬 ${teaser}`,
+      `${rEmoji} Risk seviyesi: ${rText}`,
       ``,
-      `👉 Detaylı giriş seviyeleri VIP kanalda: @vdaisignalsvip`,
+      `📋 Teknik koşullar:`,
+      conditionsBlock,
       ``,
-      `#${tagBase} #${tagDir}`,
+      `🔍 Detaylı analiz, fiyat haritası ve AI yorumu platformda.`,
+      ``,
+      `🚀 <a href="${funnelUrl}">Premium Kripto Analiz Platformunu Aç</a>`,
+      ``,
+      `<i>⚠ Yatırım tavsiyesi değildir. Bilgilendirme amaçlıdır.</i>`,
+      ``,
+      `#${tagBase} #TeknikAnaliz #AI #Kripto`,
     ].join('\n');
   }
 
-  // ── VIP Format ───────────────────────────────────────────────────
-  // Onaylanan tasarım:
-  //   💎 BTC/USDT LONG
-  //   ━━━━━━━━━━━━━━━━
-  //   ⚡ Entry: <code>68,450</code>
-  //   🎯 TP1: <code>69,800</code> (+1.97%)
-  //   ...
-  //   🛑 Stop: <code>67,200</code> (−1.83%)
-  //   📊 Confidence: 87/100 · STRONG
-  //   🟡 Risk: Orta
-  //   💡 Setup: HTF hizalama + likidite sweep + sağlıklı funding
-  //   #BTC #LONG #STRONG #VDAI_VIP
-  function _formatVip(c) {
-    const sym = escapeHtml(c.symDisp);
-    const dir = c.isLong ? 'LONG' : c.isShort ? 'SHORT' : c.dir;
-    const tier = tierLabel(c.score);
-    const rEmoji = riskEmoji(riskText(c.risk));
-    const rText = escapeHtml(riskText(c.risk));
-
-    const lines = [];
-    lines.push(`💎 <b>${sym} ${dir}</b>`);
-    lines.push(`━━━━━━━━━━━━━━━━`);
-    lines.push(``);
-
-    // Fiyatlar (monospace)
-    if (c.entry) {
-      lines.push(`⚡ Entry: <code>${escapeHtml(fmtPrice(c.entry))}</code>`);
-    }
-    if (c.tp1) {
-      const p = calcPct(c.entry, c.tp1);
-      const pct = (p != null) ? ` (${fmtPct(p)})` : '';
-      lines.push(`🎯 TP1: <code>${escapeHtml(fmtPrice(c.tp1))}</code>${pct}`);
-    }
-    if (c.tp2) {
-      const p = calcPct(c.entry, c.tp2);
-      const pct = (p != null) ? ` (${fmtPct(p)})` : '';
-      lines.push(`🎯 TP2: <code>${escapeHtml(fmtPrice(c.tp2))}</code>${pct}`);
-    }
-    if (c.tp3) {
-      const p = calcPct(c.entry, c.tp3);
-      const pct = (p != null) ? ` (${fmtPct(p)})` : '';
-      lines.push(`🎯 TP3: <code>${escapeHtml(fmtPrice(c.tp3))}</code>${pct}`);
-    }
-    if (c.sl) {
-      const p = calcPct(c.entry, c.sl);
-      const pct = (p != null) ? ` (${fmtPct(p)})` : '';
-      lines.push(`🛑 Stop: <code>${escapeHtml(fmtPrice(c.sl))}</code>${pct}`);
-    }
-    lines.push(``);
-
-    lines.push(`📊 Confidence: <b>${c.score}/100</b> · ${tier}`);
-    lines.push(`${rEmoji} Risk: ${rText}`);
-    lines.push(``);
-
-    // Setup açıklaması — tek satır, dinamik
-    let setupTxt;
-    if (c.rationale && c.rationale.length > 0) {
-      setupTxt = c.rationale.length > 200
-        ? c.rationale.slice(0, 197) + '...'
-        : c.rationale;
-    } else {
-      setupTxt = 'Çoklu indikatör konfluansı.';
-    }
-    lines.push(`💡 Setup: ${escapeHtml(setupTxt)}`);
-    lines.push(``);
-
-    // Tag'ler
-    const tagBase = escapeHtml(c.symBase || 'CRYPTO');
-    const tagDir  = escapeHtml(dir);
-    lines.push(`#${tagBase} #${tagDir} #${tier} #VDAI_VIP`);
-
-    return lines.join('\n');
-  }
-
   // ── Public API ────────────────────────────────────────────────────
+  // channelType parametresi backward compatibility için kabul ediliyor,
+  // ama tek format döndürüyoruz (VIP kanal artık kullanılmıyor)
   function format(signal, channelType) {
     if (!signal || typeof signal !== 'object') {
       return { text: null, error: 'invalid_signal' };
     }
-    const ch = String(channelType || 'free').toLowerCase();
     const core = _extractCore(signal);
 
     if (!core.sym || (!core.isLong && !core.isShort)) {
       return { text: null, error: 'invalid_signal_shape' };
     }
 
-    const text = ch === 'vip' ? _formatVip(core) : _formatFree(core);
+    const text = _formatAnalysis(core);
     return { text };
   }
 

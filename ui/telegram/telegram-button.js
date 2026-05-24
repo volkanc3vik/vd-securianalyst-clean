@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════
 // TELEGRAM UI · CARD BUTTON
-// Sinyal kartlarına "📤 Telegram" butonu enjekte eder.
+// Sinyal kartlarına "📤 Paylaş" butonu enjekte eder.
 //
 // Davranış:
 //   - Sadece admin aktifken çalışır
@@ -77,8 +77,8 @@
     btn.className = BTN_CLASS;
     btn.setAttribute('data-sym', sym);
     btn.setAttribute('data-dir', dir);
-    btn.setAttribute('aria-label', `${sym} ${dir} sinyalini Telegram'a gönder`);
-    btn.innerHTML = `<span class="vd-tg-card-btn-ico">📤</span><span class="vd-tg-card-btn-label">Telegram</span>`;
+    btn.setAttribute('aria-label', `${sym} ${dir} analizini Telegram'da paylaş`);
+    btn.innerHTML = `<span class="vd-tg-card-btn-ico">📤</span><span class="vd-tg-card-btn-label">Paylaş</span>`;
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();   // kart tıklaması (grafikte aç) tetiklenmesin
@@ -180,8 +180,8 @@
     btn.className = `${BTN_CLASS} ${TI_BTN_CLASS} vd-tg-ti-best-btn`;
     btn.setAttribute('data-sym', sym);
     btn.setAttribute('data-dir', dir);
-    btn.setAttribute('aria-label', `${sym} ${dir} Telegram'a gönder`);
-    btn.innerHTML = `<span class="vd-tg-card-btn-ico">📤</span><span class="vd-tg-card-btn-label">Telegram</span>`;
+    btn.setAttribute('aria-label', `${sym} ${dir} analizini Telegram'da paylaş`);
+    btn.innerHTML = `<span class="vd-tg-card-btn-ico">📤</span><span class="vd-tg-card-btn-label">Paylaş</span>`;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -225,8 +225,8 @@
     btn.className = `${BTN_CLASS} ${TI_BTN_CLASS} vd-tg-ti-watch-btn`;
     btn.setAttribute('data-sym', sym);
     btn.setAttribute('data-dir', dir);
-    btn.setAttribute('title', `${sym} ${dir} Telegram'a gönder`);
-    btn.setAttribute('aria-label', `${sym} ${dir} Telegram'a gönder`);
+    btn.setAttribute('title', `${sym} ${dir} analizini Telegram'da paylaş`);
+    btn.setAttribute('aria-label', `${sym} ${dir} analizini Telegram'da paylaş`);
     btn.innerHTML = `<span class="vd-tg-card-btn-ico">📤</span>`;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();

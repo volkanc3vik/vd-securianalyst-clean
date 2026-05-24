@@ -54,7 +54,7 @@
     btn.id = BTN_ID;
     btn.className = 'vd-tg-admin-btn';
     btn.type = 'button';
-    btn.setAttribute('aria-label', 'Admin modu');
+    btn.setAttribute('aria-label', 'Yönetici / yayın modu');
     btn.innerHTML = `
       <span class="vd-tg-admin-btn-ico">🔒</span>
       <span class="vd-tg-admin-btn-label">Admin</span>
@@ -106,8 +106,8 @@
     if (_active) {
       // Çıkış modu
       popup.innerHTML = `
-        <div class="vd-tg-admin-popup-title">Admin modu aktif</div>
-        <div class="vd-tg-admin-popup-info">Telegram gönderimi açık.</div>
+        <div class="vd-tg-admin-popup-title">Yayın modu aktif</div>
+        <div class="vd-tg-admin-popup-info">Telegram'da analiz paylaşımı açık.</div>
         <div class="vd-tg-admin-popup-actions">
           <button class="vd-tg-admin-popup-btn-secondary" data-action="cancel">Kapat</button>
           <button class="vd-tg-admin-popup-btn-danger" data-action="logout">Çıkış</button>
@@ -207,7 +207,7 @@
     _active = true;
     _updateButton();
     _closePopup();
-    NS.Toast?.success('Admin modu aktif');
+    NS.Toast?.success('Yayın modu aktif');
     _emit();
     _debug('admin activated');
   }
@@ -219,7 +219,7 @@
     _active = false;
     _updateButton();
     _closePopup();
-    NS.Toast?.info('Admin modu kapatıldı');
+    NS.Toast?.info('Yayın modu kapatıldı');
     _emit();
     _debug('admin deactivated');
   }

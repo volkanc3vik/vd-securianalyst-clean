@@ -788,15 +788,15 @@ function renderCard(item,dir,container,isJoker=false){
       <div class="opp-ind">MACD: <b style="color:${item.mh>0?'var(--green)':'var(--red)'}">${item.mh>0?'▲':'▼'}</b></div>
       <div class="opp-ind">24s: <b style="color:${item.chg>=0?'var(--green)':'var(--red)'}">${chgStr}</b></div>
     </div>
-    <div class="opp-desc">${desc}${isJoker?'<br><span style="color:'+jCol+';font-weight:600">⚡ Yüksek volatilite — küçük pozisyon</span>':''}</div>
+    <div class="opp-desc">${desc}${isJoker?'<br><span style="color:'+jCol+';font-weight:600">⚡ Yüksek volatilite — yüksek dikkat gerektirir</span>':''}</div>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button style="flex:1;padding:7px 10px;background:${mainCol}12;border:1px solid ${mainCol}44;border-radius:8px;color:${mainCol};font-size:10px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif"
         onclick="event.stopPropagation();window.SYM='${item.sym}';document.getElementById('symInput').value='${item.sym}';loadCoin('${item.sym}',INTV);setTimeout(()=>{const el=document.getElementById('mainPanel');if(el)el.scrollIntoView({behavior:'smooth'});},300)">
-        📈 Grafikte Aç
+        📈 Grafikte İncele
       </button>
       <button style="padding:7px 14px;background:${mainCol}20;border:1px solid ${mainCol}60;border-radius:8px;color:${mainCol};font-size:10px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif"
         onclick="event.stopPropagation();FuturesPanel.openModal({sym:'${item.sym}',dir:'${dir.toUpperCase()}',price:${item.price||0},sl:${dir==='long'?(item.sl||0):(item.slShort||0)},tp1:${dir==='long'?(item.tp1||0):(item.tp1Short||0)},tp2:${dir==='long'?(item.tp2||0):(item.tp2Short||0)}})">
-        ⚡ İşlem Aç
+        ⚡ Pozisyon Simüle Et
       </button>
     </div>`;
   d.onclick = (e) => {
@@ -910,6 +910,9 @@ async function scanMarket(){
   try{ P10.onScanComplete(results); }catch(e){}
 
   // ── Trading Intelligence — scan sonuçlarını yayınla ──
+  window.VD_STATE = window.VD_STATE || {};
+  window.VD_STATE.scanResults = results;
+  window._lastScanResults = results; // geriye dönük uyumluluk
   try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
 
   // ── AI: Tarama sinyallerini kaydet ──────────────────────────────

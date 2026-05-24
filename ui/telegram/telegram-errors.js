@@ -21,9 +21,9 @@
     text_empty:             'Mesaj metni boş',
     text_too_long:          'Mesaj çok uzun',
     invalid_channel:        'Geçersiz kanal',
-    invalid_signal:         'Geçersiz sinyal',
-    invalid_signal_shape:   'Sinyal verisi eksik',
-    signal_missing_fields:  'Sinyal alanları eksik',
+    invalid_signal:         'Geçersiz analiz verisi',
+    invalid_signal_shape:   'Analiz verisi eksik',
+    signal_missing_fields:  'Analiz alanları eksik',
 
     // Rate limit
     rate_limited:           'Çok fazla istek — biraz bekleyin',
@@ -35,9 +35,9 @@
     // Frontend
     formatter_unavailable:  'Format motoru yüklenmedi',
     dispatcher_unavailable: 'Dispatcher yüklenmedi',
-    signal_not_found:       'Sinyal verisi bulunamadı',
+    signal_not_found:       'Analiz verisi bulunamadı',
     invalid_text:           'Geçersiz metin',
-    on_cooldown:            'Cooldown aktif',
+    on_cooldown:            'Bekleme süresi aktif',
     format_failed:          'Mesaj formatlanamadı',
     network_error:          'Ağ hatası',
     sym_dir_required:       'Sembol veya yön eksik',

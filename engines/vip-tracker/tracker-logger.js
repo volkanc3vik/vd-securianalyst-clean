@@ -1,15 +1,14 @@
 // ════════════════════════════════════════════════════════════════════
-// VIP TRACKER · LOGGER
-// Trade event'lerini formatlı konsol mesajına çevirir.
+// VIP TRACKER · LOGGER (Mini-Aşama A — Dil Dönüşümü)
 //
-// Public API:
-//   TrackerLogger.tpHit(trade, targetLabel, price)
-//   TrackerLogger.stopHit(trade, price)
-//   TrackerLogger.breakeven(trade)
-//   TrackerLogger.tradeAdded(trade)
-//   TrackerLogger.tradeExpired(trade)
-//   TrackerLogger.finalMessage(trade, price)   ← TP3 özel "HEDEF GELDİ"
-//   TrackerLogger.pollSummary(activeCount)
+// HUKUKİ DÖNÜŞÜM:
+//   - "TP hit / Stop hit" → "Hedef bölgeye ulaşıldı / Risk limiti test edildi"
+//   - "HEDEF GELDİ / İşlem başarıyla sonuçlandı" → "Hedef bölgeleri tamamlandı"
+//   - "Trade" → "Analiz takibi"
+//   - Emir dili → Analiz dili
+//
+// Bu dosya internal console log üretir (test mode). Aşama 5'te bu
+// mesajların Telegram'a yayını da aynı dile uygun olacak.
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
@@ -42,23 +41,31 @@
     return s;
   }
 
+  // Target label dönüşümü: 'TP1' → 'Hedef bölge 1'
+  function _targetLabel(tag) {
+    const m = String(tag).match(/^TP(\d+)$/);
+    if (m) return `Hedef bölge ${m[1]}`;
+    return tag;
+  }
+
   function tradeAdded(t) {
+    // İç log — sadece konsol, kullanıcıya gösterilmez
     console.log(
-      `[VIP-TRACK] + ${t.symbol} ${t.direction} @ ${_fmtPrice(t.entry)} ` +
-      `(SL ${_fmtPrice(t.stopLoss)}, TPs ${t.takeProfits.map(_fmtPrice).join('/')})`
+      `[ANALYSIS-TRACK] + ${t.symbol} (${t.direction}) takibe alındı · ` +
+      `Referans: ${_fmtPrice(t.entry)} · Risk limiti: ${_fmtPrice(t.stopLoss)} · ` +
+      `Hedef bölgeler: ${t.takeProfits.map(_fmtPrice).join(' / ')}`
     );
   }
 
   function tpHit(t, targetLabel, price) {
-    // targetLabel: 'TP1' | 'TP2' | 'TP3'
     const tpIdx = parseInt(targetLabel.replace('TP', ''), 10) - 1;
     const tpPrice = t.takeProfits[tpIdx];
     const pct = _pct(tpPrice, t.entry);
-    // SHORT için yüzdeyi terse çevir (kâr pozitif)
     const sign = t.direction === 'SHORT' ? -1 : 1;
     const displayPct = pct != null ? sign * pct : null;
+    const label = _targetLabel(targetLabel);
     console.log(
-      `[VIP-TRACK] ${t.symbol} ${t.direction} → ${targetLabel} HIT @ ${_fmtPrice(price)} (${_fmtPct(displayPct)})`
+      `[ANALYSIS-TRACK] ${t.symbol} (${t.direction}) → ${label}'e ulaşıldı @ ${_fmtPrice(price)} (${_fmtPct(displayPct)})`
     );
   }
 
@@ -67,19 +74,19 @@
     const sign = t.direction === 'SHORT' ? -1 : 1;
     const displayPct = pct != null ? sign * pct : null;
     console.log(
-      `[VIP-TRACK] ${t.symbol} ${t.direction} → STOP HIT @ ${_fmtPrice(price)} (${_fmtPct(displayPct)})`
+      `[ANALYSIS-TRACK] ${t.symbol} (${t.direction}) → Risk limiti test edildi @ ${_fmtPrice(price)} (${_fmtPct(displayPct)})`
     );
   }
 
   function breakeven(t) {
     console.log(
-      `[VIP-TRACK] ${t.symbol} ${t.direction} → Breakeven aktif (SL @ ${_fmtPrice(t.entry)})`
+      `[ANALYSIS-TRACK] ${t.symbol} (${t.direction}) → Risk limiti referans seviyesine güncellendi (${_fmtPrice(t.entry)})`
     );
   }
 
   function tradeExpired(t) {
     console.log(
-      `[VIP-TRACK] ${t.symbol} ${t.direction} → EXPIRED (24h doldu)`
+      `[ANALYSIS-TRACK] ${t.symbol} (${t.direction}) → Takip süresi doldu (24 saat)`
     );
   }
 
@@ -90,18 +97,19 @@
     const displayPct = pct != null ? sign * pct : null;
     const symDisp = _symDisp(t.symbol);
 
-    // Yapılandırılmış final mesaj — gelecekte Telegram'a da gönderilebilecek
-    console.log(`[VIP-TRACK] ${t.symbol} ${t.direction} → TARGET REACHED (FINAL)`);
+    console.log(`[ANALYSIS-TRACK] ${t.symbol} (${t.direction}) → Tüm hedef bölgeleri tamamlandı`);
+    // Aşama 5'te Telegram'a gönderilecek mesajın taslağı (şimdilik sadece console)
     console.log(
-      `🏁 ${symDisp} ${t.direction} — HEDEF GELDİ\n` +
-      `TP3: ${_fmtPrice(tp3)} (${_fmtPct(displayPct)})\n` +
-      `Not: Final hedef tamamlandı. İşlem başarıyla sonuçlandı.`
+      `📊 ${symDisp} · ${t.direction} — Tüm hedef bölgeler test edildi\n` +
+      `Final hedef: ${_fmtPrice(tp3)} (${_fmtPct(displayPct)})\n` +
+      `Teknik analiz tamamlandı. Detaylar platformda.\n` +
+      `⚠ Yatırım tavsiyesi değildir.`
     );
   }
 
   function pollSummary(activeCount) {
     if (window.VipTrackerDebug) {
-      console.debug(`[VIP-Track:Poll] tick, ${activeCount} active`);
+      console.debug(`[ANALYSIS-Track:Poll] tick, ${activeCount} aktif takip`);
     }
   }
 

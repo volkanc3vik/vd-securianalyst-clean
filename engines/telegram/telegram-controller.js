@@ -186,7 +186,7 @@ window.TelegramController = (() => {
 
     const signal = _findSignalData(symU, dirU);
     if (!signal) {
-      _warn(`signal not found: ${symU} ${dirU}`);
+      _warn(`analysis data not found: ${symU} ${dirU}`);
       _addHistory({ sym: symU, dir: dirU, channel: ch, ok: false, error: 'signal_not_found' });
       return { ok: false, error: 'signal_not_found' };
     }

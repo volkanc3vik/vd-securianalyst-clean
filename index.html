@@ -2423,7 +2423,7 @@ function startTimer() {
     <h2>Joker — Sürpriz Hareket</h2>
     <span class="pill pill-orange">YÜKSEK VOLATİLİTE</span>
   </div>
-  <div class="joker-warning">⚡ Bu coinler normal listede yer almayan, ani büyük hareket yapabilecek fırsatlardır. Yüksek ATR + kırılım momentumu tespit edilmiştir. <b>Küçük pozisyon ve sıkı stop şarttır.</b></div>
+  <div class="joker-warning">⚡ Bu coinler normal listede yer almayan, ani büyük hareket potansiyeli taşıyan teknik formasyonlardır. Yüksek ATR + kırılım momentumu tespit edilmiştir. <b>Yüksek risk içerir — bilgilendirme amaçlıdır.</b></div>
   <div class="joker-grid" id="jokerGrid">
     <div class="opp joker-long loading"><div class="opp-dir joker-l">🃏 JOKER LONG</div><div class="opp-sym">—</div></div>
     <div class="opp joker-short loading"><div class="opp-dir joker-s">🃏 JOKER SHORT</div><div class="opp-sym">—</div></div>
@@ -3933,8 +3933,8 @@ function renderCard(item,dir,container,isJoker=false){
       <div class="opp-ind">MACD: <b style="color:${item.mh>0?'var(--green)':'var(--red)'}">${item.mh>0?'▲':'▼'}</b></div>
       <div class="opp-ind">24s: <b style="color:${item.chg>=0?'var(--green)':'var(--red)'}">${chgStr}</b></div>
     </div>
-    <div class="opp-desc">${desc}${isJoker?'<br><span style="color:'+jCol+';font-weight:600">⚡ Yüksek volatilite — küçük pozisyon</span>':''}</div>
-    <button class="opp-btn" style="background:${mainCol}12;color:${mainCol};border:1px solid ${mainCol}44">Grafikte Aç →</button>`;
+    <div class="opp-desc">${desc}${isJoker?'<br><span style="color:'+jCol+';font-weight:600">⚡ Yüksek volatilite — yüksek dikkat gerektirir</span>':''}</div>
+    <button class="opp-btn" style="background:${mainCol}12;color:${mainCol};border:1px solid ${mainCol}44">Grafikte İncele →</button>`;
   d.onclick=()=>{SYM=item.sym;document.getElementById('symInput').value=item.sym;loadCoin(SYM,INTV);setTimeout(()=>{const el=document.getElementById('mainPanel');if(el)el.scrollIntoView({behavior:'smooth'});},300);};
   container.appendChild(d);
 }
@@ -4141,6 +4141,9 @@ async function scanMarket(){
   console.log(`[Scanner] Tarama tamamlandı: ${results.length} coin, Long top: ${top3L.map(i=>i.sym).join(', ')}, Short top: ${top3S.map(i=>i.sym).join(', ')}`);
 
   // ── Trading Intelligence — scan sonuçlarını yayınla ──
+  window.VD_STATE = window.VD_STATE || {};
+  window.VD_STATE.scanResults = results;
+  window._lastScanResults = results; // geriye dönük uyumluluk
   try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
 }
 
@@ -9806,6 +9809,27 @@ const P10 = (() => {
 <script src="ui/intelligence/ti-warnings-card.js"></script>
 <script src="ui/intelligence/ti-panel.js"></script>
 <script src="modules/ti-init.js"></script>
+
+<!-- ── Telegram engine (Aşama 2) ───────────────────────────────── -->
+<script src="engines/telegram/telegram-formatter.js"></script>
+<script src="engines/telegram/telegram-dispatcher.js"></script>
+<script src="engines/telegram/telegram-controller.js"></script>
+
+<!-- ── Telegram UI (Aşama 3) ───────────────────────────────────── -->
+<link rel="stylesheet" href="styles/telegram-ui.css">
+<script src="ui/telegram/telegram-toast.js"></script>
+<script src="ui/telegram/telegram-errors.js"></script>
+<script src="ui/telegram/admin-mode.js"></script>
+<script src="ui/telegram/telegram-dropdown.js"></script>
+<script src="ui/telegram/telegram-button.js"></script>
+<script src="modules/telegram-ui-init.js"></script>
+
+<!-- ── VIP Sinyal Takip (Aşama 4) ──────────────────────────────── -->
+<script src="engines/vip-tracker/tracker-state.js"></script>
+<script src="engines/vip-tracker/tracker-price.js"></script>
+<script src="engines/vip-tracker/tracker-logger.js"></script>
+<script src="engines/vip-tracker/tracker-engine.js"></script>
+<script src="modules/vip-tracker-init.js"></script>
 
 <script>
 // ── CoinGlass setup (API key eklenince devreye girer) ─────────────

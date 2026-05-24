@@ -37,26 +37,19 @@
     dd.className = 'vd-tg-dropdown';
     dd.setAttribute('role', 'menu');
 
-    // Cooldown durumu kontrol et
+    // Cooldown durumu kontrol et (artık sadece free kanal var, ama backend
+    // 'vip' channel kabul ediyor — bu yüzden cooldown state'i koruyoruz)
     const Dispatcher = window.TelegramDispatcher;
-    const freeOnCooldown = Dispatcher?.isOnCooldown?.(sym, dir, 'free') || false;
-    const vipOnCooldown  = Dispatcher?.isOnCooldown?.(sym, dir, 'vip')  || false;
-    const freeRemain = freeOnCooldown ? Math.ceil(Dispatcher.getCooldownRemaining(sym, dir, 'free') / 60) : 0;
-    const vipRemain  = vipOnCooldown  ? Math.ceil(Dispatcher.getCooldownRemaining(sym, dir, 'vip')  / 60) : 0;
+    const onCooldown = Dispatcher?.isOnCooldown?.(sym, dir, 'free') || false;
+    const remainMin  = onCooldown ? Math.ceil(Dispatcher.getCooldownRemaining(sym, dir, 'free') / 60) : 0;
 
     dd.innerHTML = `
-      <div class="vd-tg-dd-header">${_esc(sym)} ${_esc(dir)}</div>
-      <button class="vd-tg-dd-item" data-channel="free" ${freeOnCooldown ? 'disabled' : ''}
-              title="${freeOnCooldown ? freeRemain + ' dk kaldı' : ''}">
+      <div class="vd-tg-dd-header">${_esc(sym)} · ${_esc(dir)}</div>
+      <button class="vd-tg-dd-item" data-channel="free" ${onCooldown ? 'disabled' : ''}
+              title="${onCooldown ? remainMin + ' dk kaldı' : 'Telegram\'da paylaş'}">
         <span class="vd-tg-dd-ico">📢</span>
-        <span class="vd-tg-dd-label">Free Kanal</span>
-        ${freeOnCooldown ? `<span class="vd-tg-dd-cd">${freeRemain}dk</span>` : ''}
-      </button>
-      <button class="vd-tg-dd-item" data-channel="vip" ${vipOnCooldown ? 'disabled' : ''}
-              title="${vipOnCooldown ? vipRemain + ' dk kaldı' : ''}">
-        <span class="vd-tg-dd-ico">💎</span>
-        <span class="vd-tg-dd-label">VIP Kanal</span>
-        ${vipOnCooldown ? `<span class="vd-tg-dd-cd">${vipRemain}dk</span>` : ''}
+        <span class="vd-tg-dd-label">Telegram'da Paylaş</span>
+        ${onCooldown ? `<span class="vd-tg-dd-cd">${remainMin}dk</span>` : ''}
       </button>
       <div class="vd-tg-dd-divider"></div>
       <button class="vd-tg-dd-item vd-tg-dd-cancel" data-channel="cancel">
@@ -158,24 +151,24 @@
     if (btn) {
       originalHTML = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = `<span class="vd-tg-card-btn-ico">⏳</span><span class="vd-tg-card-btn-label">Gönderiliyor...</span>`;
+      btn.innerHTML = `<span class="vd-tg-card-btn-ico">⏳</span><span class="vd-tg-card-btn-label">Yayınlanıyor...</span>`;
     }
 
     try {
       const result = await Controller.sendCardSignal(sym, dir, channel);
 
       if (result?.ok) {
-        const chLabel = channel === 'vip' ? 'VIP' : 'Free';
-        NS.Toast?.success(`${sym.replace(/USDT$/, '')} ${dir} ${chLabel} kanalına gönderildi`);
-        _debug('sent', sym, dir, channel, 'msgId=', result.messageId);
+        const symBase = sym.replace(/USDT$/, '');
+        NS.Toast?.success(`${symBase} analizi Telegram'da yayınlandı`);
+        _debug('published', sym, dir, channel, 'msgId=', result.messageId);
       } else if (result?.error === 'on_cooldown') {
         const remainMin = result.cooldownRemaining ? Math.ceil(result.cooldownRemaining / 60) : '?';
-        NS.Toast?.warning(`Cooldown aktif — kalan: ${remainMin} dk`);
+        NS.Toast?.warning(`Bekleme süresi aktif — kalan: ${remainMin} dk`);
       } else {
-        const userMsg = NS.errorMessage?.(result?.error) || 'Gönderilemedi';
+        const userMsg = NS.errorMessage?.(result?.error) || 'Yayınlanamadı';
         const detail = result?.detail ? ` (${result.detail})` : '';
-        NS.Toast?.error(`Gönderilemedi: ${userMsg}${detail}`);
-        _debug('send failed', result);
+        NS.Toast?.error(`Yayınlanamadı: ${userMsg}${detail}`);
+        _debug('publish failed', result);
       }
     } catch (e) {
       NS.Toast?.error('Beklenmedik hata');
