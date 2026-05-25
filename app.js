@@ -13,6 +13,97 @@ const BASE='https://api.binance.com';
 const FBASE='https://fapi.binance.com';
 
 // ══════════════════════════════════════════
+// SCROLL KORUMA SİSTEMİ
+// DOM güncellenince scroll pozisyonu kaybolmasın
+// ══════════════════════════════════════════
+const ScrollGuard = (() => {
+  let _locked   = false;
+  let _savedPos = 0;
+  let _lockTimer = null;
+
+  // Güncelleme başlamadan önce çağır
+  function save() {
+    if (!_locked) {
+      _savedPos = window.scrollY || document.documentElement.scrollTop || 0;
+    }
+  }
+
+  // Güncelleme bittikten sonra çağır
+  function restore() {
+    if (_savedPos > 50) { // Sadece sayfada aşağıdaysa restore et
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: _savedPos, behavior: 'instant' });
+      });
+    }
+  }
+
+  // Belirli bir süre boyunca scroll'u kilitle
+  function lock(ms = 500) {
+    _locked = true;
+    _savedPos = window.scrollY || 0;
+    clearTimeout(_lockTimer);
+    _lockTimer = setTimeout(() => {
+      _locked = false;
+      restore();
+    }, ms);
+  }
+
+  // innerHTML atamaları için wrap fonksiyonu
+  // Kullanım: ScrollGuard.safeSetHTML(el, html)
+  function safeSetHTML(el, html) {
+    if (!el) return;
+    save();
+    el.innerHTML = html;
+    restore();
+  }
+
+  return { save, restore, lock, safeSetHTML };
+})();
+
+// DOM gözlemcisi — büyük layout shift'leri yakala ve scroll'u koru
+(function() {
+  if (typeof MutationObserver === 'undefined') return;
+
+  let _pendingRestore = false;
+  let _lastScroll = 0;
+
+  // Scroll pozisyonunu sürekli kaydet
+  window.addEventListener('scroll', () => {
+    _lastScroll = window.scrollY;
+  }, { passive: true });
+
+  const observer = new MutationObserver((mutations) => {
+    // Büyük DOM değişikliği var mı?
+    const bigChange = mutations.some(m =>
+      m.addedNodes.length > 2 || m.removedNodes.length > 2
+    );
+
+    if (bigChange && _lastScroll > 100 && !_pendingRestore) {
+      const savedScroll = _lastScroll;
+      _pendingRestore = true;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (Math.abs(window.scrollY - savedScroll) > 80) {
+            window.scrollTo({ top: savedScroll, behavior: 'instant' });
+          }
+          _pendingRestore = false;
+        });
+      });
+    }
+  });
+
+  // Sayfa yüklenince gözlemi başlat
+  document.addEventListener('DOMContentLoaded', () => {
+    const main = document.querySelector('.main') || document.body;
+    observer.observe(main, {
+      childList: true,
+      subtree:   true,
+    });
+  });
+})();
+
+// ══════════════════════════════════════════
 // CLOCK
 // ══════════════════════════════════════════
 function startClock(){
@@ -172,6 +263,7 @@ function drawSpark(id,prices,color){
 // MARKET OVERVIEW
 // ══════════════════════════════════════════
 async function updateMarketOverview(){
+  ScrollGuard.save(); // Scroll pozisyonunu kaydet
   // BTC & ETH
   for(const cfg of[
     {sym:'BTCUSDT',id:'btc',badge:'btcBadge',priceId:'btcPrice',chgId:'btcChg',highId:'btcHigh',lowId:'btcLow',rsiId:'btcRsi',volId:'btcVol',sigId:'btcSignal',spark:'btcSpark'},
@@ -284,7 +376,8 @@ function scoreLong(closes,chg){
   if(m.hist>0)s+=20;if(m.line>0&&m.hist>0)s+=5;
   if(b){if(p>b.mid)s+=10;if(p<=b.lower*1.005)s+=10;if(p>b.upper)s-=10;}
   if(chg>0)s+=5;if(chg>3)s+=5;
-  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v>e21v?(e21v>e50v?'▲▲▲':'▲▲'):'▼',p};
+  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v>e21v?(e21v>e50v?'▲▲▲':'▲▲'):'▼',p,
+    e9v,e21v,e50v,macdObj:m};
 }
 function scoreShort(closes,chg){
   const e9=calcEMA(closes,9),e21=calcEMA(closes,21),e50=calcEMA(closes,50);
@@ -296,7 +389,8 @@ function scoreShort(closes,chg){
   if(m.hist<0)s+=20;if(m.line<0&&m.hist<0)s+=5;
   if(b){if(p<b.mid)s+=10;if(p>=b.upper*0.995)s+=10;if(p<b.lower)s-=10;}
   if(chg<0)s+=5;if(chg<-3)s+=5;
-  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v<e21v?(e21v<e50v?'▼▼▼':'▼▼'):'▲',p};
+  return{score:Math.max(0,Math.min(100,s)),rsi:r,mh:m.hist,ema:e9v<e21v?(e21v<e50v?'▼▼▼':'▼▼'):'▲',p,
+    e9v,e21v,e50v,macdObj:m};
 }
 function jokerScoreLong(closes,chg,atr,price){
   const r=calcRSI(closes),m=calcMACD(closes);
@@ -615,6 +709,7 @@ async function loadCoin(sym,intv){
   document.getElementById('errBox').style.display='none';
   document.getElementById('ldr').style.display='block';
   document.getElementById('mainPanel').style.display='none';
+
   try{
     const{tk,candles,fund,ls}=await fetchCoin(sym,intv);
     updateUI(tk,candles,fund,ls);loadTV(sym,intv);
@@ -693,9 +788,31 @@ function renderCard(item,dir,container,isJoker=false){
       <div class="opp-ind">MACD: <b style="color:${item.mh>0?'var(--green)':'var(--red)'}">${item.mh>0?'▲':'▼'}</b></div>
       <div class="opp-ind">24s: <b style="color:${item.chg>=0?'var(--green)':'var(--red)'}">${chgStr}</b></div>
     </div>
-    <div class="opp-desc">${desc}${isJoker?'<br><span style="color:'+jCol+';font-weight:600">⚡ Yüksek volatilite — küçük pozisyon</span>':''}</div>
-    <button class="opp-btn" style="background:${mainCol}12;color:${mainCol};border:1px solid ${mainCol}44">Grafikte Aç →</button>`;
-  d.onclick=()=>{SYM=item.sym;document.getElementById('symInput').value=item.sym;loadCoin(SYM,INTV);setTimeout(()=>{const el=document.getElementById('mainPanel');if(el)el.scrollIntoView({behavior:'smooth'});},300);};
+    <div class="opp-desc">${desc}${isJoker?'<br><span style="color:'+jCol+';font-weight:600">⚡ Yüksek volatilite — yüksek dikkat gerektirir</span>':''}</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button style="flex:1;padding:7px 10px;background:${mainCol}12;border:1px solid ${mainCol}44;border-radius:8px;color:${mainCol};font-size:10px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif"
+        onclick="event.stopPropagation();window.SYM='${item.sym}';document.getElementById('symInput').value='${item.sym}';loadCoin('${item.sym}',INTV);setTimeout(()=>{const el=document.getElementById('mainPanel');if(el)el.scrollIntoView({behavior:'smooth'});},300)">
+        📈 Grafikte İncele
+      </button>
+      <button style="padding:7px 14px;background:${mainCol}20;border:1px solid ${mainCol}60;border-radius:8px;color:${mainCol};font-size:10px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif"
+        onclick="event.stopPropagation();FuturesPanel.openModal({sym:'${item.sym}',dir:'${dir.toUpperCase()}',price:${item.price||0},sl:${dir==='long'?(item.sl||0):(item.slShort||0)},tp1:${dir==='long'?(item.tp1||0):(item.tp1Short||0)},tp2:${dir==='long'?(item.tp2||0):(item.tp2Short||0)}})">
+        ⚡ Pozisyon Simüle Et
+      </button>
+    </div>`;
+  d.onclick = (e) => {
+    if(e.target.tagName === 'BUTTON') return;
+    // Son kart verisini kaydet (terminal'de kullanmak için)
+    window._lastCardData = {
+      sym: item.sym, dir: dir.toUpperCase(), price: item.price||0,
+      sl:  dir==='long'?(item.sl||0):(item.slShort||0),
+      tp1: dir==='long'?(item.tp1||0):(item.tp1Short||0),
+      tp2: dir==='long'?(item.tp2||0):(item.tp2Short||0),
+    };
+    SYM = item.sym;
+    document.getElementById('symInput').value = item.sym;
+    loadCoin(SYM, INTV);
+    setTimeout(()=>{ const el=document.getElementById('mainPanel'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 300);
+  };
   container.appendChild(d);
 }
 
@@ -711,6 +828,7 @@ async function startScan(){
 }
 
 async function scanMarket(){
+  ScrollGuard.save(); // Scroll pozisyonunu kaydet
   const dot=document.getElementById('scanDot'),pw=document.getElementById('progWrap'),pf=document.getElementById('progFill');
   dot.classList.add('on');if(pw)pw.style.display='block';
   let symsToScan=FUTURES_SYMS;
@@ -732,15 +850,40 @@ async function scanMarket(){
         get(`${FBASE}/fapi/v1/ticker/24hr?symbol=${sym}`),
       ]);
       if(!Array.isArray(kl)||kl.length<30)continue;
-      const closes=kl.map(k=>+k[4]),candles=kl.map(k=>({h:+k[2],l:+k[3],c:+k[4]}));
+      const closes=kl.map(k=>+k[4]),candles=kl.map(k=>({h:+k[2],l:+k[3],c:+k[4],o:+k[1],v:+k[5]}));
       const chg=+tk.priceChangePercent,price=+tk.lastPrice;
       const atr=calcATR(candles);
       const risk=calcRisk(closes,chg,atr,price);
       const lSc=scoreLong(closes,chg),sSc=scoreShort(closes,chg);
       const jlSc=jokerScoreLong(closes,chg,atr,price),jsSc=jokerScoreShort(closes,chg,atr,price);
+
+      // SL/TP değerleri — ATR bazlı
+      const slLong  = +(price - atr*1.5).toFixed(4);
+      const tp1Long = +(price + atr*2.0).toFixed(4);
+      const tp2Long = +(price + atr*3.5).toFixed(4);
+      const slShort  = +(price + atr*1.5).toFixed(4);
+      const tp1Short = +(price - atr*2.0).toFixed(4);
+      const tp2Short = +(price - atr*3.5).toFixed(4);
+
       results.push({sym,chg,price,rsi:lSc.rsi,mh:lSc.mh,risk,atr,
         lScore:lSc.score,sScore:sSc.score,lEma:lSc.ema,sEma:sSc.ema,
-        lDesc:oppDesc(lSc,'long'),sDesc:oppDesc(sSc,'short'),jlScore:jlSc,jsScore:jsSc});
+        lDesc:oppDesc(lSc,'long'),sDesc:oppDesc(sSc,'short'),jlScore:jlSc,jsScore:jsSc,
+        // SL/TP — renderCard'da kullanılır
+        sl:slLong, tp1:tp1Long, tp2:tp2Long,
+        slShort, tp1Short, tp2Short,
+        // ── Trading Intelligence için ek veri ──────────────────────
+        closes,
+        candles,
+        ind: {
+          rsi:   lSc.rsi,
+          ema9:  lSc.e9v   ?? null,
+          ema21: lSc.e21v  ?? null,
+          ema50: lSc.e50v  ?? null,
+          atr:   atr,
+          macd:  lSc.macdObj ? { histogram: lSc.macdObj.hist, line: lSc.macdObj.line } : null,
+        },
+        dir: lSc.score > sSc.score ? 'LONG' : (sSc.score > lSc.score ? 'SHORT' : null),
+      });
     }catch(e){}
     await new Promise(r=>setTimeout(r,60));
   }
@@ -752,6 +895,7 @@ async function scanMarket(){
   const jokerS=[...results].filter(i=>!topSyms.has(i.sym)).sort((a,b)=>b.jsScore-a.jsScore)[0];
 
   const lg=document.getElementById('longGrid'),sg=document.getElementById('shortGrid'),jg=document.getElementById('jokerGrid');
+  const _scrollPos = window.scrollY; // Mevcut pozisyonu kaydet
   lg.innerHTML='';sg.innerHTML='';jg.innerHTML='';
   if(top3L.length)top3L.forEach(it=>renderCard(it,'long',lg));
   else lg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Long fırsatı bulunamadı.</div>';
@@ -759,9 +903,17 @@ async function scanMarket(){
   else sg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Short fırsatı bulunamadı.</div>';
   if(jokerL){jokerL.lScore=jokerL.jlScore;jokerL.lDesc='Ani kırılım potansiyeli · ATR: '+(jokerL.atr/jokerL.price*100).toFixed(2)+'% · '+oppDesc({score:jokerL.lScore,rsi:jokerL.rsi,mh:jokerL.mh,ema:jokerL.lEma},'long');renderCard(jokerL,'long',jg,true);}
   if(jokerS){jokerS.sScore=jokerS.jsScore;jokerS.sDesc='Ani düşüş potansiyeli · ATR: '+(jokerS.atr/jokerS.price*100).toFixed(2)+'% · '+oppDesc({score:jokerS.sScore,rsi:jokerS.rsi,mh:jokerS.mh,ema:jokerS.sEma},'short');renderCard(jokerS,'short',jg,true);}
+  // Scroll pozisyonunu geri yükle
+  if(_scrollPos > 100) requestAnimationFrame(()=>window.scrollTo({top:_scrollPos,behavior:'instant'}));
 
   // ── PHASE 10: Priority Engine scan hook ──
   try{ P10.onScanComplete(results); }catch(e){}
+
+  // ── Trading Intelligence — scan sonuçlarını yayınla ──
+  window.VD_STATE = window.VD_STATE || {};
+  window.VD_STATE.scanResults = results;
+  window._lastScanResults = results; // geriye dönük uyumluluk
+  try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
 
   // ── AI: Tarama sinyallerini kaydet ──────────────────────────────
   // Top 3 Long, Top 3 Short ve Jokerler için giriş/stop/tp hesapla
@@ -5403,143 +5555,6 @@ window.addEventListener('DOMContentLoaded',()=>{
 // Scan tamamlanınca badge güncelle
 const _origScanComplete = typeof scanMarket === 'function' ? scanMarket : null;
 
-
-// ════════════════════════════════════════════════════════════════════
-// PHASE 8: AI SİDEBAR + ONBOARDING + SİSTEM SAĞLIK + BİLDİRİM GRUPLAMA
-// ════════════════════════════════════════════════════════════════════
-
-// ── 1. AI SIDEBAR ────────────────────────────────────────────────────
-const AISidebar = (() => {
-  let _open = false;
-  let _msgCount = 0;
-
-  function toggle(){
-    _open ? close() : open();
-  }
-
-  function open(){
-    _open = true;
-    const el = document.getElementById('aiSidebar');
-    const ov = document.getElementById('aiSidebarOverlay');
-    if(el) el.classList.add('open');
-    if(ov) ov.style.display = 'block';
-    _updateHealth();
-    _updateLearnStats();
-  }
-
-  function close(){
-    _open = false;
-    const el = document.getElementById('aiSidebar');
-    const ov = document.getElementById('aiSidebarOverlay');
-    if(el) el.classList.remove('open');
-    if(ov) ov.style.display = 'none';
-  }
-
-  function addMsg(text, type){
-    const container = document.getElementById('aiSidebarMsgs');
-    if(!container) return;
-    const colors = {info:'rgba(157,125,250,.1)',success:'rgba(0,229,160,.08)',warn:'rgba(255,122,0,.08)',error:'rgba(255,61,107,.08)'};
-    const borders = {info:'rgba(157,125,250,.2)',success:'rgba(0,229,160,.2)',warn:'rgba(255,122,0,.2)',error:'rgba(255,61,107,.2)'};
-    const bg = colors[type]||colors.info;
-    const br = borders[type]||borders.info;
-    const d = document.createElement('div');
-    d.className='ai-msg';
-    d.innerHTML=`
-      <div class="ai-msg-bubble" style="background:${bg};border-color:${br}">${text}</div>
-      <div class="ai-msg-time">${new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
-    `;
-    container.insertBefore(d, container.firstChild);
-    // Max 20 mesaj
-    while(container.children.length > 20) container.removeChild(container.lastChild);
-    _msgCount++;
-  }
-
-  function quickAction(act){
-    const actions = {
-      scan   : ()=>{ if(typeof scanMarket==='function') scanMarket(); addMsg('Tarama başlatıldı. Tüm Binance Futures coinleri analiz ediliyor...','info'); },
-      btc    : ()=>{ if(typeof loadCoin==='function'){loadCoin('BTCUSDT',window.INTV||'15m');} addMsg('<b>BTC</b> analizi yüklendi. AI değerlendirme 1 saniye içinde hazır.','info'); close(); },
-      eth    : ()=>{ if(typeof loadCoin==='function'){loadCoin('ETHUSDT',window.INTV||'15m');} addMsg('<b>ETH</b> analizi yüklendi.','info'); close(); },
-      top    : ()=>{
-        const topCard = [...(window._cards||[])].sort((a,b)=>b[1].result.score-a[1].result.score)[0];
-        if(topCard) addMsg(`<span class="good">En iyi setup: <b>${topCard[0]}</b> — Skor: ${topCard[1].result.score}/100</span>`,'success');
-        else addMsg('Henüz analiz edilmiş setup yok. Önce tarama yapın.','warn');
-      },
-      risk   : ()=>{
-        const atrPct = window.IND ? (window.IND.atr/(window.KL?window.KL[window.KL.length-1].c:1)*100) : 0;
-        const msg = atrPct>4
-          ? `<span class="bad">⚠ Yüksek volatilite (%${atrPct.toFixed(2)}). Pozisyon boyutunu küçük tut!</span>`
-          : `<span class="good">✓ Volatilite normal (%${atrPct.toFixed(2)}). Normal risk yönetimi uygun.</span>`;
-        addMsg(msg, atrPct>4?'warn':'success');
-      },
-      regime : ()=>{
-        const m = typeof MarketRegime!=='undefined' ? MarketRegime.getMode() : '—';
-        const msgs = {
-          TREND:'<span class="good">✓ Trend marketi — momentum sinyalleri güvenilir.</span>',
-          SIDEWAYS:'<span class="warn">↔ Yatay market — breakout tuzaklarına dikkat.</span>',
-          VOLATILE:'<span class="bad">⚠ Volatil market — küçük pozisyon al.</span>',
-          PANIC:'<span class="bad">🔴 Panik modu — long açmaktan kaçın!</span>',
-          SQUEEZE:'<span class="warn">◎ Squeeze — büyük hareket yakın olabilir.</span>',
-        };
-        addMsg(msgs[m]||`Piyasa rejimi: ${m}`,'info');
-      },
-    };
-    if(actions[act]) actions[act]();
-  }
-
-  function _updateHealth(){
-    // WS durumu
-    const wsOk = typeof WSEngine!=='undefined' && WSEngine.getStatus()==='connected';
-    _setHealth('ws', wsOk?'ok':'warn', wsOk?'Bağlı':'Bağlantı yok');
-    // AI
-    _setHealth('ai', 'ok', 'Aktif');
-    // Scan
-    const scanEl=document.getElementById('scanStatus');
-    _setHealth('scan', 'ok', 'Hazır');
-    // DB
-    _setHealth('db', 'ok', 'Supabase bağlı');
-  }
-
-  function _setHealth(id, status, val){
-    const dot = document.getElementById('sh-'+id);
-    const valEl= document.getElementById('sh-'+id+'-val');
-    if(dot){ dot.className='sys-dot '+status; }
-    if(valEl) valEl.textContent = val;
-  }
-
-  function _updateLearnStats(){
-    if(typeof AI==='undefined') return;
-    const stats = AI.stats();
-    const wrEl  = document.getElementById('ai-wr-val');
-    const sigEl = document.getElementById('ai-sig-val');
-    const bestEl= document.getElementById('ai-best-val');
-    const sessEl= document.getElementById('ai-sess-val');
-    if(wrEl)   wrEl.textContent  = stats.winRate!==null ? stats.winRate+'%' : '—%';
-    if(sigEl)  sigEl.textContent = stats.total||0;
-    // En iyi coin
-    if(bestEl&&stats.coins){
-      const best = Object.entries(stats.coins).sort((a,b)=>b[1].wr-a[1].wr)[0];
-      bestEl.textContent = best ? best[0].replace('USDT','') : '—';
-    }
-    // Session
-    const sess = typeof SMC!=='undefined'?SMC.getSession():null;
-    if(sessEl) sessEl.textContent = sess?sess.name:'—';
-  }
-
-  // updateUI'da AI mesaj üret
-  function onCoinLoad(sym, ind, entry, reasoning){
-    if(!_open) return;
-    const sn = sym.replace('USDT','');
-    if(entry&&reasoning){
-      const isLong = entry.dir==='LONG';
-      const col    = isLong?'good':'bad';
-      const dir    = isLong?'▲ LONG':'▼ SHORT';
-      addMsg(`<b>${sn}</b> analizi tamamlandı. <span class="${col}">${dir}</span> — Güven: %${reasoning.confidence}. ${reasoning.summary[0]||''}`, isLong?'success':'warn');
-    }
-  }
-
-  return{toggle, open, close, addMsg, quickAction, onCoinLoad};
-})();
-
 // ── 2. ONBOARDING ────────────────────────────────────────────────────
 const Onboarding = (() => {
   const OB_KEY = 'vd_onboarded_v1';
@@ -5587,89 +5602,10 @@ const Onboarding = (() => {
 })();
 
 // ── 3. BİLDİRİM GRUPLAMA ────────────────────────────────────────────
-// NC renderList'i gruplama ile geliştir
-const _origRenderList = null; // NC içinde override
-
-// NC'ye AI Sidebar entegrasyonu
-const _origNCAdd = typeof NC !== 'undefined' ? NC.add.bind(NC) : null;
-if(typeof NC !== 'undefined' && _origNCAdd){
-  NC.add = function(opts){
-    _origNCAdd(opts);
-    // AI Sidebar'a da ilet (kritik bildirimleri)
-    if(opts.level==='critical'||opts.level==='high'){
-      AISidebar.addMsg(
-        `<span class="bad">🔴 ${opts.sym?opts.sym.replace('USDT',''):''} — ${opts.msg}</span>`,
-        'error'
-      );
-    }
-  };
-}
-
-// ── updateUI hook — Phase 8 entegre ──────────────────────────────────
-const _origUI_Phase8 = typeof updateUI === 'function' ? updateUI : null;
-if(_origUI_Phase8){
-  window.updateUI = async function(tk, candles, fund, ls){
-    _origUI_Phase8(tk, candles, fund, ls);
-    setTimeout(()=>{
-      try{
-        // AI Sidebar coin mesajı
-        if(window.IND && window.SYM){
-          const ent = calcEntry(window.KL||candles, window.IND, tk);
-          if(ent && typeof AIReasoning !== 'undefined'){
-            const reasoning = AIReasoning.buildReasoning({
-              sym:window.SYM, dir:ent.dir,
-              closes:(window.KL||candles).map(c=>c.c),
-              candles:window.KL||candles,
-              ind:window.IND, entry:ent,
-              btcData:typeof MarketRegime!=='undefined'?MarketRegime.getBTC():null,
-              regimeMode:typeof MarketRegime!=='undefined'?MarketRegime.getMode():null,
-              smcData:window._lastSMCData||null,
-              fakeBreak:false, conf:50,
-            });
-            AISidebar.onCoinLoad(window.SYM, window.IND, ent, reasoning);
-          }
-        }
-        // Sistem sağlık güncelle
-        SystemHealth.update();
-      }catch(e){}
-    }, 1500);
-  };
-}
-
-// ── 4. SİSTEM SAĞLIK MONİTÖRÜ ────────────────────────────────────────
-const SystemHealth = (() => {
-  let _interval = null;
-
-  function update(){
-    const wsOk = typeof WSEngine!=='undefined'&&WSEngine.getStatus()==='connected';
-    // Topbar'da durum dot (opsiyonel)
-    _setDot('sh-ws', wsOk?'ok':'warn', wsOk?'Bağlı':'Bağlantı yok');
-    _setDot('sh-api', 'ok', 'Aktif');
-    _setDot('sh-ai', 'ok', 'Çalışıyor');
-    _setDot('sh-scan', 'ok', 'Hazır');
-    _setDot('sh-db', 'ok', 'Bağlı');
-  }
-
-  function _setDot(id, status, val){
-    const dot=document.getElementById(id);
-    const valEl=document.getElementById(id+'-val');
-    if(dot){dot.className='sys-dot '+status;}
-    if(valEl) valEl.textContent=val;
-  }
-
-  function start(){
-    update();
-    _interval = setInterval(update, 10000);
-  }
-
-  return{update, start};
-})();
-
 // ── INIT ──────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
   setTimeout(()=>{
     Onboarding.init();
-    SystemHealth.start();
   }, 500);
 });
 
@@ -6032,11 +5968,8 @@ window._ECE2 = ECE2;
 window._FBDetector = FBDetector;
 window._SMCPro = SMCPro;
 window._RiskEnginePro = RiskEnginePro;
-window._AISidebar = AISidebar;
-window.AISidebar = AISidebar;
 window._Onboarding = Onboarding;
 window.Onboarding = Onboarding;
-window._SystemHealth = SystemHealth;
 window._Analytics = Analytics;
 window.Analytics = Analytics;
 window._startClock = startClock;

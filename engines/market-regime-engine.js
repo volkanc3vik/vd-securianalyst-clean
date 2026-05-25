@@ -46,6 +46,16 @@ class MarketRegimeEngine {
     // RANGE
     if (Math.abs(priceChange) < 1.5 && atrPct < 2) return 'RANGE';
 
+    // Yeni: DISTRIBUTION
+    if(ema20 > ema50 && priceChange < -1 && rsi > 55 && atrPct > 2)
+      return 'DISTRIBUTION';
+    // Yeni: ACCUMULATION  
+    if(ema20 < ema50 && priceChange > 1 && rsi < 50 && atrPct < 2.5)
+      return 'ACCUMULATION';
+    // Yeni: CHOP
+    if(Math.abs(priceChange) < 1 && atrPct < 1.5 && bb.width < 3)
+      return 'CHOP';
+
     return 'SIDEWAYS';
   }
 
@@ -60,7 +70,10 @@ class MarketRegimeEngine {
       VOLATILE: 'var(--orange)',
       SQUEEZE:  'var(--purple)',
       PANIC:    'var(--red)',
-      SIDEWAYS: 'var(--text3)',
+      SIDEWAYS:     'var(--text3)',
+      DISTRIBUTION: '#ff9f43',
+      ACCUMULATION: '#48dbfb',
+      CHOP:         '#a29bfe',
     };
     return colors[regime] || 'var(--text3)';
   }
@@ -76,7 +89,10 @@ class MarketRegimeEngine {
       VOLATILE: 'Yüksek volatilite — stop aralığını genişlet',
       SQUEEZE:  'Bollinger sıkışması — büyük hareket bekle',
       PANIC:    'Panik satış — long girişlerden kaçın',
-      SIDEWAYS: 'Yön belirsiz — konfirmasyon bekle',
+      SIDEWAYS:     'Yön belirsiz — konfirmasyon bekle',
+      DISTRIBUTION: 'Dağıtım modu — büyük oyuncular satıyor',
+      ACCUMULATION: 'Birikim modu — büyük oyuncular topluyor',
+      CHOP:         'Yatay hareket — kırılım bekle',
     };
     return descs[regime] || '—';
   }
