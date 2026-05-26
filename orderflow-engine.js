@@ -1,119 +1,105 @@
-// ═══════════════════════════════════════════════
-// RISK ENGINE — Dinamik kaldıraç, pozisyon boyutu,
-// portfolio exposure, drawdown koruması
-// ═══════════════════════════════════════════════
-import { clamp } from '../modules/helpers.js';
-import { Storage } from '../services/storage-service.js';
+// ════════════════════════════════════════════════════════════════════
+// TI RISK ASSESSOR
+// Setup Confidence ≠ Risk Level.
+//
+// Confidence (score): setup kalitesi, faktör kombinasyonu — Scorer üretir.
+// Risk Level:         bu setup'a girersen ne kadar tehlikedeyim?
+//
+// Risk faktörleri (Confidence'tan bağımsız):
+//   - Volatilite kondisyonu (extreme = high risk)
+//   - Funding stresi (extreme = high risk)
+//   - Trend overextension (sembol için mevcut hareket aşırı mı)
+//   - HTF aleyhte mi?
+//   - FBR (fake breakout risk)
+//
+// Çıktı: { level: 'Düşük'|'Orta'|'Yüksek', score: 0-100, reasons: [] }
+// ════════════════════════════════════════════════════════════════════
+window.TIRiskAssessor = (() => {
+  'use strict';
 
-// Korelasyon grupları
-const HIGH_CORR_BTC = ['ETH','BNB','SOL','AVAX','MATIC','ARB','OP'];
-const CORR_GROUPS   = [
-  ['ETH','ARB','OP','MATIC'],
-  ['BNB','CAKE'],
-  ['SOL','RAY','JTO'],
-  ['AVAX','JOE'],
-];
+  const _num = (v) => Number.isFinite(+v) ? +v : 0;
 
-class RiskEngine {
+  function assess(setup, regimeDiag) {
+    if (!setup || !setup.factors) {
+      return { level: 'Orta', score: 50, reasons: [] };
+    }
 
-  // ── Volatilite Ayarlı Kaldıraç ────────────────
-  calcDynamicLeverage(atrPct, conf, regimeMode, setupGrade) {
-    let base = atrPct > 5 ? 2 : atrPct > 4 ? 3 : atrPct > 3 ? 5 : atrPct > 2 ? 7 : atrPct > 1 ? 10 : 12;
+    let riskScore = 0;
+    const reasons = [];
 
-    // Güven skoru
-    if (conf >= 85) base += 3;
-    else if (conf >= 75) base += 1;
-    else if (conf < 55) base -= 2;
-    else if (conf < 45) base -= 4;
+    // 1. Volatility risk
+    const volQuality = regimeDiag?.vol?.quality;
+    if (volQuality === 'EXTREME') {
+      riskScore += 30;
+      reasons.push('Aşırı volatilite — geniş hareket riski');
+    } else if (volQuality === 'ELEVATED') {
+      riskScore += 15;
+      reasons.push('Yüksek volatilite ortamı');
+    }
 
-    // Rejim
-    if (regimeMode === 'PANIC')    base = Math.min(base, 2);
-    if (regimeMode === 'VOLATILE') base = Math.min(base, 3);
-    if (regimeMode === 'TREND' && conf > 70) base += 2;
-
-    // Grade
-    if (setupGrade === 'S') base += 2;
-    else if (setupGrade === 'D') base -= 3;
-
-    return clamp(Math.round(base), 1, 15);
-  }
-
-  // ── ATR Bazlı Pozisyon Boyutu ─────────────────
-  calcPositionSize(portfolio, atr, price, riskPct) {
-    if (!atr || !price || !portfolio) return null;
-    const riskAmount  = portfolio * (riskPct / 100);
-    const stopDist    = atr * 1.5;
-    const stopPct     = (stopDist / price) * 100;
-    const posSize     = riskAmount / stopDist;
-    const posValue    = posSize * price;
-    const posValuePct = (posValue / portfolio) * 100;
-    return { riskAmount, stopDist, stopPct, posSize, posValue, posValuePct };
-  }
-
-  // ── Korelasyon Kontrolü ───────────────────────
-  checkCorrelation(sym, openPositions = []) {
-    const clean    = sym.replace('USDT', '').replace('PERP', '');
-    const warnings = [];
-    let corrCount  = 0;
-
-    // BTC grubu
-    if (HIGH_CORR_BTC.includes(clean)) {
-      const openBTCCorr = openPositions.filter(p => HIGH_CORR_BTC.includes(p.sym?.replace('USDT', ''))).length;
-      if (openBTCCorr >= 2) {
-        warnings.push(`⚠ ${clean} BTC korelasyonlu — ${openBTCCorr} açık pozisyon var`);
-        corrCount += openBTCCorr;
+    // 2. Funding stresi
+    const fundingFactor = setup.factors.find(f => f.code === 'FUNDING');
+    if (fundingFactor?.available) {
+      if (fundingFactor.score <= 3) {
+        riskScore += 25;
+        reasons.push('Funding stres altında — geç giriş baskısı');
+      } else if (fundingFactor.score <= 5) {
+        riskScore += 10;
       }
     }
 
-    // Alt gruplar
-    CORR_GROUPS.forEach(group => {
-      if (group.includes(clean)) {
-        const groupOpen = openPositions.filter(p => group.includes(p.sym?.replace('USDT', ''))).length;
-        if (groupOpen > 0) {
-          warnings.push(`⚠ ${clean} ile aynı gruptaki ${groupOpen} pozisyon açık`);
-          corrCount += groupOpen;
-        }
+    // 3. FBR — fake breakout risk
+    const fbrFactor = setup.factors.find(f => f.code === 'FBR');
+    if (fbrFactor?.available && fbrFactor.score >= 7) {
+      riskScore += 25;
+      reasons.push('Giriş mumunda fakeout işaretleri');
+    } else if (fbrFactor?.available && fbrFactor.score >= 5) {
+      riskScore += 10;
+    }
+
+    // 4. HTF alignment — aleyhte mi
+    const htfFactor = setup.factors.find(f => f.code === 'HTF');
+    if (htfFactor?.available && htfFactor.score <= 4) {
+      riskScore += 20;
+      reasons.push('HTF konfirmasyonu eksik');
+    } else if (htfFactor?.available && htfFactor.score <= 6) {
+      riskScore += 8;
+    }
+
+    // 5. Trend overextension — momentum factor'dan
+    const momFactor = setup.factors.find(f => f.code === 'MOMENTUM');
+    if (momFactor?.available && momFactor.score <= 3) {
+      // Düşük momentum skoru burada RSI'ın overbought/oversold olduğunu işaret edebilir
+      riskScore += 15;
+      reasons.push('Momentum tükenme bölgesinde');
+    }
+
+    // 6. Volume zayıflığı
+    const volFactor = setup.factors.find(f => f.code === 'VOLUME');
+    if (volFactor?.available && volFactor.score <= 4) {
+      riskScore += 10;
+      reasons.push('Hacim konfirmasyonu zayıf');
+    }
+
+    // 7. Likidasyon yakınlığı (entry / sl yakın mı)
+    if (setup.entry && setup.sl) {
+      const slDistance = Math.abs(setup.entry - setup.sl) / setup.entry;
+      if (slDistance < 0.005) {
+        // SL %0.5'ten yakın — çok dar stop
+        riskScore += 15;
+        reasons.push('Stop çok dar — küçük hareket bile tetikleyebilir');
       }
-    });
+    }
 
-    return {
-      warnings,
-      corrCount,
-      risk: corrCount >= 3 ? 'HIGH' : corrCount >= 1 ? 'MEDIUM' : 'LOW',
-    };
+    riskScore = Math.max(0, Math.min(100, riskScore));
+
+    let level;
+    if (riskScore >= 55) level = 'Yüksek';
+    else if (riskScore >= 25) level = 'Orta';
+    else level = 'Düşük';
+
+    return { level, score: riskScore, reasons };
   }
 
-  // ── Drawdown Koruması ─────────────────────────
-  checkDrawdown() {
-    const trades  = Storage.getTrades();
-    const last10  = trades.slice(-10);
-    if (last10.length < 3) return { block: false, warning: null };
-
-    const losses = last10.filter(t => !t.win).length;
-    const cumPnl = last10.reduce((s, t) => s + t.pnlPct, 0);
-
-    if (losses >= 5 && cumPnl < -8) {
-      return { block: true, warning: `🛑 Drawdown koruması — Son 10T: ${losses} kayıp, -%${Math.abs(cumPnl).toFixed(1)} PNL` };
-    }
-    if (losses >= 4 && cumPnl < -5) {
-      return { block: false, warning: `⚠ Düşük performans — Boyutu küçült` };
-    }
-    if (losses >= 7) {
-      return { block: true, warning: `🛑 ${losses}/10 kayıp — Dur, stratejiyi gözden geçir` };
-    }
-    return { block: false, warning: null };
-  }
-
-  // ── Tam Risk Analizi ──────────────────────────
-  analyze({ sym, atrPct, conf, regimeMode, setupGrade, portfolio = 10000, price, atr }) {
-    const lev    = this.calcDynamicLeverage(atrPct, conf, regimeMode, setupGrade);
-    const riskPct = conf >= 80 ? 2 : conf >= 70 ? 1.5 : conf >= 55 ? 1 : 0.5;
-    const pos    = this.calcPositionSize(portfolio, atr, price, riskPct);
-    const corr   = this.checkCorrelation(sym);
-    const dd     = this.checkDrawdown();
-
-    return { lev, riskPct, pos, corr, dd, atrPct, conf, regimeMode, setupGrade, sym };
-  }
-}
-
-export const RiskEng = new RiskEngine();
+  return { assess };
+})();

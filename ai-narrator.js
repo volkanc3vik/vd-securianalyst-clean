@@ -1,126 +1,129 @@
 // ════════════════════════════════════════════════════════════════════
-// LIQUIDATION ENGINE — Spike, Cascade, Pressure, Bias
+// TI MARKET MAKER BIAS
+// "Liquidity is currently building above price." gibi profesyonel
+// commentary üretir. Koşullara göre dinamik — şablon değil.
+//
+// Girdiler:
+//   - btcData (likidite seviyeleri, son hareket)
+//   - regimeDiag (trend, vol, breadth, liq bias)
+//   - funding / oi (varsa)
 // ════════════════════════════════════════════════════════════════════
-const LiquidationEngine = (() => {
+window.TIMMBias = (() => {
+  'use strict';
 
-  const _history = [];   // {ts, value, side, sym}
-  const MAX_HIST  = 200;
-  let   _stats    = { longTotal:0, shortTotal:0, lastSpike:null };
+  const _num = (v) => Number.isFinite(+v) ? +v : 0;
 
-  // WSEngine'den gelen her likidasyon buraya gelir
-  function onLiquidation(liq) {
-    _history.push({ ...liq, ts: liq.ts || Date.now() });
-    if (_history.length > MAX_HIST) _history.shift();
+  function _liquidityLocation(btcData) {
+    if (!btcData || !btcData.candles || btcData.candles.length < 50) return null;
+    const candles = btcData.candles.slice(-50);
+    const last    = candles[candles.length - 1].c;
 
-    if (liq.side === 'BUY')  _stats.shortTotal += liq.value || 0; // BUY = short liq
-    else                     _stats.longTotal  += liq.value || 0;
-
-    // Spike kontrolü
-    const recentWindow = _history.filter(h => Date.now() - h.ts < 60000);
-    const recentTotal  = recentWindow.reduce((s,h) => s + (h.value||0), 0);
-    const avgHourly    = _history.length > 10
-      ? _history.reduce((s,h) => s+(h.value||0), 0) / _history.length * 60
-      : recentTotal;
-
-    if (recentTotal > avgHourly * 2.5 && recentTotal > 500000) {
-      _stats.lastSpike = { ts: Date.now(), value: recentTotal, side: liq.side };
+    let above = 0, below = 0;
+    for (let i = 2; i < candles.length - 2; i++) {
+      const c = candles[i];
+      const isHigh = c.h > candles[i-1].h && c.h > candles[i-2].h &&
+                     c.h > candles[i+1].h && c.h > candles[i+2].h;
+      const isLow  = c.l < candles[i-1].l && c.l < candles[i-2].l &&
+                     c.l < candles[i+1].l && c.l < candles[i+2].l;
+      if (isHigh && c.h > last) above++;
+      if (isLow  && c.l < last) below++;
     }
+
+    if (above === 0 && below === 0) return null;
+    if (above > below * 1.5) return 'ABOVE';
+    if (below > above * 1.5) return 'BELOW';
+    return 'BALANCED';
   }
 
-  // Ana analiz
-  function analyze(wsData) {
-    const now = Date.now();
-    const win5m  = _history.filter(h => now - h.ts < 300000);
-    const win1h  = _history.filter(h => now - h.ts < 3600000);
-
-    const longLiq5m  = win5m.filter(h => h.side==='SELL').reduce((s,h)=>s+(h.value||0),0);
-    const shortLiq5m = win5m.filter(h => h.side==='BUY').reduce((s,h)=>s+(h.value||0),0);
-    const total5m    = longLiq5m + shortLiq5m;
-
-    const longLiq1h  = win1h.filter(h => h.side==='SELL').reduce((s,h)=>s+(h.value||0),0);
-    const shortLiq1h = win1h.filter(h => h.side==='BUY').reduce((s,h)=>s+(h.value||0),0);
-    const total1h    = longLiq1h + shortLiq1h;
-
-    // Spike tespiti
-    const liqSpike = _stats.lastSpike && (now - _stats.lastSpike.ts < 120000);
-
-    // Cascade: 3 dakika içinde birden fazla büyük likidasyon
-    const bigLiqs = win5m.filter(h => (h.value||0) > 100000);
-    const cascade = bigLiqs.length >= 3;
-
-    // Pressure skoru (0-100)
-    let liquidationPressure = 0;
-    if (total5m > 5_000_000)  liquidationPressure = 90;
-    else if (total5m > 1_000_000) liquidationPressure = 70;
-    else if (total5m > 500_000)   liquidationPressure = 50;
-    else if (total5m > 100_000)   liquidationPressure = 30;
-    else if (total5m > 0)         liquidationPressure = 15;
-
-    // Bias
-    const liquidationBias = total5m === 0 ? 'NEUTRAL' :
-      longLiq5m > shortLiq5m * 1.5 ? 'LONG_LIQ' :
-      shortLiq5m > longLiq5m * 1.5 ? 'SHORT_LIQ' : 'BALANCED';
-
-    // squeezeRisk — büyük short likidasyon → short squeeze
-    const squeezeRisk = shortLiq5m > longLiq5m * 2 && total5m > 500000 ? 'SHORT_SQUEEZE' :
-                        longLiq5m > shortLiq5m * 2 && total5m > 500000 ? 'LONG_SQUEEZE' : null;
-
-    // WS'den son likidasyon
-    const wsLiq = wsData?.lastLiquidation;
-    const recentLiq = wsLiq && (now - wsLiq.ts < 60000) ? wsLiq : null;
-
-    return {
-      liquidationPressure,
-      liquidationBias,
-      squeezeRisk,
-      liqSpike,
-      cascade,
-      longLiq5m, shortLiq5m, total5m,
-      longLiq1h, shortLiq1h, total1h,
-      recentLiq,
-      history: _history.slice(-20),
-    };
+  function _fundingPressure(funding) {
+    if (!funding || !Number.isFinite(+funding.rate)) return null;
+    const r = +funding.rate;
+    if (r > 0.05)   return 'OVERHEATED_LONG';
+    if (r < -0.05)  return 'OVERHEATED_SHORT';
+    if (r > 0.02)   return 'ELEVATED_LONG';
+    if (r < -0.02)  return 'ELEVATED_SHORT';
+    return 'NEUTRAL';
   }
 
-  function renderUI(result, panelId='liqPanel') {
-    const el = document.getElementById(panelId);
-    if (!el) return;
+  function _oiSignal(btcData, oi) {
+    if (!oi || !btcData || !btcData.closes) return null;
+    const closes = btcData.closes.slice(-10);
+    if (closes.length < 5) return null;
+    const priceChg = (closes[closes.length-1] - closes[0]) / closes[0];
+    const oiChg    = _num(oi.change24h) || _num(oi.changePercent);
+    if (!oiChg || Math.abs(priceChg) < 0.001) return null;
 
-    const { liquidationPressure:lp, liquidationBias:lb, squeezeRisk:sr,
-            liqSpike, cascade, longLiq5m, shortLiq5m, total5m, recentLiq } = result;
+    const pUp = priceChg > 0;
+    const oUp = oiChg > 0;
 
-    const lpCol = lp>=70?'var(--red)':lp>=50?'var(--orange)':lp>=30?'var(--yellow)':'var(--green)';
-    const fmt   = v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':'$0';
-
-    el.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">BASINÇ</div>
-          <div style="font-size:20px;font-weight:800;color:${lpCol}">${lp}%</div>
-        </div>
-        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">5dk TOPLAM</div>
-          <div style="font-size:14px;font-weight:800;color:var(--cyan)">$${fmt(total5m)}</div>
-        </div>
-      </div>
-      ${liqSpike?`<div style="padding:6px 10px;background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:var(--red)">⚡ LİKİDASYON SPIKE TESPİT EDİLDİ</div>`:''}
-      ${cascade?`<div style="padding:6px 10px;background:rgba(255,122,0,.1);border:1px solid rgba(255,122,0,.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:var(--orange)">🌊 CASCADE RİSKİ — Zincirleme likidasyon</div>`:''}
-      ${sr?`<div style="padding:6px 10px;background:rgba(${sr==='SHORT_SQUEEZE'?'0,229,160':'255,61,107'},.1);border:1px solid rgba(${sr==='SHORT_SQUEEZE'?'0,229,160':'255,61,107'},.3);border-radius:8px;margin-bottom:6px;font-size:10px;font-weight:700;color:${sr==='SHORT_SQUEEZE'?'var(--green)':'var(--red)'}">⚡ ${sr.replace('_',' ')} BAŞLAYAB\u0130L\u0130R</div>`:''}
-      <div style="display:flex;gap:8px">
-        <div style="flex:1;background:rgba(255,61,107,.07);border-radius:7px;padding:6px 8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">LONG LİK.</div>
-          <div style="font-size:11px;font-weight:700;color:var(--red)">$${fmt(longLiq5m)}</div>
-        </div>
-        <div style="flex:1;background:rgba(0,229,160,.07);border-radius:7px;padding:6px 8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">SHORT LİK.</div>
-          <div style="font-size:11px;font-weight:700;color:var(--green)">$${fmt(shortLiq5m)}</div>
-        </div>
-      </div>
-      ${recentLiq?`<div style="margin-top:8px;font-size:10px;color:var(--text3);padding:5px 8px;background:rgba(0,0,0,.2);border-radius:6px">
-        Son: ${recentLiq.side==='BUY'?'🔵 Short':'🔴 Long'} likidasyon — $${fmt(recentLiq.value||0)} @ $${(+recentLiq.price||0).toFixed(2)}
-      </div>`:''}
-    `;
+    if (pUp && oUp)   return 'TREND_HEALTHY_LONG';
+    if (!pUp && !oUp) return 'TREND_HEALTHY_SHORT';
+    if (pUp && !oUp)  return 'SQUEEZE_RALLY';
+    if (!pUp && oUp)  return 'SHORT_BUILDUP';
+    return null;
   }
 
-  return { onLiquidation, analyze, renderUI };
+  function build({ btcData, regimeDiag, funding, oi }) {
+    const loc   = _liquidityLocation(btcData);
+    const fund  = _fundingPressure(funding);
+    const oiSig = _oiSignal(btcData, oi);
+    const trend = regimeDiag?.trend;
+
+    let headline;
+    const detail = [];
+
+    if (fund === 'OVERHEATED_LONG') {
+      headline = 'Funding aşırı ısınmış — long kalabalığı risk altında.';
+      detail.push('Geç longlar likidasyon zincirine açık.');
+    }
+    else if (fund === 'OVERHEATED_SHORT') {
+      headline = 'Funding aşırı negatif — short squeeze koşulları oluşuyor.';
+      detail.push('Short tarafı aşırı uzamış; ralliler shortları kapatmaya zorlayabilir.');
+    }
+    else if (oiSig === 'SQUEEZE_RALLY') {
+      headline = 'Yükseliş short kapatmalarıyla sürüyor, yeni longlarla değil.';
+      detail.push('OI desteği olmadan ralli kalitesi şüpheli.');
+    }
+    else if (oiSig === 'SHORT_BUILDUP') {
+      headline = 'Zayıflıkta shortlar birikiyor — squeeze yakıtı toplanıyor.';
+    }
+    else if (loc === 'ABOVE' && trend?.dir === 'UP') {
+      headline = 'Likidite fiyatın üzerinde — devamlılık için doğal hedef.';
+      detail.push('Üst taraftaki likidite hedefleri henüz vurulmadı.');
+    }
+    else if (loc === 'ABOVE' && trend?.dir !== 'UP') {
+      headline = 'Likidite fiyatın üzerinde birikiyor — long tuzakları mümkün.';
+      detail.push('Piyasa dönüş öncesi agresif longları avlayabilir.');
+    }
+    else if (loc === 'BELOW' && trend?.dir === 'DOWN') {
+      headline = 'Likidite fiyatın altında — aşağı yön hedefleri vurulmadı.';
+    }
+    else if (loc === 'BELOW' && trend?.dir !== 'DOWN') {
+      headline = 'Altta stoplar bekliyor — dönüş öncesi sweep riski var.';
+      detail.push('Geç shortlar avlanabilir.');
+    }
+    else if (oiSig === 'TREND_HEALTHY_LONG') {
+      headline = 'Trend gerçek long pozisyonlarıyla destekleniyor.';
+    }
+    else if (oiSig === 'TREND_HEALTHY_SHORT') {
+      headline = 'Trend gerçek short pozisyonlarıyla destekleniyor.';
+    }
+    else if (trend?.dir === 'FLAT') {
+      headline = 'Yön konvansiyonu yok — yapının oluşmasını bekle.';
+    }
+    else {
+      headline = 'Piyasa davranışı mevcut trendle uyumlu.';
+    }
+
+    if (fund === 'ELEVATED_LONG' && !headline.includes('Funding')) {
+      detail.push('Funding long tarafında yüksek seviyede.');
+    }
+    if (fund === 'ELEVATED_SHORT' && !headline.includes('Funding')) {
+      detail.push('Funding short tarafında yüksek seviyede.');
+    }
+
+    return { headline, detail };
+  }
+
+  return { build };
 })();

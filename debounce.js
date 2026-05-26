@@ -1,67 +1,133 @@
 // ═══════════════════════════════════════════════
-// CONSTANTS — Tüm sabit değerler merkezi
+// HELPERS — Genel yardımcı fonksiyonlar
 // ═══════════════════════════════════════════════
 
-export const API = {
-  BASE:  'https://api.binance.com',
-  FBASE: 'https://fapi.binance.com',
-  WS:    'wss://fstream.binance.com',
-};
+/**
+ * Mevcut trading session'ı döndür
+ */
+export function getCurrentSession() {
+  const h = new Date().getUTCHours();
+  if (h < 8)  return 'ASIA';
+  if (h < 13) return 'LONDON';
+  if (h < 21) return 'NEW_YORK';
+  return 'AFTER';
+}
 
-export const INTERVALS = ['1m', '5m', '15m', '1h', '4h'];
+/**
+ * Sayıyı belirli aralığa sıkıştır
+ */
+export function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
+}
 
-export const DEFAULT_SYM  = 'BTCUSDT';
-export const DEFAULT_INTV = '15m';
+/**
+ * Dizi ortalaması
+ */
+export function average(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
 
-export const SCAN_INTERVAL    = 120_000; // 2 dakika
-export const REFRESH_INTERVAL =  30_000; // 30 saniye
-export const TRACK_INTERVAL   =  20_000; // 20 saniye
+/**
+ * DOM element oluştur
+ */
+export function createElement(tag, attrs = {}, innerHTML = '') {
+  const el = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => {
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.style.cssText = v;
+    else el.setAttribute(k, v);
+  });
+  if (innerHTML) el.innerHTML = innerHTML;
+  return el;
+}
 
-export const RISK_LEVELS = {
-  LOW:      { label: 'DÜŞÜK RİSK',  cls: 'risk-low'  },
-  MEDIUM:   { label: 'ORTA RİSK',   cls: 'risk-med'  },
-  HIGH:     { label: 'YÜKSEK RİSK', cls: 'risk-high' },
-  CRITICAL: { label: 'KRİTİK RİSK', cls: 'risk-crit' },
-};
+/**
+ * Event listener'ı güvenli ekle/kaldır
+ */
+export class EventBus {
+  constructor() {
+    this._listeners = new Map();
+  }
 
-export const REGIME_MODES = ['TREND', 'RANGE', 'BREAKOUT', 'VOLATILE', 'SQUEEZE', 'PANIC', 'SIDEWAYS'];
+  on(event, handler) {
+    if (!this._listeners.has(event)) {
+      this._listeners.set(event, new Set());
+    }
+    this._listeners.get(event).add(handler);
+  }
 
-export const SESSIONS = {
-  ASIA:     { start: 0,  end: 8,  label: 'Asya',     color: '#f0a500' },
-  LONDON:   { start: 8,  end: 13, label: 'Londra',   color: 'var(--cyan)' },
-  NEW_YORK: { start: 13, end: 21, label: 'New York', color: 'var(--green)' },
-  AFTER:    { start: 21, end: 24, label: 'Sonrası',  color: 'var(--text3)' },
-};
+  off(event, handler) {
+    if (this._listeners.has(event)) {
+      this._listeners.get(event).delete(handler);
+    }
+  }
 
-export const TOAST_DURATION  = 6_000;  // ms
-export const TOAST_MAX       = 3;
-export const NOTIF_MAX       = 200;
+  emit(event, data) {
+    if (this._listeners.has(event)) {
+      this._listeners.get(event).forEach(fn => {
+        try { fn(data); } catch (e) { console.warn(`EventBus error [${event}]:`, e); }
+      });
+    }
+  }
 
-export const STORAGE_KEYS = {
-  TRADE_MEMORY:    'vd_trade_memory',
-  TOAST_ENABLED:   'vd_toast_enabled',
-  NOTIF_STORE:     'vd_notifications',
-  USER_PREFS:      'vd_user_prefs',
-};
+  clear() {
+    this._listeners.clear();
+  }
+}
 
-export const CONFIRMATION_WEIGHTS = {
-  ema_full:     12,
-  macd:         10,
-  rsi:           8,
-  volume:       10,
-  btc:           8,
-  rr:           10,
-  smc:           8,
-  no_fake:      10,
-  regime:        8,
-  ob_imbalance:  8,
-  funding:       8,
-};
+// Global event bus
+export const Bus = new EventBus();
 
-export const SETUP_GRADES = {
-  S: { stars: '⭐⭐⭐', label: 'ELITE SETUP',      color: '#b39dfa', bg: 'rgba(157,125,250,.2)' },
-  A: { stars: '⭐⭐',  label: 'STRONG SETUP',     color: 'var(--green)', bg: 'rgba(0,229,160,.12)' },
-  B: { stars: '⭐',   label: 'CONFIRMED SETUP',  color: 'var(--yellow)', bg: 'rgba(255,193,7,.1)' },
-  C: { stars: '⚡',   label: 'AGGRESSIVE ENTRY', color: 'var(--orange)', bg: 'rgba(255,122,0,.1)' },
-  D: { stars: '○',    label: 'WEAK SETUP',        color: 'var(--text3)', bg: 'rgba(255,255,255,.05)' },
-};
+/**
+ * Lazy singleton — bir kez oluştur, hep kullan
+ */
+export function lazy(factory) {
+  let instance;
+  return {
+    get() {
+      if (!instance) instance = factory();
+      return instance;
+    },
+    reset() { instance = undefined; }
+  };
+}
+
+/**
+ * DOM hazır olunca çalıştır
+ */
+export function onReady(fn) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
+  }
+}
+
+/**
+ * Mobile mi?
+ */
+export function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+/**
+ * iOS Safari mi?
+ */
+export function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+/**
+ * Güvenli JSON parse
+ */
+export function safeJSON(str, fallback = null) {
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
+/**
+ * Benzersiz ID üret
+ */
+export function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}

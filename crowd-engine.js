@@ -1,111 +1,116 @@
-// ═══════════════════════════════════════════════
-// MARKET REGIME ENGINE — Trend/Range/Panic tespiti
-// ═══════════════════════════════════════════════
-import { calcATR, calcBB, calcRSI } from '../modules/indicators.js';
+// ════════════════════════════════════════════════════════════════════
+// TI SETUP MATURITY
+// Olgunluk yüzdesi + "What Needs To Happen Next" eksik konfirmasyonlar.
+//
+// Maturity ≠ Score. Score kalite ölçer, Maturity tamamlanmışlık ölçer.
+// Düşük maturity = sabret. Yüksek maturity = tetik yaklaştı.
+// ════════════════════════════════════════════════════════════════════
+window.TIMaturity = (() => {
+  'use strict';
 
-class MarketRegimeEngine {
-
-  /**
-   * Piyasa rejimini tespit et
-   * @returns {string} TREND | RANGE | BREAKOUT | VOLATILE | SQUEEZE | PANIC | SIDEWAYS
-   */
-  detect(closes, candles, oiData = null) {
-    if (!closes?.length || !candles?.length) return 'SIDEWAYS';
-
-    const price  = closes[closes.length - 1];
-    const atr    = calcATR(candles);
-    const atrPct = (atr / price) * 100;
-    const bb     = calcBB(closes);
-    const rsi    = calcRSI(closes);
-
-    // EMA trend kontrolü
-    const ema20  = this._ema(closes, 20);
-    const ema50  = this._ema(closes, 50);
-    const ema200 = this._ema(closes, 200);
-
-    // Son 20 mum yön analizi
-    const recentCloses = closes.slice(-20);
-    const priceChange  = ((recentCloses[recentCloses.length - 1] - recentCloses[0]) / recentCloses[0]) * 100;
-
-    // PANIC — sert düşüş + yüksek volatilite
-    if (rsi < 25 && priceChange < -8 && atrPct > 4) return 'PANIC';
-
-    // SQUEEZE — BB çok dar
-    if (bb.width < 2) return 'SQUEEZE';
-
-    // VOLATILE
-    if (atrPct > 4) return 'VOLATILE';
-
-    // TREND — EMA hizalama
-    if (ema20 > ema50 && ema50 > ema200 && priceChange > 2) return 'TREND';
-    if (ema20 < ema50 && ema50 < ema200 && priceChange < -2) return 'TREND';
-
-    // BREAKOUT — BB dışına çıkış
-    if (price > bb.upper * 0.998 || price < bb.lower * 1.002) return 'BREAKOUT';
-
-    // RANGE
-    if (Math.abs(priceChange) < 1.5 && atrPct < 2) return 'RANGE';
-
-    // Yeni: DISTRIBUTION
-    if(ema20 > ema50 && priceChange < -1 && rsi > 55 && atrPct > 2)
-      return 'DISTRIBUTION';
-    // Yeni: ACCUMULATION  
-    if(ema20 < ema50 && priceChange > 1 && rsi < 50 && atrPct < 2.5)
-      return 'ACCUMULATION';
-    // Yeni: CHOP
-    if(Math.abs(priceChange) < 1 && atrPct < 1.5 && bb.width < 3)
-      return 'CHOP';
-
-    return 'SIDEWAYS';
-  }
-
-  /**
-   * Rejim rengini döndür
-   */
-  getColor(regime) {
-    const colors = {
-      TREND:    'var(--green)',
-      RANGE:    'var(--yellow)',
-      BREAKOUT: 'var(--cyan)',
-      VOLATILE: 'var(--orange)',
-      SQUEEZE:  'var(--purple)',
-      PANIC:    'var(--red)',
-      SIDEWAYS:     'var(--text3)',
-      DISTRIBUTION: '#ff9f43',
-      ACCUMULATION: '#48dbfb',
-      CHOP:         '#a29bfe',
-    };
-    return colors[regime] || 'var(--text3)';
-  }
-
-  /**
-   * Rejim açıklaması
-   */
-  getDesc(regime) {
-    const descs = {
-      TREND:    'Güçlü trend — momentum sinyalleri geçerli',
-      RANGE:    'Range market — kırılım bekleniyor',
-      BREAKOUT: 'Kırılım modu — momentum yüksek',
-      VOLATILE: 'Yüksek volatilite — stop aralığını genişlet',
-      SQUEEZE:  'Bollinger sıkışması — büyük hareket bekle',
-      PANIC:    'Panik satış — long girişlerden kaçın',
-      SIDEWAYS:     'Yön belirsiz — konfirmasyon bekle',
-      DISTRIBUTION: 'Dağıtım modu — büyük oyuncular satıyor',
-      ACCUMULATION: 'Birikim modu — büyük oyuncular topluyor',
-      CHOP:         'Yatay hareket — kırılım bekle',
-    };
-    return descs[regime] || '—';
-  }
-
-  _ema(closes, period) {
-    if (closes.length < period) return closes[closes.length - 1];
-    const k = 2 / (period + 1);
-    let ema = closes.slice(0, period).reduce((a, b) => a + b) / period;
-    for (let i = period; i < closes.length; i++) {
-      ema = closes[i] * k + ema * (1 - k);
+  function evaluate(setup) {
+    if (!setup || !setup.factors) {
+      return { percent: 0, confirmed: [], missing: [] };
     }
-    return ema;
-  }
-}
 
-export const RegimeEngine = new MarketRegimeEngine();
+    const confirmed = [];
+    const missing   = [];
+
+    setup.factors.forEach(f => {
+      if (!f.available) return;
+
+      // FBR negatif faktör — yüksekse uyarı
+      if (f.code === 'FBR') {
+        if (f.score >= 6) {
+          missing.push('High fakeout risk on current candle structure.');
+        }
+        return;
+      }
+
+      if (f.score >= 8)      confirmed.push(_strongPhrase(f.code));
+      else if (f.score >= 6) confirmed.push(_validPhrase(f.code));
+      else if (f.score <= 4) {
+        const m = _missingPhrase(f.code, setup.dir, setup);
+        if (m) missing.push(m);
+      }
+    });
+
+    const usablePositive = setup.factors.filter(f => f.available && !f.negative).length;
+    const percent = usablePositive === 0
+      ? 0
+      : Math.round((confirmed.length / usablePositive) * 100);
+
+    return { percent, confirmed, missing };
+  }
+
+  function _strongPhrase(code) {
+    switch (code) {
+      case 'STRUCTURE':  return 'Piyasa yapısı hizalı';
+      case 'LIQUIDITY':  return 'Likidite sweep onaylandı';
+      case 'FUNDING':    return 'Funding sağlıklı';
+      case 'OI':         return 'Open Interest trendi destekliyor';
+      case 'LIQS':       return 'Likidasyonlar yönü destekliyor';
+      case 'VOLUME':     return 'Hacim genişlemesi';
+      case 'VOLATILITY': return 'Sağlıklı volatilite';
+      case 'MOMENTUM':   return 'Güçlü momentum';
+      case 'HTF':        return 'HTF hizalama';
+      case 'SMC':        return 'SMC konfluans';
+      case 'TREND':      return 'Trend hizalama';
+      case 'RR':         return 'Premium risk/ödül';
+      default:           return code;
+    }
+  }
+
+  function _validPhrase(code) {
+    switch (code) {
+      case 'STRUCTURE':  return 'Yapı korunuyor';
+      case 'LIQUIDITY':  return 'Likidite aktif';
+      case 'FUNDING':    return 'Funding kabul edilebilir';
+      case 'OI':         return 'OI ılımlı destek';
+      case 'LIQS':       return 'Likidasyonlar nötr-pozitif';
+      case 'VOLUME':     return 'Hacim korunuyor';
+      case 'VOLATILITY': return 'Volatilite uygun';
+      case 'MOMENTUM':   return 'Momentum mevcut';
+      case 'HTF':        return 'Kısmi HTF hizalama';
+      case 'SMC':        return 'SMC kısmi konfluans';
+      case 'TREND':      return 'Trend bias destekliyor';
+      case 'RR':         return 'Kabul edilebilir R/R';
+      default:           return code;
+    }
+  }
+
+  function _missingPhrase(code, dir, setup) {
+    const isLong = (dir || '').toUpperCase() === 'LONG';
+    const entry  = setup.entry;
+
+    switch (code) {
+      case 'STRUCTURE':
+        return isLong
+          ? 'Yapı değişimi için daha yüksek tepe gerekli.'
+          : 'Yapı değişimi için daha düşük dip gerekli.';
+      case 'LIQUIDITY':  return 'Likidite sweep henüz tamamlanmadı.';
+      case 'FUNDING':    return 'Devamlılık için funding\'in stabilize olması gerekli.';
+      case 'OI':         return isLong
+          ? 'OI bir sonraki yukarı harekette genişlemeli.'
+          : 'OI bir sonraki aşağı harekette genişlemeli.';
+      case 'LIQS':       return 'Likidasyon akışı henüz lehte değil.';
+      case 'VOLUME':
+        return entry
+          ? `$${(+entry).toPrecision(4)} seviyesinde hacim genişlemesi gerekli.`
+          : 'Sonraki harekette hacim genişlemesi gerekli.';
+      case 'VOLATILITY': return 'Temiz kırılım için volatilite genişlemesi gerekli.';
+      case 'MOMENTUM':   return isLong
+          ? 'Momentum hâlâ onay bekliyor.'
+          : 'Aşağı yön momentum eksik.';
+      case 'HTF':        return 'HTF onayı eksik.';
+      case 'SMC':        return 'SMC konfluans gelişiyor.';
+      case 'TREND':      return isLong
+          ? 'Fiyat trend filtresini geri almalı.'
+          : 'Fiyat trend filtresini kaybetmeli.';
+      case 'RR':         return 'Hedef yerleşimi iyileştirilirse R/R güçlenir.';
+      default:           return null;
+    }
+  }
+
+  return { evaluate };
+})();

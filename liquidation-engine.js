@@ -1,159 +1,242 @@
-// ═══════════════════════════════════════════════
-// SMART MONEY ENGINE — BOS, CHoCH, OB, FVG, Sweeps
-// UI'dan tamamen bağımsız
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// TI MARKET PRESSURE
+// Davranışsal piyasa sinyallerini sentezler.
+//
+// "Hangi coin?" değil, "piyasa ne yapmaya çalışıyor?" cevaplar.
+//
+// Sinyaller:
+//   - FUNDING_PRESSURE      → kalabalık tarafı (long/short)
+//   - OI_EXPANSION          → yeni para giriyor (sağlıklı) vs squeeze
+//   - TRAPPED_LONGS         → fiyat çıkarken longlar tepede sıkıştı
+//   - TRAPPED_SHORTS        → düşüş tükenirken shortlar dipte sıkıştı
+//   - LIQUIDITY_ABOVE       → likidite üstte → magnet
+//   - LIQUIDITY_BELOW       → likidite altta → stop avı
+//   - MOMENTUM_EXHAUSTION   → ivme tükeniyor
+//   - CONTINUATION_WEAKNESS → trend görünür devam ediyor ama içten zayıf
+//   - LIQ_PRESSURE          → likidasyon yoğunluğu
+//
+// Çıktı: { signals: [{ code, label, severity, detail }], headline, intensity }
+// ════════════════════════════════════════════════════════════════════
+window.TIMarketPressure = (() => {
+  'use strict';
 
-class SmartMoneyEngine {
+  const _num = (v) => Number.isFinite(+v) ? +v : 0;
 
-  // ── Liquidity Sweep (Likidite Süpürmesi) ──────
-  detectLiquiditySweep(candles) {
-    const sweeps = [];
-    const n = candles.length;
-    for (let i = 5; i < n; i++) {
-      const c    = candles[i];
-      const prev = candles.slice(i - 5, i);
-      const maxH = Math.max(...prev.map(p => p.h));
-      const minL = Math.min(...prev.map(p => p.l));
-      const body = Math.abs(c.c - c.o);
-      const total = c.h - c.l;
-      const wickR = total > 0 ? body / total : 1;
+  // ── Bireysel sinyaller ─────────────────────────────────────────
+  function _fundingPressure(funding, btcDir) {
+    if (!funding || !Number.isFinite(+funding.rate)) return null;
+    const r = +funding.rate;
+    const absR = Math.abs(r);
+    if (absR < 0.015) return null;
 
-      if (c.h > maxH && c.c < maxH && wickR < 0.4 && total > 0) {
-        sweeps.push({ type: 'bearish_sweep', price: c.h, idx: i, msg: 'Buy-side likidite toplandı' });
-      }
-      if (c.l < minL && c.c > minL && wickR < 0.4 && total > 0) {
-        sweeps.push({ type: 'bullish_sweep', price: c.l, idx: i, msg: 'Sell-side likidite toplandı' });
-      }
+    if (r > 0.05) {
+      return { code:'FUNDING_PRESSURE', label:'Funding aşırı pozitif',
+        severity:'high', detail:'Long tarafı aşırı uzamış — likidasyon kaskadı riski.' };
     }
-    return sweeps.slice(-5);
+    if (r < -0.05) {
+      return { code:'FUNDING_PRESSURE', label:'Funding derin negatif',
+        severity:'high', detail:'Short tarafı aşırı uzamış — squeeze koşulları oluşuyor.' };
+    }
+    if (r > 0.025) {
+      return { code:'FUNDING_BIAS', label:'Funding long tarafına dengesiz',
+        severity:'med', detail:'Long kalabalığı birikiyor.' };
+    }
+    if (r < -0.025) {
+      return { code:'FUNDING_BIAS', label:'Funding short tarafına dengesiz',
+        severity:'med', detail:'Short kalabalığı birikiyor.' };
+    }
+    return null;
   }
 
-  // ── Order Blocks ──────────────────────────────
-  detectOrderBlocks(candles) {
-    const obs = [];
-    const n   = candles.length;
-    for (let i = 2; i < n - 1; i++) {
-      const c    = candles[i];
-      const next = candles[i + 1];
-      const body = Math.abs(c.c - c.o);
-      const avgB = candles.slice(i - 5, i).map(x => Math.abs(x.c - x.o)).reduce((a, b) => a + b, 0) / 5;
+  function _oiBehavior(oi, btc) {
+    if (!oi || !btc?.closes || btc.closes.length < 5) return null;
+    const chg = _num(oi.change24h) || _num(oi.changePercent);
+    if (!chg || Math.abs(chg) < 1) return null;
+    const closes = btc.closes;
+    const pChg = (closes[closes.length-1] - closes[closes.length-5]) / closes[closes.length-5];
 
-      if (c.c < c.o && next.c > next.o && body > avgB * 1.5 && next.c > c.h) {
-        obs.push({ type: 'bullish', high: c.o, low: c.l, idx: i, desc: 'Kurumsal alım bölgesi' });
-      }
-      if (c.c > c.o && next.c < next.o && body > avgB * 1.5 && next.c < c.l) {
-        obs.push({ type: 'bearish', high: c.h, low: c.o, idx: i, desc: 'Kurumsal satış bölgesi' });
-      }
+    if (pChg > 0.005 && chg > 2) {
+      return { code:'OI_EXPANSION', label:'OI genişliyor, fiyat yükseliyor',
+        severity:'info', detail:'Trend gerçek long pozisyonlarıyla destekleniyor.' };
     }
-    return obs.slice(-4);
+    if (pChg < -0.005 && chg > 2) {
+      return { code:'OI_SHORT_BUILDUP', label:'Düşüşte OI artıyor',
+        severity:'med', detail:'Shortlar zayıflığa yaslanıyor — squeeze yakıtı toplanıyor.' };
+    }
+    if (pChg > 0.005 && chg < -2) {
+      return { code:'OI_CONTRACTION', label:'Yükselişte OI daralıyor',
+        severity:'med', detail:'Ralli short kapatmalarıyla — yeni alımla değil.' };
+    }
+    if (pChg < -0.005 && chg < -2) {
+      return { code:'OI_LONG_FLUSH', label:'Düşüşte OI azalıyor',
+        severity:'info', detail:'Longlar pozisyon kapatıyor — temizlik aşaması.' };
+    }
+    return null;
   }
 
-  // ── Fair Value Gaps ───────────────────────────
-  detectFVG(candles) {
-    const fvgs = [];
-    const n    = candles.length;
-    for (let i = 1; i < n - 1; i++) {
-      const prev = candles[i - 1];
-      const next = candles[i + 1];
+  function _trappedTraders(btc) {
+    if (!btc?.candles || btc.candles.length < 20) return null;
+    const candles = btc.candles.slice(-20);
+    const last = candles[candles.length - 1].c;
 
-      if (prev.h < next.l && (next.l - prev.h) / prev.h > 0.001) {
-        const filled = candles.slice(i + 1).some(c => c.l <= prev.h);
-        if (!filled) fvgs.push({ type: 'bullish', high: next.l, low: prev.h, idx: i });
-      }
-      if (prev.l > next.h && (prev.l - next.h) / prev.l > 0.001) {
-        const filled = candles.slice(i + 1).some(c => c.h >= prev.l);
-        if (!filled) fvgs.push({ type: 'bearish', high: prev.l, low: next.h, idx: i });
+    // Son 20 mumda en yüksek + en düşük
+    const high = Math.max(...candles.map(c => c.h));
+    const low  = Math.min(...candles.map(c => c.l));
+    const pos  = (last - low) / (high - low);
+
+    // Tepe yakını + üst kuyrukları çok → longlar tepede sıkıştı
+    if (pos > 0.85) {
+      // En son 3 mumda üst kuyruk
+      const wicks = candles.slice(-3).reduce((s, c) => s + (c.h - Math.max(c.o, c.c)), 0);
+      const range = high - low;
+      if (range > 0 && wicks / range > 0.15) {
+        return { code:'TRAPPED_LONGS', label:'Tepede longlar tuzakta',
+          severity:'med', detail:'Üst kuyruklar reddedilme gösteriyor — fiyat agresif longları avlayabilir.' };
       }
     }
-    return fvgs.slice(-4);
+    if (pos < 0.15) {
+      const wicks = candles.slice(-3).reduce((s, c) => s + (Math.min(c.o, c.c) - c.l), 0);
+      const range = high - low;
+      if (range > 0 && wicks / range > 0.15) {
+        return { code:'TRAPPED_SHORTS', label:'Dipte shortlar tuzakta',
+          severity:'med', detail:'Alt kuyruklar dip ararken — short kapatmaları hızlanabilir.' };
+      }
+    }
+    return null;
   }
 
-  // ── CHoCH / BOS ───────────────────────────────
-  detectMarketStructure(candles) {
-    const n   = candles.length;
-    const pts = [];
-    let pH = null, pL = null;
+  function _liquidityPositioning(btc) {
+    if (!btc?.candles || btc.candles.length < 50) return null;
+    const candles = btc.candles.slice(-50);
+    const last = candles[candles.length - 1].c;
 
-    for (let i = 2; i < n - 2; i++) {
-      const c = candles[i], p = candles[i-1], pp = candles[i-2], nx = candles[i+1];
-      if (p.h >= pp.h && p.h >= c.h && p.h >= nx.h) {
-        pts.push({ type: pH !== null ? (p.h > pH ? 'HH' : 'LH') : 'HH', price: p.h, idx: i-1 });
-        pH = p.h;
-      }
-      if (p.l <= pp.l && p.l <= c.l && p.l <= nx.l) {
-        pts.push({ type: pL !== null ? (p.l < pL ? 'LL' : 'HL') : 'LL', price: p.l, idx: i-1 });
-        pL = p.l;
-      }
+    let above = 0, below = 0;
+    for (let i = 2; i < candles.length - 2; i++) {
+      const c = candles[i];
+      const isH = c.h > candles[i-1].h && c.h > candles[i-2].h && c.h > candles[i+1].h && c.h > candles[i+2].h;
+      const isL = c.l < candles[i-1].l && c.l < candles[i-2].l && c.l < candles[i+1].l && c.l < candles[i+2].l;
+      if (isH && c.h > last) above++;
+      if (isL && c.l < last) below++;
     }
+    if (above === 0 && below === 0) return null;
+    if (above > below * 1.5) {
+      return { code:'LIQUIDITY_ABOVE', label:'Likidite üstte',
+        severity:'info', detail:'Fiyatın üzerinde stop birikimi — magnet oluşmuş.' };
+    }
+    if (below > above * 1.5) {
+      return { code:'LIQUIDITY_BELOW', label:'Likidite altta',
+        severity:'info', detail:'Stop avı hedefleri altta bekliyor.' };
+    }
+    return null;
+  }
 
-    const recent = pts.slice(-6);
-    const highs  = recent.filter(p => p.type === 'HH' || p.type === 'LH');
-    const lows   = recent.filter(p => p.type === 'LL' || p.type === 'HL');
-    const bullish = highs.some(h => h.type === 'HH') && lows.some(l => l.type === 'HL');
-    const bearish = highs.some(h => h.type === 'LH') && lows.some(l => l.type === 'LL');
+  function _momentumExhaustion(btc) {
+    if (!btc?.ind) return null;
+    const rsi = _num(btc.ind.rsi);
+    const macdH = _num(btc.ind.macd?.histogram);
+    if (rsi > 72 && macdH < 0) {
+      return { code:'MOMENTUM_EXHAUSTION', label:'Yukarı momentum tükeniyor',
+        severity:'med', detail:'RSI yüksek ama MACD ayrışıyor — yorgunluk sinyali.' };
+    }
+    if (rsi < 28 && macdH > 0) {
+      return { code:'MOMENTUM_EXHAUSTION', label:'Aşağı momentum tükeniyor',
+        severity:'med', detail:'RSI düşük ama MACD ayrışıyor — dip tükenme sinyali.' };
+    }
+    return null;
+  }
 
-    // CHoCH
-    const lastTypes = recent.slice(-4).map(p => p.type);
-    const choch = (lastTypes.includes('HH') && lastTypes.includes('LL')) ||
-                  (lastTypes.includes('HL') && lastTypes.includes('LH'));
-    const bos   = lastTypes.slice(-2).every(t => t === 'HH') ||
-                  lastTypes.slice(-2).every(t => t === 'LL');
+  function _continuationWeakness(btc) {
+    if (!btc?.candles || btc.candles.length < 10) return null;
+    const last10 = btc.candles.slice(-10);
+    // Trend yönü
+    const firstC = last10[0].c, lastC = last10[last10.length-1].c;
+    if (Math.abs(lastC - firstC) / firstC < 0.005) return null;
+    const isUp = lastC > firstC;
+    // Hacim trendi
+    const v1 = last10.slice(0, 5).reduce((s,c) => s + (+c.v||0), 0) / 5;
+    const v2 = last10.slice(-5).reduce((s,c) => s + (+c.v||0), 0) / 5;
+    if (v1 === 0) return null;
+    const vDecline = (v1 - v2) / v1;
+    if (vDecline > 0.25) {
+      return { code:'CONTINUATION_WEAKNESS', label:'Devamlılık zayıflıyor',
+        severity:'med',
+        detail: isUp
+          ? 'Fiyat yükseliyor ama hacim azalıyor — ralli içten zayıf.'
+          : 'Fiyat düşüyor ama hacim azalıyor — düşüş zorlanıyor.' };
+    }
+    return null;
+  }
+
+  function _liquidationPressure() {
+    if (typeof window.LiquidationEngine === 'undefined') return null;
+    try {
+      const data = window.LiquidationEngine.getRecentStats?.();
+      if (!data) return null;
+      const longL  = _num(data.longLiqs || data.longs);
+      const shortL = _num(data.shortLiqs || data.shorts);
+      const total = longL + shortL;
+      if (total === 0) return null;
+      // Çok dengesizse rapor et
+      const ratio = longL / total;
+      if (ratio > 0.78) {
+        return { code:'LIQ_PRESSURE_LONG', label:'Long likidasyonları yoğun',
+          severity:'high', detail:'Long taraf aktif olarak temizleniyor.' };
+      }
+      if (ratio < 0.22) {
+        return { code:'LIQ_PRESSURE_SHORT', label:'Short likidasyonları yoğun',
+          severity:'high', detail:'Short taraf squeeze ediliyor.' };
+      }
+    } catch {}
+    return null;
+  }
+
+  // ── Headline & intensity ────────────────────────────────────────
+  function _buildHeadline(signals) {
+    if (signals.length === 0) return null;
+    // En yüksek severity'li sinyali öne al
+    const high = signals.filter(s => s.severity === 'high');
+    if (high.length > 0) return high[0].label;
+    const med = signals.filter(s => s.severity === 'med');
+    if (med.length > 0) return med[0].label;
+    return signals[0].label;
+  }
+
+  function _intensity(signals) {
+    if (signals.length === 0) return 0;
+    let i = 0;
+    signals.forEach(s => {
+      if (s.severity === 'high')      i += 30;
+      else if (s.severity === 'med')  i += 15;
+      else                             i += 5;
+    });
+    return Math.min(100, i);
+  }
+
+  /**
+   * Tüm sinyalleri topla ve sentezle.
+   */
+  function build({ btc, eth, btcFunding, btcOI }) {
+    const signals = [];
+    const trendDir = btc?.ind && btc.closes
+      ? ((btc.ind.ema9 > btc.ind.ema21) ? 'UP' : 'DOWN')
+      : null;
+
+    [
+      _fundingPressure(btcFunding, trendDir),
+      _oiBehavior(btcOI, btc),
+      _trappedTraders(btc),
+      _liquidityPositioning(btc),
+      _momentumExhaustion(btc),
+      _continuationWeakness(btc),
+      _liquidationPressure(),
+    ].forEach(s => { if (s) signals.push(s); });
 
     return {
-      points: recent,
-      trend:  bullish ? 'BULLISH' : bearish ? 'BEARISH' : 'NEUTRAL',
-      choch,
-      bos,
-      eqHighs: highs.filter(h => h.type === 'LH').length >= 2,
-      eqLows:  lows.filter(l => l.type === 'HL').length >= 2,
+      signals,
+      headline:  _buildHeadline(signals),
+      intensity: _intensity(signals),
     };
   }
 
-  // ── Stop Hunt ─────────────────────────────────
-  detectStopHunt(candles) {
-    const n     = candles.length;
-    const hunts = [];
-    for (let i = 3; i < n; i++) {
-      const c    = candles[i];
-      const prev = candles.slice(i - 3, i);
-      const body = Math.abs(c.c - c.o);
-      const total = c.h - c.l;
-      const wickU = c.h - Math.max(c.o, c.c);
-      const wickL = Math.min(c.o, c.c) - c.l;
-
-      if (wickU > body * 2 && wickU > total * 0.4 && total > 0) {
-        const swept = Math.max(...prev.map(p => p.h));
-        if (c.h > swept) {
-          hunts.push({ type: 'bearish_hunt', price: c.h, idx: i,
-            desc: `Stop hunt yukarı — %${(wickU/c.c*100).toFixed(2)} wick` });
-        }
-      }
-      if (wickL > body * 2 && wickL > total * 0.4 && total > 0) {
-        const swept = Math.min(...prev.map(p => p.l));
-        if (c.l < swept) {
-          hunts.push({ type: 'bullish_hunt', price: c.l, idx: i,
-            desc: `Stop hunt aşağı — %${(wickL/c.c*100).toFixed(2)} wick` });
-        }
-      }
-    }
-    return hunts.slice(-3);
-  }
-
-  // ── Tam SMC Analizi ───────────────────────────
-  analyze(candles, price) {
-    if (!candles?.length) return null;
-    return {
-      sweeps:  this.detectLiquiditySweep(candles),
-      obs:     this.detectOrderBlocks(candles),
-      fvgs:    this.detectFVG(candles),
-      ms:      this.detectMarketStructure(candles),
-      hunts:   this.detectStopHunt(candles),
-      // Shorthand flags for confirmation engine
-      ob:      this.detectOrderBlocks(candles).length > 0,
-      choch:   this.detectMarketStructure(candles).choch,
-      bos:     this.detectMarketStructure(candles).bos,
-    };
-  }
-}
-
-export const SMCEngine = new SmartMoneyEngine();
+  return { build };
+})();

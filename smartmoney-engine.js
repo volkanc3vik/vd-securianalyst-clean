@@ -1,273 +1,218 @@
 // ════════════════════════════════════════════════════════════════════
-// TI CONTROLLER v2 — Orchestrator
-// 1. 'vd:scan:complete' event'i dinler
-// 2. Tüm pipeline'ı çalıştırır (regime, mm bias, narrator, scorer, maturity)
-// 3. Panel ASLA BOŞ KALMAZ — bestSetup yoksa bile regime/BTC/ETH/MM bias gösterir
-// 4. Debug logging — her aşamayı raporlar
+// FUTURES STATE — Tek doğruluk kaynağı
+// Pozisyonlar, bakiye, mod — tek noktadan okunur, tek noktadan yazılır.
+// Persistence: localStorage. Subscribers: pub/sub pattern.
 // ════════════════════════════════════════════════════════════════════
-window.TIController = (() => {
+window.FuturesState = (() => {
   'use strict';
 
-  let _listenerAttached = false;
-  let _lastScanResults  = null;
-  let _processing       = false;
-  let _debug            = true; // konsolda debug logları görünür
+  const STORAGE_KEY  = 'vd_futures_v3';
+  const STATE_VER    = 3;
 
-  function _log(...args) {
-    if (_debug) console.log('[TI]', ...args);
-  }
-  function _warn(...args) {
-    console.warn('[TI]', ...args);
-  }
+  // ── Default state ─────────────────────────────────────────────────
+  const _defaultState = () => ({
+    ver:        STATE_VER,
+    balance:    10000,       // toplam cüzdan bakiyesi (USDT)
+    mode:       'CROSS',     // 'CROSS' | 'ISOLATED' (global varsayılan)
+    positions:  [],          // aktif + kapalı pozisyonlar
+  });
 
-  // ── Funding/OI yardımcı ────────────────────────────────────────
-  function _resolveFunding(item) {
-    if (!item) return null;
-    if (item.funding && Number.isFinite(+item.funding.rate)) return item.funding;
-    if (Number.isFinite(+item.fundingRate)) return { rate: +item.fundingRate };
-    if (typeof window.CoinGlassService !== 'undefined' && window.CoinGlassService.isEnabled?.()) {
-      try {
-        const cg = window.CoinGlassService.getCachedFunding?.(item.sym);
-        if (cg && Number.isFinite(+cg.rate)) return cg;
-      } catch {}
-    }
-    return null;
-  }
+  let _state = _defaultState();
+  const _listeners = new Set();
 
-  function _resolveOI(item) {
-    if (!item) return null;
-    if (item.oi) return item.oi;
-    if (Number.isFinite(+item.oiChange24h)) return { change24h: +item.oiChange24h };
-    if (typeof window.CoinGlassService !== 'undefined' && window.CoinGlassService.isEnabled?.()) {
-      try {
-        const cg = window.CoinGlassService.getCachedOI?.(item.sym);
-        if (cg) return cg;
-      } catch {}
-    }
-    return null;
-  }
-
-  // ── Warnings ─────────────────────────────────────────────────────
-  function _buildWarnings(regime, mmBias, bestSetup) {
-    const warnings = [];
-
-    if (regime?.code === 'LIQUIDITY_TRAP') {
-      warnings.push({ code:'LIQ_TRAP', severity:'high',
-        msg:'Likidite tuzağı koşulları — kırılımlar güvenilmez.' });
-    }
-    if (regime?.code === 'CHOPPY' && regime.diagnostics?.vol?.quality === 'ELEVATED') {
-      warnings.push({ code:'CHOP_VOL', severity:'med',
-        msg:'Yatay piyasada yüksek volatilite — sabır gerekli.' });
-    }
-
-    if (mmBias?.headline) {
-      const h = mmBias.headline.toLowerCase();
-      if (h.includes('aşırı ısınmış') || h.includes('aşırı uzamış') || h.includes('aşırı negatif')) {
-        warnings.push({ code:'FUNDING_OH', severity:'high', msg: mmBias.headline });
-      }
-    }
-
-    if (bestSetup && bestSetup.factors) {
-      const fbr = bestSetup.factors.find(f => f.code === 'FBR');
-      if (fbr?.available && fbr.score >= 7) {
-        warnings.push({ code:'BS_FBR', severity:'high',
-          msg:`${bestSetup.sym}: giriş mumunda yüksek fakeout riski.` });
-      }
-      const fund = bestSetup.factors.find(f => f.code === 'FUNDING');
-      if (fund?.available && fund.score <= 3) {
-        warnings.push({ code:'BS_FUNDING', severity:'med',
-          msg:`${bestSetup.sym}: funding stres altında — geç giriş riski.` });
-      }
-    }
-
-    const seen = new Set();
-    return warnings.filter(w => seen.has(w.code) ? false : (seen.add(w.code), true));
-  }
-
-  // ── Ana pipeline ─────────────────────────────────────────────────
-  function _process(scanResults) {
-    if (_processing) { _log('reentrancy blocked'); return; }
-    if (!Array.isArray(scanResults) || scanResults.length === 0) {
-      _warn('empty scanResults — abort');
-      return;
-    }
-    _processing = true;
-    _lastScanResults = scanResults;
-
+  // ── Persistence ───────────────────────────────────────────────────
+  function _load() {
     try {
-      const Feed     = window.TIFeed;
-      const Regime   = window.TIRegime;
-      const MMBias   = window.TIMMBias;
-      const Scorer   = window.TISetupScorer;
-      const Maturity = window.TIMaturity;
-      const Narrator = window.TINarrator;
-      const State    = window.TIState;
-
-      if (!Feed || !Regime || !MMBias || !Scorer || !Maturity || !Narrator || !State) {
-        _warn('missing engines:',
-          { Feed:!!Feed, Regime:!!Regime, MMBias:!!MMBias, Scorer:!!Scorer,
-            Maturity:!!Maturity, Narrator:!!Narrator, State:!!State });
-        return;
-      }
-
-      _log('────────── PIPELINE START ──────────');
-      _log('Input: ' + scanResults.length + ' coins');
-
-      // 1. BTC/ETH ayır
-      const { btc: btcRaw, eth: ethRaw, others } = Feed.splitMajors(scanResults);
-      _log('Majors split: BTC=' + (btcRaw ? '✓' : '✗') +
-                       ' ETH=' + (ethRaw ? '✓' : '✗') +
-                       ' Others=' + others.length);
-
-      // 2. Regime
-      const regime = Regime.detect(btcRaw, scanResults);
-      _log('Regime: ' + regime.code + ' / ' + regime.label);
-      _log('  trend:', regime.diagnostics?.trend);
-      _log('  vol:',   regime.diagnostics?.vol);
-      _log('  breadth:', regime.diagnostics?.breadth);
-
-      // 3. MM Bias
-      const mmBias = MMBias.build({
-        btcData:    btcRaw,
-        regimeDiag: regime.diagnostics,
-        funding:    _resolveFunding(btcRaw),
-        oi:         _resolveOI(btcRaw),
-      });
-      _log('MM Bias: ' + (mmBias?.headline || '(none)'));
-
-      // 4. BTC + ETH narrator
-      const btcAnalysis = btcRaw ? Narrator.analyzeCoin(btcRaw) : null;
-      const ethAnalysis = ethRaw ? Narrator.analyzeCoin(ethRaw) : null;
-      if (ethAnalysis && btcAnalysis) {
-        ethAnalysis.vsBTC = Narrator.compareETHvsBTC(btcAnalysis, ethAnalysis);
-      }
-      _log('BTC: ' + (btcAnalysis ? btcAnalysis.dir+'/'+btcAnalysis.momentum : '(none)'));
-      _log('ETH: ' + (ethAnalysis ? ethAnalysis.dir+'/'+ethAnalysis.momentum : '(none)'));
-
-      // 5. Tüm coinleri skorla
-      const scored = [];
-      let scoreFailed = 0;
-      let scoreSucceeded = 0;
-      for (const item of others) {
-        const ctx = Feed.toScorerContext(item);
-        if (!ctx) { scoreFailed++; continue; }
-        const r = Scorer.score(ctx);
-        if (!r) { scoreFailed++; continue; }
-        r.maturity = Maturity.evaluate(r);
-        scored.push(r);
-        scoreSucceeded++;
-      }
-      _log('Scored: ' + scoreSucceeded + ' / Failed: ' + scoreFailed);
-
-      // 6. Sırala ve tier kategorize
-      scored.sort((a, b) => b.score - a.score);
-      const tierCounts = {};
-      scored.forEach(s => {
-        const t = s.tier?.code || 'UNKNOWN';
-        tierCounts[t] = (tierCounts[t] || 0) + 1;
-      });
-      _log('Tier dağılımı:', tierCounts);
-
-      // Top 5 skorlu coin — debug için
-      const top5 = scored.slice(0, 5).map(s => `${s.sym}:${s.score}(${s.tier?.code})`);
-      _log('Top 5:', top5);
-
-      // 7. Best Setup + Watchlist seçimi
-      // Esnek strateji: önce VALID+ ara, yoksa WEAK kabul et, yoksa en yüksek skorluyu al
-      let bestSetup = null;
-      const watchlist = [];
-      const eligibleTiers = ['ELITE', 'STRONG', 'VALID', 'WEAK'];
-
-      for (const s of scored) {
-        const t = s.tier?.code;
-        if (!eligibleTiers.includes(t)) continue;
-        if (!bestSetup) { bestSetup = s; continue; }
-        if (watchlist.length < 2) watchlist.push(s);
-        else break;
-      }
-
-      // Hala yoksa — en yüksek skorlu olanı al (sadece AVOID değilse)
-      if (!bestSetup && scored.length > 0 && scored[0].score >= 30) {
-        bestSetup = scored[0];
-        _log('Best fallback: top scored (' + bestSetup.sym + ':' + bestSetup.score + ')');
-      }
-
-      _log('Best: ' + (bestSetup ? `${bestSetup.sym} ${bestSetup.dir} ${bestSetup.score} (${bestSetup.tier?.code})` : '(none)'));
-      _log('Watchlist: ' + watchlist.map(w => `${w.sym}:${w.score}`).join(', ') || '(empty)');
-
-      // 8. Warnings
-      const warnings = _buildWarnings(regime, mmBias, bestSetup);
-      _log('Warnings: ' + warnings.length);
-
-      // 9. Volatility observation (fallback intelligence)
-      const volObs = _buildVolatilityObservation(regime, btcAnalysis);
-
-      // 10. State commit — panel her zaman dolu
-      State.commit({
-        regime,
-        mmBias,
-        btc:         btcAnalysis,
-        eth:         ethAnalysis,
-        bestSetup,
-        watchlist,
-        warnings,
-        volatilityObs: volObs,
-        scanStats:   {
-          total:     scanResults.length,
-          scored:    scoreSucceeded,
-          failed:    scoreFailed,
-          tierCounts,
-        },
-        dataSources: Feed.detectDataSources(),
-      });
-
-      _log('────────── PIPELINE END ──────────');
-    } catch (e) {
-      _warn('PIPELINE ERROR:', e);
-    } finally {
-      _processing = false;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.ver !== STATE_VER) return; // şema değişmiş, sıfırla
+      // Sanity checks
+      if (typeof parsed.balance !== 'number' || !Number.isFinite(parsed.balance)) return;
+      if (!Array.isArray(parsed.positions)) return;
+      _state = { ..._defaultState(), ...parsed };
+    } catch {
+      // bozuk veri — varsayılana dön
+      _state = _defaultState();
     }
   }
 
-  function _buildVolatilityObservation(regime, btcAnalysis) {
-    const vol = regime?.diagnostics?.vol;
-    if (!vol) return null;
-    const map = {
-      'SQUEEZED': { label: 'Volatilite sıkışmış',    tone: 'Genişleme bekleniyor. Kırılım yakın olabilir.' },
-      'HEALTHY':  { label: 'Sağlıklı volatilite',    tone: 'Koşullar yapılandırılmış işlemler için uygun.' },
-      'ELEVATED': { label: 'Yüksek volatilite',      tone: 'Daha geniş stoplar gerekli; pozisyon küçült.' },
-      'EXTREME':  { label: 'Aşırı volatilite',       tone: 'El sürme bölgesi; gürültü çok yüksek.' },
-      'UNKNOWN':  null,
+  function _save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(_state));
+    } catch {
+      // quota aşımı vs — sessizce yut
+    }
+  }
+
+  // ── Pub/Sub ───────────────────────────────────────────────────────
+  function subscribe(fn) {
+    if (typeof fn !== 'function') return () => {};
+    _listeners.add(fn);
+    return () => _listeners.delete(fn);
+  }
+
+  function _notify(eventName, payload) {
+    _listeners.forEach(fn => {
+      try { fn(eventName, payload, _state); } catch (e) {
+        console.warn('[FuturesState] listener error:', e);
+      }
+    });
+  }
+
+  // ── Public API ────────────────────────────────────────────────────
+
+  function getState() {
+    // shallow copy — dışarıdan mutasyon engellenir
+    return {
+      ver:        _state.ver,
+      balance:    _state.balance,
+      mode:       _state.mode,
+      positions:  _state.positions.map(p => ({ ...p })),
     };
-    return map[vol.quality] || null;
   }
 
-  // ── Event handler ────────────────────────────────────────────────
-  function _onScanEvent(ev) {
-    const results = ev?.detail?.results;
-    _log('vd:scan:complete received (' + (results?.length || 0) + ' results)');
-    _process(results);
+  function getActivePositions() {
+    return _state.positions
+      .filter(p => p.status === 'ACTIVE')
+      .map(p => ({ ...p }));
   }
 
-  function start() {
-    if (_listenerAttached) return;
-    window.addEventListener('vd:scan:complete', _onScanEvent);
-    _listenerAttached = true;
-    _log('listener attached');
+  function getPositionById(id) {
+    const p = _state.positions.find(p => p.id === id);
+    return p ? { ...p } : null;
   }
 
-  function stop() {
-    if (!_listenerAttached) return;
-    window.removeEventListener('vd:scan:complete', _onScanEvent);
-    _listenerAttached = false;
+  function getBalance() {
+    return _state.balance;
   }
 
-  function refresh() {
-    if (_lastScanResults) { _process(_lastScanResults); return true; }
-    return false;
+  function getMode() {
+    return _state.mode;
   }
 
-  function setDebug(on) { _debug = !!on; }
+  function setBalance(amount) {
+    const v = +amount;
+    if (!Number.isFinite(v) || v < 0) return false;
+    // Aktif pozisyon margin'inin altına düşmeye izin verme — likidasyon riski
+    const used = (_state.positions || []).reduce((s, p) => s + (+p.margin || 0), 0);
+    if (v < used) {
+      _notify('balance:rejected', { reason: 'below_used_margin', requested: v, minimum: used });
+      return false;
+    }
+    _state.balance = +v.toFixed(2);
+    _save();
+    _notify('balance:changed', { balance: _state.balance });
+    return true;
+  }
 
-  return { start, stop, refresh, setDebug, _process };
+  function setMode(mode) {
+    if (mode !== 'CROSS' && mode !== 'ISOLATED') return false;
+    _state.mode = mode;
+    _save();
+    _notify('mode:changed', { mode });
+    return true;
+  }
+
+  /**
+   * Yeni pozisyon ekle.
+   * @param {Object} pos - controller tarafından doğrulanmış pozisyon objesi
+   * @returns {string} eklenen pozisyonun id'si
+   */
+  function addPosition(pos) {
+    if (!pos || !pos.id) return null;
+    // mükerrer engelle
+    if (_state.positions.some(p => p.id === pos.id)) return null;
+    _state.positions.unshift({ ...pos });
+    _save();
+    _notify('position:added', { position: { ...pos } });
+    return pos.id;
+  }
+
+  /**
+   * Mevcut pozisyonu güncelle (PNL, mark price, TP hit flag'leri vs).
+   * Sadece değişen alanları gönder.
+   */
+  function updatePosition(id, patch) {
+    if (!id || !patch || typeof patch !== 'object') return false;
+    const i = _state.positions.findIndex(p => p.id === id);
+    if (i === -1) return false;
+    // id, sym, dir, openTs gibi immutable alanlar overwrite edilmesin
+    const immutable = ['id', 'sym', 'symFull', 'dir', 'mode', 'openTs', 'entry', 'lev', 'margin'];
+    const safe = { ...patch };
+    immutable.forEach(k => delete safe[k]);
+    _state.positions[i] = { ..._state.positions[i], ...safe };
+    // sadece ACTIVE pozisyon güncellemeleri için kaydet (tick spam etmesin)
+    if (patch._persist !== false) _save();
+    _notify('position:updated', { id, patch: safe });
+    return true;
+  }
+
+  /**
+   * Pozisyonu kapat. status='CLOSED' yapar ve realized PNL'i bakiyeye yansıtır.
+   */
+  function closePosition(id, exitPrice, reason = 'MANUAL') {
+    const i = _state.positions.findIndex(p => p.id === id);
+    if (i === -1) return false;
+    const p = _state.positions[i];
+    if (p.status !== 'ACTIVE') return false;
+
+    const finalPrice = Number.isFinite(+exitPrice) ? +exitPrice : p.markPrice || p.entry;
+    p.status     = 'CLOSED';
+    p.closeTs    = Date.now();
+    p.closeReason = reason;
+    p.exitPrice  = finalPrice;
+    // realized PNL'i kalıcı kaydet (p.pnl zaten unrealized'dan güncelleniyor olabilir)
+    p.realizedPnl = Number.isFinite(p.pnl) ? p.pnl : 0;
+
+    // Bakiyeye yansıt — yalnızca pnl miktarı eklenir (margin zaten bakiyeye sayılıyordu)
+    _state.balance = +(_state.balance + p.realizedPnl).toFixed(2);
+
+    _save();
+    _notify('position:closed', { id, position: { ...p }, reason });
+    _notify('balance:changed', { balance: _state.balance });
+    return true;
+  }
+
+  /**
+   * Kapanmış pozisyonları temizle (geçmiş listesi büyümesin).
+   * Son N kapanmış pozisyonu tut.
+   */
+  function pruneClosed(keepLast = 50) {
+    const closed = _state.positions
+      .filter(p => p.status !== 'ACTIVE')
+      .sort((a, b) => (b.closeTs || 0) - (a.closeTs || 0))
+      .slice(0, keepLast);
+    const active = _state.positions.filter(p => p.status === 'ACTIVE');
+    _state.positions = [...active, ...closed];
+    _save();
+  }
+
+  /**
+   * Tüm state'i sıfırla (debug / kullanıcı reset).
+   */
+  function reset() {
+    _state = _defaultState();
+    _save();
+    _notify('state:reset', {});
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────
+  _load();
+
+  return {
+    subscribe,
+    getState,
+    getActivePositions,
+    getPositionById,
+    getBalance,
+    getMode,
+    setBalance,
+    setMode,
+    addPosition,
+    updatePosition,
+    closePosition,
+    pruneClosed,
+    reset,
+  };
 })();

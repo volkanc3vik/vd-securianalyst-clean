@@ -1,212 +1,244 @@
 // ════════════════════════════════════════════════════════════════════
-// FUTURES STATE — Tek doğruluk kaynağı
-// Pozisyonlar, bakiye, mod — tek noktadan okunur, tek noktadan yazılır.
-// Persistence: localStorage. Subscribers: pub/sub pattern.
+// VD Securianalyst — Telegram Send Proxy
+// Vercel Serverless Function
+//
+// Frontend bu endpoint'e POST atar; bu fonksiyon TOKEN'i koruyarak
+// Telegram Bot API'a yönlendirir. Token frontend'e ASLA sızdırılmaz.
+//
+// Endpoint:  POST /api/telegram-send
+// Body:      { channel: 'free'|'vip', text: string }
+// Response:  { ok: true, messageId: number } | { ok: false, error: string }
+//
+// Environment Variables (Vercel):
+//   TELEGRAM_BOT_TOKEN      (zorunlu) — BotFather'dan alınan token
+//   TELEGRAM_FREE_CHANNEL   (ops.)    — varsayılan: '@vdaisignals'
+//   TELEGRAM_VIP_CHANNEL    (ops.)    — varsayılan: '@vdaisignalsvip'
 // ════════════════════════════════════════════════════════════════════
-window.FuturesState = (() => {
-  'use strict';
 
-  const STORAGE_KEY  = 'vd_futures_v3';
-  const STATE_VER    = 3;
+// ── Origin whitelist ────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://vd-securianalyst.com',
+  'https://www.vd-securianalyst.com',
+  'https://vd-securianalyst-clean.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+];
+// Vercel preview build pattern (örn: vd-securianalyst-git-main-volkanc3vik.vercel.app)
+const PREVIEW_PATTERN = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
-  // ── Default state ─────────────────────────────────────────────────
-  const _defaultState = () => ({
-    ver:        STATE_VER,
-    balance:    10000,       // toplam cüzdan bakiyesi (USDT)
-    mode:       'CROSS',     // 'CROSS' | 'ISOLATED' (global varsayılan)
-    positions:  [],          // aktif + kapalı pozisyonlar
-  });
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (PREVIEW_PATTERN.test(origin)) return true;
+  return false;
+}
 
-  let _state = _defaultState();
-  const _listeners = new Set();
+// ── Rate limit (in-memory, B opsiyonu) ──────────────────────────────
+// Vercel cold start'larda sıfırlanır — kasıtlı: kalıcı limit istemiyoruz,
+// sadece basit kötüye kullanım korumasıdır.
+const _rateMap = new Map(); // ip -> { recent: [ts, ts, ...], minute: [ts, ts, ...] }
+const RL_WINDOW_SHORT = 10 * 1000;  // 10 saniye
+const RL_LIMIT_SHORT  = 5;
+const RL_WINDOW_LONG  = 60 * 1000;  // 1 dakika
+const RL_LIMIT_LONG   = 10;
 
-  // ── Persistence ───────────────────────────────────────────────────
-  function _load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!parsed || parsed.ver !== STATE_VER) return; // şema değişmiş, sıfırla
-      // Sanity checks
-      if (typeof parsed.balance !== 'number' || !Number.isFinite(parsed.balance)) return;
-      if (!Array.isArray(parsed.positions)) return;
-      _state = { ..._defaultState(), ...parsed };
-    } catch {
-      // bozuk veri — varsayılana dön
-      _state = _defaultState();
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = _rateMap.get(ip) || { recent: [], minute: [] };
+  // Eski timestamp'leri at
+  entry.recent = entry.recent.filter(t => now - t < RL_WINDOW_SHORT);
+  entry.minute = entry.minute.filter(t => now - t < RL_WINDOW_LONG);
+
+  if (entry.recent.length >= RL_LIMIT_SHORT) {
+    return { ok: false, reason: 'short_window', retryAfter: Math.ceil((RL_WINDOW_SHORT - (now - entry.recent[0])) / 1000) };
+  }
+  if (entry.minute.length >= RL_LIMIT_LONG) {
+    return { ok: false, reason: 'long_window', retryAfter: Math.ceil((RL_WINDOW_LONG - (now - entry.minute[0])) / 1000) };
+  }
+  // Kayıt
+  entry.recent.push(now);
+  entry.minute.push(now);
+  _rateMap.set(ip, entry);
+
+  // Map büyümesin: 1 dakikada bir temizlik (yaklaşık)
+  if (_rateMap.size > 1000) {
+    for (const [k, v] of _rateMap) {
+      v.minute = v.minute.filter(t => now - t < RL_WINDOW_LONG);
+      if (v.minute.length === 0) _rateMap.delete(k);
     }
   }
+  return { ok: true };
+}
 
-  function _save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(_state));
-    } catch {
-      // quota aşımı vs — sessizce yut
-    }
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
+}
+
+// ── Kanal çözümleme — sadece beyaz liste ────────────────────────────
+function resolveChannel(channelKey) {
+  const key = String(channelKey || '').toLowerCase();
+  if (key === 'free') {
+    return process.env.TELEGRAM_FREE_CHANNEL || '@vdaisignals';
+  }
+  if (key === 'vip') {
+    return process.env.TELEGRAM_VIP_CHANNEL || '@vdaisignalsvip';
+  }
+  return null;
+}
+
+// ── Body validasyonu ────────────────────────────────────────────────
+const MAX_TEXT_LEN = 4000; // Telegram limiti 4096, güvenlik payı 96
+
+function validateBody(body) {
+  if (!body || typeof body !== 'object') {
+    return { ok: false, error: 'invalid_body' };
+  }
+  if (!body.channel) return { ok: false, error: 'channel_required' };
+  if (!body.text || typeof body.text !== 'string') return { ok: false, error: 'text_required' };
+  if (body.text.trim().length === 0) return { ok: false, error: 'text_empty' };
+  if (body.text.length > MAX_TEXT_LEN) return { ok: false, error: 'text_too_long' };
+  return { ok: true };
+}
+
+// ── Error mesajları sızıntı içermez ─────────────────────────────────
+function safeErrorMessage(err) {
+  const msg = err?.message || String(err || 'unknown');
+  // Token kazara mesaja sızmasın
+  if (msg.includes('bot') && msg.match(/\d{8,}:[A-Za-z0-9_-]{30,}/)) {
+    return 'upstream_error';
+  }
+  return msg.slice(0, 200);
+}
+
+// ── Ana handler ─────────────────────────────────────────────────────
+export default async function handler(req, res) {
+  // CORS preflight
+  const origin = req.headers.origin || '';
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
+
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
 
-  // ── Pub/Sub ───────────────────────────────────────────────────────
-  function subscribe(fn) {
-    if (typeof fn !== 'function') return () => {};
-    _listeners.add(fn);
-    return () => _listeners.delete(fn);
+  // 1. Method check
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   }
 
-  function _notify(eventName, payload) {
-    _listeners.forEach(fn => {
-      try { fn(eventName, payload, _state); } catch (e) {
-        console.warn('[FuturesState] listener error:', e);
-      }
+  // 2. Origin check (preflight değil ana istek)
+  if (!isAllowedOrigin(origin)) {
+    return res.status(403).json({ ok: false, error: 'origin_not_allowed' });
+  }
+
+  // 3. Admin key guard
+  //   - ADMIN_KEY_1 ve ADMIN_KEY_2 env'de tanımlı değilse endpoint kapalı
+  //   - x-admin-key header'ı yoksa veya hiçbiriyle eşleşmiyorsa 403
+  //   - Hata mesajları hangi key'in beklendiğini ifşa etmez
+  const adminKey1 = process.env.ADMIN_KEY_1;
+  const adminKey2 = process.env.ADMIN_KEY_2;
+  const validAdminKeys = [adminKey1, adminKey2].filter(
+    k => typeof k === 'string' && k.length > 0
+  );
+  if (validAdminKeys.length === 0) {
+    return res.status(500).json({ ok: false, error: 'server_misconfigured' });
+  }
+  const providedKey = req.headers['x-admin-key'];
+  if (typeof providedKey !== 'string' || providedKey.length === 0) {
+    return res.status(403).json({ ok: false, error: 'unauthorized' });
+  }
+  if (!validAdminKeys.includes(providedKey)) {
+    return res.status(403).json({ ok: false, error: 'unauthorized' });
+  }
+
+  // 4. Rate limit
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(ip);
+  if (!rl.ok) {
+    res.setHeader('Retry-After', String(rl.retryAfter || 30));
+    return res.status(429).json({
+      ok: false,
+      error: 'rate_limited',
+      reason: rl.reason,
+      retryAfter: rl.retryAfter,
     });
   }
 
-  // ── Public API ────────────────────────────────────────────────────
-
-  function getState() {
-    // shallow copy — dışarıdan mutasyon engellenir
-    return {
-      ver:        _state.ver,
-      balance:    _state.balance,
-      mode:       _state.mode,
-      positions:  _state.positions.map(p => ({ ...p })),
-    };
+  // 5. Token env var kontrolü
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    return res.status(500).json({ ok: false, error: 'server_misconfigured' });
   }
 
-  function getActivePositions() {
-    return _state.positions
-      .filter(p => p.status === 'ACTIVE')
-      .map(p => ({ ...p }));
+  // 6. Body parse + validation
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { body = null; }
+  }
+  const v = validateBody(body);
+  if (!v.ok) {
+    return res.status(400).json({ ok: false, error: v.error });
   }
 
-  function getPositionById(id) {
-    const p = _state.positions.find(p => p.id === id);
-    return p ? { ...p } : null;
+  // 7. Kanal çözümle
+  const chatId = resolveChannel(body.channel);
+  if (!chatId) {
+    return res.status(400).json({ ok: false, error: 'invalid_channel' });
   }
 
-  function getBalance() {
-    return _state.balance;
-  }
+  // 8. Telegram API'a gönder
+  const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
 
-  function getMode() {
-    return _state.mode;
-  }
+  // parse_mode mantığı:
+  //   - body.parseMode = 'HTML' veya undefined  → HTML (varsayılan, en esnek)
+  //   - body.parseMode = 'MarkdownV2'           → MarkdownV2 (strict escape gerekir)
+  //   - body.parseMode = 'none'                 → ham metin, parse yok
+  let parseMode;
+  if (body.parseMode === 'MarkdownV2') parseMode = 'MarkdownV2';
+  else if (body.parseMode === 'none')   parseMode = undefined;
+  else                                   parseMode = 'HTML';
 
-  function setBalance(amount) {
-    const v = +amount;
-    if (!Number.isFinite(v) || v < 0) return false;
-    _state.balance = v;
-    _save();
-    _notify('balance:changed', { balance: v });
-    return true;
-  }
-
-  function setMode(mode) {
-    if (mode !== 'CROSS' && mode !== 'ISOLATED') return false;
-    _state.mode = mode;
-    _save();
-    _notify('mode:changed', { mode });
-    return true;
-  }
-
-  /**
-   * Yeni pozisyon ekle.
-   * @param {Object} pos - controller tarafından doğrulanmış pozisyon objesi
-   * @returns {string} eklenen pozisyonun id'si
-   */
-  function addPosition(pos) {
-    if (!pos || !pos.id) return null;
-    // mükerrer engelle
-    if (_state.positions.some(p => p.id === pos.id)) return null;
-    _state.positions.unshift({ ...pos });
-    _save();
-    _notify('position:added', { position: { ...pos } });
-    return pos.id;
-  }
-
-  /**
-   * Mevcut pozisyonu güncelle (PNL, mark price, TP hit flag'leri vs).
-   * Sadece değişen alanları gönder.
-   */
-  function updatePosition(id, patch) {
-    if (!id || !patch || typeof patch !== 'object') return false;
-    const i = _state.positions.findIndex(p => p.id === id);
-    if (i === -1) return false;
-    // id, sym, dir, openTs gibi immutable alanlar overwrite edilmesin
-    const immutable = ['id', 'sym', 'symFull', 'dir', 'mode', 'openTs', 'entry', 'lev', 'margin'];
-    const safe = { ...patch };
-    immutable.forEach(k => delete safe[k]);
-    _state.positions[i] = { ..._state.positions[i], ...safe };
-    // sadece ACTIVE pozisyon güncellemeleri için kaydet (tick spam etmesin)
-    if (patch._persist !== false) _save();
-    _notify('position:updated', { id, patch: safe });
-    return true;
-  }
-
-  /**
-   * Pozisyonu kapat. status='CLOSED' yapar ve realized PNL'i bakiyeye yansıtır.
-   */
-  function closePosition(id, exitPrice, reason = 'MANUAL') {
-    const i = _state.positions.findIndex(p => p.id === id);
-    if (i === -1) return false;
-    const p = _state.positions[i];
-    if (p.status !== 'ACTIVE') return false;
-
-    const finalPrice = Number.isFinite(+exitPrice) ? +exitPrice : p.markPrice || p.entry;
-    p.status     = 'CLOSED';
-    p.closeTs    = Date.now();
-    p.closeReason = reason;
-    p.exitPrice  = finalPrice;
-    // realized PNL'i kalıcı kaydet (p.pnl zaten unrealized'dan güncelleniyor olabilir)
-    p.realizedPnl = Number.isFinite(p.pnl) ? p.pnl : 0;
-
-    // Bakiyeye yansıt — yalnızca pnl miktarı eklenir (margin zaten bakiyeye sayılıyordu)
-    _state.balance = +(_state.balance + p.realizedPnl).toFixed(2);
-
-    _save();
-    _notify('position:closed', { id, position: { ...p }, reason });
-    _notify('balance:changed', { balance: _state.balance });
-    return true;
-  }
-
-  /**
-   * Kapanmış pozisyonları temizle (geçmiş listesi büyümesin).
-   * Son N kapanmış pozisyonu tut.
-   */
-  function pruneClosed(keepLast = 50) {
-    const closed = _state.positions
-      .filter(p => p.status !== 'ACTIVE')
-      .sort((a, b) => (b.closeTs || 0) - (a.closeTs || 0))
-      .slice(0, keepLast);
-    const active = _state.positions.filter(p => p.status === 'ACTIVE');
-    _state.positions = [...active, ...closed];
-    _save();
-  }
-
-  /**
-   * Tüm state'i sıfırla (debug / kullanıcı reset).
-   */
-  function reset() {
-    _state = _defaultState();
-    _save();
-    _notify('state:reset', {});
-  }
-
-  // ── Init ──────────────────────────────────────────────────────────
-  _load();
-
-  return {
-    subscribe,
-    getState,
-    getActivePositions,
-    getPositionById,
-    getBalance,
-    getMode,
-    setBalance,
-    setMode,
-    addPosition,
-    updatePosition,
-    closePosition,
-    pruneClosed,
-    reset,
+  const tgPayload = {
+    chat_id:  chatId,
+    text:     body.text,
+    disable_web_page_preview: true,
   };
-})();
+  if (parseMode) tgPayload.parse_mode = parseMode;
+
+  try {
+    const tgRes = await fetch(tgUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(tgPayload),
+    });
+    const tgData = await tgRes.json();
+
+    if (!tgRes.ok || !tgData.ok) {
+      // Telegram'ın kendi hata kodları
+      return res.status(tgRes.status >= 400 ? tgRes.status : 502).json({
+        ok:    false,
+        error: 'telegram_api_error',
+        // Telegram'dan dönen description (token içermez)
+        detail: tgData.description ? String(tgData.description).slice(0, 200) : null,
+      });
+    }
+
+    return res.status(200).json({
+      ok:        true,
+      messageId: tgData.result?.message_id || null,
+      channel:   body.channel,
+    });
+  } catch (err) {
+    return res.status(503).json({
+      ok:    false,
+      error: 'upstream_unreachable',
+      detail: safeErrorMessage(err),
+    });
+  }
+}

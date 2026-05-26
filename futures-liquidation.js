@@ -1,118 +1,291 @@
-// ════════════════════════════════════════════════════════════════════
-// SQUEEZE ENGINE — Funding + OI + LS Ratio kombinasyonu
-// ════════════════════════════════════════════════════════════════════
-const SqueezeEngine = (() => {
+// ═══════════════════════════════════════════════
+// MAIN.JS — App Bootstrap & Orchestration
+// Sadece init, mounting ve koordinasyon
+// Business logic buraya GELMEZ
+// ═══════════════════════════════════════════════
+import { Bus, onReady, isMobile } from './modules/helpers.js';
+import { Timers }                  from './modules/debounce.js';
+import { DEFAULT_SYM, DEFAULT_INTV, SCAN_INTERVAL, REFRESH_INTERVAL } from './modules/constants.js';
+import { Binance }                 from './services/binance-service.js';
+import { WSService }               from './services/websocket-service.js';
+import { Storage }                 from './services/storage-service.js';
+import { NC, Toast }               from './engines/notification-engine.js';
+import { AIEng }                   from './engines/ai-engine.js';
+import { SMCEngine }               from './engines/smartmoney-engine.js';
+import { RegimeEngine }            from './engines/market-regime-engine.js';
+import { RiskEng }                 from './engines/risk-engine.js';
+import { calcAllIndicators }       from './modules/indicators.js';
+import { formatPrice, formatPct, setEl, cleanSym } from './modules/formatters.js';
 
-  function analyze({ fund, oiChange, lsRatio, liqResult, wsData, closes }) {
-    const signals  = [];
-    let   shortSqueeze = 0;
-    let   longSqueeze  = 0;
+// ── App State ─────────────────────────────────
+const App = {
+  sym:      DEFAULT_SYM,
+  interval: DEFAULT_INTV,
+  ticker:   null,
+  candles:  [],
+  ind:      null,
+  oiData:   null,
+  btcData:  null,
+  wsData:   {},
+  regimeMode: 'SIDEWAYS',
+};
 
-    // ── Funding extreme ──────────────────────────────────────────
-    if (fund !== null) {
-      if (fund < -0.1) { shortSqueeze += 35; signals.push({ type:'SHORT', reason:`Funding aşırı negatif (%${fund.toFixed(3)}) — short'lar sıkışacak`, w:35 }); }
-      else if (fund < -0.05) { shortSqueeze += 20; signals.push({ type:'SHORT', reason:`Funding negatif (%${fund.toFixed(3)})`, w:20 }); }
-      else if (fund > 0.1) { longSqueeze += 35; signals.push({ type:'LONG', reason:`Funding aşırı pozitif (%${fund.toFixed(3)}) — long'lar sıkışacak`, w:35 }); }
-      else if (fund > 0.05) { longSqueeze += 20; signals.push({ type:'LONG', reason:`Funding pozitif (%${fund.toFixed(3)})`, w:20 }); }
+// ── Initialization ────────────────────────────
+onReady(async () => {
+  console.log('VD SecuriAnalyst — Başlatılıyor...');
+
+  _initHeader();
+  _initToast();
+  _initNotifPanel();
+  _initMobile();
+  _initClock();
+
+  // Auth kontrol — login screen
+  // (mevcut kod index.html içinde kalıyor, burası sadece post-auth)
+  Bus.on('app:authenticated', _onAuthenticated);
+});
+
+async function _onAuthenticated() {
+  await _loadCoin(App.sym, App.interval);
+  _startScan();
+  _startTicker();
+
+  // WS aboneliği
+  WSService.subscribe(App.sym, (wsD) => {
+    App.wsData = wsD;
+    Bus.emit('ws:data', wsD);
+  });
+
+  // Periyodik yenileme
+  Timers.setInterval('refresh', () => _loadCoin(App.sym, App.interval), REFRESH_INTERVAL);
+}
+
+// ── Coin yükle ────────────────────────────────
+async function _loadCoin(sym, interval) {
+  try {
+    setEl('ldr', '◌ Yükleniyor...');
+    document.getElementById('ldr')?.style && (document.getElementById('ldr').style.display = 'block');
+
+    const [klines, ticker] = await Promise.all([
+      Binance.getKlines(sym, interval, 200),
+      Binance.getTicker24h(sym),
+    ]);
+
+    const closes  = klines.map(k => +k[4]);
+    const candles = klines.map(k => ({ h: +k[2], l: +k[3], c: +k[4], o: +k[1], v: +k[5] }));
+    const price   = +ticker.lastPrice;
+    const chg     = +ticker.priceChangePercent;
+
+    App.candles = candles;
+    App.ticker  = ticker;
+
+    // İndikatörler
+    App.ind = calcAllIndicators(closes, candles);
+
+    // Market rejimi
+    const oiData = await Binance.getMarketData(sym).catch(() => ({}));
+    App.oiData   = oiData;
+    App.regimeMode = RegimeEngine.detect(closes, candles, oiData);
+
+    // BTC verisi (eğer BTCUSDT değilse)
+    if (sym !== 'BTCUSDT') {
+      const btcTicker = await Binance.getTicker24h('BTCUSDT').catch(() => null);
+      App.btcData = btcTicker ? { chg: +btcTicker.priceChangePercent } : null;
+    } else {
+      App.btcData = { chg };
     }
 
-    // ── OI genişleme ─────────────────────────────────────────────
-    if (oiChange !== null) {
-      const oiNum = parseFloat(oiChange);
-      if (oiNum > 8) {
-        if (lsRatio < 0.7)  { shortSqueeze += 25; signals.push({ type:'SHORT', reason:`OI +%${oiNum.toFixed(1)} + short kalabalık`, w:25 }); }
-        if (lsRatio > 1.5)  { longSqueeze  += 25; signals.push({ type:'LONG',  reason:`OI +%${oiNum.toFixed(1)} + long kalabalık`, w:25 }); }
-      }
-    }
+    // SMC
+    const smcData = SMCEngine.analyze(candles, price);
 
-    // ── LS Ratio ─────────────────────────────────────────────────
-    if (lsRatio !== null) {
-      if (lsRatio < 0.5)  { shortSqueeze += 25; signals.push({ type:'SHORT', reason:`Short kalabalık (L/S: ${lsRatio.toFixed(2)})`, w:25 }); }
-      else if (lsRatio < 0.7)  { shortSqueeze += 15; signals.push({ type:'SHORT', reason:`Short ağır (L/S: ${lsRatio.toFixed(2)})`, w:15 }); }
-      else if (lsRatio > 2.0)  { longSqueeze  += 25; signals.push({ type:'LONG',  reason:`Long kalabalık (L/S: ${lsRatio.toFixed(2)})`, w:25 }); }
-      else if (lsRatio > 1.5)  { longSqueeze  += 15; signals.push({ type:'LONG',  reason:`Long ağır (L/S: ${lsRatio.toFixed(2)})`, w:15 }); }
-    }
+    // Tüm event'leri yayınla — componentler dinler
+    Bus.emit('coin:loaded', { sym, interval, closes, candles, price, chg, ticker, oiData, btcData: App.btcData, smcData, regimeMode: App.regimeMode, ind: App.ind });
 
-    // ── Likidasyon baskısı ───────────────────────────────────────
-    if (liqResult) {
-      if (liqResult.liquidationBias === 'SHORT_LIQ') { shortSqueeze += 15; signals.push({ type:'SHORT', reason:'Short likidasyon baskısı', w:15 }); }
-      if (liqResult.liquidationBias === 'LONG_LIQ')  { longSqueeze  += 15; signals.push({ type:'LONG',  reason:'Long likidasyon baskısı',  w:15 }); }
-    }
-
-    // ── OB baskısı ───────────────────────────────────────────────
-    if (wsData?.obImbalance !== undefined) {
-      const obi = wsData.obImbalance;
-      if (obi > 0.7 && lsRatio < 0.7)  { shortSqueeze += 10; signals.push({ type:'SHORT', reason:'OB alım baskısı + short kalabalık', w:10 }); }
-      if (obi < 0.3 && lsRatio > 1.5)  { longSqueeze  += 10; signals.push({ type:'LONG',  reason:'OB satış baskısı + long kalabalık', w:10 }); }
-    }
-
-    // ── Fiyat durağanlığı (squeeze hazırlık) ─────────────────────
-    if (closes?.length >= 10) {
-      const last10 = closes.slice(-10);
-      const hi = Math.max(...last10), lo = Math.min(...last10);
-      const range = (hi - lo) / lo * 100;
-      if (range < 1.5 && (shortSqueeze > 30 || longSqueeze > 30)) {
-        const dominant = shortSqueeze > longSqueeze ? 'SHORT' : 'LONG';
-        signals.push({ type: dominant, reason: `Fiyat sıkışık (%${range.toFixed(1)} range) — squeeze tetiklenebilir`, w:10 });
-        if (dominant === 'SHORT') shortSqueeze += 10; else longSqueeze += 10;
-      }
-    }
-
-    const maxRisk   = Math.max(shortSqueeze, longSqueeze);
-    const riskType  = shortSqueeze >= longSqueeze ? 'SHORT_SQUEEZE' : 'LONG_SQUEEZE';
-    const squeezeRisk = Math.min(100, maxRisk);
-    const level     = squeezeRisk >= 70 ? 'CRITICAL' : squeezeRisk >= 50 ? 'HIGH' : squeezeRisk >= 30 ? 'MEDIUM' : 'LOW';
-
-    return {
-      squeezeRisk,
-      shortSqueeze: Math.min(100, shortSqueeze),
-      longSqueeze:  Math.min(100, longSqueeze),
-      dominantType: riskType,
-      level,
-      signals: signals.filter(s => s.type === (riskType === 'SHORT_SQUEEZE' ? 'SHORT' : 'LONG')),
-      allSignals: signals,
-    };
+  } catch (e) {
+    console.warn('loadCoin hata:', e);
+  } finally {
+    document.getElementById('ldr')?.style && (document.getElementById('ldr').style.display = 'none');
   }
+}
 
-  function renderUI(result, panelId='squeezePanel') {
-    const el = document.getElementById(panelId);
-    if (!el) return;
-    const { squeezeRisk:sr, shortSqueeze:ss, longSqueeze:ls, dominantType:dt, level, signals } = result;
-    const col = sr>=70?'var(--red)':sr>=50?'var(--orange)':sr>=30?'var(--yellow)':'var(--green)';
-    const isShort = dt === 'SHORT_SQUEEZE';
+// ── Market Scan ───────────────────────────────
+async function _startScan() {
+  await _runScan();
+  Timers.setInterval('scan', _runScan, SCAN_INTERVAL);
+}
 
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="flex:1;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">SQUEEZE RİSKİ</div>
-          <div style="font-size:22px;font-weight:900;color:${col}">${sr}%</div>
-          <div style="font-size:9px;color:${col}">${level}</div>
-        </div>
-        <div style="flex:1">
-          <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
-            <span style="color:var(--red)">LONG SQUEEZE</span>
-            <span style="color:var(--red);font-weight:700">${ls}%</span>
-          </div>
-          <div style="height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden;margin-bottom:6px">
-            <div style="height:100%;width:${ls}%;background:var(--red);border-radius:3px"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
-            <span style="color:var(--green)">SHORT SQUEEZE</span>
-            <span style="color:var(--green);font-weight:700">${ss}%</span>
-          </div>
-          <div style="height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${ss}%;background:var(--green);border-radius:3px"></div>
-          </div>
-        </div>
-      </div>
-      ${sr>=50?`<div style="padding:7px 10px;background:rgba(${isShort?'0,229,160':'255,61,107'},.08);border:1px solid rgba(${isShort?'0,229,160':'255,61,107'},.3);border-radius:8px;margin-bottom:8px;font-size:10px;font-weight:700;color:${isShort?'var(--green)':'var(--red)'}">
-        ⚡ ${dt.replace('_',' ')} RİSKİ YÜKSEK
-      </div>`:''}
-      <div style="display:flex;flex-direction:column;gap:4px">
-        ${signals.map(s=>`<div style="font-size:9px;color:var(--text2);padding:4px 8px;background:rgba(0,0,0,.2);border-radius:5px">• ${s.reason}</div>`).join('')}
-      </div>
-    `;
+async function _runScan() {
+  try {
+    const syms = await Binance.getTopSymbols(100);
+    Bus.emit('scan:start', { total: syms.length });
+
+    const results = [];
+    for (let i = 0; i < syms.length; i++) {
+      const sym = syms[i];
+      Bus.emit('scan:progress', { current: i + 1, total: syms.length, sym });
+
+      try {
+        const [klines, ticker] = await Promise.all([
+          Binance.getKlines(sym, App.interval, 100),
+          Binance.getTicker24h(sym),
+        ]);
+        if (!Array.isArray(klines) || klines.length < 30) continue;
+
+        const closes  = klines.map(k => +k[4]);
+        const candles = klines.map(k => ({ h: +k[2], l: +k[3], c: +k[4], o: +k[1], v: +k[5] }));
+        const price   = +ticker.lastPrice;
+        const chg     = +ticker.priceChangePercent;
+        const ind     = calcAllIndicators(closes, candles);
+
+        results.push({ sym, price, chg, closes, candles, ind, ticker });
+      } catch {}
+
+      await new Promise(r => setTimeout(r, 60));
+    }
+
+    Bus.emit('scan:complete', results);
+  } catch (e) {
+    console.warn('Scan hata:', e);
   }
+}
 
-  return { analyze, renderUI };
-})();
+// ── Ticker scroll ─────────────────────────────
+async function _startTicker() {
+  const _update = async () => {
+    try {
+      const tickers = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','DOGEUSDT','LINKUSDT','PEPEUSDT'];
+      const data = await Promise.all(tickers.map(s => Binance.getTicker24h(s).catch(() => null)));
+      data.forEach((t, i) => {
+        if (!t) return;
+        const sym = tickers[i].replace('USDT','').toLowerCase();
+        const chg = +t.priceChangePercent;
+        setEl(`t_${sym}`, formatPrice(+t.lastPrice));
+        const chgEl = document.getElementById(`tc_${sym}`);
+        if (chgEl) {
+          chgEl.textContent = formatPct(chg);
+          chgEl.className   = 'ticker-chg ' + (chg >= 0 ? 'up' : 'dn');
+        }
+      });
+    } catch {}
+  };
+  await _update();
+  Timers.setInterval('ticker', _update, 10_000);
+}
+
+// ── Header offset (sticky fix) ────────────────
+function _initHeader() {
+  function fix() {
+    const tb  = document.querySelector('.topbar');
+    const tk  = document.querySelector('.ticker-wrap');
+    const main = document.querySelector('.main');
+    const ex  = document.querySelector('.exec-mode-bar');
+    const nc  = document.getElementById('ncPopup');
+    const np  = document.querySelector('.nc-panel');
+
+    if (!tb || !main) return;
+    const tbH = tb.getBoundingClientRect().height || 52;
+    const tkH = tk ? tk.getBoundingClientRect().height || 34 : 0;
+
+    main.style.paddingTop = (tbH + tkH + 20) + 'px';
+    if (tk) tk.style.top  = tbH + 'px';
+    if (ex) ex.style.top  = (tbH + tkH) + 'px';
+    if (nc) nc.style.top  = (tbH + 8) + 'px';
+    if (np && !isMobile()) np.style.top = (tbH + 4) + 'px';
+  }
+  fix();
+  window.addEventListener('resize', fix);
+  setTimeout(fix, 300);
+  setTimeout(fix, 1000);
+}
+
+// ── Toast toggle UI ───────────────────────────
+function _initToast() {
+  Bus.on('toast:toggle', enabled => {
+    document.querySelectorAll('.toast-toggle').forEach(btn => {
+      btn.classList.toggle('enabled', enabled);
+      const dot = btn.querySelector('.tt-dot');
+      const txt = btn.querySelector('.tt-txt');
+      if (dot) dot.style.background = enabled ? 'var(--green)' : 'var(--text3)';
+      if (txt) txt.textContent = enabled ? 'Toast Açık' : 'Toast Kapalı';
+    });
+  });
+}
+
+// ── Bildirim paneli ───────────────────────────
+function _initNotifPanel() {
+  // NC event'leri dinle
+  Bus.on('notification:toggle', open => {
+    const panel   = document.getElementById('ncPanel');
+    const overlay = document.getElementById('ncOverlay');
+    const btn     = document.getElementById('ncBtn');
+    const bnNotif = document.getElementById('bn-notif');
+
+    if (panel) panel.classList.toggle('open', open);
+    if (overlay) overlay.classList.toggle('show', open);
+    if (btn) btn.classList.toggle('active', open);
+    if (bnNotif) bnNotif.classList.toggle('active', open);
+    document.body.style.overflow = open && isMobile() ? 'hidden' : '';
+  });
+
+  Bus.on('notification:badge', count => {
+    const badge    = document.getElementById('ncBadge');
+    const bnBadge  = document.getElementById('bnNotifBadge');
+    const badgeTxt = count > 0 ? String(count > 99 ? '99+' : count) : '';
+    if (badge)   { badge.textContent = badgeTxt; badge.classList.toggle('show', count > 0); }
+    if (bnBadge) { bnBadge.textContent = badgeTxt; bnBadge.style.display = count > 0 ? 'flex' : 'none'; }
+  });
+
+  Bus.on('notification:cleared', () => {
+    const list = document.getElementById('ncList');
+    if (list) list.innerHTML = '<div class="nc-empty"><span>🔔</span>Bildirim yok</div>';
+  });
+}
+
+// ── Mobil ────────────────────────────────────
+function _initMobile() {
+  if (!isMobile()) return;
+
+  // Swipe to close bildirim paneli
+  const panel  = document.getElementById('ncPanel');
+  const handle = document.getElementById('ncDragHandle');
+  if (!panel || !handle) return;
+
+  let startY = 0, isDragging = false;
+  handle.addEventListener('touchstart', e => { startY = e.touches[0].clientY; isDragging = true; panel.style.transition = 'none'; }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const delta = Math.max(0, e.touches[0].clientY - startY);
+    panel.style.transform = `translateY(${delta}px)`;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    panel.style.transition = '';
+    if (e.changedTouches[0].clientY - startY > 80) NC.toggle();
+    else panel.style.transform = '';
+  });
+}
+
+// ── Saat ─────────────────────────────────────
+function _initClock() {
+  const update = () => {
+    const el = document.getElementById('liveTime');
+    if (el) el.textContent = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+  update();
+  Timers.setInterval('clock', update, 1000);
+}
+
+// ── Global API (geriye dönük uyumluluk) ──────
+// Mevcut HTML onclick="..." çağrıları için
+window.NC      = { toggle: () => NC.toggle(), filter: k => NC.setFilter(k), clearAll: () => { if (confirm('Sil?')) NC.clearAll(); } };
+window.loadCoin = (sym, intv) => { App.sym = sym; App.interval = intv; _loadCoin(sym, intv); };
+window.doSearch = () => {
+  const v = document.getElementById('symInput')?.value?.trim().toUpperCase();
+  if (v) window.loadCoin(v.includes('USDT') ? v : v + 'USDT', App.interval);
+};
+window.startScan = _runScan;
+window.Toast   = Toast;
+window.Storage = Storage;
+
+export { App, _loadCoin as loadCoin };

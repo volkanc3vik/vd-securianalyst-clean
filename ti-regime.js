@@ -1,154 +1,118 @@
 // ════════════════════════════════════════════════════════════════════
-// FUTURES CALC — Saf hesaplama fonksiyonları
-// DOM bağımsız. Tüm input validasyonu burada yapılır.
-// Binance Futures USDT-margined perpetual mantığı.
+// SQUEEZE ENGINE — Funding + OI + LS Ratio kombinasyonu
 // ════════════════════════════════════════════════════════════════════
-window.FuturesCalc = (() => {
-  'use strict';
+const SqueezeEngine = (() => {
 
-  // ── Yardımcılar ───────────────────────────────────────────────────
-  const _num = (v) => {
-    const n = +v;
-    return Number.isFinite(n) ? n : 0;
-  };
+  function analyze({ fund, oiChange, lsRatio, liqResult, wsData, closes }) {
+    const signals  = [];
+    let   shortSqueeze = 0;
+    let   longSqueeze  = 0;
 
-  const _positive = (v) => {
-    const n = _num(v);
-    return n > 0 ? n : 0;
-  };
-
-  /**
-   * Bir sayıyı belirli ondalık basamağa yuvarla (binary float toleranslı).
-   */
-  function round(value, decimals = 4) {
-    const n = _num(value);
-    const f = Math.pow(10, decimals);
-    return Math.round(n * f) / f;
-  }
-
-  // ── Çekirdek hesaplamalar ─────────────────────────────────────────
-
-  /**
-   * Pozisyon büyüklüğü (notional USDT).
-   * Binance: positionSize = margin × leverage
-   */
-  function positionSize(margin, leverage) {
-    const m = _positive(margin);
-    const l = _positive(leverage);
-    if (m === 0 || l === 0) return 0;
-    return round(m * l, 4);
-  }
-
-  /**
-   * Coin miktarı (quantity).
-   * qty = positionSize / entryPrice
-   */
-  function quantity(margin, leverage, entryPrice) {
-    const e = _positive(entryPrice);
-    if (e === 0) return 0;
-    const size = positionSize(margin, leverage);
-    return round(size / e, 8);
-  }
-
-  /**
-   * Required initial margin verilen size & leverage için.
-   * margin = size / leverage
-   */
-  function initialMargin(positionSize, leverage) {
-    const s = _positive(positionSize);
-    const l = _positive(leverage);
-    if (l === 0) return 0;
-    return round(s / l, 4);
-  }
-
-  // ── TP/SL validasyonu ─────────────────────────────────────────────
-  /**
-   * Verilen değerler işlemin yönüne göre tutarlı mı?
-   * LONG için: SL < entry < TP1 ≤ TP2 ≤ TP3
-   * SHORT için: SL > entry > TP1 ≥ TP2 ≥ TP3
-   * @returns {Object} { valid: bool, error: string | null }
-   */
-  function validateLevels(dir, entry, sl, tp1, tp2, tp3) {
-    const D  = (dir || '').toUpperCase();
-    const e  = _num(entry);
-    if (e <= 0) return { valid: false, error: 'Giriş fiyatı pozitif olmalı.' };
-    if (D !== 'LONG' && D !== 'SHORT') return { valid: false, error: 'Yön LONG veya SHORT olmalı.' };
-
-    const isLong = D === 'LONG';
-
-    // SL kontrolü (opsiyonel)
-    if (sl !== null && sl !== undefined && sl !== '' && sl !== 0) {
-      const s = _num(sl);
-      if (s <= 0) return { valid: false, error: 'Stop Loss pozitif olmalı.' };
-      if (isLong  && s >= e) return { valid: false, error: 'LONG için Stop Loss girişten küçük olmalı.' };
-      if (!isLong && s <= e) return { valid: false, error: 'SHORT için Stop Loss girişten büyük olmalı.' };
+    // ── Funding extreme ──────────────────────────────────────────
+    if (fund !== null) {
+      if (fund < -0.1) { shortSqueeze += 35; signals.push({ type:'SHORT', reason:`Funding aşırı negatif (%${fund.toFixed(3)}) — short'lar sıkışacak`, w:35 }); }
+      else if (fund < -0.05) { shortSqueeze += 20; signals.push({ type:'SHORT', reason:`Funding negatif (%${fund.toFixed(3)})`, w:20 }); }
+      else if (fund > 0.1) { longSqueeze += 35; signals.push({ type:'LONG', reason:`Funding aşırı pozitif (%${fund.toFixed(3)}) — long'lar sıkışacak`, w:35 }); }
+      else if (fund > 0.05) { longSqueeze += 20; signals.push({ type:'LONG', reason:`Funding pozitif (%${fund.toFixed(3)})`, w:20 }); }
     }
 
-    // TP'leri sırala
-    const tps = [];
-    [tp1, tp2, tp3].forEach((tp, i) => {
-      if (tp !== null && tp !== undefined && tp !== '' && tp !== 0) {
-        const t = _num(tp);
-        if (t > 0) tps.push({ idx: i + 1, val: t });
+    // ── OI genişleme ─────────────────────────────────────────────
+    if (oiChange !== null) {
+      const oiNum = parseFloat(oiChange);
+      if (oiNum > 8) {
+        if (lsRatio < 0.7)  { shortSqueeze += 25; signals.push({ type:'SHORT', reason:`OI +%${oiNum.toFixed(1)} + short kalabalık`, w:25 }); }
+        if (lsRatio > 1.5)  { longSqueeze  += 25; signals.push({ type:'LONG',  reason:`OI +%${oiNum.toFixed(1)} + long kalabalık`, w:25 }); }
       }
-    });
-
-    for (const { idx, val } of tps) {
-      if (isLong  && val <= e) return { valid: false, error: `LONG için TP${idx} girişten büyük olmalı.` };
-      if (!isLong && val >= e) return { valid: false, error: `SHORT için TP${idx} girişten küçük olmalı.` };
     }
 
-    return { valid: true, error: null };
+    // ── LS Ratio ─────────────────────────────────────────────────
+    if (lsRatio !== null) {
+      if (lsRatio < 0.5)  { shortSqueeze += 25; signals.push({ type:'SHORT', reason:`Short kalabalık (L/S: ${lsRatio.toFixed(2)})`, w:25 }); }
+      else if (lsRatio < 0.7)  { shortSqueeze += 15; signals.push({ type:'SHORT', reason:`Short ağır (L/S: ${lsRatio.toFixed(2)})`, w:15 }); }
+      else if (lsRatio > 2.0)  { longSqueeze  += 25; signals.push({ type:'LONG',  reason:`Long kalabalık (L/S: ${lsRatio.toFixed(2)})`, w:25 }); }
+      else if (lsRatio > 1.5)  { longSqueeze  += 15; signals.push({ type:'LONG',  reason:`Long ağır (L/S: ${lsRatio.toFixed(2)})`, w:15 }); }
+    }
+
+    // ── Likidasyon baskısı ───────────────────────────────────────
+    if (liqResult) {
+      if (liqResult.liquidationBias === 'SHORT_LIQ') { shortSqueeze += 15; signals.push({ type:'SHORT', reason:'Short likidasyon baskısı', w:15 }); }
+      if (liqResult.liquidationBias === 'LONG_LIQ')  { longSqueeze  += 15; signals.push({ type:'LONG',  reason:'Long likidasyon baskısı',  w:15 }); }
+    }
+
+    // ── OB baskısı ───────────────────────────────────────────────
+    if (wsData?.obImbalance !== undefined) {
+      const obi = wsData.obImbalance;
+      if (obi > 0.7 && lsRatio < 0.7)  { shortSqueeze += 10; signals.push({ type:'SHORT', reason:'OB alım baskısı + short kalabalık', w:10 }); }
+      if (obi < 0.3 && lsRatio > 1.5)  { longSqueeze  += 10; signals.push({ type:'LONG',  reason:'OB satış baskısı + long kalabalık', w:10 }); }
+    }
+
+    // ── Fiyat durağanlığı (squeeze hazırlık) ─────────────────────
+    if (closes?.length >= 10) {
+      const last10 = closes.slice(-10);
+      const hi = Math.max(...last10), lo = Math.min(...last10);
+      const range = (hi - lo) / lo * 100;
+      if (range < 1.5 && (shortSqueeze > 30 || longSqueeze > 30)) {
+        const dominant = shortSqueeze > longSqueeze ? 'SHORT' : 'LONG';
+        signals.push({ type: dominant, reason: `Fiyat sıkışık (%${range.toFixed(1)} range) — squeeze tetiklenebilir`, w:10 });
+        if (dominant === 'SHORT') shortSqueeze += 10; else longSqueeze += 10;
+      }
+    }
+
+    const maxRisk   = Math.max(shortSqueeze, longSqueeze);
+    const riskType  = shortSqueeze >= longSqueeze ? 'SHORT_SQUEEZE' : 'LONG_SQUEEZE';
+    const squeezeRisk = Math.min(100, maxRisk);
+    const level     = squeezeRisk >= 70 ? 'CRITICAL' : squeezeRisk >= 50 ? 'HIGH' : squeezeRisk >= 30 ? 'MEDIUM' : 'LOW';
+
+    return {
+      squeezeRisk,
+      shortSqueeze: Math.min(100, shortSqueeze),
+      longSqueeze:  Math.min(100, longSqueeze),
+      dominantType: riskType,
+      level,
+      signals: signals.filter(s => s.type === (riskType === 'SHORT_SQUEEZE' ? 'SHORT' : 'LONG')),
+      allSignals: signals,
+    };
   }
 
-  // ── Risk-Reward ───────────────────────────────────────────────────
-  /**
-   * R/R oranı = (TP - entry) / (entry - SL)  (LONG için)
-   * @returns {number | null}
-   */
-  function riskReward(dir, entry, sl, tp) {
-    const e = _num(entry), s = _num(sl), t = _num(tp);
-    if (e <= 0 || s <= 0 || t <= 0) return null;
-    const isLong = (dir || '').toUpperCase() === 'LONG';
-    const risk   = isLong ? (e - s) : (s - e);
-    const reward = isLong ? (t - e) : (e - t);
-    if (risk <= 0 || reward <= 0) return null;
-    return round(reward / risk, 2);
+  function renderUI(result, panelId='squeezePanel') {
+    const el = document.getElementById(panelId);
+    if (!el) return;
+    const { squeezeRisk:sr, shortSqueeze:ss, longSqueeze:ls, dominantType:dt, level, signals } = result;
+    const col = sr>=70?'var(--red)':sr>=50?'var(--orange)':sr>=30?'var(--yellow)':'var(--green)';
+    const isShort = dt === 'SHORT_SQUEEZE';
+
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="flex:1;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3)">SQUEEZE RİSKİ</div>
+          <div style="font-size:22px;font-weight:900;color:${col}">${sr}%</div>
+          <div style="font-size:9px;color:${col}">${level}</div>
+        </div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
+            <span style="color:var(--red)">LONG SQUEEZE</span>
+            <span style="color:var(--red);font-weight:700">${ls}%</span>
+          </div>
+          <div style="height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden;margin-bottom:6px">
+            <div style="height:100%;width:${ls}%;background:var(--red);border-radius:3px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:4px">
+            <span style="color:var(--green)">SHORT SQUEEZE</span>
+            <span style="color:var(--green);font-weight:700">${ss}%</span>
+          </div>
+          <div style="height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${ss}%;background:var(--green);border-radius:3px"></div>
+          </div>
+        </div>
+      </div>
+      ${sr>=50?`<div style="padding:7px 10px;background:rgba(${isShort?'0,229,160':'255,61,107'},.08);border:1px solid rgba(${isShort?'0,229,160':'255,61,107'},.3);border-radius:8px;margin-bottom:8px;font-size:10px;font-weight:700;color:${isShort?'var(--green)':'var(--red)'}">
+        ⚡ ${dt.replace('_',' ')} RİSKİ YÜKSEK
+      </div>`:''}
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${signals.map(s=>`<div style="font-size:9px;color:var(--text2);padding:4px 8px;background:rgba(0,0,0,.2);border-radius:5px">• ${s.reason}</div>`).join('')}
+      </div>
+    `;
   }
 
-  /**
-   * Position'ın tahmini SL kaybı (USDT cinsinden).
-   */
-  function expectedLoss(dir, entry, sl, qty) {
-    const e = _num(entry), s = _num(sl), q = _num(qty);
-    if (e <= 0 || s <= 0 || q <= 0) return 0;
-    const isLong = (dir || '').toUpperCase() === 'LONG';
-    const diff   = isLong ? (e - s) : (s - e);
-    if (diff <= 0) return 0;
-    return round(diff * q, 2);
-  }
-
-  /**
-   * Position'ın tahmini TP kazancı (USDT cinsinden).
-   */
-  function expectedGain(dir, entry, tp, qty) {
-    const e = _num(entry), t = _num(tp), q = _num(qty);
-    if (e <= 0 || t <= 0 || q <= 0) return 0;
-    const isLong = (dir || '').toUpperCase() === 'LONG';
-    const diff   = isLong ? (t - e) : (e - t);
-    if (diff <= 0) return 0;
-    return round(diff * q, 2);
-  }
-
-  // ── Public API ────────────────────────────────────────────────────
-  return {
-    round,
-    positionSize,
-    quantity,
-    initialMargin,
-    validateLevels,
-    riskReward,
-    expectedLoss,
-    expectedGain,
-  };
+  return { analyze, renderUI };
 })();

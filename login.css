@@ -1,177 +1,151 @@
-// ═══════════════════════════════════════════════
-// SUPABASE SERVICE — Auth + Database
-// signals ve ai_weights tablolarını yönetir
-// ═══════════════════════════════════════════════
+   SMART MONEY + LIQUIDITY ENGINE — CSS
+   ════════════════════════════════════════════════════ */
 
-const SupabaseDB = (() => {
+/* SMC Ana Panel */
+.smc-panel{
+  background:linear-gradient(135deg,rgba(0,229,160,.04),rgba(157,125,250,.04));
+  border:1px solid rgba(0,229,160,.18);border-radius:14px;
+  padding:16px 18px;margin-bottom:14px;
+}
+.smc-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.smc-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase;}
+.smc-pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:smcPulse 2s infinite;flex-shrink:0;}
+@keyframes smcPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{box-shadow:0 0 0 6px rgba(0,229,160,0)}}
 
-  const URL = 'https://affgbrpwuikpqgsapuvh.supabase.co';
-  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZmdicnB3dWlrcHFnc2FwdXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzA4MDAsImV4cCI6MjA5NDcwNjgwMH0.8o0msNt9OQXJMbfLm8L0ipzPghCrAcvx1wKXBGT36Ds';
+/* SMC Grid */
+.smc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:500px){.smc-grid{grid-template-columns:1fr;}}
+.smc-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;}
+.smc-card-title{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:6px;text-transform:uppercase;}
+.smc-card-val{font-size:13px;font-weight:800;margin-bottom:3px;}
+.smc-card-sub{font-size:10px;color:var(--text3);line-height:1.4;}
+.smc-tag{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:4px;margin-right:3px;}
+.smc-bull{background:rgba(0,229,160,.12);border:1px solid rgba(0,229,160,.25);color:var(--green);}
+.smc-bear{background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.25);color:var(--red);}
+.smc-warn{background:rgba(255,122,0,.1);border:1px solid rgba(255,122,0,.25);color:var(--orange);}
+.smc-info{background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.25);color:var(--purple);}
+.smc-neu {background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text2);}
 
-  const HEADERS = {
-    'Content-Type' : 'application/json',
-    'apikey'       : KEY,
-    'Authorization': 'Bearer ' + KEY,
-    'Prefer'       : 'return=representation',
-  };
+/* LWC üzerinde SMC katmanları */
+.smc-liq-zone{
+  position:absolute;pointer-events:none;
+  border-left:3px solid;padding-left:6px;
+  font-size:9px;font-weight:700;white-space:nowrap;
+  display:flex;align-items:center;
+}
 
-  // ── Temel CRUD ────────────────────────────────
-  async function _insert(table, data) {
-    try {
-      const r = await fetch(`${URL}/rest/v1/${table}`, {
-        method:  'POST',
-        headers: HEADERS,
-        body:    JSON.stringify(data),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
-    } catch(e) { console.warn(`DB insert ${table}:`, e.message); return null; }
+/* Session badge */
+.session-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;
+}
+.sess-asia  {background:rgba(157,125,250,.12);border:1px solid rgba(157,125,250,.3);color:var(--purple);}
+.sess-london{background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.3);color:var(--yellow);}
+.sess-ny    {background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--green);}
+.sess-off   {background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text3);}
+
+/* Quality Score */
+.quality-bar{height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-top:6px;}
+.quality-fill{height:100%;border-radius:4px;transition:width .5s;}
+.qf-high  {background:linear-gradient(90deg,var(--green),#00c070);}
+.qf-medium{background:linear-gradient(90deg,var(--yellow),#e6a800);}
+.qf-low   {background:linear-gradient(90deg,var(--red),#cc2244);}
+
+/* SMC yorum kutusu */
+.smc-comment{
+  background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.12);
+  border-radius:10px;padding:11px 14px;
+  font-size:12px;color:var(--text2);line-height:1.65;
+  margin-bottom:10px;
+}
+.smc-comment b{color:var(--green);}
+.smc-comment .warn{color:var(--orange);}
+.smc-comment .bull{color:var(--green);}
+.smc-comment .bear{color:var(--red);}
+.smc-comment .info{color:var(--cyan);}
+
+/* FVG göstergesi */
+.fvg-list{display:flex;flex-direction:column;gap:5px;}
+.fvg-item{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(0,0,0,.2);border-radius:7px;padding:7px 11px;
+  font-size:10px;border:1px solid rgba(255,255,255,.05);
+}
+.fvg-bull{border-left:3px solid var(--green);}
+.fvg-bear{border-left:3px solid var(--red);}
+.fvg-sym{font-weight:700;color:var(--text);width:70px;flex-shrink:0;}
+.fvg-range{color:var(--text3);flex:1;}
+.fvg-status{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
+
+/* Liquidity heatmap */
+.liq-heatmap{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.liq-row{display:flex;align-items:center;gap:8px;font-size:10px;}
+.liq-label{width:90px;color:var(--text3);flex-shrink:0;font-weight:500;}
+.liq-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;}
+.liq-bar-fill{height:100%;border-radius:3px;transition:width .5s;}
+.liq-val{width:50px;text-align:right;font-weight:700;}
+
+/* ════════════════════════════════════════════════════
+   AŞAMA 2 — SMC PRO + RISK ENGINE CSS
+   ════════════════════════════════════════ */
+
+/* SMC Pro Panel */
+.smc-pro-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:500px){.smc-pro-grid{grid-template-columns:1fr;}}
+.smc-pro-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;}
+.smc-pro-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:5px;text-transform:uppercase;}
+.smc-pro-val{font-size:13px;font-weight:800;margin-bottom:3px;}
+.smc-pro-sub{font-size:10px;color:var(--text3);line-height:1.4;}
+
+/* Fake Breakout Detector */
+.fb-meter{height:8px;border-radius:4px;overflow:hidden;margin:6px 0;background:rgba(255,255,255,.06);}
+.fb-fill{height:100%;border-radius:4px;transition:width .5s;}
+.fb-low {background:linear-gradient(90deg,var(--green),#00c070);}
+.fb-med {background:linear-gradient(90deg,var(--yellow),#e6a800);}
+.fb-high{background:linear-gradient(90deg,var(--orange),var(--red));}
+
+/* Risk Engine */
+.risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+/* SMC Structure Badge */
+.smc-struct-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.smc-struct-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;}
+
+/* Whale detector */
+.whale-alert{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(157,125,250,.08);border:1px solid rgba(157,125,250,.25);
+  border-radius:10px;padding:10px 13px;margin-bottom:8px;
+  animation:whaleGlow 2s infinite;
+}
+@keyframes whaleGlow{0%,100%{box-shadow:0 0 0 0 rgba(157,125,250,.2)}50%{box-shadow:0 0 12px rgba(157,125,250,.4)}}
+.whale-alert-icon{font-size:20px;flex-shrink:0;}
+.whale-alert-txt{font-size:11px;color:var(--text2);line-height:1.5;}
+.whale-alert-txt b{color:var(--purple);}
+
+/* ════════════════════════════════════════════════════
+.glass-card,.opp,.mkt-card,.signal-card,.ece-panel,.smc-panel,.ai-panel{
+  will-change:transform;
+  transform:translateZ(0);
+}
+.ticker-track,.blob{will-change:transform;}
+
+/* ── Safe Area (iPhone notch) ── */
+@supports(padding:max(0px)){
+  body{
+    padding-left:max(0px,env(safe-area-inset-left));
+    padding-right:max(0px,env(safe-area-inset-right));
+    padding-bottom:max(70px,calc(env(safe-area-inset-bottom) + 70px));
   }
+}
 
-  async function _update(table, data, filter) {
-    try {
-      const r = await fetch(`${URL}/rest/v1/${table}?${filter}`, {
-        method:  'PATCH',
-        headers: HEADERS,
-        body:    JSON.stringify(data),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
-    } catch(e) { console.warn(`DB update ${table}:`, e.message); return null; }
-  }
-
-  async function _select(table, filter = '', limit = 100) {
-    try {
-      const r = await fetch(`${URL}/rest/v1/${table}?${filter}&limit=${limit}`, {
-        headers: { ...HEADERS, 'Prefer': 'return=representation' },
-      });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
-    } catch(e) { console.warn(`DB select ${table}:`, e.message); return []; }
-  }
-
-  // ── SIGNALS TABLOSU ──────────────────────────
-
-  // Yeni sinyal kaydet
-  async function saveSignal(sig) {
-    return _insert('signals', {
-      sym:           sig.sym,
-      direction:     sig.direction,
-      entry:         sig.entry || null,
-      confidence:    sig.confidence || null,
-      funding:       sig.funding || null,
-      oi:            sig.oi || null,
-      ls_ratio:      sig.lsRatio || null,
-      squeeze_risk:  sig.squeezeRisk || 0,
-      crowd_risk:    sig.crowdRisk || 0,
-      liq_pressure:  sig.liqPressure || 0,
-      regime:        sig.regime || 'UNKNOWN',
-      smc_structure: sig.smcStructure || null,
-      tp:            sig.tp || null,
-      sl:            sig.sl || null,
-      status:        'OPEN',
-      open_ts:       Date.now(),
-    });
-  }
-
-  // Sinyal sonucunu güncelle
-  async function closeSignal(id, { status, pnl, durationMin }) {
-    return _update('signals', {
-      status,
-      pnl:          pnl || null,
-      duration_min: durationMin || null,
-      close_ts:     Date.now(),
-    }, `id=eq.${id}`);
-  }
-
-  // Son sinyalleri getir
-  async function getSignals(limit = 50) {
-    return _select('signals', 'order=created_at.desc', limit);
-  }
-
-  // Açık sinyalleri getir
-  async function getOpenSignals() {
-    return _select('signals', 'status=eq.OPEN&order=created_at.desc', 100);
-  }
-
-  // İstatistik hesapla
-  async function getStats() {
-    const signals = await _select('signals', 'status=neq.OPEN&order=created_at.desc', 500);
-    if (!signals.length) return null;
-
-    const wins   = signals.filter(s => s.status === 'TP_HIT').length;
-    const total  = signals.length;
-    const wr     = (wins / total * 100).toFixed(1);
-    const pnls   = signals.filter(s => s.pnl !== null).map(s => +s.pnl);
-    const avgPnl = pnls.length ? (pnls.reduce((a,b)=>a+b,0)/pnls.length).toFixed(2) : null;
-
-    // Regime bazlı
-    const byRegime = {};
-    signals.forEach(s => {
-      if (!byRegime[s.regime]) byRegime[s.regime] = { wins:0, total:0 };
-      byRegime[s.regime].total++;
-      if (s.status === 'TP_HIT') byRegime[s.regime].wins++;
-    });
-
-    return { total, wins, wr, avgPnl, byRegime };
-  }
-
-  // ── AI_WEIGHTS TABLOSU ───────────────────────
-
-  // Ağırlıkları Supabase'den yükle
-  async function loadWeights() {
-    const rows = await _select('ai_weights', '', 50);
-    if (!rows.length) return null;
-    const w = {};
-    rows.forEach(r => { w[r.indicator] = +r.weight; });
-    return w;
-  }
-
-  // Ağırlığı güncelle
-  async function updateWeight(indicator, weight, win) {
-    // Önce var mı kontrol et
-    const existing = await _select('ai_weights', `indicator=eq.${indicator}`, 1);
-
-    if (existing.length) {
-      return _update('ai_weights', {
-        weight,
-        win_count:  win ? existing[0].win_count + 1 : existing[0].win_count,
-        loss_count: win ? existing[0].loss_count : existing[0].loss_count + 1,
-        updated_at: new Date().toISOString(),
-      }, `indicator=eq.${indicator}`);
-    } else {
-      return _insert('ai_weights', {
-        indicator,
-        weight,
-        win_count:  win ? 1 : 0,
-        loss_count: win ? 0 : 1,
-      });
-    }
-  }
-
-  // Tüm ağırlıkları toplu güncelle
-  async function saveWeights(weightsObj) {
-    const promises = Object.entries(weightsObj).map(([k, v]) =>
-      updateWeight(k, v, null)
-    );
-    return Promise.allSettled(promises);
-  }
-
-  // ── AUTH (mevcut) ────────────────────────────
-  async function verifyCode(kod) {
-    const r = await fetch(`${URL}/functions/v1/verify-code`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ kod }),
-    });
-    if (!r.ok) throw new Error('Sunucu hatası');
-    return r.json();
-  }
-
-  return {
-    saveSignal, closeSignal, getSignals, getOpenSignals, getStats,
-    loadWeights, updateWeight, saveWeights,
-    verifyCode,
-  };
-
-})();
+/* ── Alt Navigasyon (Mobil) ── */
+#bottomNav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:9990;
+  background:rgba(2,7,14,.97);
+  border-top:1px solid rgba(255,255,255,.07);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  padding:8px 0;
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
+}

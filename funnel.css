@@ -1,0 +1,339 @@
+/* ════════════════════════════════════════════════════════════════════
+   VD LEGAL OVERLAY — ana site footer + cookie banner + welcome modal
+   Bu CSS, index.html'deki ana siteye eklenir. Mevcut sitenin CSS
+   değişkenlerini kullanır (--bg, --text, --cyan, --orange, vs.).
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ══════════ FOOTER ══════════ */
+.vd-legal-footer {
+  background: rgba(14, 18, 26, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 28px 24px 24px;
+  margin-top: 40px;
+  font-family: inherit;
+}
+
+.vd-legal-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.vd-legal-disclaimer {
+  text-align: center;
+  color: var(--orange, #ff7a00);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.65;
+  padding: 12px 16px;
+  background: rgba(255, 122, 0, 0.06);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  letter-spacing: 0.2px;
+}
+
+.vd-legal-links {
+  text-align: center;
+  font-size: 12px;
+  margin-bottom: 14px;
+  line-height: 2;
+}
+
+.vd-legal-links a {
+  color: var(--text2, #a8b3c0);
+  text-decoration: none;
+  margin: 0 6px;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.vd-legal-links a:hover {
+  color: var(--cyan, #00d4ff);
+}
+
+.vd-legal-links-sep {
+  color: var(--text3, #6b7785);
+  margin: 0 2px;
+}
+
+.vd-legal-copyright {
+  text-align: center;
+  color: var(--text3, #6b7785);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 640px) {
+  .vd-legal-footer {
+    padding: 20px 14px 18px;
+  }
+  .vd-legal-links a {
+    display: inline-block;
+    margin: 3px 4px;
+  }
+  .vd-legal-links-sep {
+    display: none;
+  }
+}
+
+/* ══════════ COOKIE BANNER ══════════ */
+.vd-cookie-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9990;
+  background: rgba(11, 15, 22, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px 24px;
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+  font-family: inherit;
+}
+
+.vd-cookie-banner.vd-cookie-visible {
+  transform: translateY(0);
+}
+
+.vd-cookie-banner-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.vd-cookie-text {
+  color: var(--text, #e6ecf3);
+  font-size: 13px;
+  line-height: 1.6;
+  flex: 1;
+  min-width: 280px;
+}
+
+.vd-cookie-text strong {
+  color: var(--text, #e6ecf3);
+}
+
+.vd-cookie-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.vd-cookie-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text2, #a8b3c0);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.vd-cookie-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #e6ecf3);
+}
+
+.vd-cookie-btn-primary {
+  background: rgba(0, 212, 255, 0.12);
+  border-color: rgba(0, 212, 255, 0.4);
+  color: var(--cyan, #00d4ff);
+}
+
+.vd-cookie-btn-primary:hover {
+  background: rgba(0, 212, 255, 0.2);
+}
+
+@media (max-width: 640px) {
+  .vd-cookie-banner {
+    padding: 14px 14px;
+  }
+  .vd-cookie-banner-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .vd-cookie-buttons {
+    width: 100%;
+  }
+  .vd-cookie-btn {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+/* ══════════ WELCOME MODAL ══════════ */
+.vd-welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9985;
+  background: rgba(5, 8, 13, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.vd-welcome-overlay.vd-welcome-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vd-welcome-modal {
+  background: rgba(14, 18, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  max-width: 540px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px 28px 24px;
+  position: relative;
+  transform: translateY(16px) scale(0.97);
+  transition: transform 0.22s ease;
+  font-family: inherit;
+}
+
+.vd-welcome-overlay.vd-welcome-visible .vd-welcome-modal {
+  transform: translateY(0) scale(1);
+}
+
+.vd-welcome-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text3, #6b7785);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.vd-welcome-close:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #e6ecf3);
+}
+
+.vd-welcome-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text, #e6ecf3);
+  margin-bottom: 8px;
+  letter-spacing: -0.2px;
+}
+
+.vd-welcome-subtitle {
+  font-size: 14px;
+  color: var(--text2, #a8b3c0);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.vd-welcome-warnings {
+  background: rgba(255, 122, 0, 0.07);
+  border-left: 3px solid var(--orange, #ff7a00);
+  border-radius: 0 6px 6px 0;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.vd-welcome-warnings p {
+  color: var(--text, #e6ecf3);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 4px 0;
+}
+
+.vd-welcome-warnings p strong {
+  color: var(--orange, #ff7a00);
+}
+
+.vd-welcome-terms-text {
+  font-size: 12.5px;
+  color: var(--text2, #a8b3c0);
+  line-height: 1.65;
+  margin-bottom: 18px;
+}
+
+.vd-welcome-terms-text a {
+  color: var(--cyan, #00d4ff);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.vd-welcome-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.vd-welcome-btn {
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  font-family: inherit;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.vd-welcome-btn-secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text2, #a8b3c0);
+}
+
+.vd-welcome-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #e6ecf3);
+}
+
+.vd-welcome-btn-primary {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: rgba(0, 212, 255, 0.45);
+  color: var(--cyan, #00d4ff);
+}
+
+.vd-welcome-btn-primary:hover {
+  background: rgba(0, 212, 255, 0.22);
+}
+
+@media (max-width: 480px) {
+  .vd-welcome-modal {
+    padding: 22px 18px 18px;
+  }
+  .vd-welcome-title {
+    font-size: 19px;
+  }
+  .vd-welcome-buttons {
+    flex-direction: column;
+  }
+  .vd-welcome-btn {
+    width: 100%;
+    text-align: center;
+  }
+}

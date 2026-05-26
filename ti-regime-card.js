@@ -1,130 +1,254 @@
-PROFESSIONAL AI TRADING TERMINAL — EXTRA CSS
-   ════════════════════════════════════════════════════ */
+// ════════════════════════════════════════════════════════════════════
+// FUTURES CARD — Aktif Pozisyon Kart Render'ı
+// 3x3 metrik grid + canlı price bar + TP/SL hit animasyonları.
+// Sadece sunum katmanı; state mutasyonu yapmaz.
+// ════════════════════════════════════════════════════════════════════
+window.FuturesCard = (() => {
+  'use strict';
 
-/* Market Regime Badge */
-.regime-bar{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.07);
-  border-radius:12px;padding:10px 16px;margin-bottom:14px;
-}
-.regime-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;
-  letter-spacing:1px;text-transform:uppercase;
-}
-.regime-TREND      {background:rgba(0,229,160,.15);border:1px solid rgba(0,229,160,.4);color:var(--green);}
-.regime-SIDEWAYS   {background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.4);color:var(--yellow);}
-.regime-VOLATILE   {background:rgba(255,122,0,.15);border:1px solid rgba(255,122,0,.4);color:var(--orange);}
-.regime-SQUEEZE    {background:rgba(157,125,250,.15);border:1px solid rgba(157,125,250,.4);color:var(--purple);}
-.regime-PANIC      {background:rgba(255,61,107,.15);border:1px solid rgba(255,61,107,.4);color:var(--red);}
-.regime-ACCUMULATE {background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);color:var(--cyan);}
-.regime-DISTRIBUTE {background:rgba(255,122,0,.12);border:1px solid rgba(255,122,0,.35);color:var(--orange);}
-.regime-desc{font-size:11px;color:var(--text2);flex:1;}
-.regime-dot{width:7px;height:7px;border-radius:50%;animation:regimePulse 2s infinite;flex-shrink:0;}
-@keyframes regimePulse{0%,100%{opacity:1}50%{opacity:.4}}
+  // Format yardımcısı
+  function _fmt(v, d = 2) {
+    if (v === null || v === undefined || !Number.isFinite(+v)) return '—';
+    return (+v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
 
-/* AI Trade Decision */
-.ai-decision-card{
-  border-radius:14px;padding:16px 18px;margin-bottom:14px;
-  display:flex;align-items:flex-start;gap:14px;
-}
-.ai-decision-card.STRONG_LONG  {background:linear-gradient(135deg,rgba(0,229,160,.18),rgba(0,229,160,.05));border:2px solid rgba(0,229,160,.5);box-shadow:0 0 30px rgba(0,229,160,.15);}
-.ai-decision-card.LONG         {background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.3);}
-.ai-decision-card.WEAK_LONG    {background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.15);}
-.ai-decision-card.WAIT         {background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.25);}
-.ai-decision-card.WEAK_SHORT   {background:rgba(255,61,107,.04);border:1px solid rgba(255,61,107,.15);}
-.ai-decision-card.SHORT        {background:rgba(255,61,107,.08);border:1px solid rgba(255,61,107,.3);}
-.ai-decision-card.STRONG_SHORT {background:linear-gradient(135deg,rgba(255,61,107,.18),rgba(255,61,107,.05));border:2px solid rgba(255,61,107,.5);box-shadow:0 0 30px rgba(255,61,107,.15);}
-.ai-dec-icon{font-size:28px;flex-shrink:0;}
-.ai-dec-label{font-size:16px;font-weight:900;letter-spacing:1px;margin-bottom:4px;}
-.ai-dec-reason{font-size:12px;color:var(--text2);line-height:1.6;font-style:italic;}
-.ai-dec-sub{font-size:11px;color:var(--text3);margin-top:6px;font-weight:400;}
+  // Fiyatın büyüklüğüne göre uygun ondalık
+  function _autoDecimals(price) {
+    const p = Math.abs(+price);
+    if (!Number.isFinite(p) || p === 0) return 2;
+    if (p >= 1000) return 2;
+    if (p >= 10)   return 3;
+    if (p >= 1)    return 4;
+    if (p >= 0.01) return 5;
+    return 7;
+  }
 
-/* Fake Breakout Warning */
-.fake-warning{
-  display:none;
-  background:rgba(255,122,0,.08);border:1px solid rgba(255,122,0,.35);
-  border-radius:10px;padding:10px 14px;margin-bottom:10px;
-  font-size:12px;color:var(--orange);line-height:1.55;
-}
-.fake-warning.show{display:block;animation:fakeWarn .5s ease;}
-@keyframes fakeWarn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  function _fmtPrice(v) {
+    return _fmt(v, _autoDecimals(v));
+  }
 
-/* OI + Funding Panel */
-.oi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
-@media(max-width:600px){.oi-grid{grid-template-columns:repeat(2,1fr);}}
-.oi-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;}
-.oi-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:4px;text-transform:uppercase;}
-.oi-val{font-size:15px;font-weight:800;}
-.oi-sub{font-size:10px;color:var(--text3);margin-top:2px;}
-.oi-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:5px;}
-.oib-squeeze-s{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--green);}
-.oib-squeeze-l{background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);color:var(--red);}
-.oib-crowded-l{background:rgba(255,122,0,.1);border:1px solid rgba(255,122,0,.3);color:var(--orange);}
-.oib-crowded-s{background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);color:var(--purple);}
-.oib-neutral  {background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text2);}
+  function _fmtQty(qty, sym) {
+    return _fmt(qty, qty >= 1 ? 4 : 6) + ' ' + (sym || '');
+  }
 
-/* BTC Influence Meter */
-.btc-inf-wrap{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
-.btc-inf-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-.btc-inf-lbl{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:1px;}
-.btc-inf-val{font-size:13px;font-weight:800;}
-.btc-inf-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
-.btc-inf-fill{height:100%;border-radius:3px;transition:width .5s;}
+  function _duration(openTs) {
+    const s = Math.floor((Date.now() - (+openTs || Date.now())) / 1000);
+    if (s < 60)   return s + 's';
+    if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h + 'h ' + m + 'm';
+  }
 
-/* Risk Engine */
-.risk-engine-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
-@media(max-width:500px){.risk-engine-grid{grid-template-columns:1fr 1fr;}}
-.re-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;text-align:center;}
-.re-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;font-weight:600;margin-bottom:6px;text-transform:uppercase;}
-.re-val{font-size:18px;font-weight:900;}
-.re-sub{font-size:10px;color:var(--text3);margin-top:3px;}
+  // Sağlık etiketi (üst şeritte gözüken pill)
+  function _healthLabel(p, distLiqPct, zone) {
+    const FL = window.FuturesLiquidation;
+    const liqDistPct = distLiqPct;
 
-/* Trade Management */
-.tm-list{display:flex;flex-direction:column;gap:6px;}
-.tm-item{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border-radius:8px;padding:10px 13px;border:1px solid rgba(255,255,255,.05);}
-.tm-icon{font-size:16px;flex-shrink:0;}
-.tm-text{font-size:12px;color:var(--text2);flex:1;line-height:1.4;}
-.tm-text b{color:var(--text);}
-.tm-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
-.tm-act{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--green);}
-.tm-warn{background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.3);color:var(--yellow);}
-.tm-crit{background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);color:var(--red);}
+    if (liqDistPct < 1.5)  return { cls: 'liq', text: '⚠ LİKİDASYON YAKIN' };
+    if (p.slHit)           return { cls: 'sl',  text: '🛑 STOP HIT' };
+    if (p.tp3Hit)          return { cls: 'tp',  text: '🏆 TP3 HIT' };
+    if (p.tp2Hit)          return { cls: 'tp',  text: '🏆 TP2 HIT' };
+    if (p.tp1Hit)          return { cls: 'tp',  text: '🎯 TP1 HIT' };
+    if (liqDistPct < 5)    return { cls: 'sl',  text: '⚠ LİK. BÖLGESİ' };
+    return null;
+  }
 
-/* Volatility Meter */
-.vol-meter{height:8px;background:linear-gradient(90deg,var(--green),var(--yellow),var(--orange),var(--red));border-radius:4px;position:relative;margin:6px 0;}
-.vol-needle{position:absolute;top:-4px;width:3px;height:16px;background:white;border-radius:2px;transform:translateX(-50%);transition:left .5s;box-shadow:0 0 6px rgba(255,255,255,.5);}
+  // Zone'a göre alt mesaj
+  function _statusMsg(zone, dir, p) {
+    if (p.slHit)  return '🛑 Stop seviyesi geçildi.';
+    if (p.tp3Hit) return '🏆 TP3 hedefine ulaşıldı — kâr kilitle.';
+    if (p.tp2Hit) return '🎯 TP2 hedefine ulaşıldı — TP3 izle.';
+    if (p.tp1Hit) return '🎯 TP1 hedefine ulaşıldı — TP2 izle.';
+    switch (zone) {
+      case 'STOP':       return '⚠ Stop bölgesi — risk yüksek.';
+      case 'PRE_ENTRY':  return '⚡ Giriş bölgesinde — bekle.';
+      case 'IN_PROFIT':  return '📈 Kâr bölgesinde — momentum izle.';
+      case 'PROFIT_1':   return '🎯 TP1 bölgesinde.';
+      case 'PROFIT_2':   return '🏆 TP2 bölgesinde.';
+      case 'PROFIT_3':   return '🚀 TP3 bölgesinde — hedef yakın.';
+      case 'BEYOND':     return '🚀 TP hedefini geçti.';
+      default:           return '⚡ İşlem aktif.';
+    }
+  }
 
-/* Squeeze Detector */
-.squeeze-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;}
-.sq-active{background:rgba(157,125,250,.15);border:1px solid rgba(157,125,250,.4);color:var(--purple);animation:sqPulse 1.5s infinite;}
-.sq-inactive{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text3);}
-@keyframes sqPulse{0%,100%{box-shadow:0 0 0 0 rgba(157,125,250,.4)}50%{box-shadow:0 0 0 6px rgba(157,125,250,0)}}
+  // ── Price Bar render ──────────────────────────────────────────────
+  function _renderBar(p) {
+    const FP = window.FuturesPnl;
+    const pos = FP.priceBarPosition(p.dir, p.entry, p.markPrice, p.sl, p.tp1, p.tp2, p.tp3);
 
-/* Glass card alt başlık */
-.gc-sub{font-size:10px;color:var(--text3);margin-bottom:10px;line-height:1.5;}
-@keyframes pulse2{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.1)}}
+    const isLong = p.dir === 'LONG';
+    const inProfit = pos.entryPct !== null && pos.pct !== null && pos.pct >= pos.entryPct;
+    const markerCls = inProfit ? 'profit' : 'loss';
 
-/* ── AI LWC PANEL ── */
-.lwc-panel{background:var(--glass);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px;backdrop-filter:blur(20px);}
-.lwc-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);}
-.lwc-title{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase;}
-.lwc-sym{font-size:15px;font-weight:800;color:var(--text);margin-left:4px;}
-.lwc-ctrls{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap;}
-.lwcBtn{font-size:10px;font-weight:700;padding:4px 9px;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif;border:none;transition:all .15s;letter-spacing:.5px;}
-.lwcBtn.on{opacity:1;}.lwcBtn:not(.on){opacity:.35;}.lwcBtn:hover{opacity:1!important;}
-.lwcBtn.bsr{background:rgba(0,229,160,.12);color:var(--green);border:1px solid rgba(0,229,160,.3);}
-.lwcBtn.btp{background:rgba(21,101,255,.12);color:#6ab0ff;border:1px solid rgba(21,101,255,.4);}
-.lwcBtn.bms{background:rgba(157,125,250,.12);color:var(--purple);border:1px solid rgba(157,125,250,.3);}
-.lwcBtn.bpat{background:rgba(255,193,7,.1);color:var(--yellow);border:1px solid rgba(255,193,7,.3);}
-#lwcContainer{width:100%;height:460px;background:#010508;}
-@media(max-width:650px){#lwcContainer{height:320px;}}
-.lwc-legend{display:flex;gap:12px;flex-wrap:wrap;padding:7px 16px;background:rgba(0,0,0,.2);border-top:1px solid var(--border);font-size:10px;}
-.lwc-leg{display:flex;align-items:center;gap:4px;color:var(--text3);}
-.lwc-leg span{width:14px;height:2px;border-radius:1px;display:inline-block;}
-.lwc-notes{display:flex;flex-wrap:wrap;gap:5px;padding:9px 14px;background:rgba(0,0,0,.15);border-top:1px solid var(--border);min-height:34px;}
-.lwc-note{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;font-family:'Inter',sans-serif;animation:lwcNoteIn .3s ease;}
-@keyframes lwcNoteIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
+    // Level marker'ları
+    const levels = [];
+    if (p.sl)  levels.push({ cls: 'sl',    pct: 0,            label: 'SL',  price: p.sl,  hit: !!p.slHit });
+    if (pos.entryPct !== null) {
+      levels.push({ cls: 'entry', pct: pos.entryPct, label: 'Entry', price: p.entry, hit: false });
+    }
+    if (p.tp1 && pos.tp1Pct !== null) levels.push({ cls: 'tp1', pct: pos.tp1Pct, label: 'TP1', price: p.tp1, hit: !!p.tp1Hit });
+    if (p.tp2 && pos.tp2Pct !== null) levels.push({ cls: 'tp2', pct: pos.tp2Pct, label: 'TP2', price: p.tp2, hit: !!p.tp2Hit });
+    if (p.tp3 && pos.tp3Pct !== null) levels.push({ cls: 'tp3', pct: pos.tp3Pct, label: 'TP3', price: p.tp3, hit: !!p.tp3Hit });
 
-/* ════════════════════════════════════════════════════
-   
+    const markersHtml = levels.map(l => `
+      <div class="fp-bar-level ${l.cls} ${l.hit ? 'hit' : ''}" style="left:${l.pct}%">
+        <div class="fp-bar-level-tick"></div>
+        <div class="fp-bar-level-label">${l.label}</div>
+        <div class="fp-bar-level-price">$${_fmtPrice(l.price)}</div>
+      </div>
+    `).join('');
+
+    // Üst label sırası (sol→sağ)
+    const labelsHtml = `
+      <span>${p.sl ? 'SL $' + _fmtPrice(p.sl) : ''}</span>
+      <span>${p.tp3 ? 'TP3 $' + _fmtPrice(p.tp3) : (p.tp2 ? 'TP2 $' + _fmtPrice(p.tp2) : '')}</span>
+    `;
+
+    const markerPct = pos.pct !== null ? pos.pct : 50;
+
+    return `
+      <div class="fp-bar-wrap">
+        <div class="fp-bar-labels">${labelsHtml}</div>
+        <div class="fp-bar-track">
+          <div class="fp-bar-bg">
+            <div class="fp-bar-zone-sl" style="width:${pos.entryPct || 0}%"></div>
+            <div class="fp-bar-zone-profit" style="left:${pos.entryPct || 0}%; right:0"></div>
+          </div>
+          ${markersHtml}
+          <div class="fp-bar-marker ${markerCls}" style="left:${markerPct}%">
+            <div class="fp-bar-marker-dot"></div>
+            <div class="fp-bar-marker-price">$${_fmtPrice(p.markPrice)}</div>
+          </div>
+        </div>
+        <div class="fp-status">
+          <div class="fp-status-msg">${_statusMsg(pos.zone, p.dir, p)}</div>
+          <div class="fp-status-legend">
+            <span><i style="background:rgba(255,61,107,.5)"></i>SL Bölgesi</span>
+            <span><i style="background:rgba(0,229,160,.5)"></i>Kâr Bölgesi</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Üst şerit ─────────────────────────────────────────────────────
+  function _renderTop(p, healthLabel) {
+    const dirCls = p.dir === 'LONG' ? 'long' : 'short';
+    const dirIcon = p.dir === 'LONG' ? '▲ LONG' : '▼ SHORT';
+    const warnHtml = healthLabel
+      ? `<span class="fp-warn ${healthLabel.cls}">${healthLabel.text}</span>`
+      : '';
+
+    return `
+      <div class="fp-card-top">
+        <span class="fp-sym">${p.symFull || (p.sym + 'USDT')}</span>
+        <span class="fp-meta">Perp · ${p.mode === 'CROSS' ? 'Cross' : 'Iso'} · ${p.lev}x</span>
+        <span class="fp-pill ${dirCls}">${dirIcon}</span>
+        ${warnHtml}
+        <span class="fp-duration" data-duration="${p.openTs}">⏱ ${_duration(p.openTs)}</span>
+        <button class="fp-btn-close" data-close-id="${p.id}">Kapat ✕</button>
+      </div>
+    `;
+  }
+
+  // ── 3x3 Grid ──────────────────────────────────────────────────────
+  function _renderGrid(p) {
+    const pnl    = +p.pnl   || 0;
+    const roi    = +p.roi   || 0;
+    const ratio  = +p.marginRatio || 0;
+    const pnlCls = pnl >= 0 ? 'pos' : 'neg';
+    const roiCls = roi >= 0 ? 'pos' : 'neg';
+    const ratioCls = ratio > 80 ? 'crit' : ratio > 50 ? 'warn' : 'muted';
+
+    return `
+      <div class="fp-grid">
+
+        <div class="fp-cell hero">
+          <div class="fp-cell-label">PNL (USDT)</div>
+          <div class="fp-cell-val ${pnlCls}">${pnl >= 0 ? '+' : ''}${_fmt(pnl, 2)}</div>
+        </div>
+
+        <div class="fp-cell hero">
+          <div class="fp-cell-label">ROI</div>
+          <div class="fp-cell-val ${roiCls}">${roi >= 0 ? '+' : ''}${_fmt(roi, 2)}%</div>
+        </div>
+
+        <div class="fp-cell hero">
+          <div class="fp-cell-label">MARGIN RATIO</div>
+          <div class="fp-cell-val ${ratioCls}">%${_fmt(ratio, 1)}</div>
+        </div>
+
+        <div class="fp-cell">
+          <div class="fp-cell-label">SIZE (USDT)</div>
+          <div class="fp-cell-val muted">${_fmt(p.size || (p.margin * p.lev), 2)}</div>
+        </div>
+
+        <div class="fp-cell">
+          <div class="fp-cell-label">MARK PRICE</div>
+          <div class="fp-cell-val">${_fmtPrice(p.markPrice)}</div>
+        </div>
+
+        <div class="fp-cell">
+          <div class="fp-cell-label">MARGIN</div>
+          <div class="fp-cell-val muted">${_fmt(p.margin, 2)}</div>
+        </div>
+
+        <div class="fp-cell">
+          <div class="fp-cell-label">ENTRY PRICE</div>
+          <div class="fp-cell-val muted">${_fmtPrice(p.entry)}</div>
+        </div>
+
+        <div class="fp-cell">
+          <div class="fp-cell-label">MİKTAR</div>
+          <div class="fp-cell-val muted">${_fmtQty(p.qty, p.sym)}</div>
+        </div>
+
+        <div class="fp-cell">
+          <div class="fp-cell-label">LIQ. PRICE</div>
+          <div class="fp-cell-val warn">${_fmtPrice(p.liq)}</div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  // ── Kart toplam render ────────────────────────────────────────────
+  /**
+   * @param {Object} p - pozisyon objesi
+   * @returns {string} HTML
+   */
+  function render(p) {
+    if (!p) return '';
+    const FL = window.FuturesLiquidation;
+    const distLiqPct = FL.distanceToLiqPct(p.markPrice, p.liq, p.entry);
+    const FP = window.FuturesPnl;
+    const barPos = FP.priceBarPosition(p.dir, p.entry, p.markPrice, p.sl, p.tp1, p.tp2, p.tp3);
+
+    const health = _healthLabel(p, distLiqPct, barPos.zone);
+    const dirCls = p.dir === 'LONG' ? 'long' : 'short';
+    const liqWarn = distLiqPct < 1.5 ? 'warn-liq' : '';
+
+    return `
+      <div class="fp-card ${dirCls} ${liqWarn}" data-id="${p.id}">
+        ${_renderTop(p, health)}
+        ${_renderGrid(p)}
+        ${_renderBar(p)}
+      </div>
+    `;
+  }
+
+  /**
+   * Sadece duration alanını güncelle (tüm karta gerek yok — flicker engellenir).
+   * Panel her saniye çağırır.
+   */
+  function tickDuration(rootEl) {
+    if (!rootEl) return;
+    rootEl.querySelectorAll('[data-duration]').forEach(el => {
+      const ts = +el.dataset.duration;
+      el.textContent = '⏱ ' + _duration(ts);
+    });
+  }
+
+  return { render, tickDuration };
+})();

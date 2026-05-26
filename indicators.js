@@ -1,158 +1,67 @@
-// ════════════════════════════════════════════════════════════════════
-// CROWD PSYCHOLOGY ENGINE — Kalabalık tuzak, aşırı pozisyon tespiti
-// ════════════════════════════════════════════════════════════════════
-const CrowdEngine = (() => {
+// ═══════════════════════════════════════════════
+// CONSTANTS — Tüm sabit değerler merkezi
+// ═══════════════════════════════════════════════
 
-  function analyze({ fund, lsRatio, oiChange, liqResult, smcData, wsData }) {
-    const traps   = [];
-    let   crowdRisk = 0;
-    let   trapProb  = 0;
-    let   crowdType = 'NEUTRAL';
+export const API = {
+  BASE:  'https://api.binance.com',
+  FBASE: 'https://fapi.binance.com',
+  WS:    'wss://fstream.binance.com',
+};
 
-    // ── OVERLEVERAGED LONGS ──────────────────────────────────────
-    if (lsRatio > 1.8 && fund > 0.05) {
-      crowdRisk += 40;
-      trapProb  += 35;
-      crowdType  = 'OVERLEVERAGED_LONGS';
-      traps.push({
-        type: 'OVERLEVERAGED_LONGS',
-        confidence: 75,
-        desc: `Long kalabalık (L/S: ${lsRatio?.toFixed(2)}) + yüksek funding — long flush riski`,
-        action: 'Long girişten kaçın, kısa vadeli short fırsatı izle',
-        col: 'var(--red)',
-      });
-    }
+export const INTERVALS = ['1m', '5m', '15m', '1h', '4h'];
 
-    // ── OVERLEVERAGED SHORTS ─────────────────────────────────────
-    if (lsRatio < 0.55 && fund < -0.05) {
-      crowdRisk += 40;
-      trapProb  += 35;
-      crowdType  = 'OVERLEVERAGED_SHORTS';
-      traps.push({
-        type: 'OVERLEVERAGED_SHORTS',
-        confidence: 75,
-        desc: `Short kalabalık (L/S: ${lsRatio?.toFixed(2)}) + negatif funding — short squeeze riski`,
-        action: 'Short girişten kaçın, kısa vadeli long fırsatı izle',
-        col: 'var(--green)',
-      });
-    }
+export const DEFAULT_SYM  = 'BTCUSDT';
+export const DEFAULT_INTV = '15m';
 
-    // ── CROWD TRAP — SMC sweep + kalabalık ──────────────────────
-    if (smcData?.sweeps?.length > 0) {
-      if (lsRatio > 1.5 && fund > 0.03) {
-        crowdRisk += 30;
-        trapProb  += 40;
-        traps.push({
-          type: 'CROWD_TRAP',
-          confidence: 82,
-          desc: 'Likidite süpürmesi + kalabalık long — klasik bull trap',
-          action: 'Long pozisyon açma, stop hunt gerçekleşiyor olabilir',
-          col: 'var(--orange)',
-        });
-      }
-      if (lsRatio < 0.65 && fund < -0.03) {
-        crowdRisk += 30;
-        trapProb  += 40;
-        traps.push({
-          type: 'CROWD_TRAP',
-          confidence: 82,
-          desc: 'Likidite süpürmesi + kalabalık short — klasik bear trap',
-          action: 'Short pozisyon açma, stop hunt gerçekleşiyor olabilir',
-          col: 'var(--cyan)',
-        });
-      }
-    }
+export const SCAN_INTERVAL    = 120_000; // 2 dakika
+export const REFRESH_INTERVAL =  30_000; // 30 saniye
+export const TRACK_INTERVAL   =  20_000; // 20 saniye
 
-    // ── LIQUIDITY BAIT ───────────────────────────────────────────
-    if (wsData?.obImbalance !== undefined) {
-      const obi = wsData.obImbalance;
-      // Görünen güçlü alım ama kalabalık long — sahte talep
-      if (obi > 0.65 && lsRatio > 1.5 && fund > 0.05) {
-        crowdRisk += 20;
-        trapProb  += 25;
-        traps.push({
-          type: 'LIQUIDITY_BAIT',
-          confidence: 65,
-          desc: 'OB alım baskısı görünüyor ama kalabalık long — sahte talep ihtimali',
-          action: 'Kırılım onaylanmadan long açma',
-          col: 'var(--yellow)',
-        });
-      }
-      // Görünen güçlü satış ama kalabalık short — sahte arz
-      if (obi < 0.35 && lsRatio < 0.65 && fund < -0.05) {
-        crowdRisk += 20;
-        trapProb  += 25;
-        traps.push({
-          type: 'LIQUIDITY_BAIT',
-          confidence: 65,
-          desc: 'OB satış baskısı görünüyor ama kalabalık short — sahte arz ihtimali',
-          action: 'Kırılım onaylanmadan short açma',
-          col: 'var(--yellow)',
-        });
-      }
-    }
+export const RISK_LEVELS = {
+  LOW:      { label: 'DÜŞÜK RİSK',  cls: 'risk-low'  },
+  MEDIUM:   { label: 'ORTA RİSK',   cls: 'risk-med'  },
+  HIGH:     { label: 'YÜKSEK RİSK', cls: 'risk-high' },
+  CRITICAL: { label: 'KRİTİK RİSK', cls: 'risk-crit' },
+};
 
-    // ── PANIC ZONE ───────────────────────────────────────────────
-    if (liqResult?.liquidationPressure >= 70 && lsRatio > 1.3) {
-      crowdRisk += 15;
-      trapProb  += 15;
-      traps.push({
-        type: 'PANIC_ZONE',
-        confidence: 60,
-        desc: 'Yüksek likidasyon baskısı + kalabalık pozisyon — panik satış riski',
-        action: 'Stop seviyelerini gözden geçir',
-        col: 'var(--orange)',
-      });
-    }
+export const REGIME_MODES = ['TREND', 'RANGE', 'BREAKOUT', 'VOLATILE', 'SQUEEZE', 'PANIC', 'SIDEWAYS'];
 
-    // Crowd tipi belirleme
-    if (traps.length === 0) {
-      if (lsRatio > 1.2)      crowdType = 'BULLISH_CROWD';
-      else if (lsRatio < 0.8) crowdType = 'BEARISH_CROWD';
-      else                    crowdType = 'NEUTRAL';
-    }
+export const SESSIONS = {
+  ASIA:     { start: 0,  end: 8,  label: 'Asya',     color: '#f0a500' },
+  LONDON:   { start: 8,  end: 13, label: 'Londra',   color: 'var(--cyan)' },
+  NEW_YORK: { start: 13, end: 21, label: 'New York', color: 'var(--green)' },
+  AFTER:    { start: 21, end: 24, label: 'Sonrası',  color: 'var(--text3)' },
+};
 
-    return {
-      crowdRisk:  Math.min(100, crowdRisk),
-      trapProb:   Math.min(100, trapProb),
-      crowdType,
-      traps,
-      dominantTrap: traps.sort((a,b)=>b.confidence-a.confidence)[0] || null,
-    };
-  }
+export const TOAST_DURATION  = 6_000;  // ms
+export const TOAST_MAX       = 3;
+export const NOTIF_MAX       = 200;
 
-  function renderUI(result, panelId='crowdPanel') {
-    const el = document.getElementById(panelId);
-    if (!el) return;
-    const { crowdRisk:cr, trapProb:tp, crowdType:ct, traps, dominantTrap:dt } = result;
+export const STORAGE_KEYS = {
+  TRADE_MEMORY:    'vd_trade_memory',
+  TOAST_ENABLED:   'vd_toast_enabled',
+  NOTIF_STORE:     'vd_notifications',
+  USER_PREFS:      'vd_user_prefs',
+};
 
-    const crCol = cr>=70?'var(--red)':cr>=50?'var(--orange)':cr>=30?'var(--yellow)':'var(--green)';
-    const tpCol = tp>=70?'var(--red)':tp>=50?'var(--orange)':tp>=30?'var(--yellow)':'var(--green)';
+export const CONFIRMATION_WEIGHTS = {
+  ema_full:     12,
+  macd:         10,
+  rsi:           8,
+  volume:       10,
+  btc:           8,
+  rr:           10,
+  smc:           8,
+  no_fake:      10,
+  regime:        8,
+  ob_imbalance:  8,
+  funding:       8,
+};
 
-    const trapsHtml = traps.map(t=>`
-      <div style="padding:6px 10px;background:rgba(0,0,0,.2);border-left:3px solid ${t.col};border-radius:0 7px 7px 0;margin-bottom:5px">
-        <div style="font-size:10px;font-weight:700;color:${t.col}">🪤 ${t.type.replace(/_/g,' ')}</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:2px">${t.desc}</div>
-        <div style="font-size:9px;color:var(--cyan);margin-top:2px">→ ${t.action}</div>
-      </div>`).join('');
-
-    el.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">CROWD RİSKİ</div>
-          <div style="font-size:20px;font-weight:800;color:${crCol}">${cr}%</div>
-        </div>
-        <div style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">TUZAK OLASILIK</div>
-          <div style="font-size:20px;font-weight:800;color:${tpCol}">${tp}%</div>
-        </div>
-      </div>
-      <div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:6px">
-        Kalabalık Tipi: <span style="color:${cr>=50?crCol:'var(--text2)'}">${ct.replace(/_/g,' ')}</span>
-      </div>
-      ${trapsHtml || '<div style="font-size:10px;color:var(--text3)">Aktif tuzak sinyali yok</div>'}
-    `;
-  }
-
-  return { analyze, renderUI };
-})();
+export const SETUP_GRADES = {
+  S: { stars: '⭐⭐⭐', label: 'ELITE SETUP',      color: '#b39dfa', bg: 'rgba(157,125,250,.2)' },
+  A: { stars: '⭐⭐',  label: 'STRONG SETUP',     color: 'var(--green)', bg: 'rgba(0,229,160,.12)' },
+  B: { stars: '⭐',   label: 'CONFIRMED SETUP',  color: 'var(--yellow)', bg: 'rgba(255,193,7,.1)' },
+  C: { stars: '⚡',   label: 'AGGRESSIVE ENTRY', color: 'var(--orange)', bg: 'rgba(255,122,0,.1)' },
+  D: { stars: '○',    label: 'WEAK SETUP',        color: 'var(--text3)', bg: 'rgba(255,255,255,.05)' },
+};

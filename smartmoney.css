@@ -1,113 +1,177 @@
 // ═══════════════════════════════════════════════
-// BINANCE SERVICE — Tüm Binance API çağrıları
-// UI ve engine'lerden tamamen bağımsız
+// SUPABASE SERVICE — Auth + Database
+// signals ve ai_weights tablolarını yönetir
 // ═══════════════════════════════════════════════
-import { API } from '../modules/constants.js';
 
-class BinanceService {
-  constructor() {
-    this._cache    = new Map();
-    this._cacheTTL = 5000; // 5 saniye cache
+const SupabaseDB = (() => {
+
+  const URL = 'https://affgbrpwuikpqgsapuvh.supabase.co';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZmdicnB3dWlrcHFnc2FwdXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzA4MDAsImV4cCI6MjA5NDcwNjgwMH0.8o0msNt9OQXJMbfLm8L0ipzPghCrAcvx1wKXBGT36Ds';
+
+  const HEADERS = {
+    'Content-Type' : 'application/json',
+    'apikey'       : KEY,
+    'Authorization': 'Bearer ' + KEY,
+    'Prefer'       : 'return=representation',
+  };
+
+  // ── Temel CRUD ────────────────────────────────
+  async function _insert(table, data) {
+    try {
+      const r = await fetch(`${URL}/rest/v1/${table}`, {
+        method:  'POST',
+        headers: HEADERS,
+        body:    JSON.stringify(data),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch(e) { console.warn(`DB insert ${table}:`, e.message); return null; }
   }
 
-  async _fetch(url, useCache = true) {
-    if (useCache && this._cache.has(url)) {
-      const { data, ts } = this._cache.get(url);
-      if (Date.now() - ts < this._cacheTTL) return data;
+  async function _update(table, data, filter) {
+    try {
+      const r = await fetch(`${URL}/rest/v1/${table}?${filter}`, {
+        method:  'PATCH',
+        headers: HEADERS,
+        body:    JSON.stringify(data),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch(e) { console.warn(`DB update ${table}:`, e.message); return null; }
+  }
+
+  async function _select(table, filter = '', limit = 100) {
+    try {
+      const r = await fetch(`${URL}/rest/v1/${table}?${filter}&limit=${limit}`, {
+        headers: { ...HEADERS, 'Prefer': 'return=representation' },
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch(e) { console.warn(`DB select ${table}:`, e.message); return []; }
+  }
+
+  // ── SIGNALS TABLOSU ──────────────────────────
+
+  // Yeni sinyal kaydet
+  async function saveSignal(sig) {
+    return _insert('signals', {
+      sym:           sig.sym,
+      direction:     sig.direction,
+      entry:         sig.entry || null,
+      confidence:    sig.confidence || null,
+      funding:       sig.funding || null,
+      oi:            sig.oi || null,
+      ls_ratio:      sig.lsRatio || null,
+      squeeze_risk:  sig.squeezeRisk || 0,
+      crowd_risk:    sig.crowdRisk || 0,
+      liq_pressure:  sig.liqPressure || 0,
+      regime:        sig.regime || 'UNKNOWN',
+      smc_structure: sig.smcStructure || null,
+      tp:            sig.tp || null,
+      sl:            sig.sl || null,
+      status:        'OPEN',
+      open_ts:       Date.now(),
+    });
+  }
+
+  // Sinyal sonucunu güncelle
+  async function closeSignal(id, { status, pnl, durationMin }) {
+    return _update('signals', {
+      status,
+      pnl:          pnl || null,
+      duration_min: durationMin || null,
+      close_ts:     Date.now(),
+    }, `id=eq.${id}`);
+  }
+
+  // Son sinyalleri getir
+  async function getSignals(limit = 50) {
+    return _select('signals', 'order=created_at.desc', limit);
+  }
+
+  // Açık sinyalleri getir
+  async function getOpenSignals() {
+    return _select('signals', 'status=eq.OPEN&order=created_at.desc', 100);
+  }
+
+  // İstatistik hesapla
+  async function getStats() {
+    const signals = await _select('signals', 'status=neq.OPEN&order=created_at.desc', 500);
+    if (!signals.length) return null;
+
+    const wins   = signals.filter(s => s.status === 'TP_HIT').length;
+    const total  = signals.length;
+    const wr     = (wins / total * 100).toFixed(1);
+    const pnls   = signals.filter(s => s.pnl !== null).map(s => +s.pnl);
+    const avgPnl = pnls.length ? (pnls.reduce((a,b)=>a+b,0)/pnls.length).toFixed(2) : null;
+
+    // Regime bazlı
+    const byRegime = {};
+    signals.forEach(s => {
+      if (!byRegime[s.regime]) byRegime[s.regime] = { wins:0, total:0 };
+      byRegime[s.regime].total++;
+      if (s.status === 'TP_HIT') byRegime[s.regime].wins++;
+    });
+
+    return { total, wins, wr, avgPnl, byRegime };
+  }
+
+  // ── AI_WEIGHTS TABLOSU ───────────────────────
+
+  // Ağırlıkları Supabase'den yükle
+  async function loadWeights() {
+    const rows = await _select('ai_weights', '', 50);
+    if (!rows.length) return null;
+    const w = {};
+    rows.forEach(r => { w[r.indicator] = +r.weight; });
+    return w;
+  }
+
+  // Ağırlığı güncelle
+  async function updateWeight(indicator, weight, win) {
+    // Önce var mı kontrol et
+    const existing = await _select('ai_weights', `indicator=eq.${indicator}`, 1);
+
+    if (existing.length) {
+      return _update('ai_weights', {
+        weight,
+        win_count:  win ? existing[0].win_count + 1 : existing[0].win_count,
+        loss_count: win ? existing[0].loss_count : existing[0].loss_count + 1,
+        updated_at: new Date().toISOString(),
+      }, `indicator=eq.${indicator}`);
+    } else {
+      return _insert('ai_weights', {
+        indicator,
+        weight,
+        win_count:  win ? 1 : 0,
+        loss_count: win ? 0 : 1,
+      });
     }
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    if (data?.code && +data.code < 0) throw new Error(data.msg || 'API hatası');
-    if (useCache) this._cache.set(url, { data, ts: Date.now() });
-    return data;
   }
 
-  // Kline (mum) verisi
-  async getKlines(sym, interval = '15m', limit = 200) {
-    return this._fetch(`${API.FBASE}/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=${limit}`);
+  // Tüm ağırlıkları toplu güncelle
+  async function saveWeights(weightsObj) {
+    const promises = Object.entries(weightsObj).map(([k, v]) =>
+      updateWeight(k, v, null)
+    );
+    return Promise.allSettled(promises);
   }
 
-  // 24hr ticker
-  async getTicker24h(sym = null) {
-    const url = sym
-      ? `${API.FBASE}/fapi/v1/ticker/24hr?symbol=${sym}`
-      : `${API.FBASE}/fapi/v1/ticker/24hr`;
-    return this._fetch(url, !sym); // Tek sembol cache'leme
+  // ── AUTH (mevcut) ────────────────────────────
+  async function verifyCode(kod) {
+    const r = await fetch(`${URL}/functions/v1/verify-code`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ kod }),
+    });
+    if (!r.ok) throw new Error('Sunucu hatası');
+    return r.json();
   }
 
-  // Open Interest
-  async getOpenInterest(sym) {
-    try {
-      const [oi, hist] = await Promise.all([
-        this._fetch(`${API.FBASE}/fapi/v1/openInterest?symbol=${sym}`, false),
-        this._fetch(`${API.FBASE}/futures/data/openInterestHist?symbol=${sym}&period=5m&limit=2`, false),
-      ]);
-      const cur  = +oi.openInterest;
-      const prev = hist.length >= 2 ? +hist[0].sumOpenInterest : cur;
-      return {
-        oi:       cur,
-        oiChange: prev > 0 ? ((cur - prev) / prev * 100).toFixed(2) : null,
-      };
-    } catch { return { oi: null, oiChange: null }; }
-  }
+  return {
+    saveSignal, closeSignal, getSignals, getOpenSignals, getStats,
+    loadWeights, updateWeight, saveWeights,
+    verifyCode,
+  };
 
-  // Funding Rate
-  async getFundingRate(sym) {
-    try {
-      const data = await this._fetch(
-        `${API.FBASE}/fapi/v1/premiumIndex?symbol=${sym}`, false
-      );
-      return { fund: data?.lastFundingRate !== undefined ? +data.lastFundingRate * 100 : null };
-    } catch { return { fund: null }; }
-  }
-
-  // Long/Short Ratio
-  async getLSRatio(sym) {
-    try {
-      const data = await this._fetch(
-        `${API.FBASE}/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`, false
-      );
-      return { lsRatio: data?.[0] ? +data[0].longShortRatio : null };
-    } catch { return { lsRatio: null }; }
-  }
-
-  // OI + Funding + LS birleşik
-  async getMarketData(sym) {
-    const [oiData, fundData, lsData] = await Promise.all([
-      this.getOpenInterest(sym),
-      this.getFundingRate(sym),
-      this.getLSRatio(sym),
-    ]);
-    return { ...oiData, ...fundData, ...lsData };
-  }
-
-  // Futures sembol listesi
-  async getFuturesSymbols() {
-    try {
-      const data = await this._fetch(`${API.FBASE}/fapi/v1/exchangeInfo`);
-      return data.symbols
-        .filter(s => s.status === 'TRADING' && s.symbol.endsWith('USDT'))
-        .map(s => s.symbol);
-    } catch { return []; }
-  }
-
-  // Top 100 hacker coin (hacme göre)
-  async getTopSymbols(limit = 100) {
-    try {
-      const tickers = await this._fetch(`${API.FBASE}/fapi/v1/ticker/24hr`);
-      return tickers
-        .filter(t => t.symbol.endsWith('USDT'))
-        .sort((a, b) => +b.quoteVolume - +a.quoteVolume)
-        .slice(0, limit)
-        .map(t => t.symbol);
-    } catch { return []; }
-  }
-
-  // Cache temizle
-  clearCache() {
-    this._cache.clear();
-  }
-}
-
-export const Binance = new BinanceService();
+})();

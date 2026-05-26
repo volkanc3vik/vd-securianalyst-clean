@@ -1,262 +1,390 @@
 // ════════════════════════════════════════════════════════════════════
-// LEARNING ENGINE — Adaptif ağırlıklar, sonuç takibi
+// TI SETUP SCORER — 13-faktör ağırlıklı setup kalite skoru
+//
+// Felsefe:
+//   - ELITE için 90+ skor + en az 3 faktör 8+/10
+//   - Veri yoksa o faktör skordan ÇIKARILIR (fake fallback yok)
+//   - FBR negatif faktör — yüksek skor cezalandırır
+//
+// API: score(ctx) → { sym, dir, score, tier, factors, ... }
 // ════════════════════════════════════════════════════════════════════
-const LearningEngine = (() => {
+window.TISetupScorer = (() => {
+  'use strict';
 
-  const STORAGE_KEY = 'vd_learning_v1';
-  const SIG_KEY     = 'vd_signals_v1';
+  const _num = (v) => Number.isFinite(+v) ? +v : 0;
 
-  // Varsayılan ağırlıklar
-  const DEFAULT_WEIGHTS = {
-    ema:          1.0,
-    macd:         1.0,
-    rsi:          1.0,
-    volume:       1.0,
-    funding:      1.0,
-    oi:           1.0,
-    lsRatio:      1.0,
-    squeeze:      1.0,
-    crowd:        1.0,
-    liquidation:  1.0,
-    smc:          1.0,
-    regime:       1.0,
-    orderflow:    1.0,
+  const FACTOR_DEFS = [
+    { code: 'STRUCTURE',  label: 'Market Structure',     weight: 12 },
+    { code: 'LIQUIDITY',  label: 'Liquidity Behavior',   weight: 11 },
+    { code: 'FUNDING',    label: 'Funding Health',       weight: 8  },
+    { code: 'OI',         label: 'Open Interest',        weight: 9  },
+    { code: 'LIQS',       label: 'Liquidation Position', weight: 9  },
+    { code: 'VOLUME',     label: 'Volume Confirmation',  weight: 8  },
+    { code: 'VOLATILITY', label: 'Volatility Quality',   weight: 7  },
+    { code: 'MOMENTUM',   label: 'Momentum Health',      weight: 8  },
+    { code: 'HTF',        label: 'HTF Alignment',        weight: 9  },
+    { code: 'SMC',        label: 'SMC Confirmations',    weight: 8  },
+    { code: 'TREND',      label: 'Trend Alignment',      weight: 6  },
+    { code: 'FBR',        label: 'Fake Breakout Risk',   weight: 10, negative: true },
+    { code: 'RR',         label: 'Risk/Reward Quality',  weight: 5  },
+  ];
+
+  // ── Faktör değerlendiriciler ─────────────────────────────────────
+  function _structure(ctx) {
+    const smc = ctx.smcData;
+    if (!smc) return { available: false };
+    let s = 5;
+    if (smc.bos)   s += 2;
+    if (smc.choch) s += 1;
+    if (smc.structure === 'BULLISH' && ctx.dir === 'LONG')  s += 2;
+    if (smc.structure === 'BEARISH' && ctx.dir === 'SHORT') s += 2;
+    return { available: true, score: Math.max(0, Math.min(10, s)) };
+  }
+
+  function _liquidity(ctx) {
+    const smc = ctx.smcData;
+    if (!smc) return { available: false };
+    let s = 4;
+    if (smc.liquiditySweep) s += 3;
+    if (smc.equalHighs || smc.equalLows) s += 1;
+    if (smc.orderBlock) s += 2;
+    return { available: true, score: Math.max(0, Math.min(10, s)) };
+  }
+
+  function _funding(ctx) {
+    const f = ctx.funding;
+    if (!f || !Number.isFinite(+f.rate)) return { available: false };
+    const r = +f.rate;
+    const absR = Math.abs(r);
+    let s;
+    if (absR < 0.01)      s = 9;
+    else if (absR < 0.03) s = 7;
+    else if (absR < 0.05) s = 4;
+    else                  s = 1;
+    if (ctx.dir === 'LONG'  && r > 0.03)  s = Math.max(0, s - 2);
+    if (ctx.dir === 'SHORT' && r < -0.03) s = Math.max(0, s - 2);
+    return { available: true, score: s };
+  }
+
+  function _oi(ctx) {
+    const oi = ctx.oi;
+    if (!oi) return { available: false };
+    const chg = _num(oi.change24h) || _num(oi.changePercent);
+    const closes = ctx.closes;
+    if (!closes || closes.length < 5) return { available: false };
+    const priceChg = (closes[closes.length-1] - closes[closes.length-5]) / closes[closes.length-5];
+    const isLong = ctx.dir === 'LONG';
+
+    if (isLong  && priceChg > 0 && chg > 0)   return { available: true, score: 9 };
+    if (!isLong && priceChg < 0 && chg > 0)   return { available: true, score: 9 };
+    if (isLong  && priceChg > 0 && chg < 0)   return { available: true, score: 4 };
+    if (!isLong && priceChg < 0 && chg < 0)   return { available: true, score: 4 };
+    return { available: true, score: 6 };
+  }
+
+  function _liqs(ctx) {
+    if (typeof window.LiquidationEngine === 'undefined') return { available: false };
+    try {
+      const recent = window.LiquidationEngine.getRecentStats?.();
+      if (!recent) return { available: false };
+      const longL  = _num(recent.longLiqs || recent.longs);
+      const shortL = _num(recent.shortLiqs || recent.shorts);
+      const total  = longL + shortL;
+      if (total === 0) return { available: false };
+      const longRatio = longL / total;
+      const isLong = ctx.dir === 'LONG';
+      if (isLong) {
+        if (longRatio < 0.3) return { available: true, score: 9 };
+        if (longRatio > 0.7) return { available: true, score: 7 };
+        return { available: true, score: 5 };
+      } else {
+        if (longRatio > 0.7) return { available: true, score: 9 };
+        if (longRatio < 0.3) return { available: true, score: 7 };
+        return { available: true, score: 5 };
+      }
+    } catch { return { available: false }; }
+  }
+
+  function _volume(ctx) {
+    const candles = ctx.candles;
+    if (!candles || candles.length < 20) return { available: false };
+    const recent = candles.slice(-5).map(c => +c.v || 0);
+    const baseline = candles.slice(-20, -5).map(c => +c.v || 0);
+    const avgRecent = recent.reduce((a,b) => a+b, 0) / recent.length;
+    const avgBase   = baseline.reduce((a,b) => a+b, 0) / baseline.length;
+    if (avgBase === 0) return { available: false };
+    const ratio = avgRecent / avgBase;
+    let s;
+    if (ratio > 1.5)      s = 9;
+    else if (ratio > 1.2) s = 7;
+    else if (ratio > 0.9) s = 5;
+    else                  s = 3;
+    return { available: true, score: s };
+  }
+
+  function _volatility(ctx) {
+    const ind = ctx.ind;
+    if (!ind || !ind.atr || !ctx.closes) return { available: false };
+    const last = ctx.closes[ctx.closes.length - 1];
+    if (!last) return { available: false };
+    const atrPct = ind.atr / last * 100;
+    let s;
+    if (atrPct < 0.4)      s = 3;
+    else if (atrPct < 1.2) s = 9;
+    else if (atrPct < 2.5) s = 6;
+    else                    s = 3;
+    return { available: true, score: s };
+  }
+
+  function _momentum(ctx) {
+    const ind = ctx.ind;
+    if (!ind) return { available: false };
+    const rsi = ind.rsi;
+    if (!Number.isFinite(rsi)) return { available: false };
+    const isLong = ctx.dir === 'LONG';
+    let s = 5;
+
+    if (isLong) {
+      if (rsi > 70)      s = 3;
+      else if (rsi > 55) s = 8;
+      else if (rsi > 45) s = 7;
+      else if (rsi > 30) s = 5;
+      else               s = 4;
+    } else {
+      if (rsi < 30)      s = 3;
+      else if (rsi < 45) s = 8;
+      else if (rsi < 55) s = 7;
+      else if (rsi < 70) s = 5;
+      else               s = 4;
+    }
+
+    if (ind.macd?.histogram > 0 && isLong)  s = Math.min(10, s + 1);
+    if (ind.macd?.histogram < 0 && !isLong) s = Math.min(10, s + 1);
+    if (ind.macd?.histogram < 0 && isLong)  s = Math.max(0, s - 1);
+    if (ind.macd?.histogram > 0 && !isLong) s = Math.max(0, s - 1);
+
+    return { available: true, score: s };
+  }
+
+  function _htf(ctx) {
+    const ind = ctx.ind;
+    if (!ind) return { available: false };
+    const e9  = ind.ema9  || ind.e9;
+    const e21 = ind.ema21 || ind.e21;
+    const e50 = ind.ema50 || ind.e50;
+    if (!e9 || !e21 || !e50) return { available: false };
+    const isLong = ctx.dir === 'LONG';
+
+    let s = 5;
+    if (isLong) {
+      if (e9 > e21 && e21 > e50)      s = 9;
+      else if (e9 > e21 || e21 > e50) s = 6;
+      else                             s = 3;
+    } else {
+      if (e9 < e21 && e21 < e50)      s = 9;
+      else if (e9 < e21 || e21 < e50) s = 6;
+      else                             s = 3;
+    }
+    return { available: true, score: s };
+  }
+
+  function _smc(ctx) {
+    const smc = ctx.smcData;
+    if (!smc) return { available: false };
+    let s = 4;
+    if (smc.orderBlock)    s += 2;
+    if (smc.fvg)           s += 2;
+    if (smc.breakerBlock)  s += 1;
+    if (smc.confluence >= 2) s += 2;
+    return { available: true, score: Math.max(0, Math.min(10, s)) };
+  }
+
+  function _trendAlign(ctx) {
+    const ind = ctx.ind;
+    if (!ind) return { available: false };
+    const e21 = ind.ema21 || ind.e21;
+    const e50 = ind.ema50 || ind.e50;
+    if (!e21 || !e50 || !ctx.closes) return { available: false };
+    const last = ctx.closes[ctx.closes.length - 1];
+    const isLong = ctx.dir === 'LONG';
+
+    let s = 5;
+    if (isLong  && last > e21 && last > e50)       s = 9;
+    else if (!isLong && last < e21 && last < e50)  s = 9;
+    else if (isLong  && last > e50)                s = 7;
+    else if (!isLong && last < e50)                s = 7;
+    else                                            s = 3;
+    return { available: true, score: s };
+  }
+
+  function _fbr(ctx) {
+    if (typeof window.FBDetector !== 'undefined') {
+      try {
+        const fb = window.FBDetector.detect?.(ctx.candles, ctx.dir);
+        if (!fb) return { available: false };
+        return { available: true, score: Math.max(0, Math.min(10, (+fb.risk || 0) * 10)) };
+      } catch {}
+    }
+    // candle-bazlı fallback
+    if (!ctx.candles || ctx.candles.length < 5) return { available: false };
+    const c   = ctx.candles[ctx.candles.length - 1];
+    const range = c.h - c.l;
+    if (!range) return { available: false };
+    const body      = Math.abs(c.c - c.o);
+    const upperWick = c.h - Math.max(c.c, c.o);
+    const lowerWick = Math.min(c.c, c.o) - c.l;
+    let risk = 0;
+    if (ctx.dir === 'LONG'  && upperWick / range > 0.5) risk = 8;
+    if (ctx.dir === 'SHORT' && lowerWick / range > 0.5) risk = 8;
+    if (body / range < 0.3) risk = Math.max(risk, 5);
+    return { available: true, score: risk };
+  }
+
+  function _rr(ctx) {
+    const entry = +ctx.entry, sl = +ctx.sl, tp = +ctx.tp1;
+    if (!entry || !sl || !tp) return { available: false };
+    const risk   = Math.abs(entry - sl);
+    const reward = Math.abs(tp - entry);
+    if (risk <= 0) return { available: false };
+    const rr = reward / risk;
+    let s;
+    if (rr >= 3)      s = 10;
+    else if (rr >= 2) s = 8;
+    else if (rr >= 1.5) s = 6;
+    else if (rr >= 1) s = 4;
+    else              s = 2;
+    return { available: true, score: s };
+  }
+
+  const _evaluators = {
+    STRUCTURE: _structure, LIQUIDITY: _liquidity, FUNDING: _funding,
+    OI: _oi, LIQS: _liqs, VOLUME: _volume, VOLATILITY: _volatility,
+    MOMENTUM: _momentum, HTF: _htf, SMC: _smc, TREND: _trendAlign,
+    FBR: _fbr, RR: _rr,
   };
 
-  const BOUNDS = { min: 0.3, max: 2.5 };
-  const LEARN_RATE = 0.08; // Her sonuçta %8 güncelle
-
-  // ── Load/Save — localStorage + Supabase sync ────────────────────
-  function _loadWeights() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || { ...DEFAULT_WEIGHTS }; }
-    catch { return { ...DEFAULT_WEIGHTS }; }
-  }
-  function _saveWeights(w) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(w)); } catch {}
-    // Supabase'e async sync
-    if (typeof SupabaseDB !== 'undefined') {
-      SupabaseDB.saveWeights(w).catch(() => {});
+  function _tierFor(score, factors) {
+    if (score >= 90) {
+      const strong = factors.filter(f => !f.negative && f.available && f.score >= 8).length;
+      if (strong >= 3) return { code: 'ELITE',  label: 'ELİTE SETUP',  color: 'purple' };
+      return                  { code: 'STRONG', label: 'GÜÇLÜ SETUP',  color: 'cyan' };
     }
-  }
-  function _loadSignals() {
-    try { return JSON.parse(localStorage.getItem(SIG_KEY) || '[]'); }
-    catch { return []; }
-  }
-  function _saveSignals(s) {
-    try { localStorage.setItem(SIG_KEY, JSON.stringify(s.slice(-300))); } catch {}
+    if (score >= 80) return { code: 'STRONG', label: 'GÜÇLÜ SETUP',     color: 'cyan' };
+    if (score >= 70) return { code: 'VALID',  label: 'GEÇERLİ SETUP',   color: 'green' };
+    if (score >= 60) return { code: 'WEAK',   label: 'ZAYIF SETUP',     color: 'yellow' };
+    return                  { code: 'AVOID',  label: 'KAÇIN',           color: 'red' };
   }
 
-  // Supabase'den ağırlıkları yükle (sayfa açılışında)
-  async function syncFromSupabase() {
-    if (typeof SupabaseDB === 'undefined') return;
-    try {
-      const w = await SupabaseDB.loadWeights();
-      if (w && Object.keys(w).length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(w));
-        console.log('✅ AI agirliklar Supabase\'den yuklendi');
+  /**
+   * Setup'ı skorla.
+   * @param {Object} ctx - { sym, dir, closes, candles, ind, entry, sl, tp1, tp2, tp3, smcData, funding, oi }
+   */
+  function score(ctx) {
+    if (!ctx || !ctx.dir) return null;
+
+    const factors = [];
+    const missing = [];
+
+    for (const def of FACTOR_DEFS) {
+      const fn = _evaluators[def.code];
+      const r  = fn ? fn(ctx) : { available: false };
+
+      if (!r || !r.available) {
+        missing.push(def.code);
+        factors.push({ code: def.code, label: def.label, weight: def.weight,
+                       available: false, score: null, negative: !!def.negative });
+        continue;
       }
-    } catch(e) {}
-  }
 
-  // ── Sinyal Kaydet ─────────────────────────────────────────────────
-  function recordSignal({ sym, dir, entry, confidence, fund, oi, lsRatio,
-                          liquidationPressure, squeezeRisk, crowdRisk,
-                          regime, smcStructure, tp, sl }) {
-    const signals = _loadSignals();
-    const signal  = {
-      id:        Date.now(),
-      sym, dir, entry, confidence,
-      fund:      fund ?? null,
-      oi:        oi ?? null,
-      lsRatio:   lsRatio ?? null,
-      liquidationPressure: liquidationPressure ?? 0,
-      squeezeRisk:         squeezeRisk ?? 0,
-      crowdRisk:           crowdRisk ?? 0,
-      regime:    regime || 'UNKNOWN',
-      smcStructure: smcStructure || {},
-      tp, sl,
-      status:   'OPEN',    // OPEN | TP_HIT | SL_HIT | EXPIRED
-      pnl:       null,
-      duration:  null,
-      openTs:    Date.now(),
-      closeTs:   null,
-    };
-    signals.unshift(signal);
-    _saveSignals(signals);
-
-    // Supabase'e kaydet
-    if (typeof SupabaseDB !== 'undefined') {
-      SupabaseDB.saveSignal({
-        sym:          signal.sym,
-        direction:    signal.dir,
-        entry:        signal.entry,
-        confidence:   signal.confidence,
-        funding:      signal.fund,
-        oi:           signal.oi,
-        lsRatio:      signal.lsRatio,
-        squeezeRisk:  signal.squeezeRisk,
-        crowdRisk:    signal.crowdRisk,
-        liqPressure:  signal.liquidationPressure,
-        regime:       signal.regime,
-        smcStructure: signal.smcStructure,
-        tp:           signal.tp,
-        sl:           signal.sl,
-      }).then(rows => {
-        // Supabase ID'sini sakla
-        if (rows && rows[0]) signal._supabaseId = rows[0].id;
-      }).catch(() => {});
+      const s = Math.max(0, Math.min(10, +r.score || 0));
+      factors.push({ code: def.code, label: def.label, weight: def.weight,
+                     available: true, score: s, negative: !!def.negative });
     }
 
-    return signal.id;
-  }
+    // Normalize: pozitif faktörlerin ağırlıklı yüzdesi - FBR cezası
+    const positiveFactors = factors.filter(f => f.available && !f.negative);
+    const positiveWeightTotal = positiveFactors.reduce((s, f) => s + f.weight, 0);
+    const positiveScore       = positiveFactors.reduce((s, f) => s + (f.score / 10) * f.weight, 0);
 
-  // ── Sonuç Güncelle ────────────────────────────────────────────────
-  function closeSignal(id, { status, pnl, closePrice }) {
-    const signals = _loadSignals();
-    const sig     = signals.find(s => s.id === id);
-    if (!sig) return;
-
-    sig.status   = status;  // TP_HIT | SL_HIT | EXPIRED
-    sig.pnl      = pnl ?? null;
-    sig.closeTs  = Date.now();
-    sig.duration = Math.round((sig.closeTs - sig.openTs) / 60000); // dakika
-    _saveSignals(signals);
-
-    // Ağırlıkları güncelle
-    _updateWeights(sig);
-    return sig;
-  }
-
-  // ── Adaptif Ağırlık Güncelleme ────────────────────────────────────
-  function _updateWeights(sig) {
-    const weights = _loadWeights();
-    const success = sig.status === 'TP_HIT';
-    const fake    = sig.smcStructure?.fakeBreak === true;
-    const dir     = success ? 1 : -1;
-
-    // Başarılı sinyal → kullanılan indikatörlerin ağırlığını artır
-    // Başarısız sinyal → azalt
-    const updates = {};
-
-    // Squeeze başarısıysa squeeze ağırlığını artır
-    if (sig.squeezeRisk > 50) updates.squeeze = dir * LEARN_RATE * 1.5;
-
-    // Crowd riski doğru tahmin ettiyse artır
-    if (sig.crowdRisk > 50) updates.crowd = dir * LEARN_RATE;
-
-    // Likidasyon baskısı yüksekse
-    if (sig.liquidationPressure > 60) updates.liquidation = dir * LEARN_RATE;
-
-    // Funding doğru yöndeydiyse
-    if (sig.fund !== null) {
-      const fundCorrect = (sig.dir==='LONG' && sig.fund<0) || (sig.dir==='SHORT' && sig.fund>0);
-      updates.funding = fundCorrect ? LEARN_RATE * (success?1:-0.5) : -LEARN_RATE * 0.5;
+    let finalScore = 0;
+    if (positiveWeightTotal > 0) {
+      finalScore = (positiveScore / positiveWeightTotal) * 100;
+      const negativeContribution = factors
+        .filter(f => f.available && f.negative)
+        .reduce((s, f) => s + (f.score / 10) * f.weight, 0);
+      const fbrPenalty = Math.min(15, negativeContribution);
+      finalScore = Math.max(0, finalScore - fbrPenalty);
     }
 
-    // Fake breakout öğrenme — negatif
-    if (fake && !success) {
-      updates.smc = -LEARN_RATE * 1.5;
-    }
-
-    // Regime doğru tahminse
-    updates.regime = dir * LEARN_RATE * 0.5;
-
-    // Ağırlıkları uygula ve sınırlar içinde tut
-    Object.entries(updates).forEach(([k, delta]) => {
-      if (weights[k] !== undefined) {
-        weights[k] = Math.max(BOUNDS.min, Math.min(BOUNDS.max, weights[k] + delta));
-      }
-    });
-
-    _saveWeights(weights);
-    return weights;
-  }
-
-  // ── Mevcut Ağırlıkları Al ─────────────────────────────────────────
-  function getWeights() { return _loadWeights(); }
-
-  // ── İstatistikler ─────────────────────────────────────────────────
-  function getStats() {
-    const signals = _loadSignals();
-    const closed  = signals.filter(s => s.status !== 'OPEN');
-    if (!closed.length) return null;
-
-    const wins    = closed.filter(s => s.status === 'TP_HIT').length;
-    const wr      = (wins / closed.length * 100).toFixed(1);
-    const avgPnl  = (closed.filter(s=>s.pnl!==null).reduce((a,s)=>a+s.pnl,0) / closed.length).toFixed(2);
-
-    // Regime bazlı winrate
-    const byRegime = {};
-    closed.forEach(s => {
-      if (!byRegime[s.regime]) byRegime[s.regime] = { wins:0, total:0 };
-      byRegime[s.regime].total++;
-      if (s.status === 'TP_HIT') byRegime[s.regime].wins++;
-    });
-
-    // Squeeze başarı oranı
-    const squeezeSigs = closed.filter(s => s.squeezeRisk > 50);
-    const squeezeWR   = squeezeSigs.length
-      ? (squeezeSigs.filter(s=>s.status==='TP_HIT').length / squeezeSigs.length * 100).toFixed(1)
-      : null;
+    finalScore = Math.round(finalScore);
+    const tier = _tierFor(finalScore, factors);
+    const rationale = _buildRationale(ctx.sym, ctx.dir, factors, tier);
 
     return {
-      total: closed.length, wins, wr, avgPnl, byRegime, squeezeWR,
-      openCount: signals.filter(s=>s.status==='OPEN').length,
+      sym:            ctx.sym,
+      dir:            ctx.dir,
+      score:          finalScore,
+      tier,
+      factors,
+      rationale,
+      availableCount: factors.filter(f => f.available).length,
+      missingFactors: missing,
+      entry: ctx.entry, sl: ctx.sl, tp1: ctx.tp1, tp2: ctx.tp2, tp3: ctx.tp3,
+      price: ctx.closes ? ctx.closes[ctx.closes.length - 1] : null,
     };
   }
 
-  // ── Ağırlık Sıfırla ───────────────────────────────────────────────
-  function resetWeights() {
-    _saveWeights({ ...DEFAULT_WEIGHTS });
-    return { ...DEFAULT_WEIGHTS };
+  // ── Why It's Strong — rationale sentezi ──────────────────────────
+  // En güçlü 3 pozitif faktörü tek profesyonel cümleye dönüştürür.
+  // FBR (negatif) skor yüksekse uyarı ekler.
+  function _buildRationale(sym, dir, factors, tier) {
+    if (!factors || tier?.code === 'AVOID' || tier?.code === 'WEAK') return null;
+
+    // Pozitif faktörleri skor'a göre sırala (FBR hariç)
+    const positives = factors
+      .filter(f => f.available && !f.negative && f.score >= 7)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    if (positives.length === 0) return null;
+
+    const phrases = positives.map(f => _shortPhrase(f.code)).filter(Boolean);
+    if (phrases.length === 0) return null;
+
+    // Doğal Türkçe birleşim
+    let combined;
+    if (phrases.length === 1) combined = phrases[0];
+    else if (phrases.length === 2) combined = phrases[0] + ' + ' + phrases[1];
+    else combined = phrases[0] + ', ' + phrases[1] + ' + ' + phrases[2];
+
+    let sentence = `${sym} ${combined} kombinasyonunu sergiliyor.`;
+
+    // FBR uyarısı (negatif faktör)
+    const fbr = factors.find(f => f.code === 'FBR');
+    if (fbr?.available && fbr.score >= 6) {
+      sentence += ' Ancak giriş mumunda fakeout işaretleri mevcut — dikkat.';
+    }
+
+    return sentence;
   }
 
-  // ── UI Render ─────────────────────────────────────────────────────
-  function renderUI(panelId='learningPanel') {
-    const el = document.getElementById(panelId);
-    if (!el) return;
-
-    const weights = _loadWeights();
-    const stats   = getStats();
-
-    const weightRows = Object.entries(weights).map(([k,v]) => {
-      const pct = ((v - BOUNDS.min) / (BOUNDS.max - BOUNDS.min) * 100).toFixed(0);
-      const col = v >= 1.3 ? 'var(--green)' : v <= 0.7 ? 'var(--red)' : 'var(--yellow)';
-      return `
-        <div style="display:flex;align-items:center;gap:8px;padding:3px 0">
-          <span style="font-size:9px;color:var(--text3);min-width:80px;text-transform:uppercase">${k}</span>
-          <div style="flex:1;height:5px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${col};border-radius:3px"></div>
-          </div>
-          <span style="font-size:10px;font-weight:700;color:${col};min-width:35px;text-align:right">${v.toFixed(2)}x</span>
-        </div>`;
-    }).join('');
-
-    const statsHtml = stats ? `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
-        <div style="background:rgba(0,0,0,.25);border-radius:7px;padding:6px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">TOPLAM</div>
-          <div style="font-size:16px;font-weight:800;color:var(--cyan)">${stats.total}</div>
-        </div>
-        <div style="background:rgba(0,0,0,.25);border-radius:7px;padding:6px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">WINRATE</div>
-          <div style="font-size:16px;font-weight:800;color:${+stats.wr>=55?'var(--green)':'var(--red)'}">%${stats.wr}</div>
-        </div>
-        <div style="background:rgba(0,0,0,.25);border-radius:7px;padding:6px;text-align:center">
-          <div style="font-size:9px;color:var(--text3)">ORT. PNL</div>
-          <div style="font-size:16px;font-weight:800;color:${+stats.avgPnl>=0?'var(--green)':'var(--red)'}">%${stats.avgPnl}</div>
-        </div>
-      </div>` : '<div style="font-size:10px;color:var(--text3);margin-bottom:10px">Henüz kapanan sinyal yok</div>';
-
-    el.innerHTML = `
-      ${statsHtml}
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ ADAPTİF AĞIRLIKLAR</div>
-      <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;margin-bottom:10px">${weightRows}</div>
-      <button onclick="LearningEngine.resetWeights();LearningEngine.renderUI('learningPanel')"
-        style="width:100%;padding:6px;background:rgba(255,61,107,.08);border:1px solid rgba(255,61,107,.25);border-radius:8px;color:var(--red);font-size:10px;cursor:pointer">
-        ↺ Ağırlıkları Sıfırla
-      </button>`;
+  function _shortPhrase(code) {
+    switch (code) {
+      case 'STRUCTURE':  return 'piyasa yapısı hizalaması';
+      case 'LIQUIDITY':  return 'likidite sweep konfirmasyonu';
+      case 'FUNDING':    return 'sağlıklı funding';
+      case 'OI':         return 'OI desteği';
+      case 'LIQS':       return 'likidasyon akışı lehte';
+      case 'VOLUME':     return 'hacim genişlemesi';
+      case 'VOLATILITY': return 'sağlıklı volatilite';
+      case 'MOMENTUM':   return 'güçlü momentum';
+      case 'HTF':        return 'HTF hizalama';
+      case 'SMC':        return 'SMC konfluans';
+      case 'TREND':      return 'trend hizalama';
+      case 'RR':         return 'premium R/R';
+      default:           return null;
+    }
   }
 
-  return { recordSignal, closeSignal, getWeights, getStats, resetWeights, renderUI, syncFromSupabase };
+  return { score, FACTOR_DEFS };
 })();
