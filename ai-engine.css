@@ -1,0 +1,637 @@
+/* ════════════════════════════════════════════════════════════════════
+   TRADING INTELLIGENCE PANEL — premium hedge fund dashboard estetiği
+   Minimal animasyon. Hiçbir parlaklık/glow gereksiz değil.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Ana container ─────────────────────────────────────────────── */
+.ti-panel {
+  background: linear-gradient(180deg, rgba(8, 14, 24, .92), rgba(4, 8, 14, .88));
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  margin: 12px 0 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ti-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, .25), transparent);
+}
+
+.ti-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, .05);
+}
+
+.ti-header-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+
+.ti-header-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: tiPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes tiPulse {
+  0%, 100% { opacity: 1;   box-shadow: 0 0 0 0 rgba(0, 229, 160, .5); }
+  50%      { opacity: .6;  box-shadow: 0 0 0 5px rgba(0, 229, 160, 0); }
+}
+
+.ti-header-meta {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--text3);
+  font-family: 'Courier New', monospace;
+  letter-spacing: .5px;
+}
+
+/* ── Grid layout ───────────────────────────────────────────────── */
+.ti-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.ti-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── Bölüm kartları (genel) ────────────────────────────────────── */
+.ti-card {
+  background: rgba(0, 0, 0, .25);
+  border: 1px solid rgba(255, 255, 255, .05);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.ti-card-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ti-card-label-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text3);
+}
+
+/* ── REGIME card ───────────────────────────────────────────────── */
+.ti-regime {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ti-regime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 24px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+
+.ti-regime-badge.green   { background: rgba(0, 229, 160, .12); color: var(--green);  border: 1px solid rgba(0, 229, 160, .35); }
+.ti-regime-badge.red     { background: rgba(255, 61, 107, .12); color: var(--red);    border: 1px solid rgba(255, 61, 107, .35); }
+.ti-regime-badge.orange  { background: rgba(255, 122, 0, .12); color: var(--orange); border: 1px solid rgba(255, 122, 0, .4); }
+.ti-regime-badge.yellow  { background: rgba(255, 193, 7, .1);  color: var(--yellow); border: 1px solid rgba(255, 193, 7, .35); }
+.ti-regime-badge.purple  { background: rgba(157, 125, 250, .12); color: var(--purple); border: 1px solid rgba(157, 125, 250, .4); }
+
+.ti-regime-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.ti-regime-summary {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* ── MM BIAS card ──────────────────────────────────────────────── */
+.ti-mm-headline {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.ti-mm-detail {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+.ti-mm-detail li {
+  list-style: none;
+  padding-left: 14px;
+  position: relative;
+  margin-top: 4px;
+}
+
+.ti-mm-detail li::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: var(--text3);
+}
+
+/* ── BTC / ETH card ────────────────────────────────────────────── */
+.ti-major {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ti-major-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ti-major-sym {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: .5px;
+}
+
+.ti-major-dir {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+
+.ti-major-dir.up   { background: rgba(0, 229, 160, .12); color: var(--green); }
+.ti-major-dir.down { background: rgba(255, 61, 107, .12); color: var(--red); }
+.ti-major-dir.flat { background: rgba(255, 255, 255, .05); color: var(--text3); }
+
+.ti-major-meta {
+  font-size: 9px;
+  color: var(--text3);
+  margin-left: auto;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ti-major-structure {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.ti-major-summary {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.ti-major-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.ti-major-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text3);
+}
+
+.ti-major-stat b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.ti-major-stat .mom-strong    { color: var(--green); }
+.ti-major-stat .mom-healthy   { color: var(--green); }
+.ti-major-stat .mom-building  { color: var(--cyan); }
+.ti-major-stat .mom-weakening { color: var(--orange); }
+.ti-major-stat .mom-exhausted { color: var(--red); }
+.ti-major-stat .mom-weak      { color: var(--text3); }
+
+.ti-major-stat .risk-low      { color: var(--green); }
+.ti-major-stat .risk-moderate { color: var(--yellow); }
+.ti-major-stat .risk-high     { color: var(--red); }
+
+.ti-major-vs {
+  font-size: 10px;
+  color: var(--cyan);
+  font-style: italic;
+  margin-top: 4px;
+  opacity: .85;
+}
+
+/* ── BEST SETUP card (hero) ────────────────────────────────────── */
+.ti-best {
+  position: relative;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.ti-best.tier-elite  { border-color: rgba(157, 125, 250, .4); }
+.ti-best.tier-strong { border-color: rgba(0, 212, 255, .35); }
+.ti-best.tier-valid  { border-color: rgba(0, 229, 160, .3); }
+
+.ti-best::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 0; right: 0;
+  height: 2px;
+  border-radius: 14px 14px 0 0;
+}
+
+.ti-best.tier-elite::before  { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+.ti-best.tier-strong::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+.ti-best.tier-valid::before  { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+
+.ti-best-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.ti-best-sym {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: .5px;
+}
+
+.ti-best-dir {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+.ti-best-dir.long  { background: rgba(0, 229, 160, .15); color: var(--green); border: 1px solid rgba(0, 229, 160, .4); }
+.ti-best-dir.short { background: rgba(255, 61, 107, .15); color: var(--red);   border: 1px solid rgba(255, 61, 107, .4); }
+
+.ti-best-score {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ti-best-score-num {
+  font-size: 22px;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+
+.ti-best.tier-elite  .ti-best-score-num { color: var(--purple); }
+.ti-best.tier-strong .ti-best-score-num { color: var(--cyan); }
+.ti-best.tier-valid  .ti-best-score-num { color: var(--green); }
+
+.ti-best-tier {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 3px 9px;
+  border-radius: 5px;
+}
+
+.ti-best.tier-elite  .ti-best-tier { background: rgba(157, 125, 250, .15); color: var(--purple); }
+.ti-best.tier-strong .ti-best-tier { background: rgba(0, 212, 255, .12);   color: var(--cyan); }
+.ti-best.tier-valid  .ti-best-tier { background: rgba(0, 229, 160, .12);   color: var(--green); }
+
+/* Maturity bar */
+.ti-mat-wrap {
+  margin-bottom: 14px;
+}
+
+.ti-mat-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.ti-mat-label b {
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.ti-mat-bar {
+  height: 5px;
+  background: rgba(255, 255, 255, .05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ti-mat-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  border-radius: 3px;
+  transition: width .4s cubic-bezier(.22, 1, .36, 1);
+}
+
+/* Confirmed list (✓ chips) */
+.ti-conf-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.ti-conf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(0, 229, 160, .08);
+  border: 1px solid rgba(0, 229, 160, .22);
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.ti-conf-chip::before {
+  content: '✓';
+  color: var(--green);
+  font-weight: 800;
+}
+
+/* Missing list — What Needs To Happen Next */
+.ti-needs {
+  padding: 10px 12px;
+  background: rgba(0, 212, 255, .04);
+  border: 1px solid rgba(0, 212, 255, .15);
+  border-left-width: 2px;
+  border-left-color: var(--cyan);
+  border-radius: 8px;
+}
+
+.ti-needs-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ti-needs-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ti-needs-list li {
+  font-size: 11px;
+  color: var(--text2);
+  padding: 3px 0 3px 14px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.ti-needs-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+/* Setup levels (entry/sl/tp) — kompakt */
+.ti-best-levels {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, .05);
+  font-size: 10px;
+}
+
+.ti-best-level {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ti-best-level-label {
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 8px;
+}
+
+.ti-best-level-val {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.ti-best-level-val.entry { color: var(--text); }
+.ti-best-level-val.sl    { color: var(--red); }
+.ti-best-level-val.tp1   { color: var(--green); }
+.ti-best-level-val.tp2   { color: var(--cyan); }
+
+/* ── WATCHLIST ─────────────────────────────────────────────────── */
+.ti-watch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ti-watch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  background: rgba(0, 0, 0, .22);
+  border: 1px solid rgba(255, 255, 255, .04);
+  border-radius: 8px;
+}
+
+.ti-watch-sym {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  min-width: 80px;
+}
+
+.ti-watch-dir {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.ti-watch-dir.long  { background: rgba(0, 229, 160, .1);  color: var(--green); }
+.ti-watch-dir.short { background: rgba(255, 61, 107, .1); color: var(--red); }
+
+.ti-watch-tier {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text2);
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.ti-watch-score {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'Courier New', monospace;
+  color: var(--text);
+}
+
+.ti-watch-mat {
+  font-size: 10px;
+  color: var(--text3);
+  font-family: 'Courier New', monospace;
+  min-width: 50px;
+  text-align: right;
+}
+
+/* ── WARNINGS ──────────────────────────────────────────────────── */
+.ti-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ti-warn-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ti-warn-row.high {
+  background: rgba(255, 61, 107, .06);
+  border: 1px solid rgba(255, 61, 107, .2);
+  color: var(--text);
+}
+.ti-warn-row.med {
+  background: rgba(255, 122, 0, .05);
+  border: 1px solid rgba(255, 122, 0, .2);
+  color: var(--text);
+}
+.ti-warn-row.low {
+  background: rgba(255, 193, 7, .04);
+  border: 1px solid rgba(255, 193, 7, .15);
+  color: var(--text2);
+}
+
+.ti-warn-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.ti-warn-row.high .ti-warn-icon { color: var(--red); }
+.ti-warn-row.med  .ti-warn-icon { color: var(--orange); }
+.ti-warn-row.low  .ti-warn-icon { color: var(--yellow); }
+
+/* ── EMPTY state ───────────────────────────────────────────────── */
+.ti-empty {
+  text-align: center;
+  padding: 22px 16px;
+  color: var(--text3);
+  font-size: 11px;
+}
+
+.ti-empty-title {
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* ── Source badges (footer) ────────────────────────────────────── */
+.ti-sources {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  color: var(--text3);
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, .04);
+  letter-spacing: .5px;
+}
+
+.ti-source-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ti-source-dot i {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text3);
+}
+
+.ti-source-dot.active i { background: var(--green); box-shadow: 0 0 4px var(--green); }
+
+/* ── Mobile ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .ti-panel { padding: 14px 14px 12px; }
+  .ti-row-2 { grid-template-columns: 1fr; }
+  .ti-best-head { gap: 8px; }
+  .ti-best-score { margin-left: 0; width: 100%; justify-content: flex-end; }
+  .ti-best-score-num { font-size: 20px; }
+  .ti-best-levels { flex-wrap: wrap; }
+  .ti-watch-row { flex-wrap: wrap; gap: 8px; }
+  .ti-watch-mat { width: 100%; text-align: left; margin-top: 4px; }
+}
