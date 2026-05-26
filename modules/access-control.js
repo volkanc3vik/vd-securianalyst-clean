@@ -35,24 +35,10 @@
     }
   }
 
-  // Admin mode kontrolü — admin aktifse otomatik premium
-  function _checkAdminActive() {
-    try {
-      // 1) Direkt API kontrolü
-      if (window.TelegramUI?.AdminMode?.isActive?.()) return true;
-      // 2) Dispatcher'da admin key var mı
-      if (window.TelegramDispatcher?.hasAdminKey?.()) return true;
-    } catch (e) {}
-    return false;
-  }
-
   window.APP_ACCESS = {
-    // Admin aktifse VEYA preview flag varsa premium, yoksa free
-    mode: (_checkPremiumPreview() || _checkAdminActive()) ? 'premium' : 'free',
+    mode: _checkPremiumPreview() ? 'premium' : 'free',
     lockedSymbol: DEFAULT_SYMBOL,
     source: 'direct',
-    // Premium kaynağı (debug için): 'admin' | 'preview' | 'auth' | null
-    premiumSource: _checkAdminActive() ? 'admin' : (_checkPremiumPreview() ? 'preview' : null),
 
     isPremium() {
       return this.mode === 'premium';
@@ -66,19 +52,17 @@
     },
 
     // Premium mode'a geç (debug veya gelecek auth için)
-    setPremium(source) {
+    setPremium() {
       this.mode = 'premium';
-      this.premiumSource = source || 'manual';
       try {
         window.dispatchEvent(new CustomEvent('vd:access:changed', {
-          detail: { mode: 'premium', source: this.premiumSource }
+          detail: { mode: 'premium' }
         }));
       } catch (e) {}
     },
 
     setFree() {
       this.mode = 'free';
-      this.premiumSource = null;
       try {
         window.dispatchEvent(new CustomEvent('vd:access:changed', {
           detail: { mode: 'free' }
@@ -222,67 +206,12 @@
     _debug('symInput intercepted');
   }
 
-  // ── Admin mode değişikliği dinle (otomatik premium toggle) ───────
-  function _setupAdminListener() {
-    window.addEventListener('vd:telegram:admin', function(e) {
-      const isActive = !!(e?.detail?.active);
-      const currentSource = window.APP_ACCESS.premiumSource;
-
-      if (isActive) {
-        // Admin aktive oldu → premium aç
-        if (!window.APP_ACCESS.isPremium()) {
-          window.APP_ACCESS.setPremium('admin');
-          _debug('admin activated → premium mode ON');
-        }
-      } else {
-        // Admin kapandı → SADECE eğer premium kaynağı admin idiyse kapat
-        // (preview flag veya gerçek auth ile premium ise dokunma)
-        if (currentSource === 'admin') {
-          window.APP_ACCESS.setFree();
-          _debug('admin deactivated → premium mode OFF');
-        }
-      }
-    });
-    _debug('admin listener attached');
-  }
-
-  // ── İlk yüklemede admin state'i doğrula (timing güvencesi) ───────
-  // access-control.js, telegram-ui scripts'ten önce yüklenebilir.
-  // Birkaç gecikmeli kontrol ile admin state'i yakala.
-  function _verifyInitialAdminState(attempts) {
-    attempts = attempts || 0;
-    if (attempts > 20) return; // ~3sn sonra vazgeç
-
-    const isAdmin = _checkAdminActive();
-    if (isAdmin && !window.APP_ACCESS.isPremium()) {
-      window.APP_ACCESS.setPremium('admin');
-      _debug('initial admin detected → premium mode ON');
-      return;
-    }
-    if (!isAdmin && window.APP_ACCESS.premiumSource === 'admin') {
-      // Admin kapalı ama premium hâlâ açıksa düzelt
-      window.APP_ACCESS.setFree();
-      _debug('initial admin not detected → premium mode OFF');
-      return;
-    }
-    // Admin state belirsiz, biraz bekleyip tekrar dene
-    if (!window.TelegramUI?.AdminMode && !window.TelegramDispatcher) {
-      setTimeout(() => _verifyInitialAdminState(attempts + 1), 150);
-    }
-  }
-
   // ── Init ─────────────────────────────────────────────────────────
   function init() {
-    _debug('init', {
-      mode: window.APP_ACCESS.mode,
-      locked: window.APP_ACCESS.lockedSymbol,
-      premiumSource: window.APP_ACCESS.premiumSource,
-    });
+    _debug('init', { mode: window.APP_ACCESS.mode, locked: window.APP_ACCESS.lockedSymbol });
     _wrapOpenCoin();
     _interceptSignalGrids();
     _interceptSymInput();
-    _setupAdminListener();
-    _verifyInitialAdminState();
   }
 
   // DOMContentLoaded'da intercept et
