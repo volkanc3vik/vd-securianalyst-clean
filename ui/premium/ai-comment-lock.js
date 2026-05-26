@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// AI COMMENT LOCK (Mini-Aşama B.3-PREMIUM)
+// AI COMMENT LOCK (Mini-Aşama B.3-PREMIUM + B.3-MAINT)
 //
 // AI yorum bloklarını kısmi blur yapar:
 //   - İlk 2 cümle/satır AÇIK
@@ -7,10 +7,10 @@
 //   - SON cümle/satır AÇIK (intrigue pattern)
 //   - Altta premium bilgilendirme + buton
 //
-// Hedef bloklar:
-//   - #aiComment (ana AI yorum)
-//   - .ai-comment (CSS class, birden fazla yer)
+// Hedef bloklar (B.3-MAINT: selector daraltıldı):
+//   - #aiComment (ana AI yorum, ID-based)
 //   - .sc-ai-comment (signal/setup card AI yorum)
+//   (.ai-comment generic class'ı kaldırıldı — false-positive riski yok)
 //
 // İdempotency: data-vd-ai-locked marker
 //
@@ -20,13 +20,19 @@
 //   VDAICommentLock.refresh()
 //
 // Güvenlik: textContent ile parse, innerHTML YOK.
+// Defensive: blacklist guard (.ticker-wrap, .market-overview, header)
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
 
   const LOCKED_MARKER = 'data-vd-ai-locked';
   const ORIGINAL_TEXT_ATTR = 'data-vd-ai-original';
-  const TARGET_SELECTORS = '#aiComment, .ai-comment, .sc-ai-comment';
+  // B.3-MAINT: .ai-comment generic selector kaldırıldı.
+  // Sadece spesifik ID ve scoped class kullan.
+  const TARGET_SELECTORS = '#aiComment, .sc-ai-comment';
+  // Blacklist: bu container'lar içinde olan elementlere ASLA kilit uygulanmaz
+  // (false-positive guard — selector daralsa bile defansif koruma)
+  const BLACKLIST_CONTAINERS = '.ticker-wrap, #tickerScroll, .ticker-item, header, .app-header, .market-overview, .mkt-card';
   // Minimum satır sayısı — bu kadar az satırlı blok kilitlenmez
   const MIN_LINES = 4;
 
@@ -36,6 +42,19 @@
 
   function _debug(...args) {
     if (window.VDPremiumDebug) console.debug('[AICommentLock]', ...args);
+  }
+
+  // ── Blacklist guard (defensive) ──────────────────────────────────
+  // Element bir blacklist container'ı içindeyse true döner.
+  // Bu ek korumayla, gelecekte selector genişlese bile
+  // ticker/market kartlarına dokunulmaz.
+  function _isInBlacklistedArea(el) {
+    if (!el || typeof el.closest !== 'function') return false;
+    try {
+      return el.closest(BLACKLIST_CONTAINERS) !== null;
+    } catch (e) {
+      return false;
+    }
   }
 
   // ── Metni cümle/satırlara böl ────────────────────────────────────
@@ -217,6 +236,11 @@
 
     const blocks = document.querySelectorAll(TARGET_SELECTORS);
     blocks.forEach(el => {
+      // B.3-MAINT: Defansif blacklist guard
+      if (_isInBlacklistedArea(el)) {
+        _debug('blacklisted area, skipping:', el);
+        return;
+      }
       if (isPremium) {
         _unlockBlock(el);
         return;

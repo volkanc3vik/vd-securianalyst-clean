@@ -485,3 +485,77 @@
    Premium toast:        10000 (en üst, kilit feedback)
    Telegram toast:       9994 (mevcut)
 */
+
+/* ════════════════════════════════════════════════════════════════
+   B.3-MAINT: Whitelist override (CSS son savunma hattı)
+   
+   Bu container'lar premium gating'den ETKİLENMEMELİDİR:
+   - Ticker bar (üstteki kayan fiyat şeridi)
+   - Market overview kartları (BTC/ETH/Dominance)
+   - Header / app-header (admin rozetleri, gezinti)
+   
+   Bu kurallar, JS bir şekilde bu alanlara marker uygularsa bile
+   görsel kilidin etkisiz kalmasını garanti eder.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Ticker bar — her zaman tam görünür ve etkileşimli */
+.ticker-wrap,
+.ticker-wrap *,
+.ticker-item,
+.ticker-item *,
+#tickerScroll,
+#tickerScroll * {
+  filter: none !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  user-select: text !important;
+}
+
+/* Ticker bar içinde olası lock marker'larını görmezden gel */
+.ticker-wrap [data-vd-locked],
+.ticker-wrap [data-vd-ai-locked],
+#tickerScroll [data-vd-locked],
+#tickerScroll [data-vd-ai-locked],
+.ticker-item [data-vd-locked],
+.ticker-item [data-vd-ai-locked] {
+  display: revert !important;
+}
+
+/* Market overview kartları — BTC, ETH, Dominance daima açık */
+.market-overview,
+.market-overview *,
+.mkt-card,
+.mkt-card *,
+.mkt-header,
+.mkt-price,
+.mkt-chg,
+.mkt-stats,
+.mkt-stat,
+.mkt-stat-val,
+.mkt-signal {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Market kartlarındaki olası lock marker'ları görmezden gel */
+.market-overview [data-vd-locked],
+.market-overview [data-vd-ai-locked],
+.mkt-card [data-vd-locked],
+.mkt-card [data-vd-ai-locked] {
+  display: revert !important;
+}
+
+/* Market kartlarında lock overlay görünmesin */
+.market-overview .vd-lock-overlay,
+.mkt-card .vd-lock-overlay {
+  display: none !important;
+}
+
+/* Header ve admin bar — daima erişilebilir */
+header,
+.app-header,
+header *,
+.app-header * {
+  filter: none !important;
+  pointer-events: auto !important;
+}

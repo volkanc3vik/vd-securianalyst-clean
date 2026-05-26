@@ -25,6 +25,7 @@
 
   const DEFAULT_SYMBOL = 'BTCUSDT';
   const PREMIUM_PREVIEW_KEY = 'vd_premium_preview';
+  const ACCESS_CODE_KEY = 'aap_access_v1';
 
   // ── State ────────────────────────────────────────────────────────
   function _checkPremiumPreview() {
@@ -46,13 +47,40 @@
     return false;
   }
 
+  // Access code login kontrolü — mevcut Supabase access code sistemi
+  // localStorage['aap_access_v1'] = { isAdmin: bool, bitis: timestamp_ms, ... }
+  function _checkAccessCode() {
+    try {
+      const raw = localStorage.getItem(ACCESS_CODE_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      if (typeof d !== 'object' || d === null) return false;
+      // isAdmin true ise (kod sistemi içindeki admin) — sınırsız erişim
+      if (d.isAdmin === true) return true;
+      // bitis (expiresAt) ileri tarihte ise geçerli
+      if (typeof d.bitis === 'number' && d.bitis > Date.now()) return true;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // İlk mode hesaplama: preview > admin > access_code öncelik sırasıyla
+  function _computeInitialState() {
+    if (_checkPremiumPreview()) return { mode: 'premium', source: 'preview' };
+    if (_checkAdminActive()) return { mode: 'premium', source: 'admin' };
+    if (_checkAccessCode()) return { mode: 'premium', source: 'access_code' };
+    return { mode: 'free', source: null };
+  }
+
+  const _initial = _computeInitialState();
+
   window.APP_ACCESS = {
-    // Admin aktifse VEYA preview flag varsa premium, yoksa free
-    mode: (_checkPremiumPreview() || _checkAdminActive()) ? 'premium' : 'free',
+    mode: _initial.mode,
     lockedSymbol: DEFAULT_SYMBOL,
     source: 'direct',
-    // Premium kaynağı (debug için): 'admin' | 'preview' | 'auth' | null
-    premiumSource: _checkAdminActive() ? 'admin' : (_checkPremiumPreview() ? 'preview' : null),
+    // Premium kaynağı (debug için): 'admin' | 'preview' | 'access_code' | 'auth' | null
+    premiumSource: _initial.source,
 
     isPremium() {
       return this.mode === 'premium';
@@ -63,6 +91,40 @@
       if (!sym) return false;
       const normalized = String(sym).toUpperCase();
       return normalized === this.lockedSymbol;
+    },
+
+    // ── Merkezi state-resolver ─────────────────────────────────────
+    // Tüm premium kaynaklarını tarar, mode'u günceller, event yayınlar.
+    // Öncelik sırası: preview > admin > access_code
+    // Not: 'manual' source ile setPremium yapılmışsa bu override'a dokunmaz
+    //       (debug/test amaçlı manuel premium kalıcı kalır)
+    refreshAccessState() {
+      // Manuel override koruması
+      if (this.premiumSource === 'manual') {
+        if (window.VDPremiumDebug) {
+          console.debug('[AccessControl] refreshAccessState: manual override active, skipping');
+        }
+        return false;
+      }
+
+      const next = _computeInitialState();
+      const changed = (this.mode !== next.mode) || (this.premiumSource !== next.source);
+      if (!changed) return false;
+
+      const prevMode = this.mode;
+      this.mode = next.mode;
+      this.premiumSource = next.source;
+
+      try {
+        window.dispatchEvent(new CustomEvent('vd:access:changed', {
+          detail: { mode: next.mode, source: next.source, prevMode: prevMode }
+        }));
+      } catch (e) {}
+
+      if (window.VDPremiumDebug) {
+        console.debug('[AccessControl] refreshAccessState:', prevMode, '→', next.mode, '(', next.source, ')');
+      }
+      return true;
     },
 
     // Premium mode'a geç (debug veya gelecek auth için)
@@ -84,6 +146,11 @@
           detail: { mode: 'free' }
         }));
       } catch (e) {}
+    },
+
+    // Login akışı manuel çağırabilir (Supabase login sonrası ileride entegre edilebilir)
+    notifyAccessCodeLogin() {
+      return this.refreshAccessState();
     },
 
     // Lock symbol set (site-funnel.js çağırır)
@@ -224,26 +291,46 @@
 
   // ── Admin mode değişikliği dinle (otomatik premium toggle) ───────
   function _setupAdminListener() {
-    window.addEventListener('vd:telegram:admin', function(e) {
-      const isActive = !!(e?.detail?.active);
-      const currentSource = window.APP_ACCESS.premiumSource;
-
-      if (isActive) {
-        // Admin aktive oldu → premium aç
-        if (!window.APP_ACCESS.isPremium()) {
-          window.APP_ACCESS.setPremium('admin');
-          _debug('admin activated → premium mode ON');
-        }
-      } else {
-        // Admin kapandı → SADECE eğer premium kaynağı admin idiyse kapat
-        // (preview flag veya gerçek auth ile premium ise dokunma)
-        if (currentSource === 'admin') {
-          window.APP_ACCESS.setFree();
-          _debug('admin deactivated → premium mode OFF');
-        }
-      }
+    window.addEventListener('vd:telegram:admin', function() {
+      // Merkezi resolver ile tüm kaynakları yeniden değerlendir
+      window.APP_ACCESS.refreshAccessState();
     });
     _debug('admin listener attached');
+  }
+
+  // ── localStorage değişiklik dinle (cross-tab + same-tab cover) ──
+  // 'storage' event sadece DİĞER tab'lardaki değişiklikleri yakalar.
+  // Same-tab değişiklikleri polling ile yakalanır.
+  function _setupStorageListener() {
+    window.addEventListener('storage', function(e) {
+      if (!e || !e.key) return;
+      // Sadece access ile ilgili anahtarlar
+      if (e.key === 'aap_access_v1' || e.key === 'vd_premium_preview') {
+        window.APP_ACCESS.refreshAccessState();
+        _debug('storage event:', e.key);
+      }
+    });
+    _debug('storage listener attached');
+  }
+
+  // ── İlk 10 saniye polling — login akışı async olabilir ──────────
+  // Mevcut Supabase login akışı `aap_access_v1`'i set ettikten sonra
+  // sayfayı reload edebilir veya etmeyebilir. Polling ile yakalarız.
+  // Premium aktive olunca polling erken durur.
+  function _startInitialPolling() {
+    let ticks = 0;
+    const MAX_TICKS = 10;
+    const INTERVAL = 1000;
+
+    const id = setInterval(() => {
+      ticks++;
+      const changed = window.APP_ACCESS.refreshAccessState();
+      // Premium aktif oldu veya max'a ulaştık → durdur
+      if (ticks >= MAX_TICKS || window.APP_ACCESS.isPremium()) {
+        clearInterval(id);
+        _debug('polling stopped:', { ticks, premium: window.APP_ACCESS.isPremium() });
+      }
+    }, INTERVAL);
   }
 
   // ── İlk yüklemede admin state'i doğrula (timing güvencesi) ───────
@@ -253,19 +340,9 @@
     attempts = attempts || 0;
     if (attempts > 20) return; // ~3sn sonra vazgeç
 
-    const isAdmin = _checkAdminActive();
-    if (isAdmin && !window.APP_ACCESS.isPremium()) {
-      window.APP_ACCESS.setPremium('admin');
-      _debug('initial admin detected → premium mode ON');
-      return;
-    }
-    if (!isAdmin && window.APP_ACCESS.premiumSource === 'admin') {
-      // Admin kapalı ama premium hâlâ açıksa düzelt
-      window.APP_ACCESS.setFree();
-      _debug('initial admin not detected → premium mode OFF');
-      return;
-    }
-    // Admin state belirsiz, biraz bekleyip tekrar dene
+    window.APP_ACCESS.refreshAccessState();
+
+    // Telegram scripts yüklenmediyse beklemeye devam
     if (!window.TelegramUI?.AdminMode && !window.TelegramDispatcher) {
       setTimeout(() => _verifyInitialAdminState(attempts + 1), 150);
     }
@@ -282,7 +359,9 @@
     _interceptSignalGrids();
     _interceptSymInput();
     _setupAdminListener();
+    _setupStorageListener();
     _verifyInitialAdminState();
+    _startInitialPolling();
   }
 
   // DOMContentLoaded'da intercept et

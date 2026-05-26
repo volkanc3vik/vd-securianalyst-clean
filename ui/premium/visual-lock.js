@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// VISUAL LOCK (Mini-Aşama B.3-PREMIUM)
+// VISUAL LOCK (Mini-Aşama B.3-PREMIUM + B.3-MAINT)
 //
 // MutationObserver tabanlı görsel kilit uygulayıcı:
 //   - Sinyal grid kartları (longGrid, shortGrid, jokerGrid)
@@ -15,6 +15,8 @@
 // Mevcut DOM yapısına dokunmadan (sadece attribute ekler/kaldırır)
 // CSS class'ları stillemeyi yapar.
 //
+// B.3-MAINT: Blacklist guard eklendi (ticker, market summary, header).
+//
 // Public API:
 //   VDVisualLock.mount()
 //   VDVisualLock.unmount()
@@ -25,6 +27,8 @@
 
   const LOCKED_MARKER = 'data-vd-locked';
   const PROCESSED_MARKER = 'data-vd-lock-processed';
+  // Blacklist: bu container'lar içinde olan elementlere ASLA kilit uygulanmaz
+  const BLACKLIST_CONTAINERS = '.ticker-wrap, #tickerScroll, .ticker-item, header, .app-header, .market-overview, .mkt-card';
 
   let _observers = [];
   let _mounted = false;
@@ -32,6 +36,16 @@
 
   function _debug(...args) {
     if (window.VDPremiumDebug) console.debug('[VisualLock]', ...args);
+  }
+
+  // ── Blacklist guard (defensive) ──────────────────────────────────
+  function _isInBlacklistedArea(el) {
+    if (!el || typeof el.closest !== 'function') return false;
+    try {
+      return el.closest(BLACKLIST_CONTAINERS) !== null;
+    } catch (e) {
+      return false;
+    }
   }
 
   // ── Sembolü normalize et (USDT suffix) ───────────────────────────
@@ -89,6 +103,11 @@
   // ── Kart kilidi uygula/kaldır ────────────────────────────────────
   function _applyCardLock(card, shouldLock) {
     if (!card) return;
+    // B.3-MAINT: Defansif blacklist guard
+    if (_isInBlacklistedArea(card)) {
+      _debug('blacklisted, skipping card lock');
+      return;
+    }
     const isLocked = card.getAttribute(LOCKED_MARKER) === 'true';
 
     if (shouldLock && !isLocked) {
@@ -107,6 +126,11 @@
   // ── TI sembol (watchlist + best setup) için kilit ────────────────
   function _applyTISymLock(el, shouldLock) {
     if (!el) return;
+    // B.3-MAINT: Defansif blacklist guard
+    if (_isInBlacklistedArea(el)) {
+      _debug('blacklisted, skipping TI sym lock');
+      return;
+    }
     const isLocked = el.getAttribute(LOCKED_MARKER) === 'true';
 
     if (shouldLock && !isLocked) {
