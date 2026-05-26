@@ -57,12 +57,30 @@
     const el = e.currentTarget;
     if (!el) return;
 
+    // Premium gating — lockedSymbol değilse blok et
+    // (Visual lock zaten pointer-events: none yapıyor ama defansif kontrol)
+    if (el.getAttribute('data-vd-locked') === 'true') {
+      _debug('blocked: locked element');
+      return;
+    }
+
     // Sembol metni — textContent kullan (XSS güvenli)
     const rawText = (el.textContent || '').trim();
     const sym = _normalizeSymbol(rawText);
 
     if (!_isValidFinalSymbol(sym)) {
       _debug('invalid symbol:', rawText);
+      return;
+    }
+
+    // APP_ACCESS gate — wrap edilmiş openCoin zaten kontrol eder ama
+    // burada da kontrol etmek hızlı feedback verir (toast/modal direkt)
+    if (window.APP_ACCESS && !window.APP_ACCESS.canAccessSymbol(sym)) {
+      _debug('premium gate blocked:', sym);
+      if (window.VDPremiumToast?.show) window.VDPremiumToast.show();
+      setTimeout(() => {
+        if (window.VDPremiumModal?.show) window.VDPremiumModal.show({ requestedSym: sym });
+      }, 350);
       return;
     }
 

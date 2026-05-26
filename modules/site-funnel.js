@@ -169,6 +169,15 @@
     _referrer = ref;
     _utmSource = utm;
 
+    // Premium gating — lockedSymbol set (her durumda)
+    // URL'de sym varsa o, yoksa default BTCUSDT
+    if (window.APP_ACCESS && window.APP_ACCESS.setLockedSymbol) {
+      const lockSym = sym || 'BTCUSDT';
+      const lockSource = (ref === 'tg' || ref === 'telegram') ? 'telegram' : 'direct';
+      window.APP_ACCESS.setLockedSymbol(lockSym, lockSource);
+      _debug('APP_ACCESS locked to:', lockSym, '(source:', lockSource, ')');
+    }
+
     if (!hasParams) {
       _debug('no funnel params');
       return;
