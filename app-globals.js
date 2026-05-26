@@ -1,356 +1,104 @@
-// ════════════════════════════════════════════════════════════════════
-// FUTURES MODAL — Manuel Pozisyon Açma
-// Canlı pozisyon büyüklüğü ve likidasyon önizlemesi.
-// AbortController ile tüm event listener'lar tek seferde temizlenir.
-// ════════════════════════════════════════════════════════════════════
-window.FuturesModal = (() => {
-  'use strict';
+// ═══════════════════════════════════════════════════════════════
+// APP-GLOBALS.JS — Window Bridge
+// onclick="..." HTML attributeları type="module" scope'da
+// çalışmaz. Bu dosya tüm fonksiyonları window'a bağlar.
+// ═══════════════════════════════════════════════════════════════
 
-  let _root = null;
-  let _abortCtrl = null;
-  let _currentDir = 'LONG';
-  let _currentMode = 'CROSS';
-  let _currentSym = 'BTCUSDT';
-  let _liveFetch = null;     // canlı fiyat çekme timer
+// Bu fonksiyon, tüm modüller yüklendikten sonra çağrılır
+export function registerGlobals() {
 
-  function _fmt(v, d = 2) {
-    if (v === null || v === undefined || !Number.isFinite(+v)) return '—';
-    return (+v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-  }
+  // ── Auth ──────────────────────────────────────────────────────
+  window.doLogin        = () => import('./auth.js').then(m => m.doLogin());
+  window.doLogout       = () => import('./auth.js').then(m => m.doLogout());
+  window.toggleLoginEye = () => {
+    const inp = document.getElementById('loginInput');
+    const eye = document.getElementById('loginEye');
+    if (!inp) return;
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    if (eye) eye.textContent = inp.type === 'password' ? '👁' : '🙈';
+  };
 
-  function _val(id) {
-    const el = _root && _root.querySelector('#' + id);
-    if (!el) return null;
-    const v = el.value.trim();
-    if (v === '') return null;
-    const n = +v;
-    return Number.isFinite(n) ? n : null;
-  }
+  // ── Navigation ────────────────────────────────────────────────
+  window.loadCoin = (sym, intv) => {
+    window.SYM = sym; window.INTV = intv;
+    document.getElementById('symInput') && (document.getElementById('symInput').value = sym);
+    window._appLoadCoin && window._appLoadCoin(sym, intv);
+  };
+  window.openCoin = (sym) => {
+    window.SYM = sym; window.INTV = window.INTV || '15m';
+    document.getElementById('symInput') && (document.getElementById('symInput').value = sym);
+    window._appLoadCoin && window._appLoadCoin(sym, window.INTV);
+    setTimeout(() => { document.getElementById('mainPanel')?.scrollIntoView({ behavior: 'smooth' }); }, 200);
+  };
+  window.doSearch = () => {
+    const v = document.getElementById('symInput')?.value?.trim().toUpperCase();
+    if (v) window.loadCoin(v.includes('USDT') ? v : v + 'USDT', window.INTV || '15m');
+  };
+  window.quickCoin = (sym) => { window.loadCoin(sym, window.INTV || '15m'); };
+  window.startScan = () => window._appStartScan && window._appStartScan();
 
-  function _setText(sel, text) {
-    const el = _root && _root.querySelector(sel);
-    if (el) el.textContent = text;
-  }
+  // ── Notification Center ───────────────────────────────────────
+  window.NC = {
+    toggle:   () => window._NC?.toggle(),
+    filter:   (k) => window._NC?.setFilter(k),
+    clearAll: () => { if (confirm('Tüm bildirimler silinsin mi?')) window._NC?.clearAll(); },
+    add:      (opts) => window._NC?.add(opts),
+  };
 
-  function _showError(msg) {
-    const el = _root && _root.querySelector('#fmError');
-    if (!el) return;
-    if (msg) {
-      el.textContent = msg;
-      el.style.display = 'block';
-    } else {
-      el.textContent = '';
-      el.style.display = 'none';
-    }
-  }
+  // ── Toast ─────────────────────────────────────────────────────
+  window.ToastSystem = {
+    toggle:    () => window._Toast?.toggle(),
+    isEnabled: () => window._Toast?.enabled ?? true,
+  };
 
-  // ── Canlı hesap (pozisyon, likidasyon önizleme) ──────────────────
-  function _recalc() {
-    const FC = window.FuturesCalc;
-    const FL = window.FuturesLiquidation;
-    const FS = window.FuturesState;
+  // ── Signal Card Engine ────────────────────────────────────────
+  window.SCE = {
+    setMode: (m) => window._SCE?.setMode(m),
+    setSort: (s) => window._SCE?.setSort(s),
+  };
 
-    const entry  = _val('fmEntry');
-    const lev    = _val('fmLev');
-    const margin = _val('fmMargin');
+  // ── LWC Chart ─────────────────────────────────────────────────
+  window.LWC = {
+    toggle: (layer) => window._LWC?.toggle(layer),
+  };
 
-    // Pozisyon büyüklüğü
-    const size = FC.positionSize(margin || 0, lev || 1);
-    _setText('#fmPos', '$' + _fmt(size, 2));
+  // ── AI Learning ───────────────────────────────────────────────
+  window.AI = {
+    resetWeights: () => window._AI?.resetWeights(),
+    clearAll:     () => window._AI?.clearAll(),
+    load:         () => window._AI?.load(),
+    startTracking:() => window._AI?.startTracking(),
+  };
+  window.renderAI = () => window._renderAI && window._renderAI();
 
-    // Miktar (qty)
-    if (entry && entry > 0) {
-      const qty = FC.quantity(margin || 0, lev || 1, entry);
-      _setText('#fmQty', _fmt(qty, qty >= 1 ? 4 : 6));
-    } else {
-      _setText('#fmQty', '—');
-    }
+  // ── Analytics ─────────────────────────────────────────────────
+  window.Analytics = {
+    tab:          (t) => window._Analytics?.tab(t),
+    clearHistory: () => window._Analytics?.clearHistory(),
+    refresh:      () => window._Analytics?.refresh(),
+  };
 
-    // Likidasyon önizleme (her iki yön için)
-    if (entry && entry > 0 && lev && lev > 0 && margin && margin > 0) {
-      const balance     = FS.getBalance();
-      const activePos   = FS.getActivePositions();
-      const usedMargin  = activePos.reduce((s, p) => s + (+p.margin || 0), 0);
+  // ── Onboarding ────────────────────────────────────────────────
+  window.Onboarding = {
+    next: () => window._Onboarding?.next(),
+    skip: () => window._Onboarding?.skip(),
+  };
 
-      const liqLong = FL.compute({
-        mode: _currentMode, dir: 'LONG', entry, leverage: lev, margin,
-        walletBalance: balance, usedMargin,
-      });
-      const liqShort = FL.compute({
-        mode: _currentMode, dir: 'SHORT', entry, leverage: lev, margin,
-        walletBalance: balance, usedMargin,
-      });
+  // ── Phase 10 ──────────────────────────────────────────────────
+  window.P10 = {
+    setMode: (m) => window._P10?.setMode(m),
+  };
 
-      const liqEl = _root.querySelector('#fmLiq');
-      if (liqEl) {
-        liqEl.innerHTML = `⚡ Likidasyon (${_currentMode}): ` +
-          `<b style="color:var(--green)">LONG</b> ~$${_fmt(liqLong, 4)} ` +
-          ` &nbsp;·&nbsp; ` +
-          `<b style="color:var(--red)">SHORT</b> ~$${_fmt(liqShort, 4)}`;
-      }
-    } else {
-      _setText('#fmLiq', '⚡ Likidasyon hesaplanıyor...');
-    }
+  // ── Swipe Panel ───────────────────────────────────────────────
+  window.openSwipePanel  = () => window._openSwipePanel?.();
+  window.closeSwipePanel = () => window._closeSwipePanel?.();
 
-    // Kullanılabilir bakiye
-    const balance    = FS.getBalance();
-    const activePos  = FS.getActivePositions();
-    const usedMargin = activePos.reduce((s, p) => s + (+p.margin || 0), 0);
-    const avail      = balance - usedMargin;
-    _setText('#fmAvail', '$' + _fmt(avail, 2));
+  // ── Bottom Nav ────────────────────────────────────────────────
+  window.bnNav = (section) => window._bnNav?.(section);
 
-    _showError(null);
-  }
+  // ── Misc ──────────────────────────────────────────────────────
+  window.copyPrompt   = () => window._copyPrompt?.();
+  window.requestNotif = () => window._requestNotif?.();
 
-  // ── Yön değiştir ──────────────────────────────────────────────────
-  function _setDir(dir) {
-    _currentDir = (dir || 'LONG').toUpperCase();
-    if (!_root) return;
-    const longBtn  = _root.querySelector('#fmDirLong');
-    const shortBtn = _root.querySelector('#fmDirShort');
-    const modal    = _root.querySelector('.fm-modal');
-    const cta      = _root.querySelector('#fmCta');
-
-    longBtn  && longBtn.classList.toggle('active',  _currentDir === 'LONG');
-    shortBtn && shortBtn.classList.toggle('active', _currentDir === 'SHORT');
-
-    if (modal) {
-      modal.classList.toggle('short', _currentDir === 'SHORT');
-    }
-    if (cta) {
-      cta.classList.toggle('long',  _currentDir === 'LONG');
-      cta.classList.toggle('short', _currentDir === 'SHORT');
-      cta.textContent = _currentDir === 'LONG' ? '▲ LONG İŞLEMİ AÇ' : '▼ SHORT İŞLEMİ AÇ';
-    }
-    _recalc();
-  }
-
-  function _setMode(mode) {
-    _currentMode = (mode || 'CROSS').toUpperCase();
-    window.FuturesState.setMode(_currentMode);
-    if (!_root) return;
-    _root.querySelectorAll('.fm-mode-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.mode === _currentMode);
-    });
-    _recalc();
-  }
-
-  // ── Canlı fiyat çek (entry default doldurma) ──────────────────────
-  function _fetchCurrentPrice(symFull) {
-    // Önce WSEngine'den dene (zaten abone)
-    try {
-      if (typeof window.WSEngine !== 'undefined' && typeof window.WSEngine.getData === 'function') {
-        const d = window.WSEngine.getData(symFull.toLowerCase());
-        if (d && Number.isFinite(+d.lastPrice) && +d.lastPrice > 0) {
-          return Promise.resolve(+d.lastPrice);
-        }
-      }
-    } catch {}
-
-    // REST fallback
-    return fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symFull.toUpperCase()}`)
-      .then(r => r.json())
-      .then(j => j && j.price ? +j.price : null)
-      .catch(() => null);
-  }
-
-  // ── Açılış ────────────────────────────────────────────────────────
-  function open(prefill = {}) {
-    close(); // önce varsa kapat
-
-    _currentMode = window.FuturesState.getMode() || 'CROSS';
-    _currentDir  = (prefill.dir || 'LONG').toUpperCase();
-    const symRaw = (prefill.sym || window.SYM || 'BTCUSDT').toUpperCase();
-    _currentSym  = symRaw.endsWith('USDT') ? symRaw : symRaw + 'USDT';
-
-    _abortCtrl = new AbortController();
-    const sig = _abortCtrl.signal;
-
-    _root = document.createElement('div');
-    _root.className = 'fm-overlay';
-    _root.setAttribute('role', 'dialog');
-    _root.setAttribute('aria-modal', 'true');
-
-    _root.innerHTML = `
-      <div class="fm-modal ${_currentDir === 'SHORT' ? 'short' : ''}" id="fmModal">
-
-        <div class="fm-head">
-          <span class="fm-head-sym">${_currentSym.replace('USDT', '')}/USDT</span>
-          <button class="fm-x" id="fmClose" aria-label="Kapat">✕</button>
-        </div>
-
-        <!-- LONG / SHORT Toggle -->
-        <div class="fm-dir-toggle">
-          <button class="fm-dir-btn long  ${_currentDir === 'LONG'  ? 'active' : ''}" id="fmDirLong">▲ LONG</button>
-          <button class="fm-dir-btn short ${_currentDir === 'SHORT' ? 'active' : ''}" id="fmDirShort">▼ SHORT</button>
-        </div>
-
-        <!-- Mode + Balance -->
-        <div class="fm-mode">
-          <button class="fm-mode-btn ${_currentMode === 'CROSS'    ? 'active' : ''}" data-mode="CROSS">CROSS</button>
-          <button class="fm-mode-btn ${_currentMode === 'ISOLATED' ? 'active' : ''}" data-mode="ISOLATED">ISOLATED</button>
-          <span class="fm-balance-disp">Bakiye: <b id="fmAvail">$0.00</b></span>
-        </div>
-
-        <!-- Form -->
-        <div class="fm-form">
-
-          <div class="fm-field">
-            <label class="fm-field-label">GİRİŞ FİYATI</label>
-            <input class="fm-input" id="fmEntry" type="number" step="any" placeholder="0.00" value="${prefill.price || ''}">
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">KALDIRAÇ</label>
-            <input class="fm-input" id="fmLev" type="number" step="1" min="1" max="125" value="10">
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">MARGIN ($)</label>
-            <input class="fm-input" id="fmMargin" type="number" step="any" min="0" value="100">
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">POZİSYON (OTOMATİK)</label>
-            <div class="fm-readout" id="fmPos">$1,000.00</div>
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">MİKTAR (OTOMATİK)</label>
-            <div class="fm-readout" id="fmQty">—</div>
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">STOP LOSS</label>
-            <input class="fm-input sl" id="fmSl" type="number" step="any" placeholder="opsiyonel" value="${prefill.sl || ''}">
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">TAKE PROFIT 1</label>
-            <input class="fm-input tp1" id="fmTp1" type="number" step="any" placeholder="opsiyonel" value="${prefill.tp1 || ''}">
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">TAKE PROFIT 2</label>
-            <input class="fm-input tp2" id="fmTp2" type="number" step="any" placeholder="opsiyonel" value="${prefill.tp2 || ''}">
-          </div>
-
-          <div class="fm-field">
-            <label class="fm-field-label">TAKE PROFIT 3</label>
-            <input class="fm-input tp3" id="fmTp3" type="number" step="any" placeholder="opsiyonel" value="${prefill.tp3 || ''}">
-          </div>
-
-        </div>
-
-        <div class="fm-liq" id="fmLiq">⚡ Likidasyon hesaplanıyor...</div>
-        <div class="fm-error" id="fmError" style="display:none"></div>
-
-        <button class="fm-cta ${_currentDir === 'LONG' ? 'long' : 'short'}" id="fmCta">
-          ${_currentDir === 'LONG' ? '▲ LONG İŞLEMİ AÇ' : '▼ SHORT İŞLEMİ AÇ'}
-        </button>
-      </div>
-    `;
-
-    document.body.appendChild(_root);
-
-    // Listener'lar (hepsi abort sinyaline bağlı)
-    const $ = (sel) => _root.querySelector(sel);
-
-    $('#fmClose').addEventListener('click', close, { signal: sig });
-    _root.addEventListener('click', (e) => { if (e.target === _root) close(); }, { signal: sig });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); }, { signal: sig });
-
-    $('#fmDirLong').addEventListener('click',  () => _setDir('LONG'),  { signal: sig });
-    $('#fmDirShort').addEventListener('click', () => _setDir('SHORT'), { signal: sig });
-
-    _root.querySelectorAll('.fm-mode-btn').forEach(btn => {
-      btn.addEventListener('click', () => _setMode(btn.dataset.mode), { signal: sig });
-    });
-
-    ['fmEntry', 'fmLev', 'fmMargin'].forEach(id => {
-      $('#' + id).addEventListener('input', _recalc, { signal: sig });
-    });
-
-    $('#fmCta').addEventListener('click', _submit, { signal: sig });
-
-    // Entry boşsa canlı fiyat çek
-    if (!prefill.price) {
-      _fetchCurrentPrice(_currentSym).then(price => {
-        if (!_root) return; // arada kapanmış olabilir
-        const entryEl = $('#fmEntry');
-        if (entryEl && !entryEl.value && Number.isFinite(price) && price > 0) {
-          entryEl.value = price;
-          _recalc();
-        }
-      });
-    }
-
-    _recalc();
-    // Focus margin (entry zaten doluysa)
-    setTimeout(() => {
-      const focusEl = prefill.price ? $('#fmMargin') : $('#fmEntry');
-      if (focusEl) focusEl.focus();
-    }, 50);
-  }
-
-  // ── Gönder ────────────────────────────────────────────────────────
-  function _submit() {
-    const entry  = _val('fmEntry');
-    const lev    = _val('fmLev');
-    const margin = _val('fmMargin');
-    const sl     = _val('fmSl');
-    const tp1    = _val('fmTp1');
-    const tp2    = _val('fmTp2');
-    const tp3    = _val('fmTp3');
-
-    if (!entry || entry <= 0)   return _showError('Giriş fiyatı zorunlu.');
-    if (!lev   || lev <= 0)     return _showError('Kaldıraç zorunlu (1-125).');
-    if (!margin || margin <= 0) return _showError('Margin zorunlu.');
-
-    const result = window.FuturesController.openPosition({
-      sym:       _currentSym,
-      dir:       _currentDir,
-      mode:      _currentMode,
-      leverage:  lev,
-      margin,
-      entry,
-      sl, tp1, tp2, tp3,
-    });
-
-    if (!result.ok) {
-      _showError(result.error || 'İşlem açılamadı.');
-      return;
-    }
-
-    // Başarılı — modal'ı kapat
-    close();
-
-    // Panel'e scroll
-    setTimeout(() => {
-      const mount = document.getElementById('futuresPanelMount');
-      if (mount) mount.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 200);
-  }
-
-  // ── Kapat ─────────────────────────────────────────────────────────
-  function close() {
-    if (_abortCtrl) {
-      try { _abortCtrl.abort(); } catch {}
-      _abortCtrl = null;
-    }
-    if (_root && _root.parentNode) {
-      _root.parentNode.removeChild(_root);
-    }
-    _root = null;
-    if (_liveFetch) {
-      clearInterval(_liveFetch);
-      _liveFetch = null;
-    }
-  }
-
-  function isOpen() {
-    return _root !== null;
-  }
-
-  return { open, close, isOpen };
-})();
+  console.log('✅ Global bridge kuruldu');
+}
