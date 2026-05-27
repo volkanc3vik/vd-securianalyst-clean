@@ -6,13 +6,20 @@
 // Telegram Bot API'a yönlendirir. Token frontend'e ASLA sızdırılmaz.
 //
 // Endpoint:  POST /api/telegram-send
-// Body:      { channel: 'free'|'vip', text: string }
+// Body:      { channel: 'free'|'backup', text: string, parseMode?: 'HTML'|'MarkdownV2'|'none' }
 // Response:  { ok: true, messageId: number } | { ok: false, error: string }
 //
 // Environment Variables (Vercel):
-//   TELEGRAM_BOT_TOKEN      (zorunlu) — BotFather'dan alınan token
-//   TELEGRAM_FREE_CHANNEL   (ops.)    — varsayılan: '@vdaisignals'
-//   TELEGRAM_VIP_CHANNEL    (ops.)    — varsayılan: '@vdaisignalsvip'
+//   TELEGRAM_BOT_TOKEN              (zorunlu) — BotFather'dan alınan token
+//   TELEGRAM_FREE_CHANNEL_ID        (zorunlu) — numeric -100... (NOT @username)
+//   TELEGRAM_BACKUP_CHANNEL_ID      (opsiyonel) — backup/private kanal
+//   ADMIN_KEY_1, ADMIN_KEY_2        (zorunlu)  — admin guard
+//
+// B.4-TG düzeltmesi (Mayıs 2026):
+//   - Eski TELEGRAM_FREE_CHANNEL / TELEGRAM_VIP_CHANNEL env'leri ARTIK okunmaz
+//   - VIP kanalı disabled (frontend zaten VIP göndermez)
+//   - Numeric chat_id zorunlu, @username uyarı ile (production önerilmez)
+//   - Debug log + telegram description user-friendly hata mapping
 // ════════════════════════════════════════════════════════════════════
 
 // ── Origin whitelist ────────────────────────────────────────────────
@@ -76,16 +83,83 @@ function getClientIp(req) {
   return req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
 }
 
-// ── Kanal çözümleme — sadece beyaz liste ────────────────────────────
+// ── Chat ID format validasyonu ───────────────────────────────────────
+// Production'da numeric -100... önerilir.
+// @username destekli ama uyarı verir.
+function validateChatIdFormat(id) {
+  if (!id || typeof id !== 'string') {
+    return { ok: false, type: 'empty' };
+  }
+  // -100 ile başlayan numeric (channel/supergroup) — ÖNERİLEN
+  if (/^-100\d{6,}$/.test(id)) {
+    return { ok: true, type: 'numeric_channel' };
+  }
+  // Diğer negative numeric (basic group)
+  if (/^-\d{3,}$/.test(id)) {
+    return { ok: true, type: 'numeric_group' };
+  }
+  // Positive numeric (user/private chat)
+  if (/^\d{3,}$/.test(id)) {
+    return { ok: true, type: 'numeric_user' };
+  }
+  // @username — destekleniyor ama uyarı
+  if (/^@[A-Za-z][A-Za-z0-9_]{4,31}$/.test(id)) {
+    return {
+      ok: true,
+      type: 'username',
+      warning: 'Production ortamında username yerine -100 ile başlayan numeric chat_id kullanın.',
+    };
+  }
+  return { ok: false, type: 'invalid_format' };
+}
+
+// ── Chat ID maskeleme (loglar için) ──────────────────────────────────
+// "-1001234567890" → "-100***7890"
+// "@username"       → "@us***"
+function maskChatId(id) {
+  if (!id) return '(empty)';
+  const s = String(id);
+  if (s.startsWith('-100') && s.length > 7) {
+    return s.slice(0, 4) + '***' + s.slice(-4);
+  }
+  if (s.startsWith('@') && s.length > 4) {
+    return s.slice(0, 3) + '***';
+  }
+  if (s.length > 6) {
+    return s.slice(0, 3) + '***' + s.slice(-3);
+  }
+  return '***';
+}
+
+// ── Kanal çözümleme — B.4-TG yeni davranış ───────────────────────────
+// Geriye uyumluluk: yok. Eski TELEGRAM_FREE_CHANNEL / TELEGRAM_VIP_CHANNEL
+// env'leri ARTIK okunmaz. Sadece *_ID suffix'li env'ler kullanılır.
 function resolveChannel(channelKey) {
   const key = String(channelKey || '').toLowerCase();
+
   if (key === 'free') {
-    return process.env.TELEGRAM_FREE_CHANNEL || '@vdaisignals';
+    const id = process.env.TELEGRAM_FREE_CHANNEL_ID;
+    if (!id) {
+      return { ok: false, reason: 'free_channel_not_configured' };
+    }
+    return { ok: true, chatId: id, channelType: 'free' };
   }
+
+  if (key === 'backup') {
+    const id = process.env.TELEGRAM_BACKUP_CHANNEL_ID;
+    if (!id) {
+      return { ok: false, reason: 'backup_channel_not_configured' };
+    }
+    return { ok: true, chatId: id, channelType: 'backup' };
+  }
+
   if (key === 'vip') {
-    return process.env.TELEGRAM_VIP_CHANNEL || '@vdaisignalsvip';
+    // Strateji gereği VIP kanal devre dışı (Aşama A — dil dönüşümü).
+    // Frontend zaten VIP göndermez. Backend gelirse açıkça reddedilir.
+    return { ok: false, reason: 'vip_channel_disabled' };
   }
-  return null;
+
+  return { ok: false, reason: 'invalid_channel' };
 }
 
 // ── Body validasyonu ────────────────────────────────────────────────
@@ -186,10 +260,46 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: v.error });
   }
 
-  // 7. Kanal çözümle
-  const chatId = resolveChannel(body.channel);
-  if (!chatId) {
-    return res.status(400).json({ ok: false, error: 'invalid_channel' });
+  // 7. Kanal çözümle (B.4-TG: yeni davranış)
+  const resolved = resolveChannel(body.channel);
+  if (!resolved.ok) {
+    console.error('[TG_SEND_CONFIG]', {
+      channel: body.channel,
+      reason: resolved.reason,
+      hasBotToken: Boolean(token),
+      freeChannelConfigured: Boolean(process.env.TELEGRAM_FREE_CHANNEL_ID),
+      backupChannelConfigured: Boolean(process.env.TELEGRAM_BACKUP_CHANNEL_ID),
+    });
+    return res.status(400).json({ ok: false, error: resolved.reason });
+  }
+
+  const chatId = resolved.chatId;
+  const chatIdMasked = maskChatId(chatId);
+
+  // Chat ID format validate (production önerisi için uyarı)
+  const fmt = validateChatIdFormat(chatId);
+  if (!fmt.ok) {
+    console.error('[TG_SEND_CONFIG]', {
+      channel: body.channel,
+      resolvedChatId: chatIdMasked,
+      reason: 'invalid_chat_id_format',
+    });
+    return res.status(500).json({ ok: false, error: 'invalid_chat_id_format' });
+  }
+
+  // Debug log — her gönderim için (token YOK, chat_id MASKED)
+  console.log('[TG_SEND]', {
+    channel: body.channel,
+    resolvedChatId: chatIdMasked,
+    chatIdType: fmt.type,
+    channelType: resolved.channelType,
+    hasBotToken: Boolean(token),
+    textLength: body.text.length,
+    timestamp: new Date().toISOString(),
+  });
+
+  if (fmt.warning) {
+    console.warn('[TG_SEND_WARN]', { warning: fmt.warning });
   }
 
   // 8. Telegram API'a gönder
@@ -220,12 +330,46 @@ export default async function handler(req, res) {
     const tgData = await tgRes.json();
 
     if (!tgRes.ok || !tgData.ok) {
-      // Telegram'ın kendi hata kodları
+      const tgDescription = tgData.description ? String(tgData.description) : 'unknown';
+
+      // Sunucu tarafı detay log (token yok, chat_id masked)
+      console.error('[TG_SEND_ERROR]', {
+        channel: body.channel,
+        resolvedChatId: chatIdMasked,
+        chatIdType: fmt.type,
+        httpStatus: tgRes.status,
+        errorCode: tgData.error_code,
+        description: tgDescription.slice(0, 200),
+      });
+
+      // Telegram description'a göre user-friendly hata kodu seç
+      const lowerDesc = tgDescription.toLowerCase();
+      let userError = 'telegram_api_error';
+
+      if (lowerDesc.includes('chat not found')) {
+        userError = 'telegram_chat_not_found';
+      } else if (
+        lowerDesc.includes('not enough rights') ||
+        lowerDesc.includes('chat_admin_required') ||
+        lowerDesc.includes('have no rights') ||
+        lowerDesc.includes('need administrator rights')
+      ) {
+        userError = 'telegram_bot_not_admin';
+      } else if (
+        lowerDesc.includes('bot was kicked') ||
+        lowerDesc.includes('bot is not a member')
+      ) {
+        userError = 'telegram_bot_kicked';
+      } else if (lowerDesc.includes('blocked')) {
+        userError = 'telegram_bot_blocked';
+      } else if (lowerDesc.includes('too many requests')) {
+        userError = 'telegram_rate_limited';
+      }
+
       return res.status(tgRes.status >= 400 ? tgRes.status : 502).json({
-        ok:    false,
-        error: 'telegram_api_error',
-        // Telegram'dan dönen description (token içermez)
-        detail: tgData.description ? String(tgData.description).slice(0, 200) : null,
+        ok:     false,
+        error:  userError,
+        detail: tgDescription.slice(0, 200),
       });
     }
 
@@ -235,6 +379,11 @@ export default async function handler(req, res) {
       channel:   body.channel,
     });
   } catch (err) {
+    console.error('[TG_SEND_EXCEPTION]', {
+      channel: body.channel,
+      resolvedChatId: chatIdMasked,
+      message: safeErrorMessage(err),
+    });
     return res.status(503).json({
       ok:    false,
       error: 'upstream_unreachable',

@@ -28,9 +28,21 @@
     // Rate limit
     rate_limited:           'Çok fazla istek — biraz bekleyin',
 
+    // B.4-TG: Kanal yapılandırma hataları
+    free_channel_not_configured:   'Free kanal yapılandırılmamış — TELEGRAM_FREE_CHANNEL_ID env değişkeni eksik',
+    backup_channel_not_configured: 'Backup kanal yapılandırılmamış — TELEGRAM_BACKUP_CHANNEL_ID env değişkeni eksik',
+    vip_channel_disabled:          'VIP kanal şu anda devre dışı',
+    invalid_chat_id_format:        'Kanal ID formatı geçersiz — numeric (-100...) veya @username olmalı',
+    bot_token_missing:             'Bot token yapılandırılmamış — TELEGRAM_BOT_TOKEN env değişkeni eksik',
+
     // Telegram API
     telegram_api_error:     'Telegram hatası',
-    upstream_unreachable:   'Telegram\'a ulaşılamıyor',
+    telegram_chat_not_found:'Telegram kanal ID bulunamadı veya bot bu kanalda admin değil',
+    telegram_bot_not_admin: 'Bot kanalda admin yetkisine sahip değil',
+    telegram_bot_kicked:    'Bot kanaldan çıkarılmış veya üye değil',
+    telegram_bot_blocked:   'Bot bu kanaldan engellenmiş',
+    telegram_rate_limited:  'Telegram tarafından oran sınırı uygulandı — biraz bekleyin',
+    upstream_unreachable:   "Telegram'a ulaşılamıyor",
 
     // Frontend
     formatter_unavailable:  'Format motoru yüklenmedi',
