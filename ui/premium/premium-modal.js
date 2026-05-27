@@ -106,6 +106,14 @@
     cta.addEventListener('click', _onCtaClick);
     modal.appendChild(cta);
 
+    // ── B.5: "Zaten kodum var" linki ──
+    const codeLink = document.createElement('button');
+    codeLink.className = 'vd-premium-modal-code-link';
+    codeLink.type = 'button';
+    codeLink.textContent = '🔑 Zaten kodum var → Premium Kod Gir';
+    codeLink.addEventListener('click', _onCodeLinkClick);
+    modal.appendChild(codeLink);
+
     // ── Footer note ──
     _addText(modal,
       'Yakında lansman — detaylar için takipte kalın.',
@@ -130,6 +138,27 @@
       console.log('[Premium] CTA tıklandı — lansman yakında');
     }
     hide();
+  }
+
+  // ── B.5: "Kodum var" linki → premium modal kapat + loginScreen aç ──
+  function _onCodeLinkClick() {
+    hide(true);  // immediate close
+    // Kısa gecikme ile loginScreen modal'ı aç (hide animasyonu çakışmasın)
+    setTimeout(() => {
+      try {
+        if (typeof window.openPremiumLogin === 'function') {
+          window.openPremiumLogin();
+        } else {
+          // Fallback: doğrudan class manipülasyonu
+          const screen = document.getElementById('loginScreen');
+          if (screen) {
+            screen.style.display = '';
+            screen.classList.remove('hiding');
+            screen.classList.add('is-open');
+          }
+        }
+      } catch(e) {}
+    }, 100);
   }
 
   function show(opts) {

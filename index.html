@@ -1584,9 +1584,11 @@ body{overscroll-behavior-y:none;}
              radial-gradient(ellipse at 80% 0%,rgba(0,229,160,.1) 0%,transparent 50%),
              radial-gradient(ellipse at 50% 100%,rgba(125,125,250,.08) 0%,transparent 50%),
              #02070e;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
   font-family:'Inter',sans-serif;transition:opacity .6s ease;
 }
+/* B.5: Public site — loginScreen sadece manuel açılır (premium kod aktivasyonu) */
+#loginScreen.is-open{display:flex;}
 #loginScreen.hiding{opacity:0;pointer-events:none;}
 
 .lb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;}
@@ -1779,33 +1781,35 @@ body{overscroll-behavior-y:none;}
 }
 </style>
 
-<!-- Giriş Ekranı -->
+<!-- Premium Aktivasyon Modalı (B.5: kapı değil, opsiyonel modal) -->
 <div id="loginScreen">
   <div class="lb lb1"></div>
   <div class="lb lb2"></div>
   <div class="lb lb3"></div>
+  <!-- B.5: Modal kapatma butonu -->
+  <button class="vd-login-close" onclick="closePremiumLogin()" aria-label="Kapat">×</button>
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-logo-icon">◈</div>
+      <div class="login-logo-icon">🔑</div>
       <div>
-        <span class="login-logo-title">AI ANALYST PRO</span>
-        <span class="login-logo-sub">Binance Futures Terminal</span>
+        <span class="login-logo-title">PREMIUM AKTİVASYON</span>
+        <span class="login-logo-sub">VD SecuriAnalyst</span>
       </div>
     </div>
-    <div class="login-h">Erişim Kodu</div>
-    <div class="login-p">Sisteme erişmek için size verilen erişim kodunu girin.</div>
+    <div class="login-h">Premium Kodu</div>
+    <div class="login-p">Premium üyelik kodunuzu girin. Tüm coinler ve detaylı analizler açılacak.</div>
     <div class="login-inp-wrap">
       <input type="password" class="login-inp" id="loginInput"
-        placeholder="Erişim kodunuzu girin..."
+        placeholder="Premium kodunuzu girin..."
         onkeydown="if(event.key==='Enter')doLogin()"
         autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
       <button class="login-eye" id="loginEye" onclick="toggleLoginEye()">👁</button>
     </div>
     <div class="login-err" id="loginErr"></div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">Giriş Yap</button>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Premium'u Aktive Et</button>
     <div class="login-footer">
-      Bu sistem yalnızca yetkili kullanıcılara açıktır.<br>
-      Yetkisiz erişim denemeleri kayıt altına alınır.
+      Premium kodun yoksa sitede free olarak kullanmaya devam edebilirsin.<br>
+      Kod almak için iletişime geç.
     </div>
   </div>
 </div>
@@ -2068,30 +2072,95 @@ async function doLogin() {
   btn.innerHTML = 'Giriş Yap';
 }
 
-// ── Erişim ver ──
+// ── Erişim ver ── (B.5: Premium aktivasyon — app zaten çalışıyor)
 function grantAccess(isAdmin) {
   const screen = document.getElementById('loginScreen');
-  if(screen){ screen.classList.add('hiding'); setTimeout(()=>{ screen.style.display='none'; }, 600); }
+  if(screen){
+    // Modal'ı kapat
+    screen.classList.remove('is-open');
+    screen.classList.add('hiding');
+    setTimeout(()=>{
+      screen.style.display='none';
+      screen.classList.remove('hiding');
+    }, 600);
+  }
   setTimeout(startTimer, 100);
 
-  // Ana uygulamayı başlat (2. script bloğundaki init fonksiyonu)
+  // B.5: APP_ACCESS premium state'ini refresh et (access_code yakalanır)
   setTimeout(() => {
     try {
-      if(typeof initApp === 'function') initApp(isAdmin);
-    } catch(e) {
-      // initApp yoksa eski yöntemi dene
-      try { if(typeof startClock === 'function') startClock(); } catch {}
-      try { if(typeof startScan  === 'function') startScan();  } catch {}
-      try { if(typeof loadCoin   === 'function') loadCoin(window.SYM || 'BTCUSDT', window.INTV || '15m'); } catch {}
-    }
-  }, 700);
+      if (window.APP_ACCESS && typeof window.APP_ACCESS.refreshAccessState === 'function') {
+        window.APP_ACCESS.refreshAccessState();
+      } else if (window.APP_ACCESS && typeof window.APP_ACCESS.notifyAccessCodeLogin === 'function') {
+        window.APP_ACCESS.notifyAccessCodeLogin();
+      }
+    } catch(e) {}
+
+    // Toast bildirim: Premium aktive edildi
+    try {
+      const toast = document.createElement('div');
+      toast.style.cssText =
+        'position:fixed;top:80px;left:50%;transform:translateX(-50%);'+
+        'z-index:10001;padding:14px 24px;border-radius:10px;'+
+        'background:linear-gradient(135deg,rgba(157,125,250,.95),rgba(125,90,240,.95));'+
+        'color:#fff;font:600 14px Inter,sans-serif;'+
+        'box-shadow:0 8px 32px rgba(157,125,250,.4);'+
+        'border:1px solid rgba(255,255,255,.2);';
+      toast.textContent = '✨ Premium aktive edildi';
+      document.body.appendChild(toast);
+      setTimeout(()=>{
+        toast.style.transition = 'opacity .5s ease';
+        toast.style.opacity = '0';
+        setTimeout(()=>toast.remove(), 500);
+      }, 2500);
+    } catch(e) {}
+  }, 100);
+
+  // App zaten ilk yüklemede başladı (B.5: koşulsuz). Sadece state refresh yeterli.
+  // Mevcut initApp veya ek init artık burada gerekmez.
 }
 
-// ── Çıkış yap ──
+// ── Premium iptal (eski: çıkış) ──
 function doLogout() {
-  if(!confirm('Çıkış yapmak istediğinizden emin misiniz?')) return;
+  if(!confirm('Premium üyeliği iptal etmek istediğinize emin misiniz? Free moda dönersiniz.')) return;
   localStorage.removeItem(LS_KEY);
   location.reload();
+}
+
+// ── B.5: Premium Kod giriş modal'ı aç ──
+function openPremiumLogin() {
+  const screen = document.getElementById('loginScreen');
+  if(!screen) return;
+  screen.style.display = '';  // CSS reset (inline style varsa kaldır)
+  screen.classList.remove('hiding');
+  screen.classList.add('is-open');
+}
+
+// ── B.5: Premium Kod giriş modal'ı kapat ──
+function closePremiumLogin() {
+  const screen = document.getElementById('loginScreen');
+  if(!screen) return;
+  screen.classList.remove('is-open');
+}
+
+// ── B.5: APP_ACCESS state değişimi → topbar UI toggle ──
+// Free kullanıcı: "🔑 Premium Kod" butonu görünür, tbInline gizli
+// Premium kullanıcı: "🔑 Premium Kod" gizli, tbInline (timer + iptal) görünür
+function updateTopbarForAccessMode() {
+  try {
+    const isPremium = !!(window.APP_ACCESS && window.APP_ACCESS.isPremium && window.APP_ACCESS.isPremium());
+    const btnPremiumCode = document.getElementById('tbPremiumCode');
+    const tbInline = document.getElementById('tbInline');
+    if(btnPremiumCode) btnPremiumCode.style.display = isPremium ? 'none' : '';
+    if(tbInline)       tbInline.style.display       = isPremium ? 'flex' : 'none';
+  } catch(e) {}
+}
+window.addEventListener('vd:access:changed', updateTopbarForAccessMode);
+// Sayfa açıldığında ilk durum doğru olsun
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', updateTopbarForAccessMode);
+} else {
+  setTimeout(updateTopbarForAccessMode, 200);
 }
 
 // ── Sayaç ──
@@ -2139,7 +2208,9 @@ function startTimer() {
   _timerInterval = setInterval(update, 1000);
 }
 
-// ── Sayfa açılınca kontrol ──
+// ── Sayfa açılınca kontrol ── (B.5: loginScreen artık default gizli)
+// Premium state APP_ACCESS.refreshAccessState() tarafından yönetiliyor.
+// Burada sadece stale localStorage temizliği + timer başlatma yapılır.
 (function checkAccess() {
   const raw = localStorage.getItem(LS_KEY);
   if(!raw) return;
@@ -2147,15 +2218,14 @@ function startTimer() {
   try {
     const data = JSON.parse(raw);
     if(data.isAdmin || (data.bitis && Date.now() < data.bitis)) {
-      const screen = document.getElementById('loginScreen');
-      if(screen) screen.style.display = 'none';
-      // DOM tamamen hazır olunca timer başlat
+      // Premium aktif — timer'ı başlat (UI: kalan süre + premium badge)
       if(document.readyState === 'loading'){
         document.addEventListener('DOMContentLoaded', startTimer);
       } else {
         setTimeout(startTimer, 50);
       }
     } else {
+      // Süresi dolmuş veya geçersiz — temizle
       localStorage.removeItem(LS_KEY);
     }
   } catch(e) {
@@ -2176,12 +2246,16 @@ function startTimer() {
     </div>
   </div>
   <div class="topbar-right">
-    <!-- Timer bilgisi — topbar içinde -->
+    <!-- B.5: Premium Kod butonu — sadece FREE kullanıcı için görünür -->
+    <button id="tbPremiumCode" class="vd-premium-code-btn" onclick="openPremiumLogin()">
+      🔑 Premium Kod
+    </button>
+    <!-- Timer bilgisi — topbar içinde (premium kullanıcılarda görünür) -->
     <div id="tbInline" style="display:none;align-items:center;gap:8px;font-family:'Inter',sans-serif;">
       <span class="tb-icon" style="font-size:11px">🔒</span>
       <span class="tb-text" id="tbText" style="font-size:10px;color:rgba(255,255,255,.5)"></span>
       <span class="tb-admin" id="tbAdmin" style="display:none;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(157,125,250,.15);border:1px solid rgba(157,125,250,.3);color:#9d7dfa">◈ ADMİN</span>
-      <button class="tb-logout" onclick="doLogout()">Çıkış</button>
+      <button class="tb-logout" onclick="doLogout()">İptal Et</button>
     </div>
     <button class="nc-btn" id="ncBtn" onclick="NC.toggle()">
       🔔 <span id="ncBtnTxt">Bildirimler</span>
@@ -9100,19 +9174,14 @@ if(_origUI_Phase7){
   };
 }
 
-// INIT — sadece giriş yapılmışsa çalıştır
+// INIT — B.5: Public site, her ziyaretçi için app başlar
+// (Premium gating APP_ACCESS tarafından yönetilir, app her zaman aktif)
 // ══════════════════════════════════════════
 (function(){
-  const _ls = localStorage.getItem('aap_access_v1');
-  let _hasAccess = false;
-  try{
-    const _d = JSON.parse(_ls||'{}');
-    _hasAccess = _d.isAdmin || (_d.bitis && Date.now() < _d.bitis);
-  }catch(e){}
+  // B.5: _hasAccess koşulu kaldırıldı.
+  // Site artık public — Telegram'dan gelen veya direkt giren herkes
+  // app'i kullanabilir. Premium/free ayrımı APP_ACCESS ile yapılır.
 
-  if(!_hasAccess) return; // Giriş yapılmamış, bekle
-
-  // Giriş yapılmış — uygulamayı başlat
   buildIv();
   startClock();
   loadCoin(SYM,INTV);
