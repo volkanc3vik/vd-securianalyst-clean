@@ -136,11 +136,11 @@ window.TIMarketPressure = (() => {
     const macdH = _num(btc.ind.macd?.histogram);
     if (rsi > 72 && macdH < 0) {
       return { code:'MOMENTUM_EXHAUSTION', label:'Yukarı momentum tükeniyor',
-        severity:'med', detail:'RSI yüksek ama MACD ayrışıyor — yorgunluk sinyali.' };
+        severity:'med', detail:'RSI yüksek ama MACD ayrışıyor — yorgunluk işareti.' };
     }
     if (rsi < 28 && macdH > 0) {
       return { code:'MOMENTUM_EXHAUSTION', label:'Aşağı momentum tükeniyor',
-        severity:'med', detail:'RSI düşük ama MACD ayrışıyor — dip tükenme sinyali.' };
+        severity:'med', detail:'RSI düşük ama MACD ayrışıyor — dip tükenme işareti.' };
     }
     return null;
   }

@@ -106,7 +106,7 @@ window.TIRegime = (() => {
     }
     else if (trend.dir === 'UP' && trend.strength > 40 && (vol.quality === 'HEALTHY' || vol.quality === 'ELEVATED') && longHeavy) {
       code = 'RISK_ON'; label = 'Risk-On Ortamı'; color = 'green';
-      summary = 'Trend devamı destekleniyor. Geri çekilmeler alım fırsatı.';
+      summary = 'Trend devamı destekleniyor. Geri çekilmeler yukarı yönlü görünüm sunabilir.';
     }
     else if (trend.dir === 'DOWN' && trend.strength > 40 && shortHeavy) {
       code = 'RISK_OFF'; label = 'Risk-Off Ortamı'; color = 'red';
@@ -122,11 +122,11 @@ window.TIRegime = (() => {
     }
     else if (trend.dir === 'DOWN') {
       code = 'RISK_OFF_FRAGILE'; label = 'Temkinli Risk-Off'; color = 'red';
-      summary = 'Aşağı yön korunuyor ama tükenme sinyalleri var. Geç shortlardan kaçın.';
+      summary = 'Aşağı yön korunuyor ama tükenme işaretleri var. Geç aşağı yönlü görünüm riski artabilir.';
     }
     else {
       code = 'CHOPPY'; label = 'Yatay / Belirsiz Piyasa'; color = 'yellow';
-      summary = 'Karışık sinyaller. Konfluans için bekle.';
+      summary = 'Karışık teknik görünüm. Konfluans için gözlem önerilir.';
     }
 
     return {

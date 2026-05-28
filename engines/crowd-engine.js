@@ -17,8 +17,8 @@ const CrowdEngine = (() => {
       traps.push({
         type: 'OVERLEVERAGED_LONGS',
         confidence: 75,
-        desc: `Long kalabalık (L/S: ${lsRatio?.toFixed(2)}) + yüksek funding — long flush riski`,
-        action: 'Long girişten kaçın, kısa vadeli short fırsatı izle',
+        desc: `Yukarı yönlü kalabalık (L/S: ${lsRatio?.toFixed(2)}) + yüksek funding — yukarı yönlü tasfiye riski`,
+        action: 'Yukarı yönlü görünüm zayıf, kısa vadeli aşağı yönlü baskı izlenebilir',
         col: 'var(--red)',
       });
     }
@@ -31,8 +31,8 @@ const CrowdEngine = (() => {
       traps.push({
         type: 'OVERLEVERAGED_SHORTS',
         confidence: 75,
-        desc: `Short kalabalık (L/S: ${lsRatio?.toFixed(2)}) + negatif funding — short squeeze riski`,
-        action: 'Short girişten kaçın, kısa vadeli long fırsatı izle',
+        desc: `Aşağı yönlü kalabalık (L/S: ${lsRatio?.toFixed(2)}) + negatif funding — aşağı yönlü sıkışma riski`,
+        action: 'Aşağı yönlü görünüm zayıf, kısa vadeli yukarı yönlü görünüm izlenebilir',
         col: 'var(--green)',
       });
     }
