@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="VD SecuriAnalyst — İletişim formu ve iletişim bilgileri.">
+  <meta name="robots" content="index,follow">
+  <title>İletişim · VD SecuriAnalyst</title>
+  <link rel="stylesheet" href="legal-shared.css">
+</head>
+<body class="legal-page">
+
+  <header class="legal-header">
+    <a href="../index.html" class="legal-logo">VD SecuriAnalyst</a>
+    <nav class="legal-nav">
+      <a href="../index.html">Ana Sayfa</a>
+      <a href="contact.html">İletişim</a>
+    </nav>
+  </header>
+
+  <main class="legal-content">
+    <h1>İletişim</h1>
+    <p class="legal-meta">Görüşleriniz ve sorularınız için bize ulaşın.</p>
+
+    <h2>İletişim Bilgileri</h2>
+    <div class="legal-info-box">
+      <p>
+        <strong>E-posta:</strong> <span class="vd-fill-required">[İLETİŞİM E-POSTASI]</span><br>
+        <strong>KVKK Başvuruları:</strong> <span class="vd-fill-required">[KVKK BAŞVURU E-POSTASI]</span><br>
+        <strong>Adres:</strong> <span class="vd-fill-required">[AÇIK ADRES]</span>
+      </p>
+    </div>
+
+    <h2>Yanıt Süresi</h2>
+    <p>İletişim taleplerinize <strong>3-5 iş günü</strong> içinde yanıt vermeyi hedefliyoruz. KVKK başvuruları yasal süre olan <strong>30 gün</strong> içinde sonuçlandırılır.</p>
+
+    <h2>İletişim Formu</h2>
+    <p>Aşağıdaki form üzerinden bize ulaşabilirsiniz:</p>
+
+    <form class="legal-form" id="vd-contact-form" novalidate>
+      <label for="cf-name">Adınız *</label>
+      <input type="text" id="cf-name" name="name" required autocomplete="name" maxlength="100">
+
+      <label for="cf-email">E-posta *</label>
+      <input type="email" id="cf-email" name="email" required autocomplete="email" maxlength="120">
+
+      <label for="cf-subject">Konu</label>
+      <select id="cf-subject" name="subject">
+        <option value="genel">Genel Soru</option>
+        <option value="kvkk">KVKK Başvurusu</option>
+        <option value="hukuki">Hukuki Konular</option>
+        <option value="geri-bildirim">Geri Bildirim</option>
+        <option value="hata">Hata Bildirimi</option>
+        <option value="diger">Diğer</option>
+      </select>
+
+      <label for="cf-message">Mesajınız *</label>
+      <textarea id="cf-message" name="message" required maxlength="2000" placeholder="Mesajınızı buraya yazın..."></textarea>
+
+      <p style="font-size: 12px; color: var(--text3); margin-bottom: 14px;">
+        Form gönderiminde sağladığınız veriler <a href="kvkk.html">KVKK Aydınlatma Metni</a> çerçevesinde işlenecektir.
+      </p>
+
+      <button type="submit" class="legal-form-btn">📤 Gönder</button>
+
+      <div class="legal-form-status" id="cf-status"></div>
+    </form>
+
+    <h2>KVKK Başvurularınız</h2>
+    <p>Kişisel verilerinize ilişkin haklarınızı kullanmak istiyorsanız, lütfen <a href="kvkk.html">KVKK Aydınlatma Metni</a> sayfamızda belirtilen başvuru yolunu izleyiniz. Başvurularınız yasal süre olan 30 gün içinde sonuçlandırılır.</p>
+
+    <h2>Hata Bildirimi</h2>
+    <p>Platform üzerinde bir hata, güvenlik açığı veya tutarsızlık tespit ettiyseniz lütfen "Konu" alanında "Hata Bildirimi"ni seçerek bize iletin. Bildirimleriniz için teşekkür ederiz.</p>
+  </main>
+
+  <footer class="legal-footer">
+    <div class="legal-disclaimer-strong">
+      ⚠ Bu platform yatırım tavsiyesi vermez. Tüm içerikler bilgilendirme amaçlıdır. Kripto para işlemleri yüksek risk içerir.
+    </div>
+    <nav class="legal-footer-links">
+      <a href="disclaimer.html">Yatırım Tavsiyesi Değildir</a> ·
+      <a href="terms.html">Kullanım Koşulları</a> ·
+      <a href="risk.html">Risk Bildirimi</a> ·
+      <a href="privacy.html">Gizlilik</a> ·
+      <a href="kvkk.html">KVKK</a> ·
+      <a href="cookies.html">Çerez</a> ·
+      <a href="contact.html">İletişim</a>
+    </nav>
+    <div class="legal-copyright">
+      © 2026 VD SecuriAnalyst — Tüm hakları saklıdır.
+    </div>
+  </footer>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // STUB CONTACT FORM HANDLER
+    // Şimdilik Supabase bağlanmadı, form submit edilince console.log
+    // ve kullanıcıya başarı mesajı. Mini-Aşama B.4-B.5'te gerçek
+    // Supabase insert eklenecek.
+    // ═══════════════════════════════════════════════════════════════
+    (function() {
+      'use strict';
+      const form = document.getElementById('vd-contact-form');
+      const status = document.getElementById('cf-status');
+      if (!form) return;
+
+      // Basit rate limit — aynı tarayıcıdan 5dk içinde 3 mesaj sınırı
+      const RATE_KEY = 'vd_contact_last_submit';
+      const RATE_LIMIT_MS = 5 * 60 * 1000;
+
+      function _setStatus(type, msg) {
+        status.className = 'legal-form-status ' + type;
+        status.textContent = msg;
+      }
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const name    = form.name.value.trim();
+        const email   = form.email.value.trim();
+        const subject = form.subject.value;
+        const message = form.message.value.trim();
+
+        // Validation
+        if (!name || name.length < 2) {
+          _setStatus('error', 'Lütfen geçerli bir isim girin.');
+          return;
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          _setStatus('error', 'Lütfen geçerli bir e-posta girin.');
+          return;
+        }
+        if (!message || message.length < 10) {
+          _setStatus('error', 'Mesajınız en az 10 karakter olmalıdır.');
+          return;
+        }
+
+        // Rate limit
+        try {
+          const last = parseInt(localStorage.getItem(RATE_KEY) || '0', 10);
+          if (Date.now() - last < RATE_LIMIT_MS) {
+            _setStatus('error', 'Lütfen biraz bekleyin, çok hızlı mesaj gönderiyorsunuz.');
+            return;
+          }
+        } catch (e) { /* yut */ }
+
+        // STUB — şimdilik sadece console.log
+        // Mini-Aşama B.4-B.5'te Supabase'e insert eklenecek
+        console.log('[CONTACT-FORM][STUB] Form submission:', {
+          name, email, subject, message,
+          submittedAt: new Date().toISOString(),
+        });
+
+        try { localStorage.setItem(RATE_KEY, String(Date.now())); } catch (e) {}
+
+        _setStatus('success', '✓ Mesajınız alındı. (Not: Henüz aktif olmayan stub modda. Lütfen geçici olarak doğrudan e-posta ile iletişime geçin.)');
+
+        // Form temizle
+        form.reset();
+      });
+    })();
+  </script>
+
+</body>
+</html>
