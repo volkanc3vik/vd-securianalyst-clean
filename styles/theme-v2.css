@@ -1,0 +1,664 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   VD SECURIANALYST — CINEMATIC THEME V3 (Institutional Intelligence Terminal)
+   Felsefe: Bloomberg yoğunluğu × Apple disiplini × Cyberpunk atmosferi.
+   Restraint > şov. Glow kontrollü ve anlamlı yerlerde.
+   Additive override layer. HTML/JS/class'lara dokunmaz. Sil = eski tema.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   1) TOKENS — referans paletten birebir
+   ════════════════════════════════════════════════════════════ */
+:root {
+  /* Background katmanları (siyah dominant) */
+  --v3-bg-deep:    #02050D;
+  --v3-bg:         #050816;
+  --v3-bg-panel:   #07111F;
+  --v3-bg-panel-2: #0a1628;
+  --v3-bg-elev:    #0c1a2e;
+
+  /* Vurgu renkleri (sadece anlam taşıyan yerlerde) */
+  --v3-cyan:       #00D1FF;
+  --v3-cyan-soft:  #4dd9ff;
+  --v3-blue:       #007BFF;
+  --v3-blue-deep:  #0056b3;
+
+  /* Semantik */
+  --v3-success:    #00FFA3;
+  --v3-success-d:  #00cc83;
+  --v3-danger:     #FF3B6B;
+  --v3-danger-d:   #cc2f55;
+  --v3-warn:       #FFC247;
+  --v3-warn-d:     #cc9b39;
+
+  /* Tipografi */
+  --v3-text:       #EAF6FF;
+  --v3-text-2:     #7FA9C9;
+  --v3-text-3:     #4a6a85;
+  --v3-text-muted: #34516a;
+
+  /* Border'lar — default görünmez, hover'da cyan */
+  --v3-border:        rgba(255,255,255,0.06);
+  --v3-border-hi:     rgba(0,209,255,0.18);
+  --v3-border-strong: rgba(0,209,255,0.32);
+  --v3-border-active: rgba(0,209,255,0.45);
+
+  /* Glow — kontrollü, sadece interactive */
+  --v3-glow-s:  0 0 12px rgba(0,209,255,0.20);
+  --v3-glow-m:  0 0 22px rgba(0,209,255,0.30);
+  --v3-glow-l:  0 0 36px rgba(0,209,255,0.42);
+  --v3-glow-blue: 0 0 22px rgba(0,123,255,0.28);
+
+  /* Shadow ölçeği — derinlik için, parlatma için değil */
+  --v3-shadow-1: 0 2px 8px rgba(0,0,0,0.4);
+  --v3-shadow-2: 0 10px 30px rgba(0,0,0,0.55);
+  --v3-shadow-3: 0 24px 60px rgba(0,0,0,0.65);
+
+  /* Cinematic kart kompoziti */
+  --v3-card-shadow:
+    0 0 0 1px var(--v3-border),
+    0 10px 40px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.025);
+  --v3-card-shadow-hover:
+    0 0 0 1px var(--v3-border-strong),
+    0 18px 56px rgba(0,0,0,0.65),
+    0 0 28px rgba(0,209,255,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+
+  /* Yüzey gradient'leri */
+  --v3-grad-panel: linear-gradient(180deg, rgba(10,22,40,0.92), rgba(5,8,22,0.96));
+  --v3-grad-cta:   linear-gradient(135deg, var(--v3-cyan), var(--v3-blue));
+  --v3-grad-cta-hover: linear-gradient(135deg, var(--v3-cyan-soft), #1f8eff);
+  --v3-grad-text:  linear-gradient(120deg, var(--v3-text) 20%, var(--v3-cyan) 70%, var(--v3-blue) 100%);
+
+  /* Geometri */
+  --v3-radius: 14px;
+  --v3-radius-sm: 10px;
+  --v3-radius-lg: 18px;
+
+  /* Easing — Apple-style */
+  --v3-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --v3-ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
+  --v3-dur: 250ms;
+}
+
+/* ════════════════════════════════════════════════════════════
+   2) BODY — atmosfer (siyah ağırlık, subtle radial glow, ince grid)
+   ════════════════════════════════════════════════════════════ */
+html, body {
+  background: var(--v3-bg) !important;
+  color: var(--v3-text);
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Atmosferik radial glow — çok subtle, sadece köşelerde */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 45% at 10% -8%, rgba(0,209,255,0.10), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 92% 6%, rgba(0,123,255,0.09), transparent 62%),
+    radial-gradient(ellipse 70% 40% at 50% 110%, rgba(0,209,255,0.05), transparent 65%);
+  animation: v3Drift 38s ease-in-out infinite alternate;
+}
+@keyframes v3Drift {
+  0%   { transform: translate3d(0,0,0) scale(1); opacity: 0.9; }
+  100% { transform: translate3d(-1%,-1.5%,0) scale(1.04); opacity: 1; }
+}
+
+/* Çok ince grid — Bloomberg dokunuşu */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,209,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,209,255,0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, black 30%, transparent 80%);
+}
+
+/* ════════════════════════════════════════════════════════════
+   3) TOPBAR — institutional, blur + cyan light line altta
+   ════════════════════════════════════════════════════════════ */
+.topbar {
+  background: linear-gradient(180deg, rgba(2,5,13,0.94), rgba(2,5,13,0.82)) !important;
+  backdrop-filter: blur(28px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+  border-bottom: 1px solid transparent !important;
+  position: relative;
+}
+.topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg,
+    transparent, rgba(0,209,255,0.45) 30%, rgba(0,123,255,0.45) 70%, transparent);
+  box-shadow: 0 0 12px rgba(0,209,255,0.30);
+}
+.logo-icon {
+  background: var(--v3-grad-cta) !important;
+  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+  border-radius: 8px;
+  transition: transform var(--v3-dur) var(--v3-ease), box-shadow var(--v3-dur) var(--v3-ease);
+}
+.logo:hover .logo-icon { transform: rotate(-4deg) scale(1.05); box-shadow: var(--v3-glow-l); }
+.logo-text {
+  background: linear-gradient(90deg, var(--v3-cyan), var(--v3-blue)) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  letter-spacing: 0.6px; font-weight: 800;
+}
+.logo-sub { color: var(--v3-text-3); letter-spacing: 0.4px; }
+
+/* Navbar buton (bildirim, admin) — glass, hover'da cyan border ipucu */
+.notif-btn, .vd-premium-code-btn, .vd-admin-btn {
+  background: rgba(0,209,255,0.04) !important;
+  border: 1px solid var(--v3-border) !important;
+  color: var(--v3-text-2) !important;
+  border-radius: 10px !important;
+  transition: all 200ms var(--v3-ease) !important;
+}
+.notif-btn:hover, .vd-premium-code-btn:hover, .vd-admin-btn:hover {
+  border-color: var(--v3-border-strong) !important;
+  color: var(--v3-text) !important;
+  box-shadow: var(--v3-glow-s);
+  transform: translateY(-1px);
+}
+
+/* ════════════════════════════════════════════════════════════
+   4) TICKER — Bloomberg disiplini
+   ════════════════════════════════════════════════════════════ */
+.ticker {
+  background: rgba(2,5,13,0.7) !important;
+  border-bottom: 1px solid var(--v3-border) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.ticker-item {
+  transition: background 180ms var(--v3-ease);
+  font-variant-numeric: tabular-nums;
+}
+.ticker-item:hover { background: rgba(0,209,255,0.05); }
+.ticker-sym { color: var(--v3-text-2) !important; letter-spacing: 0.4px; }
+.ticker-price { color: var(--v3-text) !important; font-weight: 600; }
+.ticker-chg.up { color: var(--v3-success) !important; background: rgba(0,255,163,0.06); box-shadow: inset 0 0 0 1px rgba(0,255,163,0.15); }
+.ticker-chg.dn { color: var(--v3-danger) !important; background: rgba(255,59,107,0.06); box-shadow: inset 0 0 0 1px rgba(255,59,107,0.15); }
+
+/* ════════════════════════════════════════════════════════════
+   5) KART SİSTEMİ — institutional, glass, kontrollü glow
+   Hedef class'lar: tüm panel kartları
+   ════════════════════════════════════════════════════════════ */
+.glass-card,
+.sc-card,
+.smc-pro-card,
+.perf-card,
+.risk-card,
+.ind-card,
+.mkt-stat,
+.entry-item {
+  background: var(--v3-grad-panel) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  border: 1px solid var(--v3-border) !important;
+  border-radius: var(--v3-radius) !important;
+  box-shadow: var(--v3-card-shadow) !important;
+  transition: transform var(--v3-dur) var(--v3-ease),
+              border-color var(--v3-dur) var(--v3-ease),
+              box-shadow var(--v3-dur) var(--v3-ease) !important;
+  position: relative;
+}
+
+/* Üst hafif aydınlık çizgi (corner accent — subtle Cyberpunk) */
+.glass-card::before,
+.smc-pro-card::before,
+.perf-card::before,
+.risk-card::before,
+.ind-card::before {
+  content: ""; position: absolute; top: 0; left: 12%; right: 12%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,209,255,0.35), transparent);
+  opacity: 0.55;
+  transition: opacity var(--v3-dur) var(--v3-ease);
+  pointer-events: none;
+}
+
+.glass-card:hover,
+.smc-pro-card:hover,
+.perf-card:hover,
+.risk-card:hover,
+.ind-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v3-card-shadow-hover) !important;
+}
+.glass-card:hover::before,
+.smc-pro-card:hover::before,
+.perf-card:hover::before,
+.risk-card:hover::before,
+.ind-card:hover::before { opacity: 1; }
+
+/* Stat kutucukları — iç metrikler için */
+.sc-stat, .mkt-stat, .entry-item {
+  background: rgba(0,209,255,0.025) !important;
+  border: 1px solid var(--v3-border) !important;
+  border-radius: var(--v3-radius-sm) !important;
+  transition: border-color 180ms var(--v3-ease), background 180ms var(--v3-ease);
+  box-shadow: none !important;
+}
+.sc-stat:hover, .mkt-stat:hover, .entry-item:hover {
+  border-color: var(--v3-border-hi) !important;
+  background: rgba(0,209,255,0.05) !important;
+  transform: none;
+}
+
+/* Kart başlığı — institutional accent */
+.gc-title {
+  letter-spacing: 0.5px;
+  color: var(--v3-text) !important;
+  font-weight: 700;
+}
+.glass-card .gc-title::before {
+  content: ""; display: inline-block;
+  width: 3px; height: 13px; margin-right: 9px; vertical-align: -2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--v3-cyan), var(--v3-blue));
+  box-shadow: 0 0 8px rgba(0,209,255,0.5);
+}
+
+/* Sayısal değerler — tabular-nums + monospace fallback (Bloomberg) */
+.sc-stat-val, .mkt-stat-val, .smc-pro-val, .perf-card-val,
+.ticker-price, .vd-admin-popup-info {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   6) BUTONLAR — primary cinematic, secondary glass
+   ════════════════════════════════════════════════════════════ */
+
+/* Generic / global butonlar (gbtn, vd-*-btn, vb.) */
+button, .gbtn, .sc-sort-btn {
+  transition: all 200ms var(--v3-ease) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Aktif sıralama / seçim */
+.sc-sort-btn.active, .qc-chip.active, .qc-tab.active {
+  background: rgba(0,209,255,0.10) !important;
+  border-color: var(--v3-border-strong) !important;
+  color: var(--v3-cyan) !important;
+  box-shadow: inset 0 0 0 1px var(--v3-border-strong), 0 0 14px rgba(0,209,255,0.15);
+}
+
+.gbtn:hover, .sc-sort-btn:hover, .qc-chip:hover {
+  border-color: var(--v3-border-hi) !important;
+  box-shadow: var(--v3-glow-s);
+}
+
+/* Login / Premium CTA — primary cinematic */
+.login-btn {
+  background: var(--v3-grad-cta) !important;
+  border: none !important;
+  color: #fff !important;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  transition: transform 200ms var(--v3-ease), box-shadow 200ms var(--v3-ease) !important;
+}
+.login-btn:hover { transform: translateY(-2px); box-shadow: var(--v3-glow-l), inset 0 1px 0 rgba(255,255,255,0.25) !important; }
+.login-btn:active { transform: translateY(0); }
+
+/* ════════════════════════════════════════════════════════════
+   7) LOGIN / PREMIUM modal
+   ════════════════════════════════════════════════════════════ */
+#loginScreen {
+  background: rgba(2,5,13,0.78) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.login-card {
+  background: linear-gradient(180deg, rgba(12,26,46,0.94), rgba(5,8,22,0.97)) !important;
+  backdrop-filter: blur(32px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
+  border: 1px solid var(--v3-border-strong) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.12) !important;
+  position: relative; overflow: hidden;
+}
+.login-card::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--v3-grad-cta);
+  box-shadow: 0 0 16px rgba(0,209,255,0.5);
+}
+.login-logo-icon { box-shadow: var(--v3-glow-m) !important; }
+.login-h { color: var(--v3-text) !important; letter-spacing: 0.4px; }
+.login-input {
+  background: rgba(0,209,255,0.04) !important;
+  border: 1px solid var(--v3-border) !important;
+  color: var(--v3-text) !important;
+  border-radius: 11px !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  transition: border-color 180ms var(--v3-ease), box-shadow 180ms var(--v3-ease);
+}
+.login-input:focus {
+  border-color: var(--v3-border-active) !important;
+  box-shadow: 0 0 0 3px rgba(0,209,255,0.12), var(--v3-glow-s) !important;
+  outline: none !important;
+}
+
+/* ════════════════════════════════════════════════════════════
+   8) FOUNDER — split layout korunur, cinematic frame
+   ════════════════════════════════════════════════════════════ */
+.founder-section-v2 > div {
+  background:
+    linear-gradient(135deg, rgba(0,209,255,0.04), rgba(0,123,255,0.03) 60%, rgba(255,255,255,0.01)),
+    var(--v3-bg-panel) !important;
+  border: 1px solid var(--v3-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--v3-card-shadow) !important;
+  padding: 44px !important;
+  transition: box-shadow var(--v3-dur) var(--v3-ease);
+}
+.founder-section-v2 > div:hover {
+  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.10) !important;
+}
+
+@media (min-width: 880px) {
+  .founder-section-v2 > div {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    text-align: left !important;
+    column-gap: 56px;
+    padding-top: 60px !important;
+    justify-content: space-between !important;
+  }
+  .founder-section-v2 > div > p:first-of-type {
+    position: absolute; top: 26px; left: 48px; margin: 0 !important; order: 0;
+  }
+  .founder-section-v2 > div > .fv2-photo {
+    order: 2; flex: 0 0 auto; align-self: center; margin: 0 !important;
+  }
+  .founder-section-v2 > div > h3,
+  .founder-section-v2 > div > p:nth-of-type(2),
+  .founder-section-v2 > div > p:nth-of-type(3),
+  .founder-section-v2 > div > div:not(.fv2-photo):not([style*="height:2px"]):not([style*="height: 2px"]) {
+    order: 1; flex: 0 0 calc(100% - 250px);
+    text-align: left !important; margin-left: 0 !important; margin-right: 0 !important;
+  }
+  .founder-section-v2 > div > p:nth-of-type(3) { max-width: 480px !important; }
+  .founder-section-v2 > div > div[style*="flex-wrap:wrap"] { justify-content: flex-start !important; }
+  .founder-section-v2 > div > .fv2-copyright {
+    order: 3; flex: 0 0 100%; text-align: left !important; margin-top: 22px !important;
+  }
+}
+
+/* Foto çerçevesi — cinematic cyan halka */
+.founder-section-v2 > div > .fv2-photo > div:first-child {
+  width: 150px !important; height: 150px !important;
+  border: 2px solid var(--v3-border-active) !important;
+  box-shadow:
+    var(--v3-glow-m),
+    0 0 60px rgba(0,209,255,0.20),
+    inset 0 0 0 1px rgba(255,255,255,0.05) !important;
+}
+.founder-section-v2 img { transition: transform 400ms var(--v3-ease); }
+.founder-section-v2 img:hover { transform: scale(1.04); }
+
+/* ════════════════════════════════════════════════════════════
+   9) PRICING (premium.html) — palet disiplini: cyan + blue, mor yok
+   ════════════════════════════════════════════════════════════ */
+.pr-hero {
+  background:
+    radial-gradient(ellipse 60% 70% at 22% -10%, rgba(0,209,255,0.14), transparent 58%),
+    radial-gradient(ellipse 60% 70% at 80% 0%, rgba(0,123,255,0.14), transparent 58%),
+    linear-gradient(180deg, rgba(12,26,46,0.6), var(--v3-bg-panel)) !important;
+  border: 1px solid var(--v3-border-hi) !important;
+  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.08) !important;
+  border-radius: 26px !important;
+}
+.pr-hero-badge {
+  color: var(--v3-cyan) !important;
+  background: rgba(0,209,255,0.08) !important;
+  border-color: var(--v3-border-strong) !important;
+}
+.pr-hero h1 {
+  background: var(--v3-grad-text) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.pr-hero p { color: var(--v3-text-2) !important; }
+
+.pr-card {
+  background:
+    linear-gradient(165deg, rgba(0,209,255,0.04), rgba(0,123,255,0.03) 70%, rgba(255,255,255,0.01)),
+    var(--v3-bg-panel) !important;
+  border: 1px solid var(--v3-border) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--v3-shadow-2) !important;
+  transition: transform var(--v3-dur) var(--v3-ease), border-color var(--v3-dur), box-shadow var(--v3-dur);
+}
+.pr-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--v3-border-strong) !important;
+  box-shadow: var(--v3-shadow-3), 0 0 36px rgba(0,209,255,0.16) !important;
+}
+.pr-card.pr-featured {
+  border-color: var(--v3-border-active) !important;
+  box-shadow: var(--v3-shadow-3), 0 0 44px rgba(0,209,255,0.28) !important;
+  background:
+    linear-gradient(165deg, rgba(0,209,255,0.08), rgba(0,123,255,0.06) 70%, rgba(255,255,255,0.02)),
+    var(--v3-bg-panel) !important;
+}
+.pr-badge {
+  background: var(--v3-grad-cta) !important;
+  box-shadow: 0 0 24px rgba(0,209,255,0.45), 0 4px 12px rgba(0,0,0,0.4) !important;
+}
+.pr-price {
+  background: linear-gradient(120deg, var(--v3-cyan), var(--v3-blue)) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-variant-numeric: tabular-nums;
+}
+.pr-price-cur { -webkit-text-fill-color: var(--v3-cyan) !important; }
+.pr-feat li::before { color: var(--v3-cyan) !important; }
+.pr-cta {
+  background: var(--v3-grad-cta) !important;
+  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+}
+.pr-cta:hover { box-shadow: var(--v3-glow-l), inset 0 1px 0 rgba(255,255,255,0.25) !important; }
+.pr-card:not(.pr-featured) .pr-cta {
+  background: rgba(0,209,255,0.06) !important;
+  border: 1px solid var(--v3-border-strong) !important;
+  color: var(--v3-cyan) !important;
+  box-shadow: none !important;
+}
+.pr-card:not(.pr-featured) .pr-cta:hover {
+  background: rgba(0,209,255,0.12) !important;
+  box-shadow: var(--v3-glow-s) !important;
+}
+.pr-access-note { color: var(--v3-text-2); }
+.pr-access-note strong { color: var(--v3-cyan); }
+.pr-feat-item {
+  background:
+    linear-gradient(135deg, rgba(0,209,255,0.03), rgba(0,123,255,0.02)),
+    var(--v3-bg-panel) !important;
+  border: 1px solid var(--v3-border) !important;
+}
+.pr-feat-item:hover {
+  border-color: var(--v3-border-strong) !important;
+  box-shadow: var(--v3-shadow-2);
+}
+.pr-feat-item .pr-fi-ico {
+  background: linear-gradient(135deg, rgba(0,209,255,0.20), rgba(0,123,255,0.20)) !important;
+  border-color: var(--v3-border-hi) !important;
+  color: var(--v3-cyan) !important;
+}
+.pr-compare {
+  background: var(--v3-bg-panel) !important;
+  border: 1px solid var(--v3-border) !important;
+  border-radius: 16px !important;
+}
+.pr-compare thead th { background: rgba(0,209,255,0.04) !important; color: var(--v3-text-2) !important; }
+.pr-compare thead th.pr-col-prem { color: var(--v3-cyan) !important; background: rgba(0,209,255,0.08) !important; }
+.pr-compare td.pr-prem { background: rgba(0,209,255,0.03) !important; }
+.pr-compare td.pr-prem::before { color: var(--v3-cyan) !important; }
+.pr-compare tbody tr:hover td { background: rgba(0,209,255,0.05) !important; }
+.pr-compare tbody tr:hover td.pr-prem { background: rgba(0,209,255,0.10) !important; }
+.pr-code-link { color: var(--v3-cyan) !important; }
+.pr-code-link:hover { color: var(--v3-cyan-soft) !important; }
+.pr-disclaimer {
+  background: rgba(0,209,255,0.02) !important;
+  border-color: var(--v3-border) !important;
+  border-left: 3px solid var(--v3-cyan) !important;
+  color: var(--v3-text-2) !important;
+}
+
+/* ════════════════════════════════════════════════════════════
+   10) GRAFİK PANELLERİ — institutional çerçeve
+   ════════════════════════════════════════════════════════════ */
+.chart-area, .tradingview-widget-container, [class*="chart-"]:not([class*="charts-"]) {
+  border-radius: var(--v3-radius);
+}
+
+/* ════════════════════════════════════════════════════════════
+   11) TABLOLAR — Bloomberg scan-line hover
+   ════════════════════════════════════════════════════════════ */
+table { font-variant-numeric: tabular-nums; }
+table thead th {
+  color: var(--v3-text-3) !important;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+table tbody tr { transition: background 180ms var(--v3-ease); }
+table tbody tr:hover {
+  background: linear-gradient(90deg, transparent, rgba(0,209,255,0.05), transparent) !important;
+}
+
+/* ════════════════════════════════════════════════════════════
+   12) SCROLLBAR — minimal cinematic
+   ════════════════════════════════════════════════════════════ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,209,255,0.25) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(0,209,255,0.25), rgba(0,123,255,0.25));
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(0,209,255,0.45), rgba(0,123,255,0.45));
+  background-clip: padding-box;
+}
+
+/* ════════════════════════════════════════════════════════════
+   13) Subtle reveal — sadece kartlar ilk yüklenince
+   ════════════════════════════════════════════════════════════ */
+@keyframes v3FadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.glass-card { animation: v3FadeUp 380ms var(--v3-ease-emph) both; }
+
+/* ════════════════════════════════════════════════════════════
+   14) Focus ring — accessibility
+   ════════════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,209,255,0.25), 0 0 12px rgba(0,209,255,0.20) !important;
+  border-radius: 8px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   15) Bildirim toast'ları (premium feedback)
+   ════════════════════════════════════════════════════════════ */
+[class*="VDPremiumToast"], [class*="vd-premium-toast"] {
+  background: linear-gradient(180deg, rgba(12,26,46,0.96), rgba(5,8,22,0.98)) !important;
+  border: 1px solid var(--v3-border-hi) !important;
+  box-shadow: var(--v3-shadow-2), 0 0 28px rgba(0,209,255,0.16) !important;
+}
+
+/* ════════════════════════════════════════════════════════════
+   16) Admin Codes Panel (.acp-*) — cinematic uyum
+   ════════════════════════════════════════════════════════════ */
+.acp-overlay { background: rgba(2,5,13,0.82) !important; }
+.acp-modal {
+  background: linear-gradient(180deg, rgba(12,26,46,0.96), rgba(5,8,22,0.98)) !important;
+  border: 1px solid var(--v3-border-strong) !important;
+  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.10) !important;
+}
+.acp-header {
+  background: linear-gradient(120deg, rgba(0,209,255,0.06), rgba(0,123,255,0.04)) !important;
+  border-bottom-color: var(--v3-border-hi) !important;
+}
+.acp-title {
+  background: linear-gradient(120deg, var(--v3-cyan), var(--v3-blue)) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+}
+.acp-btn-primary {
+  background: var(--v3-grad-cta) !important;
+  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+}
+.acp-btn-primary:hover { box-shadow: var(--v3-glow-l) !important; }
+.acp-tab-active {
+  background: linear-gradient(120deg, var(--v3-cyan), var(--v3-blue)) !important;
+  box-shadow: var(--v3-glow-s) !important;
+}
+.acp-code { color: var(--v3-cyan) !important; }
+.acp-code-full { color: var(--v3-cyan) !important; }
+.acp-table tbody tr:hover td { background: rgba(0,209,255,0.05) !important; }
+
+/* ════════════════════════════════════════════════════════════
+   17) Legal sayfa header/footer — institutional polish
+   ════════════════════════════════════════════════════════════ */
+.legal-header {
+  background: rgba(2,5,13,0.85) !important;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-bottom: 1px solid var(--v3-border) !important;
+}
+.legal-logo {
+  background: linear-gradient(90deg, var(--v3-cyan), var(--v3-blue)) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.legal-footer {
+  border-top: 1px solid var(--v3-border) !important;
+  background: rgba(2,5,13,0.5);
+}
+
+/* ════════════════════════════════════════════════════════════
+   18) MOBİL — kompakt, hover'lar yumuşatılır
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  body::after { background-size: 40px 40px; }
+  .glass-card:hover,
+  .smc-pro-card:hover,
+  .perf-card:hover,
+  .risk-card:hover,
+  .ind-card:hover { transform: none; }
+  .founder-section-v2 > div { padding: 28px !important; }
+  .pr-card:hover { transform: translateY(-3px); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   19) Erişilebilirlik — hareket azaltma
+   ════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+  .glass-card { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   20) Yardımcı utility class'ları (gelecek için)
+   ════════════════════════════════════════════════════════════ */
+.v3-mono { font-family: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.v3-text-cyan { color: var(--v3-cyan) !important; }
+.v3-text-success { color: var(--v3-success) !important; }
+.v3-text-danger { color: var(--v3-danger) !important; }
