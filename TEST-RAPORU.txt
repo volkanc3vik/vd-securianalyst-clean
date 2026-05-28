@@ -1,49 +1,43 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — AŞAMA 2: TEST RAPORU (About Sayfası)
+VD SecuriAnalyst — THEME V2: TEST RAPORU
 ═══════════════════════════════════════════════════════════════
 
 SYNTAX / YAPI KONTROLLERİ:
-  ✓ ui/legal/footer.js — node --check: GEÇTİ
-  ✓ legal/about.html — DOCTYPE doğru, tek <html>, tek <body>
-  ✓ about.html — <section> 6/6 dengeli, <div> 34/34 dengeli
-  ✓ legal-shared.css — { } brace dengesi: 98/98 DENGELI
-  ✓ --purple (#9d7dfa) değişkeni :root'a eklendi
-  ✓ about.html legal-shared.css'e bağlı
+  ✓ styles/theme-v2.css — { } brace dengesi: 59/59 DENGELI
+  ✓ index.html — 4 inline script bloğu: HEPSİ node --check'ten GEÇTİ
+  ✓ index.html — tek </body>, tek </html> (korundu)
+  ✓ theme-v2.css link en son stylesheet olarak eklendi (override garantisi)
+  ✓ founder-section-v2 class eklendi (inline style korundu)
 
-İÇERİK DOĞRULAMA:
-  ✓ 7 teknoloji kartı (about-card) render yapısı tam
-  ✓ 7 iletişim kanalı (about-contact-item) — tüm e-postalar + sosyal
-  ✓ Tüm e-postalar mailto: linkli, sosyal linkler target=_blank rel=noopener
-
-YASAKLI İFADE TARAMASI (about.html):
-  ✓ "sinyal grubu": 0
-  ✓ "al/sat": 0
-  ✓ "işlem aç": 0
-  ✓ "kesin kazanç": 0
-  ✓ "trade": 0
-  ✓ "garanti": yalnızca "garanti ETMEZ" (koruyucu reddi-beyan) — güvenli
-  ✓ "yatırım tavsiyesi": yalnızca "DEĞİLDİR / VERMEZ" (yasal koruma) — güvenli
-  → Pazarlama/yönlendirme bağlamında yasaklı ifade YOK.
-
-FOOTER LİNK ENTEGRASYONU:
-  ✓ Ana sayfa footer (footer.js): "Hakkımızda" linki eklendi (en başa)
-  ✓ 8/8 legal sayfada footer nav'da "Hakkımızda" linki mevcut
-    (about, contact, cookies, disclaimer, kvkk, privacy, risk, terms)
-  ✓ about.html → ../index.html ve diğer legal sayfalara link veriyor
+RESPONSIVE / PERFORMANS:
+  ✓ Tüm animasyonlar transform/opacity/filter (GPU hızlandırmalı)
+  ✓ Animation library YOK — saf CSS
+  ✓ @media (max-width:640px): pricing tek kolon, grid küçülür,
+    kart hover devre dışı (mobil performans)
+  ✓ @media (prefers-reduced-motion): tüm animasyonlar kapanır
+  ✓ Arka plan mesh/grid: fixed + pointer-events:none (etkileşimi engellemez)
 
 REGRESSION RİSKİ DEĞERLENDİRMESİ:
-  • RİSK SEVİYESİ: ÇOK DÜŞÜK.
-  • about.html tamamen yeni, izole bir sayfa — mevcut akışı etkilemez.
-  • footer.js: idempotent mount mantığı korundu, sadece 1 link satırı eklendi.
-  • CSS: yalnızca EKLEME yapıldı, mevcut hiçbir kural değiştirilmedi.
-  • index.html'e DOKUNULMADI.
-  • premium gating / Telegram / engine / cookie-banner: SIFIR TEMAS.
+  • RİSK SEVİYESİ: DÜŞÜK.
+  • Sadece görsel override katmanı; HTML/JS/logic'e sıfır temas.
+  • theme-v2.css en son yüklenir → kontrollü cascade, mevcut stiller silinmez.
+  • !important yalnızca tema-kritik override'larda kullanıldı
+    (navbar, kart zemini, login) — panel-iç yapıya karışmaz.
+  • index.html değişikliği: 1 <link> + 1 class — fonksiyonel etki yok.
+  • premium gating görünürlüğü: blur/lock CSS'i (premium-lock.css)
+    korundu, üzerine yazılmadı.
+  • Geri alma: theme-v2.css silinirse site eski temaya birebir döner.
+
+  ⚠ Beklenen görsel değişim: navbar/kartlar/login/founder daha
+    premium görünecek (amaçlanan davranış). İşlevsel kayıp yok.
 
 DEPLOY SONRASI KONTROL LİSTESİ:
-  [ ] vd-securianalyst.com/legal/about.html açılıyor mu
-  [ ] Hero başlığı gradient görünüyor mu (cyan→purple)
-  [ ] 7 teknoloji kartı hover'da yukarı kalkıyor mu
-  [ ] İletişim e-posta linkleri tıklanınca mail açıyor mu
-  [ ] Ana sayfa altındaki footer'da "Hakkımızda" linki var mı → about'a gidiyor mu
-  [ ] Herhangi bir legal sayfanın (ör. Gizlilik) footer'ında "Hakkımızda" var mı
-  [ ] Mobilde kartlar tek kolona düşüyor mu
+  [ ] Arka planda hafif cyan/purple/blue mesh + grid dokusu görünüyor mu
+  [ ] Navbar'da blur + alt neon çizgi + logo glow var mı
+  [ ] Kartlar (glass-card, perf, risk, ind) hover'da yukarı kalkıyor +
+      cyan kenar parlaması alıyor mu
+  [ ] Premium aktivasyon modal'ı (login) premium görünüyor mu
+  [ ] Founder/Kurucu kartı gradient zemin + hover'da portre zoom yapıyor mu
+  [ ] Mobilde düzen bozulmadan sadeleşiyor mu
+  [ ] Coin seçme, tarama, premium kilit, bildirim → hepsi ESKİSİ GİBİ çalışıyor mu
+      (görsel değişti, işlev aynı kalmalı)

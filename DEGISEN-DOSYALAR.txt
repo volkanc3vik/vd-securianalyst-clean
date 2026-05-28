@@ -1,57 +1,57 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — AŞAMA 2: ABOUT / HAKKIMIZDA SAYFASI
+VD SecuriAnalyst — THEME V2 (SecuriGate DNA Adaptation)
 DEĞİŞEN DOSYALAR RAPORU
-Baz: CLEAN_4-FULL  →  Sonuç: CLEAN_5
+Baz: CLEAN_5-FULL  →  Sonuç: CLEAN_6
 ═══════════════════════════════════════════════════════════════
 
 YENİ EKLENEN DOSYA (1):
-  + legal/about.html
+  + styles/theme-v2.css   → premium override katmanı (tüm tema işi burada)
 
-DEĞİŞEN DOSYALAR (9):
-  1. legal/legal-shared.css        → --purple değişkeni + about stilleri (sona eklendi)
-  2. ui/legal/footer.js            → ana sayfa footer'ına "Hakkımızda" linki
-  3. legal/contact.html            → footer nav'a "Hakkımızda" linki
-  4. legal/cookies.html            → footer nav'a "Hakkımızda" linki
-  5. legal/disclaimer.html         → footer nav'a "Hakkımızda" linki
-  6. legal/kvkk.html               → footer nav'a "Hakkımızda" linki
-  7. legal/privacy.html            → footer nav'a "Hakkımızda" linki
-  8. legal/risk.html               → footer nav'a "Hakkımızda" linki
-  9. legal/terms.html              → footer nav'a "Hakkımızda" linki
+DEĞİŞEN DOSYALAR (1):
+  1. index.html
+     • <head> sonuna theme-v2.css link'i eklendi (en son yüklenir = override)
+     • Founder bölümü wrapper'ına "founder-section-v2" class'ı eklendi
+       (inline style'a DOKUNULMADI — sadece tema kancası)
 
 SİLİNECEK DOSYA: YOK
 
 ───────────────────────────────────────────────────────────────
-ABOUT SAYFASI İÇERİĞİ (6 bölüm)
+THEME V2 STRATEJİSİ: "Additive Override Layer"
 ───────────────────────────────────────────────────────────────
-1. Hero       — "Yeni Nesil AI Destekli Kripto Analiz Platformu"
-                + AI Market Intelligence rozeti + gradient başlık
-2. Platform   — modern kripto analiz platformu, veriyi anlaşılır kılma
-3. Teknoloji  — 7 glassmorphism kart (cyan/purple vurgu):
-                gerçek zamanlı veri akışı, market scanner, futures risk
-                katmanları, volatilite izleme, market structure,
-                AI yorum katmanları, premium veri katmanları
-4. Vizyon     — bilinçli araştırma vurgusu (purple-accent kutu)
-5. Yasal Güv. — 4 madde (tavsiye değildir / yönlendirme yok /
-                getiri vaadi yok / kullanıcı sorumlu) — korkutmayan dil
-6. İletişim   — 7 kanal kartı: web, info@, support@, privacy@,
-                billing@, Instagram, Telegram
+Mevcut HTML, class isimleri, scriptler ve panel-CSS'leri korunarak;
+en son yüklenen tek bir premium katman eklendi. CSS cascade gereği
+bu katman görünümü güzelleştirir, hiçbir şeyi silmez.
+→ Tamamen geri alınabilir: theme-v2.css'i sil = eski tema döner.
 
 ───────────────────────────────────────────────────────────────
-TASARIM / DİL
+THEME V2 İÇERİĞİ
 ───────────────────────────────────────────────────────────────
-• Mevcut legal sayfa iskeletiyle birebir uyumlu (header/content/footer)
-• Dark premium tema + glassmorphism kartlar + cyan/purple vurgu
-• Mobil uyumlu (@media 600px: tek kolon)
-• Semantic HTML + SEO meta + OpenGraph
-• Yasaklı ifadeler KULLANILMADI (sinyal grubu, al/sat, kesin kazanç,
-  garanti-vaadi, trade yönlendirmesi yok)
-• Güvenli dil: veri odaklı analiz, piyasa gözlemi, algoritmik
-  değerlendirme, teknik görünüm, risk seviyesi, volatilite görünümü
-• "Taslak / hukuk onayı bekleniyor" uyarısı KONULMADI (karar gereği)
+• Premium token'lar: glow (cyan/purple/blue), shadow ölçeği (1/2/3),
+  marka gradient, panel gradient, radius, ease eğrisi
+• Atmosferik arka plan: animated mesh-gradient + subtle grid overlay
+  (cyan/blue/purple, body::before + body::after, GPU-light)
+• Navbar V2: derin blur+saturate, neon alt-border glow, logo glow+hover
+• Kart sistemi V2: glassmorphism + inner glow + hover translate(-3px)
+  + border-glow (glass-card, smc-pro-card, perf-card, risk-card,
+  ind-card, mkt-stat, sc-stat, entry-item)
+• Başlık aksanı: glass-card başlıklarına gradient bar
+• Login/Premium modal V2: derin blur, üst gradient şerit, glow CTA
+• Founder section V2: gradient zemin, derin gölge, portre hover-zoom
+• Pricing-ready (HTML YOK, sadece CSS): .vd-pricing-card,
+  .vd-pricing-featured (ÖNE ÇIKAN rozet), .vd-compare-table,
+  .vd-cta-glow — ileride pricing aşamasında kullanılmaya hazır
+• Micro-animations: fadeUp, pulseGlow, hover glow/translate
+• Mobil rafine: pricing tek kolon, grid küçülür, hover devre dışı
+• Erişilebilirlik: prefers-reduced-motion ile tüm animasyon kapanır
+
+KİMLİK: SecuriGate'in premium SaaS DNA'sı (dark, cyan/blue/purple,
+glassmorphism, glow, premium spacing) SecuriAnalyst'in AI market
+intelligence kimliğine uyarlandı. Birebir kopya değil.
 
 DOKUNULMAYANLAR:
-• index.html (hiç dokunulmadı — footer.js zaten dinamik inject ediyor)
-• premium gating, access-control, detail-lock
-• Telegram sistemi, engine logic
-• Mevcut CSS class'ları (sadece YENİ class + --purple eklendi)
-• cookie-banner, welcome-modal
+• engine logic, APP_ACCESS, premium gating, detail-lock, visual-lock
+• Telegram sistemi, API mantığı, analiz hesaplamaları, access code
+• chart engine, veri modelleri
+• Mevcut HTML yapısı/class/id/script/event handler
+• Mevcut CSS dosyaları (futures/intelligence/premium-lock vb.)
+• Pricing HTML EKLENMEDİ (karar gereği — ayrı aşamada)
