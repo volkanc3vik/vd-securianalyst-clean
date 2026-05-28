@@ -1825,6 +1825,19 @@ const SB_URL = 'https://affgbrpwuikpqgsapuvh.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZmdicnB3dWlrcHFnc2FwdXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzA4MDAsImV4cCI6MjA5NDcwNjgwMH0.8o0msNt9OQXJMbfLm8L0ipzPghCrAcvx1wKXBGT36Ds';
 const LS_KEY = 'aap_access_v1';
 
+// ── Cihaz kimliği (cihaz limiti için) ──
+const DEVICE_ID_KEY = 'vd_device_id';
+function getDeviceId() {
+  try {
+    let d = localStorage.getItem(DEVICE_ID_KEY);
+    if (!d) {
+      d = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem(DEVICE_ID_KEY, d);
+    }
+    return d;
+  } catch (e) { return 'dev_nostore'; }
+}
+
 // ════════════════════════════════════════════════════
 // PHASE 1 — SECURE SUPABASE CLIENT
 // ════════════════════════════════════════════════════
@@ -1943,8 +1956,8 @@ function _verifySession(){
     const raw = localStorage.getItem(LS_KEY);
     if(!raw) return false;
     const data = JSON.parse(raw);
-    // Admin
-    if(data.isAdmin && data.kod) return true;
+    // Admin (tam kod artık saklanmıyor — isAdmin yeterli, server doğruladı)
+    if(data.isAdmin === true) return true;
     // Normal — süre kontrolü
     if(data.bitis && Date.now() < data.bitis) return true;
     // Süresi dolmuş
@@ -2014,12 +2027,19 @@ async function doLogin() {
     const resp = await fetch('https://affgbrpwuikpqgsapuvh.supabase.co/functions/v1/verify-code', {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ kod }),
+      body   : JSON.stringify({ kod, device_id: getDeviceId() }),
     });
 
     const result = await resp.json();
 
     if(!result.success) {
+      // Cihaz limiti özel mesajı
+      if(result.error === 'device_limit') {
+        showLoginErr('🔒 Bu premium kodu izin verilen cihaz sayısına ulaşmıştır. Destek için support@vd-securianalyst.com');
+        btn.disabled = false;
+        btn.innerHTML = 'Premium\u2019u Aktive Et';
+        return;
+      }
       RateLimit.fail();
       const rem = RateLimit.getRemainingTime();
       const errMsg = result.error || 'Geçersiz erişim kodu';
@@ -2027,38 +2047,55 @@ async function doLogin() {
         ? `🔒 ${errMsg}. Hesap ${Math.ceil(rem/60)} dakika kilitlendi.`
         : '❌ ' + errMsg + '. Lütfen tekrar deneyin.');
       btn.disabled = false;
-      btn.innerHTML = 'Giriş Yap';
+      btn.innerHTML = 'Premium\u2019u Aktive Et';
       return;
     }
 
     // Başarılı — rate limit sıfırla
     RateLimit.success();
 
-    // Admin ise sonsuz erişim
+    // Admin ise sonsuz erişim (tam kod SAKLANMAZ)
     if(result.is_admin) {
       localStorage.setItem(LS_KEY, JSON.stringify({
         bitis  : Date.now() + (36500 * 24 * 60 * 60 * 1000),
-        isAdmin: true, kod,
+        isAdmin: true,
+        code_preview: result.code_preview || 'ADMIN',
+        plan_id: 'admin',
+        device_id: getDeviceId(),
+        source : 'access_code',
         sureLbl: 'Sınırsız Erişim',
       }));
       grantAccess(true);
       return;
     }
 
-    // Normal kullanıcı — süre hesapla
-    const sure_ms = result.sure_gun * 24 * 60 * 60 * 1000;
-    const bitis   = Date.now() + sure_ms;
-    const sg      = result.sure_gun;
+    // Normal kullanıcı — server'dan gelen expires_at esas alınır (güvenli)
+    let bitis;
+    if(result.expires_at) {
+      bitis = new Date(result.expires_at).getTime();
+    } else {
+      // fallback: sure_gun
+      bitis = Date.now() + (Number(result.sure_gun) * 24 * 60 * 60 * 1000);
+    }
+    const sg = Number(result.sure_gun);
     const sureLbl = sg <= 0.5 ? '12 Saat'
-      : sg === 1 ? '1 Gün' : sg === 2 ? '2 Gün'
-      : sg === 3 ? '3 Gün' : sg === 4 ? '4 Gün'
-      : sg === 5 ? '5 Gün' : sg === 6 ? '6 Gün'
-      : sg === 7 ? '1 Hafta' : sg === 14 ? '2 Hafta'
-      : sg === 21 ? '3 Hafta' : sg === 30 ? '1 Ay'
-      : sg + ' Gün';
+      : sg <= 1 ? '1 Gün' : sg <= 2 ? '2 Gün'
+      : sg <= 3 ? '3 Gün' : sg <= 4 ? '4 Gün'
+      : sg <= 5 ? '5 Gün' : sg <= 6 ? '6 Gün'
+      : sg <= 7 ? '1 Hafta' : sg <= 14 ? '2 Hafta'
+      : sg <= 21 ? '3 Hafta' : sg <= 30 ? '1 Ay'
+      : Math.round(sg) + ' Gün';
 
+    // GÜVENLİK: tam kod (kod) ARTIK SAKLANMIYOR — sadece preview + meta
     localStorage.setItem(LS_KEY, JSON.stringify({
-      bitis, isAdmin: false, kod, sureLbl,
+      bitis,
+      isAdmin: false,
+      code_preview: result.code_preview || '',
+      plan_id: result.plan_id || 'premium',
+      plan_name: result.plan_name || 'Premium',
+      device_id: getDeviceId(),
+      source: 'access_code',
+      sureLbl,
     }));
 
     grantAccess(false);
@@ -9916,6 +9953,8 @@ const P10 = (() => {
 <script src="ui/telegram/telegram-toast.js"></script>
 <script src="ui/telegram/telegram-errors.js"></script>
 <script src="ui/telegram/admin-mode.js"></script>
+<link rel="stylesheet" href="styles/admin-codes.css">
+<script src="ui/telegram/admin-codes-panel.js"></script>
 <script src="ui/telegram/telegram-dropdown.js"></script>
 <script src="ui/telegram/telegram-button.js"></script>
 <script src="modules/telegram-ui-init.js"></script>
