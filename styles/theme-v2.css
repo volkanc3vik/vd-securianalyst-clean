@@ -187,32 +187,39 @@ body::after {
   /* Dikey → yatay split */
   .founder-section-v2 > div {
     flex-direction: row !important;
+    flex-wrap: wrap !important;
     align-items: center !important;
     text-align: left !important;
-    gap: 48px;
+    column-gap: 56px;
     justify-content: space-between !important;
+    padding-top: 60px !important;
   }
-  /* Sıra: HAKKIMIZDA etiketi metin grubuna gider; foto sağa */
-  .founder-section-v2 > div > p:first-of-type { /* HAKKIMIZDA */
-    position: absolute; top: 28px; left: 48px; margin: 0 !important;
+  /* HAKKIMIZDA etiketi: sol üst köşeye sabit */
+  .founder-section-v2 > div > p:first-of-type {
+    position: absolute; top: 26px; left: 48px; margin: 0 !important; order: 0;
   }
-  /* Foto bloğu (ilk iç div) → sağ taraf, büyür */
-  .founder-section-v2 > div > div:nth-of-type(1) {
-    order: 2; flex-shrink: 0; margin: 0 !important;
+  /* Foto bloğu → SAĞ taraf */
+  .founder-section-v2 > div > .fv2-photo {
+    order: 2; flex: 0 0 auto; margin: 0 !important; align-self: center;
   }
-  /* İsim, ünvan, ayraç, açıklama, sosyaller → sol blok */
+  /* Sol metin sütunu: isim/ünvan/ayraç/açıklama/sosyal — order:1, alt alta */
   .founder-section-v2 > div > h3,
   .founder-section-v2 > div > p:nth-of-type(2),
-  .founder-section-v2 > div > div:nth-of-type(2),
   .founder-section-v2 > div > p:nth-of-type(3),
-  .founder-section-v2 > div > div:nth-of-type(3) {
-    order: 1; align-self: flex-start; text-align: left !important;
-    margin-left: 0 !important; margin-right: 0 !important;
+  .founder-section-v2 > div > div:not(.fv2-photo):not([style*="height:2px"]):not([style*="height: 2px"]) {
+    order: 1; flex: 0 0 calc(100% - 250px);
+    text-align: left !important; margin-left: 0 !important; margin-right: 0 !important;
   }
-  .founder-section-v2 > div > div:nth-of-type(3) { justify-content: flex-start !important; }
+  .founder-section-v2 > div > p:nth-of-type(3) { max-width: 480px !important; }
+  /* Sosyal butonlar sola hizalı */
+  .founder-section-v2 > div > div[style*="flex-wrap:wrap"] { justify-content: flex-start !important; }
+  /* Copyright: tam alta, sola */
+  .founder-section-v2 > div > .fv2-copyright {
+    order: 3; flex: 0 0 100%; text-align: left !important; margin-top: 24px !important;
+  }
 }
 /* Portre çerçevesi: SecuriGate cyan glow halkası */
-.founder-section-v2 > div > div:nth-of-type(1) > div:first-child {
+.founder-section-v2 > div > .fv2-photo > div:first-child {
   width: 150px !important; height: 150px !important;
   border: 3px solid var(--v2-line-hi) !important;
   box-shadow: var(--glow-cyan), 0 0 60px rgba(33,212,253,0.25) !important;

@@ -1,47 +1,33 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — THEME V2.1 (SecuriGate DNA · AGRESİF)
-DEĞİŞEN DOSYALAR RAPORU
-Baz: CLEAN_6  →  Sonuç: CLEAN_7
+VD SecuriAnalyst — THEME V2.1 (SecuriGate DNA + Founder Split FIX)
+DEĞİŞEN DOSYALAR — Baz: CLEAN_6 → Sonuç: CLEAN_7
 ═══════════════════════════════════════════════════════════════
 
-DEĞİŞEN DOSYALAR (1):
-  1. styles/theme-v2.css  → baştan yazıldı (agresif, görünür dönüşüm)
+DEĞİŞEN DOSYALAR (2):
+  1. styles/theme-v2.css  → agresif tema + founder split layout (class-tabanlı, KESİN)
+  2. index.html           → founder iç elemanlarına 2 class eklendi:
+                             • .fv2-photo (foto bloğu → sağa)
+                             • .fv2-copyright (telif → en alta)
+                             (inline style'lara DOKUNULMADI, sadece class eklendi)
 
-YENİ EKLENEN DOSYA: YOK
-SİLİNECEK DOSYA: YOK
-
-NOT: index.html'e DOKUNULMADI. theme-v2.css link'i ve founder-section-v2
-class'ı zaten CLEAN_6'da eklenmişti. Bu aşama yalnızca CSS'i güçlendirir.
-
-───────────────────────────────────────────────────────────────
-NEDEN BU SÜRÜM (önceki neden fark etmiyordu)
-───────────────────────────────────────────────────────────────
-Önceki theme-v2.css mevcut soluk paleti baz aldığı için görünür fark
-yaratmıyordu. Bu sürüm SecuriGate referansından çıkarılan NET değerlerle
-yazıldı: parlak elektrik cyan (#21d4fd/#5ce1ff) + mor (#9d7dfa), daha
-derin zemin (#060b16), belirgin kenarlar ve glow.
+YENİ/SİLİNECEK DOSYA: YOK
 
 ───────────────────────────────────────────────────────────────
-YAPILAN DÖNÜŞÜMLER (SecuriGate seviyesi)
+FOUNDER SPLIT FIX (önceki dağınıklık çözüldü)
 ───────────────────────────────────────────────────────────────
-• Zemin: daha derin lacivert-siyah (#060b16)
-• Arka plan: BELİRGİN cyan/mor/mavi mesh + grid (eskisi çok soluktu)
-• Navbar: net cyan alt-border + glow, blur+saturate, logo glow
-• Kartlar: NET cyan kenar çizgisi + iç glow + hover translate(-5px)
-  + güçlü cyan kenar parlaması (glass/smc-pro/perf/risk/ind)
-• İç stat kutuları: cyan kenar + hover vurgu
-• Başlık aksanı: kalın gradient bar + glow
-• Login modal: derin blur, üst gradient, glow CTA
-• FOUNDER: SecuriGate SPLIT LAYOUT (≥880px'de solda metin / sağda
-  glow halkalı portre 150px). Mobilde dikey'e döner. Inline style
-  korundu, sadece CSS ile düzen + glow uygulandı.
-• Pricing-ready CSS güncellendi (cyan/mor, HTML yok)
-• Micro-animations: fadeUp, hover glow/translate
+Önceki sürümde nth-of-type seçicileri founder'ın karmaşık inline
+yapısında elemanları yanlış sıraladı (foto ortada, metin dağınık).
+Bu sürümde güvenilir class hedefleme:
+  • .fv2-photo → order:2 (SAĞ taraf, glow halkalı 150px portre)
+  • İsim/ünvan/ayraç/açıklama/sosyal → order:1 (SOL blok, alt alta)
+  • HAKKIMIZDA → sol üst köşe
+  • .fv2-copyright → order:3 (en alt, full width)
+Sonuç: SecuriGate gibi solda metin / sağda portre.
+≥880px split; mobilde otomatik dikey.
 
-DOKUNULMAYANLAR:
-• index.html (HİÇ), engine logic, APP_ACCESS, premium gating,
-  detail/visual-lock, Telegram, API, hesaplama, access code,
-  chart engine, veri modelleri, diğer CSS dosyaları
-• Founder inline HTML/style (sadece CSS ile düzenlendi)
+Tema içeriği (V2.1): belirgin cyan/mor mesh+grid, net cyan kenarlı
+kartlar, güçlü hover glow, premium navbar/login — değişmedi.
 
-GERİ ALMA: theme-v2.css silinirse site eski temaya birebir döner.
+DOKUNULMAYANLAR: engine, premium gating, Telegram, chart, API,
+hesaplama, access code, veri modelleri, diğer CSS.
+GERİ ALMA: theme-v2.css sil + class'lar zararsız kalır.

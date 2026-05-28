@@ -1,37 +1,23 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — THEME V2.1: TEST RAPORU
+VD SecuriAnalyst — THEME V2.1 + Founder Fix: TEST RAPORU
 ═══════════════════════════════════════════════════════════════
 
 SYNTAX / YAPI:
-  ✓ styles/theme-v2.css — { } brace dengesi: 67/67 DENGELI
-  ✓ index.html değişmedi (tek body/html korundu, link+class mevcut)
+  ✓ theme-v2.css — brace dengesi: 69/69 DENGELI
+  ✓ index.html — tek body/html korundu
+  ✓ .fv2-photo ve .fv2-copyright class'ları eklendi (1'er adet)
+  ✓ Inline style'lara dokunulmadı
 
-RESPONSIVE / PERFORMANS:
-  ✓ Tüm animasyonlar transform/opacity (GPU), library yok
-  ✓ Founder split: @media (min-width:880px) — masaüstü yatay,
-    mobil dikey (otomatik)
-  ✓ @media (max-width:640px): pricing tek kolon, kart hover kapalı
-  ✓ @media (prefers-reduced-motion): animasyonlar kapanır
-  ✓ Arka plan fixed + pointer-events:none → etkileşimi engellemez
+REGRESSION RİSKİ: DÜŞÜK
+  • index.html: sadece 2 class eklendi (görsel hedefleme için)
+  • Founder split artık class-tabanlı → güvenilir
+  • Logic/gating/Telegram/chart: sıfır temas
 
-REGRESSION RİSKİ:
-  • RİSK: DÜŞÜK-ORTA (founder split layout inline yapıyı CSS ile
-    yeniden düzenliyor; nth-of-type seçicilerle hedeflendi).
-  • Founder dışı her şey saf görsel override.
-  • index.html'e sıfır temas → fonksiyonel etki yok.
-  • Premium gating/Telegram/engine/chart: sıfır temas.
-  • Geri alma: theme-v2.css sil = eski tema.
-
-  ⚠ Founder bölümünü deploy sonrası özellikle kontrol et (split
-    layout inline style üzerine geldiği için görsel teyit şart).
-
-DEPLOY SONRASI KONTROL LİSTESİ:
-  [ ] Arka planda BELİRGİN cyan/mor mesh + grid görünüyor mu (artık net)
-  [ ] Navbar alt cyan neon çizgi + logo glow
-  [ ] Kartlar net cyan kenarlı mı + hover'da belirgin yukarı kalkış+glow
-  [ ] Bitcoin/Ethereum/Dominance kartları premium görünüyor mu
-  [ ] Premium aktivasyon (login) modal premium mı
-  [ ] FOUNDER: masaüstünde solda metin / sağda glow portre (split) mı
-  [ ] Founder mobilde düzgün dikey'e dönüyor mu
-  [ ] Coin seçme/tarama/premium kilit/bildirim → işlev ESKİSİ GİBİ mi
-  [ ] Hard refresh (Ctrl+Shift+R) yapmayı unutma
+DEPLOY SONRASI KONTROL:
+  [ ] FOUNDER masaüstü: SOL'da HAKKIMIZDA+isim+ünvan+açıklama+sosyal,
+      SAĞ'da glow halkalı portre (dağınık DEĞİL)
+  [ ] Founder mobil (<880px): düzgün dikey
+  [ ] Kartlar net cyan kenar + hover glow
+  [ ] Arka plan belirgin cyan/mor mesh
+  [ ] İşlevler eskisi gibi
+  [ ] Hard refresh (Ctrl+Shift+R)
