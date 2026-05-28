@@ -1,23 +1,41 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — THEME V2.1 + Founder Fix: TEST RAPORU
+VD SecuriAnalyst — PREMIUM/PRICING: TEST RAPORU
 ═══════════════════════════════════════════════════════════════
 
 SYNTAX / YAPI:
-  ✓ theme-v2.css — brace dengesi: 69/69 DENGELI
-  ✓ index.html — tek body/html korundu
-  ✓ .fv2-photo ve .fv2-copyright class'ları eklendi (1'er adet)
-  ✓ Inline style'lara dokunulmadı
+  ✓ ui/premium/premium-modal.js — node --check: GEÇTİ
+  ✓ legal/premium.html inline script — node --check: GEÇTİ
+  ✓ index.html 4 inline script — HEPSİ GEÇTİ (activate=1 eklendi)
+  ✓ premium.html — DOCTYPE, tek html/body, 5/5 section dengeli
+  ✓ legal-shared.css — brace 144/144 DENGELI
+  ✓ premium.html: theme-v2.css + legal-shared.css linkli, 3 pricing kartı
+
+YASAKLI DİL TARAMASI (premium.html):
+  ✓ sinyal satışı: 0   ✓ garanti: 0   ✓ kesin kazanç: 0
+  ✓ trade önerisi: 0   ✓ "yatırım tavsiyesi": yalnız "değildir" (yasal)
+
+CTA ROUTING DOĞRULAMA:
+  ✓ premium-modal _onCtaClick → window.location='legal/premium.html'
+  ✓ premium.html prBuy() → "Ödeme sistemi hazırlanıyor" toast
+  ✓ premium.html prHaveCode() → index.html?activate=1
+  ✓ index.html ?activate=1 → openPremiumLogin() (DOMContentLoaded)
 
 REGRESSION RİSKİ: DÜŞÜK
-  • index.html: sadece 2 class eklendi (görsel hedefleme için)
-  • Founder split artık class-tabanlı → güvenilir
-  • Logic/gating/Telegram/chart: sıfır temas
+  • premium.html yeni/izole sayfa
+  • premium-modal.js: sadece 1 fonksiyon (CTA hedefi) değişti, modal akışı korundu
+  • index.html: sadece izole IIFE eklendi (param yoksa hiçbir etki yok)
+  • legal-shared.css: sadece EKLEME (mevcut class'lar korundu)
+  • Gating/Telegram/engine/chart/access-control: SIFIR TEMAS
 
 DEPLOY SONRASI KONTROL:
-  [ ] FOUNDER masaüstü: SOL'da HAKKIMIZDA+isim+ünvan+açıklama+sosyal,
-      SAĞ'da glow halkalı portre (dağınık DEĞİL)
-  [ ] Founder mobil (<880px): düzgün dikey
-  [ ] Kartlar net cyan kenar + hover glow
-  [ ] Arka plan belirgin cyan/mor mesh
-  [ ] İşlevler eskisi gibi
+  [ ] vd-securianalyst.com/legal/premium.html açılıyor mu
+  [ ] Hero + 3 kart (Weekly featured glow) görünüyor mu
+  [ ] Kartlar hover'da yukarı kalkıp glow alıyor mu
+  [ ] "Premium Al" → "Ödeme sistemi hazırlanıyor" toast çıkıyor mu
+  [ ] "Kodum Var" → ana sayfaya gidip kod modalı açılıyor mu
+  [ ] Free kullanıcıda bir premium CTA (kilitli kart/CTA bandı) tıkla
+      → modal açılıyor → modaldaki "Premium'a Geç" → premium.html'e gidiyor mu
+  [ ] Free vs Premium tablosu + özellik grid düzgün mü
+  [ ] Mobilde kartlar tek kolon + tablo kaydırılabilir mi
+  [ ] Premium kod girince erişim ESKİSİ GİBİ açılıyor mu (gating bozulmadı)
   [ ] Hard refresh (Ctrl+Shift+R)

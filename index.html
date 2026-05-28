@@ -2143,6 +2143,18 @@ function closePremiumLogin() {
   screen.classList.remove('is-open');
 }
 
+// ── Pricing sayfasından "Kodum Var" ile dönüş: ?activate=1 → kod modalını aç ──
+(function() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('activate') === '1') {
+      window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() { try { openPremiumLogin(); } catch (e) {} }, 400);
+      });
+    }
+  } catch (e) {}
+})();
+
 // ── B.5: APP_ACCESS state değişimi → topbar UI toggle ──
 // Free kullanıcı: "🔑 Premium Kod" butonu görünür, tbInline gizli
 // Premium kullanıcı: "🔑 Premium Kod" gizli, tbInline (timer + iptal) görünür

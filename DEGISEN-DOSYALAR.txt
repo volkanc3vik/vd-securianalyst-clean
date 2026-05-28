@@ -1,33 +1,58 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — THEME V2.1 (SecuriGate DNA + Founder Split FIX)
-DEĞİŞEN DOSYALAR — Baz: CLEAN_6 → Sonuç: CLEAN_7
+VD SecuriAnalyst — PREMIUM / PRICING SAYFASI
+DEĞİŞEN DOSYALAR — Baz: CLEAN_7 → Sonuç: CLEAN_8
 ═══════════════════════════════════════════════════════════════
 
-DEĞİŞEN DOSYALAR (2):
-  1. styles/theme-v2.css  → agresif tema + founder split layout (class-tabanlı, KESİN)
-  2. index.html           → founder iç elemanlarına 2 class eklendi:
-                             • .fv2-photo (foto bloğu → sağa)
-                             • .fv2-copyright (telif → en alta)
-                             (inline style'lara DOKUNULMADI, sadece class eklendi)
+YENİ EKLENEN DOSYA (1):
+  + legal/premium.html   → premium üyelik vitrini (pricing sayfası)
 
-YENİ/SİLİNECEK DOSYA: YOK
+DEĞİŞEN DOSYALAR (3):
+  1. ui/premium/premium-modal.js → modal "Premium'a Geç" butonu artık
+                                    legal/premium.html'e yönlendirir
+                                    (eski "lansman yakında" toast kaldırıldı)
+  2. legal/legal-shared.css      → pricing stilleri eklendi (sona, ~135 satır)
+  3. index.html                  → ?activate=1 parametre kontrolü eklendi
+                                    (premium.html "Kodum Var" → kod modalı açar)
+
+SİLİNECEK DOSYA: YOK
 
 ───────────────────────────────────────────────────────────────
-FOUNDER SPLIT FIX (önceki dağınıklık çözüldü)
+STRATEJİ A — CTA AKIŞI
 ───────────────────────────────────────────────────────────────
-Önceki sürümde nth-of-type seçicileri founder'ın karmaşık inline
-yapısında elemanları yanlış sıraladı (foto ortada, metin dağınık).
-Bu sürümde güvenilir class hedefleme:
-  • .fv2-photo → order:2 (SAĞ taraf, glow halkalı 150px portre)
-  • İsim/ünvan/ayraç/açıklama/sosyal → order:1 (SOL blok, alt alta)
-  • HAKKIMIZDA → sol üst köşe
-  • .fv2-copyright → order:3 (en alt, full width)
-Sonuç: SecuriGate gibi solda metin / sağda portre.
-≥880px split; mobilde otomatik dikey.
+Tüm premium CTA'ları (premium-cta bandı, visual-lock overlay,
+ai-comment-lock, detail-lock) zaten VDPremiumModal.show() açıyordu.
+Modal'daki "Premium'a Geç" butonu artık legal/premium.html'e
+yönlendiriyor → TEK noktayla 6 CTA alanı pricing'e akar.
+Navbar "🔑 Premium Kod" butonu DEĞİŞMEDİ (kod girişi, satış değil).
 
-Tema içeriği (V2.1): belirgin cyan/mor mesh+grid, net cyan kenarlı
-kartlar, güçlü hover glow, premium navbar/login — değişmedi.
+───────────────────────────────────────────────────────────────
+PREMIUM.HTML İÇERİĞİ
+───────────────────────────────────────────────────────────────
+• Hero: "Premium AI Market Intelligence Access" + cyan/purple glow
+• 3 pricing kartı:
+    - Daily Access  $20  / 24 saat
+    - Weekly Access $100 / 7 gün   ★ MOST POPULAR (featured glow)
+    - Monthly Access $300 / 30 gün
+• Premium özellikler grid (8 madde)
+• Free vs Premium karşılaştırma tablosu
+• Yasal not (tavsiye değildir)
+• Theme V2 uyumlu (theme-v2.css + legal-shared.css linkli)
 
-DOKUNULMAYANLAR: engine, premium gating, Telegram, chart, API,
-hesaplama, access code, veri modelleri, diğer CSS.
-GERİ ALMA: theme-v2.css sil + class'lar zararsız kalır.
+CTA DAVRANIŞI (gerçek ödeme YOK):
+• "Premium Al" → toast: "💳 Ödeme sistemi hazırlanıyor — <plan> yakında"
+• "Kodum Var" → index.html?activate=1 → mevcut premium kod modalı açılır
+
+PARA BİRİMİ: $ (USD). TL/kur ve gerçek ödeme = ayrı aşama.
+
+YASAKLI DİL KULLANILMADI: sinyal satışı, garanti, kesin kazanç,
+trade önerisi, yatırım tavsiyesi YOK. ("tavsiye değildir" sadece
+yasal koruma cümlesinde geçer.)
+
+DOKUNULMAYANLAR:
+• APP_ACCESS, premium gating logic, access-control
+• Telegram sistemi, engine logic, chart engine, API, hesaplamalar
+• access code sistemi (openPremiumLogin korundu, sadece çağrılıyor)
+• Diğer CSS dosyaları, theme-v2.css
+
+GERİ ALMA: premium.html sil + modal/index/css değişiklikleri
+zararsız (modal yine açılır, sadece yönlenmez).

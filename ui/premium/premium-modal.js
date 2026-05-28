@@ -130,14 +130,10 @@
   }
 
   function _onCtaClick() {
-    // Şimdilik sadece toast ve kapat — gelecekte ödeme sayfası
-    if (window.TelegramUI?.Toast?.info) {
-      window.TelegramUI.Toast.info('🚀 Premium lansmanı yakında. Detaylar için takipte kalın.');
-    } else if (window.VDPremiumToast?.show) {
-      // Fallback — premium toast (info versiyonu yok ama yine de göster)
-      console.log('[Premium] CTA tıklandı — lansman yakında');
-    }
-    hide();
+    // Premium üyelik vitrini (pricing) sayfasına yönlendir.
+    // Mevcut sayfa kök (index.html) olduğundan legal/ alt yoluna gidilir.
+    hide(true);
+    window.location.href = 'legal/premium.html';
   }
 
   // ── B.5: "Kodum var" linki → premium modal kapat + loginScreen aç ──
