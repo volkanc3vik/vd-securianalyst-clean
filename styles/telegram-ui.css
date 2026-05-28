@@ -1,0 +1,465 @@
+/* ════════════════════════════════════════════════════════════════════
+   TELEGRAM UI — STYLES
+   Mevcut dark institutional görünüm + minimal animasyon.
+   Yeni renk eklemez, mevcut CSS değişkenlerini kullanır:
+     --green, --red, --cyan, --orange, --purple, --yellow
+     --text, --text2, --text3
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ══════════ ADMIN BUTTON ══════════ */
+.vd-tg-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.vd-tg-admin-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+}
+
+.vd-tg-admin-btn.active {
+  background: rgba(0, 229, 160, 0.08);
+  border-color: rgba(0, 229, 160, 0.35);
+  color: var(--green);
+}
+
+.vd-tg-admin-btn.active:hover {
+  background: rgba(0, 229, 160, 0.12);
+}
+
+.vd-tg-admin-btn-ico {
+  font-size: 11px;
+}
+
+.vd-tg-admin-btn-label {
+  font-size: 10.5px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* Sağ üst köşeye fallback host (header bulunamazsa) */
+.vd-tg-admin-host-fixed {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 9990;
+}
+
+/* ══════════ ADMIN POPUP ══════════ */
+.vd-tg-admin-popup {
+  position: absolute;
+  min-width: 240px;
+  max-width: 280px;
+  padding: 14px;
+  background: rgba(14, 18, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  animation: vd-tg-fade-in 0.18s ease;
+}
+
+@keyframes vd-tg-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vd-tg-admin-popup-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+
+.vd-tg-admin-popup-info {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+.vd-tg-admin-popup-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.vd-tg-admin-popup-input:focus {
+  border-color: var(--cyan);
+}
+
+.vd-tg-admin-popup-input-error {
+  border-color: var(--red);
+  animation: vd-tg-shake 0.25s;
+}
+
+@keyframes vd-tg-shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-3px); }
+  75%      { transform: translateX(3px); }
+}
+
+.vd-tg-admin-popup-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.vd-tg-admin-popup-btn-primary,
+.vd-tg-admin-popup-btn-secondary,
+.vd-tg-admin-popup-btn-danger {
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.vd-tg-admin-popup-btn-primary {
+  background: rgba(0, 212, 255, 0.12);
+  border-color: rgba(0, 212, 255, 0.35);
+  color: var(--cyan);
+}
+
+.vd-tg-admin-popup-btn-primary:hover {
+  background: rgba(0, 212, 255, 0.18);
+}
+
+.vd-tg-admin-popup-btn-secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text3);
+}
+
+.vd-tg-admin-popup-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.vd-tg-admin-popup-btn-danger {
+  background: rgba(255, 61, 107, 0.08);
+  border-color: rgba(255, 61, 107, 0.35);
+  color: var(--red);
+}
+
+.vd-tg-admin-popup-btn-danger:hover {
+  background: rgba(255, 61, 107, 0.15);
+}
+
+/* ══════════ CARD BUTTON ══════════ */
+.vd-tg-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: rgba(0, 212, 255, 0.07);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 6px;
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.vd-tg-card-btn:hover:not(:disabled) {
+  background: rgba(0, 212, 255, 0.14);
+  border-color: rgba(0, 212, 255, 0.45);
+}
+
+.vd-tg-card-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.vd-tg-card-btn-ico {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.vd-tg-card-btn-label {
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+/* Buton + İşlem Aç yan yana */
+.vd-tg-btn-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.vd-tg-btn-row .opp-btn {
+  flex: 1;
+  margin-top: 0 !important;
+  min-width: 0;
+}
+
+/* ══════════ TI BEST SETUP BUTONU (sağ üst) ══════════ */
+.vd-tg-ti-best-btn {
+  margin-left: auto;
+  padding: 5px 9px;
+  font-size: 10.5px;
+}
+
+.vd-tg-ti-best-btn .vd-tg-card-btn-label {
+  font-size: 10px;
+}
+
+/* ti-best-head: flex layout, butonu sağa yaslar */
+.ti-best-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ══════════ TI WATCHLIST BUTONU (kompakt ikon) ══════════ */
+.vd-tg-ti-watch-btn {
+  margin-left: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.vd-tg-ti-watch-btn .vd-tg-card-btn-ico {
+  font-size: 12px;
+}
+
+/* ti-watch-row: butonu doğru hizalamak için */
+.ti-watch-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Mobil */
+@media (max-width: 640px) {
+  .vd-tg-card-btn {
+    padding: 6px 8px;
+    font-size: 10.5px;
+  }
+  .vd-tg-card-btn-label {
+    font-size: 10px;
+  }
+  .vd-tg-ti-best-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .vd-tg-ti-watch-btn {
+    padding: 4px 6px;
+    margin-left: 6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .vd-tg-card-btn-label {
+    display: none;  /* çok dar ekranda sadece ikon */
+  }
+  .vd-tg-card-btn {
+    padding: 6px 8px;
+  }
+  .vd-tg-ti-best-btn .vd-tg-card-btn-label {
+    display: none;
+  }
+  .vd-tg-ti-best-btn {
+    padding: 5px 8px;
+  }
+}
+
+/* ══════════ DROPDOWN ══════════ */
+.vd-tg-dropdown {
+  min-width: 200px;
+  background: rgba(14, 18, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  z-index: 10001;
+  padding: 4px;
+  animation: vd-tg-fade-in 0.18s ease;
+  font-family: inherit;
+}
+
+.vd-tg-dd-header {
+  padding: 6px 10px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text3);
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 4px;
+}
+
+.vd-tg-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-align: left;
+  font-family: inherit;
+}
+
+.vd-tg-dd-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.vd-tg-dd-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vd-tg-dd-ico {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.vd-tg-dd-label {
+  flex: 1;
+}
+
+.vd-tg-dd-cd {
+  font-size: 10px;
+  color: var(--orange);
+  background: rgba(255, 122, 0, 0.1);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.vd-tg-dd-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 4px 6px;
+}
+
+.vd-tg-dd-cancel {
+  color: var(--text3);
+}
+
+.vd-tg-dd-cancel:hover {
+  color: var(--text2);
+}
+
+/* ══════════ TOAST ══════════ */
+.vd-tg-toast-stack {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 11000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.vd-tg-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
+  max-width: 340px;
+  padding: 10px 14px;
+  background: rgba(14, 18, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.vd-tg-toast-in {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.vd-tg-toast-out {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.vd-tg-toast-ico {
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+}
+
+.vd-tg-toast-msg {
+  flex: 1;
+  line-height: 1.45;
+}
+
+.vd-tg-toast-success { border-left: 3px solid var(--green); }
+.vd-tg-toast-success .vd-tg-toast-ico { color: var(--green); }
+
+.vd-tg-toast-error   { border-left: 3px solid var(--red); }
+.vd-tg-toast-error   .vd-tg-toast-ico { color: var(--red); }
+
+.vd-tg-toast-warning { border-left: 3px solid var(--orange); }
+.vd-tg-toast-warning .vd-tg-toast-ico { color: var(--orange); }
+
+.vd-tg-toast-info    { border-left: 3px solid var(--cyan); }
+.vd-tg-toast-info    .vd-tg-toast-ico { color: var(--cyan); }
+
+@media (max-width: 480px) {
+  .vd-tg-toast-stack {
+    bottom: 12px;
+    right: 8px;
+    left: 8px;
+  }
+  .vd-tg-toast {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+}
