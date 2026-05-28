@@ -104,11 +104,14 @@
     popup.setAttribute('role', 'dialog');
 
     if (_active) {
-      // Çıkış modu
+      // Çıkış modu + Premium Kodlar erişimi
       popup.innerHTML = `
         <div class="vd-tg-admin-popup-title">Yayın modu aktif</div>
         <div class="vd-tg-admin-popup-info">Telegram'da analiz paylaşımı açık.</div>
         <div class="vd-tg-admin-popup-actions">
+          <button class="vd-tg-admin-popup-btn-secondary" data-action="codes">🔑 Premium Kodlar</button>
+        </div>
+        <div class="vd-tg-admin-popup-actions" style="margin-top:8px;">
           <button class="vd-tg-admin-popup-btn-secondary" data-action="cancel">Kapat</button>
           <button class="vd-tg-admin-popup-btn-danger" data-action="logout">Çıkış</button>
         </div>
@@ -179,6 +182,14 @@
     if (action === 'cancel') _closePopup();
     else if (action === 'submit') _submitKey();
     else if (action === 'logout') _logout();
+    else if (action === 'codes') {
+      _closePopup();
+      if (window.TelegramUI?.AdminCodesPanel?.open) {
+        window.TelegramUI.AdminCodesPanel.open();
+      } else {
+        NS.Toast?.error?.('Kod paneli yüklenemedi');
+      }
+    }
   }
 
   function _submitKey() {
