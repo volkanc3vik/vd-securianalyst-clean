@@ -1,58 +1,55 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — PREMIUM / PRICING SAYFASI
-DEĞİŞEN DOSYALAR — Baz: CLEAN_7 → Sonuç: CLEAN_8
+VD SecuriAnalyst — PRICING PAGE V2 (geniş vitrin, büyük kartlar)
+DEĞİŞEN DOSYALAR — Baz: CLEAN_8 → Sonuç: CLEAN_9
 ═══════════════════════════════════════════════════════════════
 
-YENİ EKLENEN DOSYA (1):
-  + legal/premium.html   → premium üyelik vitrini (pricing sayfası)
+DEĞİŞEN DOSYALAR (2):
+  1. legal/premium.html      → geniş container ile YENİDEN YAZILDI
+  2. legal/legal-shared.css  → pricing stilleri V2'ye yükseltildi
+                               (eski .pr-* bloğu kesildi, V2 eklendi)
 
-DEĞİŞEN DOSYALAR (3):
-  1. ui/premium/premium-modal.js → modal "Premium'a Geç" butonu artık
-                                    legal/premium.html'e yönlendirir
-                                    (eski "lansman yakında" toast kaldırıldı)
-  2. legal/legal-shared.css      → pricing stilleri eklendi (sona, ~135 satır)
-  3. index.html                  → ?activate=1 parametre kontrolü eklendi
-                                    (premium.html "Kodum Var" → kod modalı açar)
-
-SİLİNECEK DOSYA: YOK
+YENİ/SİLİNECEK DOSYA: YOK
+DOKUNULMAYAN: index.html, premium-modal.js, diğer her şey.
 
 ───────────────────────────────────────────────────────────────
-STRATEJİ A — CTA AKIŞI
+KÖK SORUN ÇÖZÜLDÜ
 ───────────────────────────────────────────────────────────────
-Tüm premium CTA'ları (premium-cta bandı, visual-lock overlay,
-ai-comment-lock, detail-lock) zaten VDPremiumModal.show() açıyordu.
-Modal'daki "Premium'a Geç" butonu artık legal/premium.html'e
-yönlendiriyor → TEK noktayla 6 CTA alanı pricing'e akar.
-Navbar "🔑 Premium Kod" butonu DEĞİŞMEDİ (kod girişi, satış değil).
+Önceki premium.html, legal sayfalarının .legal-content (max-width:800px)
+container'ını kullanıyordu → kartlar dar, sayfa sıkışık, "belge" hissi.
+ÇÖZÜM: yeni .premium-wrap (max-width:1200px) geniş vitrin container.
+legal-content dar yapısı ARTIK KULLANILMIYOR (doğrulandı).
 
 ───────────────────────────────────────────────────────────────
-PREMIUM.HTML İÇERİĞİ
+V2 İYİLEŞTİRMELERİ
 ───────────────────────────────────────────────────────────────
-• Hero: "Premium AI Market Intelligence Access" + cyan/purple glow
-• 3 pricing kartı:
-    - Daily Access  $20  / 24 saat
-    - Weekly Access $100 / 7 gün   ★ MOST POPULAR (featured glow)
-    - Monthly Access $300 / 30 gün
-• Premium özellikler grid (8 madde)
-• Free vs Premium karşılaştırma tablosu
-• Yasal not (tavsiye değildir)
-• Theme V2 uyumlu (theme-v2.css + legal-shared.css linkli)
+• Geniş container: .premium-wrap 1200px (sıkışma bitti)
+• Hero genişledi: mesh+grid bg, büyük gradient başlık
+    "Premium Piyasa Analiz Katmanlarını Aç" + yeni alt metin
+• Kartlar BÜYÜDÜ: padding 40px, fiyat 58px, daha fazla spacing,
+    ayraç çizgili süre, büyük CTA
+• Grid: desktop 3 kolon (repeat(3,1fr))
+• Weekly featured: scale(1.06) + güçlü mor glow + büyük badge + ortada
+• Premium özellikler: ikon-badge'li grid, hover lift (satış hissi)
+• Free vs Premium: BÜYÜK tablo (radius, padding 18px, font 15px,
+    premium kolonu cyan vurgulu, hover satır vurgusu)
+• Alt güvenli uyarı kutusu (.pr-disclaimer) — istenen metin birebir
 
-CTA DAVRANIŞI (gerçek ödeme YOK):
-• "Premium Al" → toast: "💳 Ödeme sistemi hazırlanıyor — <plan> yakında"
-• "Kodum Var" → index.html?activate=1 → mevcut premium kod modalı açılır
+KART ÖZELLİKLERİ (gerçekçi, vaat YOK):
+  Tüm coin erişimi · Kilitli analiz alanlarını açar · AI değerlendirme
+  metinlerinin tamamı · Detaylı teknik görünüm · Premium fiyat haritası
+  alanları · Gelişmiş piyasa görünümü · Premium kullanıcı deneyimi
+YASAKLI DİL YOK: garanti/kazanç/işlem önerisi/sinyal satışı/kesin = 0.
+  ("tavsiye" yalnız "yatırım tavsiyesi değildir" yasal cümlesinde.)
 
-PARA BİRİMİ: $ (USD). TL/kur ve gerçek ödeme = ayrı aşama.
+CTA (değişmedi, sadece metin/görsel iyileşti):
+• "Premium Al" → "💳 Ödeme sistemi hazırlanıyor — <plan>" toast
+• "Premium Kod Gir" → index.html?activate=1 (mevcut kod modalı)
 
-YASAKLI DİL KULLANILMADI: sinyal satışı, garanti, kesin kazanç,
-trade önerisi, yatırım tavsiyesi YOK. ("tavsiye değildir" sadece
-yasal koruma cümlesinde geçer.)
+RESPONSIVE:
+• Desktop (>980px): 3 kolon
+• Tablet (≤980px): 2 + 1 (Monthly tam genişlik altta, ortalı)
+• Mobil (≤640px): tek kolon, fiyat küçülür
 
-DOKUNULMAYANLAR:
-• APP_ACCESS, premium gating logic, access-control
-• Telegram sistemi, engine logic, chart engine, API, hesaplamalar
-• access code sistemi (openPremiumLogin korundu, sadece çağrılıyor)
-• Diğer CSS dosyaları, theme-v2.css
-
-GERİ ALMA: premium.html sil + modal/index/css değişiklikleri
-zararsız (modal yine açılır, sadece yönlenmez).
+DOKUNULMAYANLAR: engine, APP_ACCESS, premium gating, access code,
+Telegram, chart, API, ödeme entegrasyonu — HİÇBİRİ.
+GERİ ALMA: 2 dosyayı eski sürümle değiştir.

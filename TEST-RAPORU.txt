@@ -1,41 +1,45 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — PREMIUM/PRICING: TEST RAPORU
+VD SecuriAnalyst — PRICING V2: TEST RAPORU
 ═══════════════════════════════════════════════════════════════
 
 SYNTAX / YAPI:
-  ✓ ui/premium/premium-modal.js — node --check: GEÇTİ
-  ✓ legal/premium.html inline script — node --check: GEÇTİ
-  ✓ index.html 4 inline script — HEPSİ GEÇTİ (activate=1 eklendi)
-  ✓ premium.html — DOCTYPE, tek html/body, 5/5 section dengeli
-  ✓ legal-shared.css — brace 144/144 DENGELI
-  ✓ premium.html: theme-v2.css + legal-shared.css linkli, 3 pricing kartı
+  ✓ premium.html — DOCTYPE, tek html/body, 4/4 section
+  ✓ premium-wrap KULLANILIYOR, legal-content KULLANILMIYOR (teyit)
+  ✓ 3 pricing kartı (1 featured), theme-v2.css linkli
+  ✓ Free vs Premium tablo: 6 satır (1 başlık + 5 veri)
+  ✓ inline script — node --check: GEÇTİ
+  ✓ legal-shared.css — brace 156/156 DENGELI
 
 YASAKLI DİL TARAMASI (premium.html):
-  ✓ sinyal satışı: 0   ✓ garanti: 0   ✓ kesin kazanç: 0
-  ✓ trade önerisi: 0   ✓ "yatırım tavsiyesi": yalnız "değildir" (yasal)
+  ✓ garanti:0  kazanç:0  işlem önerisi:0  sinyal satışı:0  kesin:0
+  ✓ "tavsiye" → yalnız "yatırım tavsiyesi değildir" (yasal koruma)
 
-CTA ROUTING DOĞRULAMA:
-  ✓ premium-modal _onCtaClick → window.location='legal/premium.html'
-  ✓ premium.html prBuy() → "Ödeme sistemi hazırlanıyor" toast
-  ✓ premium.html prHaveCode() → index.html?activate=1
-  ✓ index.html ?activate=1 → openPremiumLogin() (DOMContentLoaded)
+GERÇEKÇİ ÖZELLİK DOĞRULAMA:
+  ✓ Sadece izin verilen 7 özellik kullanıldı
+  ✓ Olmayan veri/Telegram premium vaadi YOK
 
-REGRESSION RİSKİ: DÜŞÜK
-  • premium.html yeni/izole sayfa
-  • premium-modal.js: sadece 1 fonksiyon (CTA hedefi) değişti, modal akışı korundu
-  • index.html: sadece izole IIFE eklendi (param yoksa hiçbir etki yok)
-  • legal-shared.css: sadece EKLEME (mevcut class'lar korundu)
-  • Gating/Telegram/engine/chart/access-control: SIFIR TEMAS
+CTA DOĞRULAMA:
+  ✓ prBuy() → "Ödeme sistemi hazırlanıyor" toast
+  ✓ prHaveCode() → index.html?activate=1 (kod akışı)
+
+REGRESSION RİSKİ: ÇOK DÜŞÜK
+  • Sadece 2 dosya (premium.html içerik + legal-shared.css pricing stilleri)
+  • CSS: sadece .pr-* / .premium-wrap blokları değişti; about/legal/
+    diğer class'lara dokunulmadı
+  • index.html, premium-modal.js, gating, engine, Telegram: SIFIR TEMAS
+  • CTA routing zaten kuruluydu, değişmedi
 
 DEPLOY SONRASI KONTROL:
-  [ ] vd-securianalyst.com/legal/premium.html açılıyor mu
-  [ ] Hero + 3 kart (Weekly featured glow) görünüyor mu
+  [ ] vd-securianalyst.com/legal/premium.html GENİŞ açılıyor mu
+      (kartlar artık dar/sıkışık DEĞİL)
+  [ ] Hero geniş, büyük başlık + alt metin
+  [ ] 3 kart yan yana, BÜYÜK; Weekly ortada belirgin glow + scale + badge
   [ ] Kartlar hover'da yukarı kalkıp glow alıyor mu
-  [ ] "Premium Al" → "Ödeme sistemi hazırlanıyor" toast çıkıyor mu
-  [ ] "Kodum Var" → ana sayfaya gidip kod modalı açılıyor mu
-  [ ] Free kullanıcıda bir premium CTA (kilitli kart/CTA bandı) tıkla
-      → modal açılıyor → modaldaki "Premium'a Geç" → premium.html'e gidiyor mu
-  [ ] Free vs Premium tablosu + özellik grid düzgün mü
-  [ ] Mobilde kartlar tek kolon + tablo kaydırılabilir mi
-  [ ] Premium kod girince erişim ESKİSİ GİBİ açılıyor mu (gating bozulmadı)
+  [ ] "Premium Al" → "Ödeme sistemi hazırlanıyor" toast
+  [ ] "Premium Kod Gir" → ana sayfada kod modalı
+  [ ] Premium özellikler grid (ikon-badge'li) satış hissi veriyor mu
+  [ ] Free vs Premium tablosu BÜYÜK ve okunabilir mi
+  [ ] Alt güvenli uyarı kutusu görünüyor mu
+  [ ] TABLET genişliğinde 2+1 düzeni (Monthly altta ortalı)
+  [ ] MOBİL tek kolon
   [ ] Hard refresh (Ctrl+Shift+R)

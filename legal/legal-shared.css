@@ -674,136 +674,204 @@ body.legal-page {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   PREMIUM / PRICING sayfası — Theme V2 uyumlu (cyan/purple glow)
-   Sadece premium.html kullanır. Mevcut legal class'lara dokunmaz.
+   PREMIUM / PRICING sayfası V2 — geniş vitrin, büyük kartlar
+   Sadece premium.html kullanır. Geniş container ile legal-content
+   dar yapısı KULLANILMAZ. cyan/purple glow, premium SaaS.
    ════════════════════════════════════════════════════════════════════ */
 
-.premium-page { padding-bottom: 60px; }
+/* ── Geniş vitrin container (legal-content 800px sıkışmasını ATLAR) ── */
+.premium-wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 32px 72px;
+}
 
-/* ── Hero ── */
+/* ── HERO (geniş) ── */
 .pr-hero {
   position: relative;
   text-align: center;
-  padding: 64px 24px 52px;
-  border-radius: 24px;
-  margin-bottom: 12px;
+  padding: 80px 32px 64px;
+  border-radius: 28px;
+  margin-bottom: 56px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 70% 60% at 25% 0%, rgba(0,212,255,0.14), transparent 58%),
-    radial-gradient(ellipse 70% 60% at 80% 10%, rgba(157,125,250,0.16), transparent 58%),
-    var(--bg2);
-  border: 1px solid rgba(0,212,255,0.18);
-  box-shadow: 0 0 50px rgba(0,212,255,0.08);
+    radial-gradient(ellipse 60% 70% at 20% -10%, rgba(0,212,255,0.16), transparent 55%),
+    radial-gradient(ellipse 60% 70% at 82% 0%, rgba(157,125,250,0.18), transparent 55%),
+    linear-gradient(180deg, rgba(15,30,50,0.5), var(--bg2));
+  border: 1px solid rgba(0,212,255,0.2);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 60px rgba(0,212,255,0.10);
+}
+.pr-hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
 }
 .pr-hero-badge {
-  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--cyan);
-  background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.28);
-  border-radius: 100px; padding: 6px 16px; margin-bottom: 22px;
+  position: relative; display: inline-block; font-size: 12px; font-weight: 700;
+  letter-spacing: 2.5px; text-transform: uppercase; color: var(--cyan);
+  background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.32);
+  border-radius: 100px; padding: 7px 20px; margin-bottom: 26px;
 }
 .pr-hero h1 {
-  font-size: clamp(27px, 5vw, 42px); line-height: 1.18; margin: 0 auto 18px;
-  max-width: 760px; border: none; padding: 0;
-  background: linear-gradient(120deg, var(--text) 25%, var(--cyan) 65%, var(--purple) 100%);
+  position: relative;
+  font-size: clamp(30px, 5.5vw, 52px); line-height: 1.12; margin: 0 auto 22px;
+  max-width: 880px; border: none; padding: 0; font-weight: 800;
+  background: linear-gradient(115deg, var(--text) 20%, var(--cyan) 62%, var(--purple) 100%);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
-.pr-hero p { font-size: clamp(14px,2.2vw,17px); color: var(--text2); max-width: 660px; margin: 0 auto; line-height: 1.7; }
+.pr-hero p {
+  position: relative;
+  font-size: clamp(15px, 2.2vw, 19px); color: var(--text2);
+  max-width: 720px; margin: 0 auto; line-height: 1.75;
+}
 
-/* ── Pricing grid ── */
+/* ── PRICING GRID — 3 kolon, büyük kartlar ── */
 .pr-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 22px; margin: 40px auto; max-width: 1000px; align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  align-items: stretch;
+  margin: 0 auto 16px;
 }
 .pr-card {
   position: relative; display: flex; flex-direction: column;
-  padding: 30px 26px; border-radius: 18px;
-  background: linear-gradient(160deg, rgba(0,212,255,0.04), rgba(157,125,250,0.03)), var(--bg2);
+  padding: 40px 32px; border-radius: 22px;
+  background: linear-gradient(165deg, rgba(0,212,255,0.05), rgba(157,125,250,0.04) 70%, rgba(255,255,255,0.01)), var(--bg2);
   border: 1px solid var(--border);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-  transition: transform 0.28s cubic-bezier(0.22,1,0.36,1), border-color 0.28s, box-shadow 0.28s;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+  transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), border-color 0.3s, box-shadow 0.3s;
 }
 .pr-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(0,212,255,0.4);
-  box-shadow: 0 18px 48px rgba(0,0,0,0.5), 0 0 36px rgba(0,212,255,0.16);
+  transform: translateY(-8px);
+  border-color: rgba(0,212,255,0.42);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 48px rgba(0,212,255,0.2);
 }
+/* Weekly featured — en güçlü kart */
 .pr-card.pr-featured {
-  border-color: rgba(157,125,250,0.5);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45), 0 0 40px rgba(157,125,250,0.22);
-  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(157,125,250,0.55);
+  box-shadow: 0 20px 56px rgba(0,0,0,0.5), 0 0 56px rgba(157,125,250,0.3);
+  transform: scale(1.06);
+  background: linear-gradient(165deg, rgba(0,212,255,0.08), rgba(157,125,250,0.08) 70%, rgba(255,255,255,0.015)), var(--bg2);
+  z-index: 2;
 }
-.pr-card.pr-featured:hover { transform: translateY(-12px) scale(1.02); }
+.pr-card.pr-featured:hover { transform: scale(1.06) translateY(-8px); }
 .pr-badge {
-  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-  font-size: 10px; font-weight: 800; letter-spacing: 1.5px; white-space: nowrap;
-  padding: 5px 16px; border-radius: 100px; color: #fff;
+  position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; font-weight: 800; letter-spacing: 1.5px; white-space: nowrap;
+  padding: 7px 20px; border-radius: 100px; color: #fff;
   background: linear-gradient(120deg, var(--cyan), var(--purple));
-  box-shadow: 0 0 22px rgba(157,125,250,0.45);
+  box-shadow: 0 0 28px rgba(157,125,250,0.55), 0 4px 12px rgba(0,0,0,0.4);
 }
-.pr-plan { font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); margin-bottom: 14px; }
-.pr-price { font-size: 44px; font-weight: 800; line-height: 1;
+.pr-plan { font-size: 14px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 18px; }
+.pr-price {
+  font-size: 58px; font-weight: 800; line-height: 1;
   background: linear-gradient(120deg, var(--cyan), var(--purple));
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.pr-price-cur { font-size: 22px; vertical-align: super; -webkit-text-fill-color: var(--cyan); }
-.pr-duration { font-size: 13px; color: var(--text2); margin: 8px 0 22px; }
-.pr-feat { list-style: none; padding: 0; margin: 0 0 24px; flex: 1; }
-.pr-feat li { font-size: 13px; color: var(--text2); padding: 7px 0 7px 26px; position: relative; line-height: 1.5; }
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.pr-price-cur { font-size: 28px; vertical-align: super; -webkit-text-fill-color: var(--cyan); margin-right: 2px; }
+.pr-duration { font-size: 14px; color: var(--text2); margin: 10px 0 28px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.pr-feat { list-style: none; padding: 0; margin: 0 0 32px; flex: 1; }
+.pr-feat li { font-size: 14px; color: var(--text2); padding: 9px 0 9px 28px; position: relative; line-height: 1.55; }
 .pr-feat li::before {
-  content: "✓"; position: absolute; left: 0; top: 7px;
-  color: var(--cyan); font-weight: 800; font-size: 13px;
+  content: "✓"; position: absolute; left: 0; top: 9px;
+  color: var(--cyan); font-weight: 800; font-size: 14px;
 }
 .pr-cta {
   display: block; width: 100%; text-align: center;
-  padding: 13px 20px; border-radius: 11px; border: none; cursor: pointer;
-  font-size: 14px; font-weight: 700; font-family: inherit; color: #fff;
-  background: linear-gradient(120deg, var(--cyan), var(--blue, #1565ff) 60%, var(--purple));
-  box-shadow: 0 0 20px rgba(0,212,255,0.25);
+  padding: 16px 22px; border-radius: 13px; border: none; cursor: pointer;
+  font-size: 15px; font-weight: 700; font-family: inherit; color: #fff;
+  background: linear-gradient(120deg, var(--cyan), var(--blue, #1565ff) 55%, var(--purple));
+  box-shadow: 0 0 26px rgba(0,212,255,0.3);
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.pr-cta:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0,212,255,0.4); }
+.pr-cta:hover { transform: translateY(-2px); box-shadow: 0 0 38px rgba(0,212,255,0.5); }
 .pr-card:not(.pr-featured) .pr-cta {
-  background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.3); color: var(--cyan);
-  box-shadow: none;
+  background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.32); color: var(--cyan); box-shadow: none;
 }
-.pr-card:not(.pr-featured) .pr-cta:hover { background: rgba(0,212,255,0.14); box-shadow: 0 0 18px rgba(0,212,255,0.2); }
+.pr-card:not(.pr-featured) .pr-cta:hover { background: rgba(0,212,255,0.15); box-shadow: 0 0 22px rgba(0,212,255,0.25); }
 
-/* ── Premium özellikler bölümü ── */
-.pr-section { margin-top: 52px; }
-.pr-section > h2 { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); border: none; padding: 0; margin-bottom: 18px; text-align: center; }
-.pr-feat-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; max-width: 900px; margin: 0 auto;
-}
-.pr-feat-item {
-  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px;
-  background: rgba(0,212,255,0.03); border: 1px solid var(--border);
-  font-size: 13px; color: var(--text); transition: border-color 0.2s, background 0.2s;
-}
-.pr-feat-item:hover { border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.06); }
-.pr-feat-item .pr-fi-ico { color: var(--cyan); font-weight: 800; flex-shrink: 0; }
-
-/* ── FREE vs PREMIUM tablo ── */
-.pr-compare-wrap { max-width: 760px; margin: 0 auto; overflow-x: auto; }
-.pr-compare { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
-.pr-compare th, .pr-compare td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; }
-.pr-compare thead th { color: var(--text3); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; font-size: 11px; }
-.pr-compare thead th.pr-col-prem { color: var(--cyan); }
-.pr-compare td.pr-free { color: var(--text3); }
-.pr-compare td.pr-prem { color: var(--text); }
-.pr-compare td.pr-prem::before { content: "✓ "; color: var(--cyan); font-weight: 800; }
-.pr-compare tbody tr:hover { background: rgba(0,212,255,0.03); }
-
-/* ── Kodum var alanı ── */
-.pr-code-note { text-align: center; margin-top: 40px; font-size: 13px; color: var(--text2); }
+/* ── Kodum var ── */
+.pr-code-note { text-align: center; margin-top: 36px; font-size: 14px; color: var(--text2); }
 .pr-code-link {
   background: none; border: none; cursor: pointer; font: inherit;
-  color: var(--cyan); font-weight: 700; text-decoration: underline; padding: 0;
+  color: var(--cyan); font-weight: 700; text-decoration: underline; padding: 0; margin-left: 4px;
 }
 .pr-code-link:hover { color: var(--purple); }
 
-@media (max-width: 640px) {
-  .pr-hero { padding: 44px 18px 38px; }
-  .pr-grid { grid-template-columns: 1fr; }
+/* ── Bölüm başlıkları ── */
+.pr-section { margin-top: 72px; }
+.pr-section > h2 {
+  font-size: clamp(20px, 3vw, 28px); font-weight: 800; letter-spacing: 0.3px;
+  color: var(--text); border: none; padding: 0; margin-bottom: 8px; text-align: center;
+}
+.pr-section > .pr-sub { text-align: center; color: var(--text2); font-size: 15px; margin-bottom: 32px; }
+
+/* ── Premium özellikler grid ── */
+.pr-feat-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+}
+.pr-feat-item {
+  display: flex; align-items: center; gap: 14px; padding: 20px 22px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.04), rgba(157,125,250,0.03)), var(--bg2);
+  border: 1px solid var(--border);
+  font-size: 14px; font-weight: 500; color: var(--text);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.pr-feat-item:hover { transform: translateY(-3px); border-color: rgba(0,212,255,0.35); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+.pr-feat-item .pr-fi-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; font-size: 16px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.18), rgba(157,125,250,0.18));
+  border: 1px solid var(--border); color: var(--cyan); font-weight: 800;
+}
+
+/* ── FREE vs PREMIUM (büyük, okunabilir) ── */
+.pr-compare-wrap { max-width: 880px; margin: 0 auto; overflow-x: auto; }
+.pr-compare {
+  width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; min-width: 560px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 18px; overflow: hidden;
+}
+.pr-compare th, .pr-compare td { padding: 18px 22px; border-bottom: 1px solid var(--border); text-align: left; }
+.pr-compare thead th {
+  color: var(--text3); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  font-size: 12px; background: rgba(255,255,255,0.02);
+}
+.pr-compare thead th.pr-col-prem {
+  color: var(--cyan); background: rgba(0,212,255,0.06); font-size: 13px;
+}
+.pr-compare tbody tr:last-child td { border-bottom: none; }
+.pr-compare td.pr-free { color: var(--text3); }
+.pr-compare td.pr-prem { color: var(--text); font-weight: 500; background: rgba(0,212,255,0.03); }
+.pr-compare td.pr-prem::before { content: "✓ "; color: var(--cyan); font-weight: 800; }
+.pr-compare td:first-child { font-weight: 600; color: var(--text2); }
+.pr-compare tbody tr:hover td { background: rgba(0,212,255,0.05); }
+.pr-compare tbody tr:hover td.pr-prem { background: rgba(0,212,255,0.09); }
+
+/* ── Alt güvenli uyarı (geniş) ── */
+.pr-disclaimer {
+  max-width: 880px; margin: 56px auto 0; padding: 24px 28px; border-radius: 16px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-left: 3px solid var(--cyan);
+  font-size: 14px; color: var(--text2); line-height: 1.7; text-align: center;
+}
+
+/* ── RESPONSIVE: tablet 2+1, mobil tek kolon ── */
+@media (max-width: 980px) {
+  .pr-grid { grid-template-columns: repeat(2, 1fr); }
+  /* 3. kart (Monthly) tam genişlik alta */
+  .pr-grid > .pr-card:nth-child(3) { grid-column: 1 / -1; max-width: 460px; margin: 0 auto; width: 100%; }
   .pr-card.pr-featured { transform: none; }
-  .pr-card.pr-featured:hover { transform: translateY(-6px); }
+  .pr-card.pr-featured:hover { transform: translateY(-8px); }
+}
+@media (max-width: 640px) {
+  .premium-wrap { padding: 20px 16px 56px; }
+  .pr-hero { padding: 52px 20px 44px; border-radius: 22px; }
+  .pr-grid { grid-template-columns: 1fr; gap: 36px; }
+  .pr-grid > .pr-card:nth-child(3) { max-width: none; }
   .pr-feat-grid { grid-template-columns: 1fr; }
+  .pr-price { font-size: 48px; }
 }
