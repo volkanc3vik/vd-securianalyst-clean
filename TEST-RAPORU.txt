@@ -1,47 +1,49 @@
 ═══════════════════════════════════════════════════════════════
-VD SecuriAnalyst — AŞAMA 1: TEST RAPORU
+VD SecuriAnalyst — AŞAMA 2: TEST RAPORU (About Sayfası)
 ═══════════════════════════════════════════════════════════════
 
-SYNTAX KONTROLLERİ (node --check):
-  ✓ index.html — 4 inline script bloğu: HEPSİ GEÇTİ
-  ✓ engines/intelligence/ti-narrator.js: GEÇTİ
-  ✓ engines/intelligence/ti-risk-assessor.js: GEÇTİ
-  ✓ ui/futures/futures-card.js: GEÇTİ
-  ✓ ui/futures/futures-panel.js: GEÇTİ
-  ✓ ui/intelligence/ti-best-setup-card.js: GEÇTİ
-  ✓ ui/premium/premium-modal.js: GEÇTİ
+SYNTAX / YAPI KONTROLLERİ:
+  ✓ ui/legal/footer.js — node --check: GEÇTİ
+  ✓ legal/about.html — DOCTYPE doğru, tek <html>, tek <body>
+  ✓ about.html — <section> 6/6 dengeli, <div> 34/34 dengeli
+  ✓ legal-shared.css — { } brace dengesi: 98/98 DENGELI
+  ✓ --purple (#9d7dfa) değişkeni :root'a eklendi
+  ✓ about.html legal-shared.css'e bağlı
 
-YAPISAL KONTROL:
-  ✓ Tek </body>, tek </html> (korundu)
-  ✓ Klasör yapısı bozulmadı
-  ✓ Yeni/silinen dosya yok
+İÇERİK DOĞRULAMA:
+  ✓ 7 teknoloji kartı (about-card) render yapısı tam
+  ✓ 7 iletişim kanalı (about-contact-item) — tüm e-postalar + sosyal
+  ✓ Tüm e-postalar mailto: linkli, sosyal linkler target=_blank rel=noopener
 
-GÖRÜNÜR METİN TARAMASI (final):
-  ✓ "İşleme Gir / Long gir / Short gir": KALMADI
-  ✓ "girişlerden/girişten kaçın": KALMADI
-  ✓ "long/short fırsat": KALMADI
-  ✓ "AL/SAT SİNYAL, Al/Sat sinyal": KALMADI
-  ✓ "AI Signal Cards / Signal Card (görünür)": KALMADI
-  ✓ "Trade Modu / AI TRADE MENTOR (görünür)": KALMADI
-  → Yalnızca kod yorumu kaldı (index.html:2440), kullanıcıya görünmez.
+YASAKLI İFADE TARAMASI (about.html):
+  ✓ "sinyal grubu": 0
+  ✓ "al/sat": 0
+  ✓ "işlem aç": 0
+  ✓ "kesin kazanç": 0
+  ✓ "trade": 0
+  ✓ "garanti": yalnızca "garanti ETMEZ" (koruyucu reddi-beyan) — güvenli
+  ✓ "yatırım tavsiyesi": yalnızca "DEĞİLDİR / VERMEZ" (yasal koruma) — güvenli
+  → Pazarlama/yönlendirme bağlamında yasaklı ifade YOK.
+
+FOOTER LİNK ENTEGRASYONU:
+  ✓ Ana sayfa footer (footer.js): "Hakkımızda" linki eklendi (en başa)
+  ✓ 8/8 legal sayfada footer nav'da "Hakkımızda" linki mevcut
+    (about, contact, cookies, disclaimer, kvkk, privacy, risk, terms)
+  ✓ about.html → ../index.html ve diğer legal sayfalara link veriyor
 
 REGRESSION RİSKİ DEĞERLENDİRMESİ:
-  • Tüm değişiklikler yalnızca KULLANICIYA GÖRÜNEN string'ler.
-  • Hiçbir logic, hesaplama, değişken/fonksiyon adı değişmedi.
-  • LONG/SHORT iç değerleri korundu → scan/scoring/chart etkilenmez.
-  • Premium gating, access-control, detail-lock dokunulmadı.
-  • Telegram gönderim mantığı dokunulmadı.
-  • RİSK SEVİYESİ: DÜŞÜK. Yalnızca metin/etiket görünümü değişti.
-
-  ⚠ Tek dikkat: Kullanıcı arayüzünde bazı başlık/etiketler
-    yeni isimleriyle görünecek (beklenen davranış). İşlevsel
-    bir kayıp yok.
+  • RİSK SEVİYESİ: ÇOK DÜŞÜK.
+  • about.html tamamen yeni, izole bir sayfa — mevcut akışı etkilemez.
+  • footer.js: idempotent mount mantığı korundu, sadece 1 link satırı eklendi.
+  • CSS: yalnızca EKLEME yapıldı, mevcut hiçbir kural değiştirilmedi.
+  • index.html'e DOKUNULMADI.
+  • premium gating / Telegram / engine / cookie-banner: SIFIR TEMAS.
 
 DEPLOY SONRASI KONTROL LİSTESİ:
-  [ ] Coin seç → detay panelinde "Referans/Risk Limiti/Hedef Bölge" etiketleri
-  [ ] Sol panel → "Yukarı/Aşağı Yönlü Görünüm" başlıkları
-  [ ] TI paneli → "AI Analiz Kartları", "Teknik Görünüm" dili
-  [ ] TI best-setup kartı → "Görünüm Değerlendirmesi", "Hedef Bölge 1/2"
-  [ ] Futures paneli → "Manuel Pozisyon Ekle", "⚡ Pozisyon Ekle" butonları
-  [ ] AI Mentor yorumları → "teknik görünüm" dili ("setup" yok)
-  [ ] Onboarding → "Analiz Kartı üretir" metni
+  [ ] vd-securianalyst.com/legal/about.html açılıyor mu
+  [ ] Hero başlığı gradient görünüyor mu (cyan→purple)
+  [ ] 7 teknoloji kartı hover'da yukarı kalkıyor mu
+  [ ] İletişim e-posta linkleri tıklanınca mail açıyor mu
+  [ ] Ana sayfa altındaki footer'da "Hakkımızda" linki var mı → about'a gidiyor mu
+  [ ] Herhangi bir legal sayfanın (ör. Gizlilik) footer'ında "Hakkımızda" var mı
+  [ ] Mobilde kartlar tek kolona düşüyor mu

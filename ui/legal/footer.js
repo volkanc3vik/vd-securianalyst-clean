@@ -39,6 +39,8 @@
           Kripto para işlemleri yüksek risk içerir.
         </div>
         <div class="vd-legal-links">
+          <a href="${LEGAL_PATH}about.html">Hakkımızda</a>
+          <span class="vd-legal-links-sep">·</span>
           <a href="${LEGAL_PATH}disclaimer.html">Yatırım Tavsiyesi Değildir</a>
           <span class="vd-legal-links-sep">·</span>
           <a href="${LEGAL_PATH}terms.html">Kullanım Koşulları</a>
