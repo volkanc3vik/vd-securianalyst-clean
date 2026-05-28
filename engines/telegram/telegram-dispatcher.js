@@ -53,6 +53,41 @@ window.TelegramDispatcher = (() => {
     _adminKey = null;
   }
 
+  // ── Admin API sarmalı (key private kalır, dışarı sızmaz) ──────────
+  // Kullanım: TelegramDispatcher.adminFetch('/api/admin-codes', { action:'list' })
+  async function adminFetch(endpoint, payload, opts) {
+    opts = opts || {};
+    if (typeof _adminKey !== 'string' || _adminKey.length === 0) {
+      throw new Error('admin_key_missing');
+    }
+    const method = opts.method || (payload && payload.action === 'list' && opts.useGet !== false ? 'GET' : 'POST');
+    let url = endpoint;
+    let body;
+    if (method === 'GET') {
+      const qs = new URLSearchParams();
+      Object.keys(payload || {}).forEach(k => {
+        if (payload[k] != null) qs.set(k, String(payload[k]));
+      });
+      url = endpoint + (qs.toString() ? '?' + qs.toString() : '');
+    } else {
+      body = JSON.stringify(payload || {});
+    }
+    const r = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': _adminKey,
+      },
+      body,
+    });
+    const text = await r.text();
+    let data;
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { ok: false, error: 'invalid_response' }; }
+    if (!r.ok && !data.error) data.error = 'http_' + r.status;
+    if (!('ok' in data)) data.ok = r.ok;
+    return data;
+  }
+
   // ── Cooldown API ──────────────────────────────────────────────────
   function isOnCooldown(sym, dir, channel) {
     const key = _cooldownKey(sym, dir, channel);
@@ -234,5 +269,6 @@ window.TelegramDispatcher = (() => {
     setAdminKey,
     hasAdminKey,
     clearAdminKey,
+    adminFetch,
   };
 })();
