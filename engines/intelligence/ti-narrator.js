@@ -83,14 +83,14 @@ window.TINarrator = (() => {
 
   function _summary(dir, momentum, risk) {
     if (dir === 'UP') {
-      if (momentum === 'Exhausted') return 'Uzama riski yüksek — yeni longlarda temkin.';
+      if (momentum === 'Exhausted') return 'Uzama riski yüksek — yukarı yönlü görünümde temkin.';
       if (momentum === 'Weakening') return 'Geri çekilme riski artıyor — kârı koru.';
       if (momentum === 'Strong')    return 'Trend devamı destekleniyor.';
       if (momentum === 'Healthy')   return 'Devamlılık için yapıcı koşullar.';
       return 'Erken aşama hareket — onay bekle.';
     }
     if (dir === 'DOWN') {
-      if (momentum === 'Exhausted') return 'Ortalama dönüş riski — geç shortlar zayıf.';
+      if (momentum === 'Exhausted') return 'Ortalama dönüş riski — geç aşağı yönlü görünüm zayıf.';
       if (momentum === 'Weakening') return 'Aşağı yön momentum kaybediyor — sıçrama mümkün.';
       if (momentum === 'Strong')    return 'Aşağı yön devamı destekleniyor.';
       if (momentum === 'Healthy')   return 'Düşüş yönlü bias korunuyor.';

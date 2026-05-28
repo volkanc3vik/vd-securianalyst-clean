@@ -35,7 +35,7 @@ window.TIBestSetupCard = (() => {
         <div class="ti-card">
           <div class="ti-card-label"><span class="ti-card-label-dot"></span>EN OLGUN SETUP</div>
           <div class="ti-empty">
-            <div class="ti-empty-title">Bu döngüde kaliteli setup bulunmadı</div>
+            <div class="ti-empty-title">Bu döngüde kaliteli teknik görünüm bulunmadı</div>
             <div>Hiçbir coin kalite eşiğini geçmedi. Piyasa izleniyor.</div>
             ${tierLine}
           </div>
@@ -82,7 +82,7 @@ window.TIBestSetupCard = (() => {
     const metricsRow = `
       <div class="ti-metrics-row">
         <div class="ti-metric">
-          <span class="ti-metric-label">Setup Confidence</span>
+          <span class="ti-metric-label">Görünüm Değerlendirmesi</span>
           <span class="ti-metric-val ti-metric-confidence">${score}</span>
         </div>
         <div class="ti-metric">
@@ -95,10 +95,10 @@ window.TIBestSetupCard = (() => {
     // Setup levels
     const levelsHtml = (setup.entry || setup.sl || setup.tp1) ? `
       <div class="ti-best-levels">
-        ${setup.entry ? `<div class="ti-best-level"><span class="ti-best-level-label">Giriş</span><span class="ti-best-level-val entry">${_fmtPrice(setup.entry)}</span></div>` : ''}
-        ${setup.sl    ? `<div class="ti-best-level"><span class="ti-best-level-label">Stop</span><span class="ti-best-level-val sl">${_fmtPrice(setup.sl)}</span></div>` : ''}
-        ${setup.tp1   ? `<div class="ti-best-level"><span class="ti-best-level-label">TP1</span><span class="ti-best-level-val tp1">${_fmtPrice(setup.tp1)}</span></div>` : ''}
-        ${setup.tp2   ? `<div class="ti-best-level"><span class="ti-best-level-label">TP2</span><span class="ti-best-level-val tp2">${_fmtPrice(setup.tp2)}</span></div>` : ''}
+        ${setup.entry ? `<div class="ti-best-level"><span class="ti-best-level-label">Referans</span><span class="ti-best-level-val entry">${_fmtPrice(setup.entry)}</span></div>` : ''}
+        ${setup.sl    ? `<div class="ti-best-level"><span class="ti-best-level-label">Risk Limiti</span><span class="ti-best-level-val sl">${_fmtPrice(setup.sl)}</span></div>` : ''}
+        ${setup.tp1   ? `<div class="ti-best-level"><span class="ti-best-level-label">Hedef Bölge 1</span><span class="ti-best-level-val tp1">${_fmtPrice(setup.tp1)}</span></div>` : ''}
+        ${setup.tp2   ? `<div class="ti-best-level"><span class="ti-best-level-label">Hedef Bölge 2</span><span class="ti-best-level-val tp2">${_fmtPrice(setup.tp2)}</span></div>` : ''}
       </div>
     ` : '';
 
@@ -116,7 +116,7 @@ window.TIBestSetupCard = (() => {
 
           <div class="ti-mat-wrap">
             <div class="ti-mat-label">
-              <span>Setup Olgunluğu</span>
+              <span>Teknik Görünüm Olgunluğu</span>
               <b>${matPct}%</b>
             </div>
             <div class="ti-mat-bar">

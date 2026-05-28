@@ -1,0 +1,53 @@
+═══════════════════════════════════════════════════════════════
+VD SecuriAnalyst — AŞAMA 1: MARKA DİLİ / HUKUKİ DİL REFACTOR V2
+DEĞİŞEN DOSYALAR RAPORU
+Baz: CLEAN_3-FULL  →  Sonuç: CLEAN_4
+═══════════════════════════════════════════════════════════════
+
+DEĞİŞEN DOSYALAR (7):
+  1. index.html
+  2. engines/intelligence/ti-narrator.js
+  3. engines/intelligence/ti-risk-assessor.js
+  4. ui/futures/futures-card.js
+  5. ui/futures/futures-panel.js
+  6. ui/intelligence/ti-best-setup-card.js
+  7. ui/premium/premium-modal.js
+
+YENİ EKLENEN DOSYA: YOK
+SİLİNECEK DOSYA: YOK
+
+NOT: engines/crowd-engine.js, engines/market-regime-engine.js,
+engines/intelligence/ti-regime.js, ti-market-pressure.js dosyaları
+CLEAN_3'te ZATEN güncellenmişti — bu aşamada içerikleri değişmedi.
+
+───────────────────────────────────────────────────────────────
+YAPILAN GÖRÜNÜR METİN DÖNÜŞÜMLERİ (özet)
+───────────────────────────────────────────────────────────────
+• "AI Signal Cards" → "AI Analiz Kartları"
+• "AI TRADE MENTOR" (görünür başlık) → "AI ANALİZ MENTORU"
+• "Signal Card üretir" (onboarding) → "Analiz Kartı üretir"
+• "Long/Short Fırsatları" → "Yukarı/Aşağı Yönlü Görünüm"
+• "LONG/SHORT fırsatı" → "Yukarı/Aşağı yön eğilimi"
+• Görünür "Sinyal" → "Analiz / Gösterge / İşaret / Veri"
+• "yükseliş/düşüş sinyali" (mum formasyon) → "yukarı/aşağı yönlü teknik işaret"
+• Görünür "Setup" → "Teknik Görünüm / Teknik Yapı"
+• "Setup Confidence" → "Görünüm Değerlendirmesi"
+• "Setup Olgunluğu" → "Teknik Görünüm Olgunluğu"
+• TI kart etiketleri: Giriş→Referans, Stop→Risk Limiti, TP1/TP2→Hedef Bölge 1/2
+• "GİRİŞ ZAMANLAMA" → "TEKNİK GÖRÜNÜM ZAMANLAMASI"
+• "Manuel İşlem Aç / ⚡ İşlem Aç" → "Manuel Pozisyon Ekle / ⚡ Pozisyon Ekle"
+• "⚡ İşlem aktif" → "⚡ Pozisyon aktif"
+• "Giriş bölgesinde — bekle" → "Referans bölgesinde — gözlem"
+• "yeni longlarda temkin" → "yukarı yönlü görünümde temkin"
+• "geç shortlar zayıf" → "geç aşağı yönlü görünüm zayıf"
+• "geç giriş baskısı" → "geç katılım baskısı"
+• "Eksik veri ile işlem yapmak" → "Eksik veri ile değerlendirme yapmak"
+• "giriş için daha fazla teyit bekle" → "daha fazla teyit beklenmeli"
+
+DOKUNULMAYANLAR (kod içi, görünmez):
+• signal:'LONG' / signal:'SHORT' değerleri
+• setup.dir / setupCard / _setupObserver vb. değişken/fonksiyon adları
+• LONG/SHORT iç logic değerleri, TP/stop/entry hesaplamaları
+• Telegram formatter mantığı (zaten "teknik destek" güvenli dili kullanıyor)
+• futures-card.js teknik "Stop/TP" terimleri (önceki karar gereği)
+• Yorum satırları (ör. index.html:2440 "PHASE 10: AI TRADE MENTOR")

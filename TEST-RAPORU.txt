@@ -1,0 +1,47 @@
+═══════════════════════════════════════════════════════════════
+VD SecuriAnalyst — AŞAMA 1: TEST RAPORU
+═══════════════════════════════════════════════════════════════
+
+SYNTAX KONTROLLERİ (node --check):
+  ✓ index.html — 4 inline script bloğu: HEPSİ GEÇTİ
+  ✓ engines/intelligence/ti-narrator.js: GEÇTİ
+  ✓ engines/intelligence/ti-risk-assessor.js: GEÇTİ
+  ✓ ui/futures/futures-card.js: GEÇTİ
+  ✓ ui/futures/futures-panel.js: GEÇTİ
+  ✓ ui/intelligence/ti-best-setup-card.js: GEÇTİ
+  ✓ ui/premium/premium-modal.js: GEÇTİ
+
+YAPISAL KONTROL:
+  ✓ Tek </body>, tek </html> (korundu)
+  ✓ Klasör yapısı bozulmadı
+  ✓ Yeni/silinen dosya yok
+
+GÖRÜNÜR METİN TARAMASI (final):
+  ✓ "İşleme Gir / Long gir / Short gir": KALMADI
+  ✓ "girişlerden/girişten kaçın": KALMADI
+  ✓ "long/short fırsat": KALMADI
+  ✓ "AL/SAT SİNYAL, Al/Sat sinyal": KALMADI
+  ✓ "AI Signal Cards / Signal Card (görünür)": KALMADI
+  ✓ "Trade Modu / AI TRADE MENTOR (görünür)": KALMADI
+  → Yalnızca kod yorumu kaldı (index.html:2440), kullanıcıya görünmez.
+
+REGRESSION RİSKİ DEĞERLENDİRMESİ:
+  • Tüm değişiklikler yalnızca KULLANICIYA GÖRÜNEN string'ler.
+  • Hiçbir logic, hesaplama, değişken/fonksiyon adı değişmedi.
+  • LONG/SHORT iç değerleri korundu → scan/scoring/chart etkilenmez.
+  • Premium gating, access-control, detail-lock dokunulmadı.
+  • Telegram gönderim mantığı dokunulmadı.
+  • RİSK SEVİYESİ: DÜŞÜK. Yalnızca metin/etiket görünümü değişti.
+
+  ⚠ Tek dikkat: Kullanıcı arayüzünde bazı başlık/etiketler
+    yeni isimleriyle görünecek (beklenen davranış). İşlevsel
+    bir kayıp yok.
+
+DEPLOY SONRASI KONTROL LİSTESİ:
+  [ ] Coin seç → detay panelinde "Referans/Risk Limiti/Hedef Bölge" etiketleri
+  [ ] Sol panel → "Yukarı/Aşağı Yönlü Görünüm" başlıkları
+  [ ] TI paneli → "AI Analiz Kartları", "Teknik Görünüm" dili
+  [ ] TI best-setup kartı → "Görünüm Değerlendirmesi", "Hedef Bölge 1/2"
+  [ ] Futures paneli → "Manuel Pozisyon Ekle", "⚡ Pozisyon Ekle" butonları
+  [ ] AI Mentor yorumları → "teknik görünüm" dili ("setup" yok)
+  [ ] Onboarding → "Analiz Kartı üretir" metni

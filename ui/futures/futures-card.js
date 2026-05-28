@@ -62,13 +62,13 @@ window.FuturesCard = (() => {
     if (p.tp1Hit) return '🎯 TP1 hedefine ulaşıldı — TP2 izle.';
     switch (zone) {
       case 'STOP':       return '⚠ Stop bölgesi — risk yüksek.';
-      case 'PRE_ENTRY':  return '⚡ Giriş bölgesinde — bekle.';
+      case 'PRE_ENTRY':  return '⚡ Referans bölgesinde — gözlem.';
       case 'IN_PROFIT':  return '📈 Kâr bölgesinde — momentum izle.';
       case 'PROFIT_1':   return '🎯 TP1 bölgesinde.';
       case 'PROFIT_2':   return '🏆 TP2 bölgesinde.';
       case 'PROFIT_3':   return '🚀 TP3 bölgesinde — hedef yakın.';
       case 'BEYOND':     return '🚀 TP hedefini geçti.';
-      default:           return '⚡ İşlem aktif.';
+      default:           return '⚡ Pozisyon aktif.';
     }
   }
 

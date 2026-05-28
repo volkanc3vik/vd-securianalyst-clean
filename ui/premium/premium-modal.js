@@ -93,7 +93,7 @@
     const warnIcon = document.createElement('span');
     warnIcon.textContent = '⚠️ ';
     const warnText = document.createElement('span');
-    warnText.textContent = 'Eksik veri ile işlem yapmak risklidir';
+    warnText.textContent = 'Eksik veri ile değerlendirme yapmak risklidir';
     warning.appendChild(warnIcon);
     warning.appendChild(warnText);
     modal.appendChild(warning);

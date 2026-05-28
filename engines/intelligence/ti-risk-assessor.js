@@ -42,7 +42,7 @@ window.TIRiskAssessor = (() => {
     if (fundingFactor?.available) {
       if (fundingFactor.score <= 3) {
         riskScore += 25;
-        reasons.push('Funding stres altında — geç giriş baskısı');
+        reasons.push('Funding stres altında — geç katılım baskısı');
       } else if (fundingFactor.score <= 5) {
         riskScore += 10;
       }

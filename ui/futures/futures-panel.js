@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════
 // FUTURES PANEL — Ana container
-// "+ Manuel İşlem Aç" butonu, aktif pozisyon kart listesi, sayaç.
+// "+ Manuel Pozisyon Ekle" butonu, aktif pozisyon kart listesi, sayaç.
 // Render strateji: state değişiminde full re-render; her saniye sadece
 // duration tick. PNL/mark price değişiminde RAF ile throttled tam render.
 // ════════════════════════════════════════════════════════════════════
@@ -34,7 +34,7 @@ window.FuturesPanel = (() => {
               <button class="fp-balance-cancel" id="fpBalanceCancel" title="Vazgeç">×</button>
             </span>
           </span>
-          <button class="fp-btn-open" id="fpOpenBtn">+ Manuel İşlem Aç</button>
+          <button class="fp-btn-open" id="fpOpenBtn">+ Manuel Pozisyon Ekle</button>
         </div>
         <div id="fpList"></div>
       </div>
@@ -145,7 +145,7 @@ window.FuturesPanel = (() => {
         <div class="fp-empty">
           <div class="fp-empty-icon">📊</div>
           <div class="fp-empty-title">Aktif işlem yok</div>
-          <div class="fp-empty-sub">Yukarıdaki <b style="color:var(--cyan)">+ Manuel İşlem Aç</b> butonuna veya sinyal kartındaki <b style="color:var(--cyan)">⚡ İşlem Aç</b> butonuna bas.</div>
+          <div class="fp-empty-sub">Yukarıdaki <b style="color:var(--cyan)">+ Manuel Pozisyon Ekle</b> butonuna veya analiz kartındaki <b style="color:var(--cyan)">⚡ Pozisyon Ekle</b> butonuna bas.</div>
         </div>
       `;
       return;

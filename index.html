@@ -2558,7 +2558,7 @@ function startTimer() {
     <div class="sig-card-body">
       <div class="sc-section-title">
         <div class="sc-rarity-dot" style="background:var(--purple);animation:aiBrain 2s infinite"></div>
-        AI Signal Cards
+        AI Analiz Kartları
         <span style="margin-left:auto;font-size:10px;color:var(--text3)" id="scCount">0 aktif kart</span>
       </div>
       <!-- Sort Bar -->
@@ -6774,7 +6774,7 @@ const SCE = (() => {
 
       <!-- Timing -->
       <div class="sc-timing">
-        <div class="sc-timing-lbl">⏱ GİRİŞ ZAMANLAMA</div>
+        <div class="sc-timing-lbl">⏱ TEKNİK GÖRÜNÜM ZAMANLAMASI</div>
         <div class="sc-timing-val">${timing}</div>
       </div>
 
@@ -8479,7 +8479,7 @@ const RiskEnginePro = (() => {
     if(atrPct>4)      advice += 'Yüksek volatilite — pozisyon boyutunu küçük tut. ';
     if(lev<=3)        advice += 'Düşük kaldıraç önerilir. ';
     if(conf>=75&&lev>=5) advice += `Güçlü setup: ${lev}x kaldıraç ve %${riskPct} risk ile girilebilir. `;
-    else if(conf<60)  advice += 'Güven düşük — giriş için daha fazla teyit bekle. ';
+    else if(conf<60)  advice += 'Değerlendirme düşük — daha fazla teyit beklenmeli. ';
     if(oiData&&oiData.fund&&Math.abs(oiData.fund)>0.08) advice += 'Yüksek funding nedeniyle kaldıraç düşürüldü. ';
     if(regimeMode==='PANIC') advice += 'Panik modu — agresif pozisyon açmaktan kaçın. ';
     if(!advice) advice = `${lev}x kaldıraç ile portföyün %${riskPct}'ini riske at. Stop: %${stopPct.toFixed(1)}.`;
@@ -9369,7 +9369,7 @@ function initApp(isAdmin){
     <div class="ob-step" id="ob-s2">
       <div class="ob-icon">🔍</div>
       <div class="ob-title">Otomatik Tarama</div>
-      <div class="ob-desc">Sistem tüm Binance Futures coinlerini sürekli tarar. Güçlü setup oluşunca Signal Card üretir, sizi bildirimle uyarır.</div>
+      <div class="ob-desc">Sistem tüm Binance Futures coinlerini sürekli tarar. Güçlü teknik görünüm oluşunca Analiz Kartı üretir, sizi bildirimle uyarır.</div>
     </div>
     <div class="ob-step" id="ob-s3">
       <div class="ob-icon">🧠</div>
