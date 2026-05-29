@@ -1,92 +1,104 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   VD SECURIANALYST — CINEMATIC THEME V3 (Institutional Intelligence Terminal)
-   Felsefe: Bloomberg yoğunluğu × Apple disiplini × Cyberpunk atmosferi.
-   Restraint > şov. Glow kontrollü ve anlamlı yerlerde.
-   Additive override layer. HTML/JS/class'lara dokunmaz. Sil = eski tema.
+   VD SECURIANALYST — CINEMATIC THEME V4 (Karanlığın İçinden Enerji)
+   Felsefe: Tron × Apple × Institutional Trading Terminal.
+   Karanlık premium teknoloji laboratuvarı. Glow geniş alanda + düşük opacity.
+   Mor/magenta TAMAMEN temizlendi. Sadece cyan / electric blue / soft teal.
+   Additive override. HTML/JS/diğer CSS sıfır temas. Sil = eski tema.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ════════════════════════════════════════════════════════════
-   1) TOKENS — referans paletten birebir
+   1) TOKENS — Tron paleti, cinematic ölçü
    ════════════════════════════════════════════════════════════ */
 :root {
-  /* Background katmanları (siyah dominant) */
-  --v3-bg-deep:    #02050D;
-  --v3-bg:         #050816;
-  --v3-bg-panel:   #07111F;
-  --v3-bg-panel-2: #0a1628;
-  --v3-bg-elev:    #0c1a2e;
+  /* Karanlık katmanlar (siyah dominant) */
+  --v4-bg-deep:    #02050D;
+  --v4-bg:         #050816;
+  --v4-bg-panel:   #07111F;
+  --v4-bg-panel-2: #0a1628;
+  --v4-bg-elev:    #0d1d36;
 
-  /* Vurgu renkleri (sadece anlam taşıyan yerlerde) */
-  --v3-cyan:       #00D1FF;
-  --v3-cyan-soft:  #4dd9ff;
-  --v3-blue:       #007BFF;
-  --v3-blue-deep:  #0056b3;
+  /* Cyan + electric blue + soft teal (mor YOK) */
+  --v4-cyan:       #00D1FF;
+  --v4-cyan-br:    #5cdfff;
+  --v4-cyan-soft:  #4dd9ff;
+  --v4-teal:       #00e8d6;
+  --v4-teal-soft:  #5cf2e3;
+  --v4-blue:       #007BFF;
+  --v4-blue-elec:  #2b8eff;
+  --v4-blue-deep:  #0056b3;
 
   /* Semantik */
-  --v3-success:    #00FFA3;
-  --v3-success-d:  #00cc83;
-  --v3-danger:     #FF3B6B;
-  --v3-danger-d:   #cc2f55;
-  --v3-warn:       #FFC247;
-  --v3-warn-d:     #cc9b39;
+  --v4-success:    #00FFA3;
+  --v4-success-d:  #00cc83;
+  --v4-danger:     #FF3B6B;
+  --v4-danger-d:   #cc2f55;
+  --v4-warn:       #FFC247;
 
   /* Tipografi */
-  --v3-text:       #EAF6FF;
-  --v3-text-2:     #7FA9C9;
-  --v3-text-3:     #4a6a85;
-  --v3-text-muted: #34516a;
+  --v4-text:       #EAF6FF;
+  --v4-text-2:     #7FA9C9;
+  --v4-text-3:     #4a6a85;
+  --v4-text-muted: #2e4862;
 
-  /* Border'lar — default görünmez, hover'da cyan */
-  --v3-border:        rgba(255,255,255,0.06);
-  --v3-border-hi:     rgba(0,209,255,0.18);
-  --v3-border-strong: rgba(0,209,255,0.32);
-  --v3-border-active: rgba(0,209,255,0.45);
+  /* Border'lar (default görünmez, hover'da Tron) */
+  --v4-border:        rgba(255,255,255,0.06);
+  --v4-border-hi:     rgba(0,209,255,0.22);
+  --v4-border-strong: rgba(0,209,255,0.38);
+  --v4-border-active: rgba(0,209,255,0.55);
 
-  /* Glow — kontrollü, sadece interactive */
-  --v3-glow-s:  0 0 12px rgba(0,209,255,0.20);
-  --v3-glow-m:  0 0 22px rgba(0,209,255,0.30);
-  --v3-glow-l:  0 0 36px rgba(0,209,255,0.42);
-  --v3-glow-blue: 0 0 22px rgba(0,123,255,0.28);
+  /* GLOW SİSTEMİ — geniş alan + düşük opacity (Tron felsefesi) */
+  --v4-glow-xs:    0 0 20px rgba(0,209,255,0.18);
+  --v4-glow-s:     0 0 32px rgba(0,209,255,0.22);
+  --v4-glow-m:     0 0 56px rgba(0,209,255,0.26);
+  --v4-glow-l:     0 0 96px rgba(0,209,255,0.30);
+  --v4-glow-xl:    0 0 140px rgba(0,209,255,0.32);
+  --v4-glow-blue-m: 0 0 56px rgba(0,123,255,0.24);
+  --v4-glow-blue-l: 0 0 96px rgba(0,123,255,0.28);
+  --v4-glow-teal-m: 0 0 56px rgba(0,232,214,0.22);
 
-  /* Shadow ölçeği — derinlik için, parlatma için değil */
-  --v3-shadow-1: 0 2px 8px rgba(0,0,0,0.4);
-  --v3-shadow-2: 0 10px 30px rgba(0,0,0,0.55);
-  --v3-shadow-3: 0 24px 60px rgba(0,0,0,0.65);
+  /* Shadow ölçeği (derinlik) */
+  --v4-shadow-1: 0 4px 12px rgba(0,0,0,0.45);
+  --v4-shadow-2: 0 12px 36px rgba(0,0,0,0.60);
+  --v4-shadow-3: 0 28px 72px rgba(0,0,0,0.72);
 
   /* Cinematic kart kompoziti */
-  --v3-card-shadow:
-    0 0 0 1px var(--v3-border),
-    0 10px 40px rgba(0,0,0,0.55),
-    inset 0 1px 0 rgba(255,255,255,0.025);
-  --v3-card-shadow-hover:
-    0 0 0 1px var(--v3-border-strong),
-    0 18px 56px rgba(0,0,0,0.65),
-    0 0 28px rgba(0,209,255,0.14),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+  --v4-card-shadow:
+    0 0 0 1px var(--v4-border),
+    0 14px 48px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.03),
+    inset 0 -40px 80px rgba(0,0,0,0.25);
+  --v4-card-shadow-hover:
+    0 0 0 1px var(--v4-border-strong),
+    0 24px 72px rgba(0,0,0,0.72),
+    0 0 56px rgba(0,209,255,0.22),
+    0 0 120px rgba(0,123,255,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.06);
 
-  /* Yüzey gradient'leri */
-  --v3-grad-panel: linear-gradient(180deg, rgba(10,22,40,0.92), rgba(5,8,22,0.96));
-  --v3-grad-cta:   linear-gradient(135deg, var(--v3-cyan), var(--v3-blue));
-  --v3-grad-cta-hover: linear-gradient(135deg, var(--v3-cyan-soft), #1f8eff);
-  --v3-grad-text:  linear-gradient(120deg, var(--v3-text) 20%, var(--v3-cyan) 70%, var(--v3-blue) 100%);
+  /* Yüzeyler */
+  --v4-grad-panel: linear-gradient(180deg, rgba(13,29,54,0.92) 0%, rgba(7,17,31,0.96) 60%, rgba(2,5,13,0.98) 100%);
+  --v4-grad-panel-elev: linear-gradient(180deg, rgba(20,42,72,0.85) 0%, rgba(10,22,40,0.96) 60%, rgba(2,5,13,0.99) 100%);
+  --v4-grad-cta: linear-gradient(135deg, var(--v4-cyan) 0%, var(--v4-blue) 100%);
+  --v4-grad-cta-hover: linear-gradient(135deg, var(--v4-cyan-br) 0%, var(--v4-blue-elec) 100%);
+  --v4-grad-text: linear-gradient(120deg, var(--v4-text) 15%, var(--v4-cyan) 60%, var(--v4-blue) 100%);
+  --v4-grad-text-cyan: linear-gradient(90deg, var(--v4-cyan), var(--v4-teal));
 
   /* Geometri */
-  --v3-radius: 14px;
-  --v3-radius-sm: 10px;
-  --v3-radius-lg: 18px;
+  --v4-radius: 14px;
+  --v4-radius-sm: 10px;
+  --v4-radius-lg: 20px;
 
   /* Easing — Apple-style */
-  --v3-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --v3-ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
-  --v3-dur: 250ms;
+  --v4-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --v4-ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
+  --v4-dur: 280ms;
 }
 
 /* ════════════════════════════════════════════════════════════
-   2) BODY — atmosfer (siyah ağırlık, subtle radial glow, ince grid)
+   2) BODY — karanlık atmosfer, geniş enerji odakları
    ════════════════════════════════════════════════════════════ */
 html, body {
-  background: var(--v3-bg) !important;
-  color: var(--v3-text);
+  background: var(--v4-bg) !important;
+  color: var(--v4-text);
 }
 body {
   -webkit-font-smoothing: antialiased;
@@ -94,99 +106,193 @@ body {
   font-feature-settings: "ss01", "cv11";
 }
 
-/* Atmosferik radial glow — çok subtle, sadece köşelerde */
+/* Geniş enerji odakları — düşük opacity ama büyük alan */
 body::before {
   content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
   background:
-    radial-gradient(ellipse 55% 45% at 10% -8%, rgba(0,209,255,0.10), transparent 60%),
-    radial-gradient(ellipse 50% 45% at 92% 6%, rgba(0,123,255,0.09), transparent 62%),
-    radial-gradient(ellipse 70% 40% at 50% 110%, rgba(0,209,255,0.05), transparent 65%);
-  animation: v3Drift 38s ease-in-out infinite alternate;
+    radial-gradient(ellipse 60% 50% at 8% -10%, rgba(0,209,255,0.22), transparent 55%),
+    radial-gradient(ellipse 55% 50% at 92% 8%, rgba(0,123,255,0.20), transparent 58%),
+    radial-gradient(ellipse 50% 35% at 50% 50%, rgba(0,209,255,0.06), transparent 65%),
+    radial-gradient(ellipse 70% 45% at 50% 115%, rgba(0,123,255,0.16), transparent 60%);
+  animation: v4Drift 48s ease-in-out infinite alternate;
 }
-@keyframes v3Drift {
-  0%   { transform: translate3d(0,0,0) scale(1); opacity: 0.9; }
-  100% { transform: translate3d(-1%,-1.5%,0) scale(1.04); opacity: 1; }
+@keyframes v4Drift {
+  0%   { transform: translate3d(0,0,0) scale(1); opacity: 0.95; }
+  100% { transform: translate3d(-1.5%,-2%,0) scale(1.06); opacity: 1; }
 }
 
-/* Çok ince grid — Bloomberg dokunuşu */
+/* İnce holographic grid */
 body::after {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background-image:
-    linear-gradient(rgba(0,209,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,209,255,0.025) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, black 30%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, black 30%, transparent 80%);
+    linear-gradient(rgba(0,209,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,209,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 110% 70% at 50% 0%, black 25%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 110% 70% at 50% 0%, black 25%, transparent 85%);
 }
 
 /* ════════════════════════════════════════════════════════════
-   3) TOPBAR — institutional, blur + cyan light line altta
+   3) TOPBAR — metallic + Tron alt çizgisi
    ════════════════════════════════════════════════════════════ */
 .topbar {
-  background: linear-gradient(180deg, rgba(2,5,13,0.94), rgba(2,5,13,0.82)) !important;
-  backdrop-filter: blur(28px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+  background:
+    linear-gradient(180deg, rgba(7,17,31,0.94), rgba(2,5,13,0.86)) !important;
+  backdrop-filter: blur(32px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(170%) !important;
   border-bottom: 1px solid transparent !important;
   position: relative;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.03) inset;
 }
 .topbar::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
   background: linear-gradient(90deg,
-    transparent, rgba(0,209,255,0.45) 30%, rgba(0,123,255,0.45) 70%, transparent);
-  box-shadow: 0 0 12px rgba(0,209,255,0.30);
+    transparent 0%,
+    rgba(0,209,255,0.10) 15%,
+    rgba(0,209,255,0.55) 35%,
+    rgba(0,232,214,0.50) 50%,
+    rgba(0,123,255,0.55) 65%,
+    rgba(0,209,255,0.10) 85%,
+    transparent 100%);
+  box-shadow: 0 0 24px rgba(0,209,255,0.55), 0 0 48px rgba(0,123,255,0.30);
 }
+
+/* Logo — metallic + aura */
+.logo { position: relative; }
+.logo::before {
+  content: ""; position: absolute; left: -8px; top: -8px; width: 56px; height: 56px;
+  background: radial-gradient(circle at 40% 40%, rgba(0,209,255,0.32), transparent 70%);
+  filter: blur(8px); pointer-events: none; z-index: -1;
+  transition: opacity 300ms var(--v4-ease);
+}
+.logo:hover::before { background: radial-gradient(circle at 40% 40%, rgba(0,209,255,0.50), transparent 70%); }
 .logo-icon {
-  background: var(--v3-grad-cta) !important;
-  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.18) !important;
-  border-radius: 8px;
-  transition: transform var(--v3-dur) var(--v3-ease), box-shadow var(--v3-dur) var(--v3-ease);
+  background: linear-gradient(135deg, var(--v4-cyan) 0%, var(--v4-teal) 35%, var(--v4-blue) 100%) !important;
+  box-shadow:
+    0 0 32px rgba(0,209,255,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    inset 0 -8px 16px rgba(0,86,179,0.4) !important;
+  border-radius: 10px !important;
+  transition: transform var(--v4-dur) var(--v4-ease), box-shadow var(--v4-dur) var(--v4-ease);
 }
-.logo:hover .logo-icon { transform: rotate(-4deg) scale(1.05); box-shadow: var(--v3-glow-l); }
+.logo:hover .logo-icon {
+  transform: rotate(-5deg) scale(1.06);
+  box-shadow:
+    0 0 48px rgba(0,209,255,0.75),
+    0 0 96px rgba(0,123,255,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.35) !important;
+}
 .logo-text {
-  background: linear-gradient(90deg, var(--v3-cyan), var(--v3-blue)) !important;
+  background: linear-gradient(90deg, var(--v4-cyan) 0%, var(--v4-cyan-br) 50%, var(--v4-blue) 100%) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   letter-spacing: 0.6px; font-weight: 800;
+  filter: drop-shadow(0 0 12px rgba(0,209,255,0.4));
 }
-.logo-sub { color: var(--v3-text-3); letter-spacing: 0.4px; }
+.logo-sub { color: var(--v4-text-3); letter-spacing: 0.6px; }
 
-/* Navbar buton (bildirim, admin) — glass, hover'da cyan border ipucu */
+/* Navbar butonları (bildirim/admin/premium-kod) — glass + hover aura */
 .notif-btn, .vd-premium-code-btn, .vd-admin-btn {
   background: rgba(0,209,255,0.04) !important;
-  border: 1px solid var(--v3-border) !important;
-  color: var(--v3-text-2) !important;
+  border: 1px solid var(--v4-border) !important;
+  color: var(--v4-text-2) !important;
   border-radius: 10px !important;
-  transition: all 200ms var(--v3-ease) !important;
+  transition: all 220ms var(--v4-ease) !important;
+  position: relative;
 }
 .notif-btn:hover, .vd-premium-code-btn:hover, .vd-admin-btn:hover {
-  border-color: var(--v3-border-strong) !important;
-  color: var(--v3-text) !important;
-  box-shadow: var(--v3-glow-s);
+  border-color: var(--v4-border-strong) !important;
+  color: var(--v4-text) !important;
+  background: rgba(0,209,255,0.08) !important;
+  box-shadow: var(--v4-glow-xs), inset 0 0 12px rgba(0,209,255,0.08);
   transform: translateY(-1px);
 }
 
 /* ════════════════════════════════════════════════════════════
-   4) TICKER — Bloomberg disiplini
+   4) TICKER — Bloomberg disiplini + soft glow
    ════════════════════════════════════════════════════════════ */
 .ticker {
-  background: rgba(2,5,13,0.7) !important;
-  border-bottom: 1px solid var(--v3-border) !important;
+  background: rgba(2,5,13,0.8) !important;
+  border-bottom: 1px solid var(--v4-border) !important;
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
+  position: relative;
+}
+.ticker::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,209,255,0.18), transparent);
 }
 .ticker-item {
-  transition: background 180ms var(--v3-ease);
+  transition: background 200ms var(--v4-ease);
   font-variant-numeric: tabular-nums;
 }
-.ticker-item:hover { background: rgba(0,209,255,0.05); }
-.ticker-sym { color: var(--v3-text-2) !important; letter-spacing: 0.4px; }
-.ticker-price { color: var(--v3-text) !important; font-weight: 600; }
-.ticker-chg.up { color: var(--v3-success) !important; background: rgba(0,255,163,0.06); box-shadow: inset 0 0 0 1px rgba(0,255,163,0.15); }
-.ticker-chg.dn { color: var(--v3-danger) !important; background: rgba(255,59,107,0.06); box-shadow: inset 0 0 0 1px rgba(255,59,107,0.15); }
+.ticker-item:hover { background: rgba(0,209,255,0.06); }
+.ticker-sym { color: var(--v4-text-2) !important; letter-spacing: 0.4px; font-weight: 600; }
+.ticker-price { color: var(--v4-text) !important; font-weight: 600; }
+.ticker-chg.up {
+  color: var(--v4-success) !important;
+  background: rgba(0,255,163,0.06);
+  box-shadow: inset 0 0 0 1px rgba(0,255,163,0.18), 0 0 8px rgba(0,255,163,0.10);
+}
+.ticker-chg.dn {
+  color: var(--v4-danger) !important;
+  background: rgba(255,59,107,0.06);
+  box-shadow: inset 0 0 0 1px rgba(255,59,107,0.18), 0 0 8px rgba(255,59,107,0.10);
+}
 
 /* ════════════════════════════════════════════════════════════
-   5) KART SİSTEMİ — institutional, glass, kontrollü glow
-   Hedef class'lar: tüm panel kartları
+   5) HERO / TERMINAL — büyük halo, başlık cinematic
+   "PİYASA İSTİHBARAT TERMİNALİ" başlığı + ana panel
+   ════════════════════════════════════════════════════════════ */
+/* Glass-card içindeki gc-title — terminal başlığı */
+.glass-card {
+  position: relative;
+}
+.glass-card::before {
+  content: ""; position: absolute;
+  top: -1px; left: 12%; right: 12%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,209,255,0.55), transparent);
+  opacity: 0.7; transition: opacity 300ms var(--v4-ease);
+  pointer-events: none; z-index: 1;
+  box-shadow: 0 0 14px rgba(0,209,255,0.4);
+}
+.glass-card:hover::before { opacity: 1; }
+
+/* Kart üst köşelerine Tron köşe işaretleri (sadece hover'da görünür) */
+.glass-card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; opacity: 0;
+  transition: opacity 300ms var(--v4-ease);
+  background:
+    /* sol üst köşe braket */
+    linear-gradient(135deg, var(--v4-cyan) 0%, transparent 8%) top left / 18px 18px no-repeat,
+    /* sağ üst */
+    linear-gradient(225deg, var(--v4-cyan) 0%, transparent 8%) top right / 18px 18px no-repeat,
+    /* sol alt */
+    linear-gradient(45deg, var(--v4-cyan) 0%, transparent 8%) bottom left / 18px 18px no-repeat,
+    /* sağ alt */
+    linear-gradient(315deg, var(--v4-cyan) 0%, transparent 8%) bottom right / 18px 18px no-repeat;
+  filter: drop-shadow(0 0 6px rgba(0,209,255,0.5));
+}
+.glass-card:hover::after { opacity: 0.7; }
+
+/* Terminal başlığı (gc-title) yanında live dot */
+.gc-title {
+  letter-spacing: 0.6px;
+  color: var(--v4-text) !important;
+  font-weight: 700;
+  position: relative;
+}
+.glass-card .gc-title::before {
+  content: ""; display: inline-block;
+  width: 4px; height: 14px; margin-right: 10px; vertical-align: -2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--v4-cyan), var(--v4-blue));
+  box-shadow: 0 0 10px rgba(0,209,255,0.7);
+}
+
+/* ════════════════════════════════════════════════════════════
+   6) KART SİSTEMİ — Tron hover, alt iç ışık, geniş glow
    ════════════════════════════════════════════════════════════ */
 .glass-card,
 .sc-card,
@@ -194,31 +300,17 @@ body::after {
 .perf-card,
 .risk-card,
 .ind-card,
-.mkt-stat,
-.entry-item {
-  background: var(--v3-grad-panel) !important;
-  backdrop-filter: blur(18px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
-  border: 1px solid var(--v3-border) !important;
-  border-radius: var(--v3-radius) !important;
-  box-shadow: var(--v3-card-shadow) !important;
-  transition: transform var(--v3-dur) var(--v3-ease),
-              border-color var(--v3-dur) var(--v3-ease),
-              box-shadow var(--v3-dur) var(--v3-ease) !important;
+.mkt-stat {
+  background: var(--v4-grad-panel) !important;
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+  border: 1px solid var(--v4-border) !important;
+  border-radius: var(--v4-radius) !important;
+  box-shadow: var(--v4-card-shadow) !important;
+  transition: transform var(--v4-dur) var(--v4-ease),
+              border-color var(--v4-dur) var(--v4-ease),
+              box-shadow var(--v4-dur) var(--v4-ease) !important;
   position: relative;
-}
-
-/* Üst hafif aydınlık çizgi (corner accent — subtle Cyberpunk) */
-.glass-card::before,
-.smc-pro-card::before,
-.perf-card::before,
-.risk-card::before,
-.ind-card::before {
-  content: ""; position: absolute; top: 0; left: 12%; right: 12%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,209,255,0.35), transparent);
-  opacity: 0.55;
-  transition: opacity var(--v3-dur) var(--v3-ease);
-  pointer-events: none;
 }
 
 .glass-card:hover,
@@ -226,140 +318,233 @@ body::after {
 .perf-card:hover,
 .risk-card:hover,
 .ind-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--v3-card-shadow-hover) !important;
+  transform: translateY(-3px);
+  box-shadow: var(--v4-card-shadow-hover) !important;
 }
-.glass-card:hover::before,
-.smc-pro-card:hover::before,
-.perf-card:hover::before,
-.risk-card:hover::before,
-.ind-card:hover::before { opacity: 1; }
 
-/* Stat kutucukları — iç metrikler için */
+/* Stat kutucukları — Bloomberg yoğunluğu */
 .sc-stat, .mkt-stat, .entry-item {
-  background: rgba(0,209,255,0.025) !important;
-  border: 1px solid var(--v3-border) !important;
-  border-radius: var(--v3-radius-sm) !important;
-  transition: border-color 180ms var(--v3-ease), background 180ms var(--v3-ease);
-  box-shadow: none !important;
+  background:
+    linear-gradient(180deg, rgba(0,209,255,0.04), rgba(0,209,255,0.01)) !important;
+  border: 1px solid var(--v4-border) !important;
+  border-radius: var(--v4-radius-sm) !important;
+  transition: border-color 200ms var(--v4-ease), background 200ms var(--v4-ease);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 1px 4px rgba(0,0,0,0.3) !important;
 }
 .sc-stat:hover, .mkt-stat:hover, .entry-item:hover {
-  border-color: var(--v3-border-hi) !important;
-  background: rgba(0,209,255,0.05) !important;
-  transform: none;
+  border-color: var(--v4-border-hi) !important;
+  background: linear-gradient(180deg, rgba(0,209,255,0.08), rgba(0,209,255,0.02)) !important;
 }
 
-/* Kart başlığı — institutional accent */
-.gc-title {
-  letter-spacing: 0.5px;
-  color: var(--v3-text) !important;
-  font-weight: 700;
-}
-.glass-card .gc-title::before {
-  content: ""; display: inline-block;
-  width: 3px; height: 13px; margin-right: 9px; vertical-align: -2px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--v3-cyan), var(--v3-blue));
-  box-shadow: 0 0 8px rgba(0,209,255,0.5);
-}
-
-/* Sayısal değerler — tabular-nums + monospace fallback (Bloomberg) */
+/* Sayısal değerler — Bloomberg-grade */
 .sc-stat-val, .mkt-stat-val, .smc-pro-val, .perf-card-val,
-.ticker-price, .vd-admin-popup-info {
+.ticker-price {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.2px;
+  color: var(--v4-text) !important;
+  font-weight: 700;
+}
+.sc-stat-lbl, .mkt-stat-lbl {
+  color: var(--v4-text-3) !important;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 /* ════════════════════════════════════════════════════════════
-   6) BUTONLAR — primary cinematic, secondary glass
+   7) BTC/ETH/DOMINANCE KARTLARI — sağ üst orb dönüşümü
+   Mevcut düz daireler → holographic energy orb
    ════════════════════════════════════════════════════════════ */
-
-/* Generic / global butonlar (gbtn, vd-*-btn, vb.) */
-button, .gbtn, .sc-sort-btn {
-  transition: all 200ms var(--v3-ease) !important;
-  font-variant-numeric: tabular-nums;
+/* Tüm absolute pozisyonlu top:0 right:0 dekoratif daireleri hedefle */
+.glass-card > div[style*="position:absolute"][style*="border-radius:50%"],
+.glass-card > div[style*="position: absolute"][style*="border-radius: 50%"],
+.smc-pro-card > div[style*="position:absolute"][style*="border-radius:50%"] {
+  filter: blur(28px) !important;
+  opacity: 0.7 !important;
+  background: radial-gradient(circle at 35% 35%, rgba(0,209,255,0.7), rgba(0,123,255,0.4) 50%, transparent 75%) !important;
+  mix-blend-mode: screen;
 }
 
-/* Aktif sıralama / seçim */
-.sc-sort-btn.active, .qc-chip.active, .qc-tab.active {
-  background: rgba(0,209,255,0.10) !important;
-  border-color: var(--v3-border-strong) !important;
-  color: var(--v3-cyan) !important;
-  box-shadow: inset 0 0 0 1px var(--v3-border-strong), 0 0 14px rgba(0,209,255,0.15);
+/* Mini chart sparkline'lar — alttan glow Bloomberg dokunuşu */
+.glass-card svg, .smc-pro-card svg, .perf-card svg {
+  filter: drop-shadow(0 4px 16px rgba(0,209,255,0.18));
 }
 
-.gbtn:hover, .sc-sort-btn:hover, .qc-chip:hover {
-  border-color: var(--v3-border-hi) !important;
-  box-shadow: var(--v3-glow-s);
+/* ════════════════════════════════════════════════════════════
+   8) BUTONLAR — primary cinematic CTA, secondary Tron glass
+   ════════════════════════════════════════════════════════════ */
+button { transition: all 220ms var(--v4-ease) !important; }
+
+/* COMPACT/PRO/QUANT chip'leri — turuncu/mor temizlik */
+.qc-chip, .sc-sort-btn, .gbtn {
+  background: rgba(0,209,255,0.04) !important;
+  border: 1px solid var(--v4-border) !important;
+  color: var(--v4-text-2) !important;
+  border-radius: 8px !important;
+  transition: all 220ms var(--v4-ease) !important;
+}
+.qc-chip:hover, .sc-sort-btn:hover, .gbtn:hover {
+  border-color: var(--v4-border-strong) !important;
+  color: var(--v4-text) !important;
+  background: rgba(0,209,255,0.08) !important;
+  box-shadow: var(--v4-glow-xs);
+}
+.qc-chip.active, .sc-sort-btn.active, .gbtn.active {
+  background: rgba(0,209,255,0.12) !important;
+  border-color: var(--v4-border-active) !important;
+  color: var(--v4-cyan) !important;
+  box-shadow:
+    inset 0 0 0 1px var(--v4-border-strong),
+    0 0 20px rgba(0,209,255,0.25);
 }
 
-/* Login / Premium CTA — primary cinematic */
+/* Login / Premium aktive — primary CTA */
 .login-btn {
-  background: var(--v3-grad-cta) !important;
+  background: var(--v4-grad-cta) !important;
   border: none !important;
   color: #fff !important;
   font-weight: 700;
-  letter-spacing: 0.3px;
-  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.2) !important;
-  transition: transform 200ms var(--v3-ease), box-shadow 200ms var(--v3-ease) !important;
+  letter-spacing: 0.4px;
+  box-shadow:
+    0 0 32px rgba(0,209,255,0.45),
+    0 8px 24px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.25) !important;
+  transition: transform 220ms var(--v4-ease), box-shadow 220ms var(--v4-ease) !important;
 }
-.login-btn:hover { transform: translateY(-2px); box-shadow: var(--v3-glow-l), inset 0 1px 0 rgba(255,255,255,0.25) !important; }
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 48px rgba(0,209,255,0.6),
+    0 12px 32px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.35) !important;
+}
 .login-btn:active { transform: translateY(0); }
 
 /* ════════════════════════════════════════════════════════════
-   7) LOGIN / PREMIUM modal
+   9) MOR TEMİZLİK — squeeze, premium-cta bandı, joker, vb.
+   Eski mor (#9d7dfa, #a78bfa, purple) tüm yerlerden cyan/blue'ya
+   ════════════════════════════════════════════════════════════ */
+
+/* SQUEEZE badge ve banner */
+[class*="squeeze"], [class*="Squeeze"], [id*="squeeze"], [id*="Squeeze"] {
+  --purple: var(--v4-cyan);
+  --v2-purple: var(--v4-cyan);
+}
+
+/* Squeeze badge container */
+button[onclick*="squeeze" i], div[class*="squeeze" i] button,
+[class*="squeeze-badge"], [class*="SqueezeBadge"] {
+  background: rgba(0,209,255,0.08) !important;
+  border-color: var(--v4-border-strong) !important;
+  color: var(--v4-cyan) !important;
+  box-shadow: 0 0 16px rgba(0,209,255,0.20) !important;
+}
+
+/* "SQUEEZE ALGILANDI" sağ üst rozet (genel — herhangi mor bordürlü buton) */
+[style*="rgb(157, 125, 250)"],
+[style*="rgb(167, 139, 250)"],
+[style*="#9d7dfa"],
+[style*="#a78bfa"],
+[style*="#8b5cf6"] {
+  color: var(--v4-cyan) !important;
+  border-color: var(--v4-border-strong) !important;
+  background: rgba(0,209,255,0.06) !important;
+}
+
+/* Joker kartları (mor outline) → cinematic cyan-teal */
+[class*="joker"], [id*="joker"] {
+  --purple: var(--v4-cyan);
+  --v2-purple: var(--v4-cyan);
+}
+
+/* Premium CTA bandı — alt "Premium'a Geç" */
+[class*="premium-cta"], [class*="PremiumCta"], [id*="premium-cta"],
+[class*="premium-band"] {
+  background: linear-gradient(120deg, rgba(0,209,255,0.10), rgba(0,123,255,0.08) 60%, rgba(0,232,214,0.06)) !important;
+  border-color: var(--v4-border-strong) !important;
+  box-shadow:
+    0 -8px 32px rgba(0,209,255,0.18),
+    inset 0 1px 0 rgba(0,209,255,0.20) !important;
+}
+/* Premium CTA buton (içinde) */
+[class*="premium-cta"] button, [class*="PremiumCta"] button {
+  background: var(--v4-grad-cta) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 0 32px rgba(0,209,255,0.45), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+}
+[class*="premium-cta"] button:hover, [class*="PremiumCta"] button:hover {
+  box-shadow: 0 0 48px rgba(0,209,255,0.6), inset 0 1px 0 rgba(255,255,255,0.3) !important;
+  transform: translateY(-2px);
+}
+
+/* Eski tema değişkenleri override (root düzeyinde mor varsa) */
+:root {
+  --purple: var(--v4-cyan) !important;
+  --v2-purple: var(--v4-cyan) !important;
+}
+
+/* ════════════════════════════════════════════════════════════
+   10) LOGIN / PREMIUM AKTİVASYON MODAL — cinematic vault
    ════════════════════════════════════════════════════════════ */
 #loginScreen {
-  background: rgba(2,5,13,0.78) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(2,5,13,0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 .login-card {
-  background: linear-gradient(180deg, rgba(12,26,46,0.94), rgba(5,8,22,0.97)) !important;
-  backdrop-filter: blur(32px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
-  border: 1px solid var(--v3-border-strong) !important;
-  border-radius: 22px !important;
-  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.12) !important;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,209,255,0.10), transparent 60%),
+    linear-gradient(180deg, rgba(13,29,54,0.96), rgba(5,8,22,0.98)) !important;
+  backdrop-filter: blur(36px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(170%) !important;
+  border: 1px solid var(--v4-border-strong) !important;
+  border-radius: 24px !important;
+  box-shadow:
+    var(--v4-shadow-3),
+    0 0 80px rgba(0,209,255,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.05) !important;
   position: relative; overflow: hidden;
 }
 .login-card::before {
   content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: var(--v3-grad-cta);
-  box-shadow: 0 0 16px rgba(0,209,255,0.5);
+  background: var(--v4-grad-cta);
+  box-shadow: 0 0 22px rgba(0,209,255,0.65);
 }
-.login-logo-icon { box-shadow: var(--v3-glow-m) !important; }
-.login-h { color: var(--v3-text) !important; letter-spacing: 0.4px; }
+.login-logo-icon { box-shadow: 0 0 48px rgba(0,209,255,0.65), inset 0 1px 0 rgba(255,255,255,0.25) !important; }
+.login-h { color: var(--v4-text) !important; letter-spacing: 0.4px; }
 .login-input {
   background: rgba(0,209,255,0.04) !important;
-  border: 1px solid var(--v3-border) !important;
-  color: var(--v3-text) !important;
-  border-radius: 11px !important;
+  border: 1px solid var(--v4-border) !important;
+  color: var(--v4-text) !important;
+  border-radius: 12px !important;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.5px;
-  transition: border-color 180ms var(--v3-ease), box-shadow 180ms var(--v3-ease);
+  letter-spacing: 0.6px;
+  transition: border-color 200ms var(--v4-ease), box-shadow 200ms var(--v4-ease);
 }
 .login-input:focus {
-  border-color: var(--v3-border-active) !important;
-  box-shadow: 0 0 0 3px rgba(0,209,255,0.12), var(--v3-glow-s) !important;
+  border-color: var(--v4-border-active) !important;
+  box-shadow: 0 0 0 3px rgba(0,209,255,0.14), 0 0 24px rgba(0,209,255,0.22) !important;
   outline: none !important;
 }
 
 /* ════════════════════════════════════════════════════════════
-   8) FOUNDER — split layout korunur, cinematic frame
+   11) FOUNDER — split layout korunur, cinematic frame
    ════════════════════════════════════════════════════════════ */
 .founder-section-v2 > div {
   background:
+    radial-gradient(ellipse 50% 60% at 80% 50%, rgba(0,209,255,0.08), transparent 60%),
     linear-gradient(135deg, rgba(0,209,255,0.04), rgba(0,123,255,0.03) 60%, rgba(255,255,255,0.01)),
-    var(--v3-bg-panel) !important;
-  border: 1px solid var(--v3-border) !important;
-  border-radius: 22px !important;
-  box-shadow: var(--v3-card-shadow) !important;
-  padding: 44px !important;
-  transition: box-shadow var(--v3-dur) var(--v3-ease);
+    var(--v4-bg-panel) !important;
+  border: 1px solid var(--v4-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--v4-card-shadow), 0 0 60px rgba(0,209,255,0.06) !important;
+  padding: 48px !important;
+  transition: box-shadow var(--v4-dur) var(--v4-ease);
 }
 .founder-section-v2 > div:hover {
-  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.10) !important;
+  box-shadow: var(--v4-shadow-3), 0 0 80px rgba(0,209,255,0.14) !important;
 }
 
 @media (min-width: 880px) {
@@ -374,7 +559,7 @@ button, .gbtn, .sc-sort-btn {
     justify-content: space-between !important;
   }
   .founder-section-v2 > div > p:first-of-type {
-    position: absolute; top: 26px; left: 48px; margin: 0 !important; order: 0;
+    position: absolute; top: 28px; left: 48px; margin: 0 !important; order: 0;
   }
   .founder-section-v2 > div > .fv2-photo {
     order: 2; flex: 0 0 auto; align-self: center; margin: 0 !important;
@@ -389,265 +574,279 @@ button, .gbtn, .sc-sort-btn {
   .founder-section-v2 > div > p:nth-of-type(3) { max-width: 480px !important; }
   .founder-section-v2 > div > div[style*="flex-wrap:wrap"] { justify-content: flex-start !important; }
   .founder-section-v2 > div > .fv2-copyright {
-    order: 3; flex: 0 0 100%; text-align: left !important; margin-top: 22px !important;
+    order: 3; flex: 0 0 100%; text-align: left !important; margin-top: 24px !important;
   }
 }
 
-/* Foto çerçevesi — cinematic cyan halka */
+/* Foto cyan halka */
 .founder-section-v2 > div > .fv2-photo > div:first-child {
-  width: 150px !important; height: 150px !important;
-  border: 2px solid var(--v3-border-active) !important;
+  width: 160px !important; height: 160px !important;
+  border: 2px solid var(--v4-border-active) !important;
   box-shadow:
-    var(--v3-glow-m),
-    0 0 60px rgba(0,209,255,0.20),
-    inset 0 0 0 1px rgba(255,255,255,0.05) !important;
+    0 0 32px rgba(0,209,255,0.45),
+    0 0 80px rgba(0,209,255,0.20),
+    inset 0 0 0 1px rgba(255,255,255,0.06) !important;
 }
-.founder-section-v2 img { transition: transform 400ms var(--v3-ease); }
-.founder-section-v2 img:hover { transform: scale(1.04); }
+.founder-section-v2 img { transition: transform 400ms var(--v4-ease); }
+.founder-section-v2 img:hover { transform: scale(1.05); }
 
 /* ════════════════════════════════════════════════════════════
-   9) PRICING (premium.html) — palet disiplini: cyan + blue, mor yok
+   12) PRICING (premium.html) — cyan+blue palet
    ════════════════════════════════════════════════════════════ */
 .pr-hero {
   background:
-    radial-gradient(ellipse 60% 70% at 22% -10%, rgba(0,209,255,0.14), transparent 58%),
-    radial-gradient(ellipse 60% 70% at 80% 0%, rgba(0,123,255,0.14), transparent 58%),
-    linear-gradient(180deg, rgba(12,26,46,0.6), var(--v3-bg-panel)) !important;
-  border: 1px solid var(--v3-border-hi) !important;
-  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.08) !important;
-  border-radius: 26px !important;
+    radial-gradient(ellipse 60% 70% at 20% -10%, rgba(0,209,255,0.16), transparent 58%),
+    radial-gradient(ellipse 60% 70% at 80% 0%, rgba(0,123,255,0.16), transparent 58%),
+    radial-gradient(ellipse 50% 50% at 50% 100%, rgba(0,232,214,0.10), transparent 60%),
+    linear-gradient(180deg, rgba(12,26,46,0.6), var(--v4-bg-panel)) !important;
+  border: 1px solid var(--v4-border-hi) !important;
+  box-shadow: var(--v4-shadow-3), 0 0 80px rgba(0,209,255,0.12) !important;
+  border-radius: 28px !important;
 }
 .pr-hero-badge {
-  color: var(--v3-cyan) !important;
-  background: rgba(0,209,255,0.08) !important;
-  border-color: var(--v3-border-strong) !important;
+  color: var(--v4-cyan) !important;
+  background: rgba(0,209,255,0.10) !important;
+  border-color: var(--v4-border-strong) !important;
+  box-shadow: 0 0 16px rgba(0,209,255,0.18) !important;
 }
 .pr-hero h1 {
-  background: var(--v3-grad-text) !important;
+  background: var(--v4-grad-text) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 24px rgba(0,209,255,0.18));
 }
-.pr-hero p { color: var(--v3-text-2) !important; }
+.pr-hero p { color: var(--v4-text-2) !important; }
 
 .pr-card {
   background:
-    linear-gradient(165deg, rgba(0,209,255,0.04), rgba(0,123,255,0.03) 70%, rgba(255,255,255,0.01)),
-    var(--v3-bg-panel) !important;
-  border: 1px solid var(--v3-border) !important;
-  border-radius: 20px !important;
-  box-shadow: var(--v3-shadow-2) !important;
-  transition: transform var(--v3-dur) var(--v3-ease), border-color var(--v3-dur), box-shadow var(--v3-dur);
+    linear-gradient(165deg, rgba(0,209,255,0.05), rgba(0,123,255,0.03) 70%, rgba(255,255,255,0.01)),
+    var(--v4-bg-panel) !important;
+  border: 1px solid var(--v4-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--v4-shadow-2) !important;
+  transition: transform var(--v4-dur) var(--v4-ease), border-color var(--v4-dur), box-shadow var(--v4-dur);
 }
 .pr-card:hover {
   transform: translateY(-6px);
-  border-color: var(--v3-border-strong) !important;
-  box-shadow: var(--v3-shadow-3), 0 0 36px rgba(0,209,255,0.16) !important;
+  border-color: var(--v4-border-strong) !important;
+  box-shadow: var(--v4-shadow-3), 0 0 48px rgba(0,209,255,0.22) !important;
 }
 .pr-card.pr-featured {
-  border-color: var(--v3-border-active) !important;
-  box-shadow: var(--v3-shadow-3), 0 0 44px rgba(0,209,255,0.28) !important;
+  border-color: var(--v4-border-active) !important;
+  box-shadow:
+    var(--v4-shadow-3),
+    0 0 56px rgba(0,209,255,0.32),
+    0 0 120px rgba(0,123,255,0.20) !important;
   background:
-    linear-gradient(165deg, rgba(0,209,255,0.08), rgba(0,123,255,0.06) 70%, rgba(255,255,255,0.02)),
-    var(--v3-bg-panel) !important;
+    linear-gradient(165deg, rgba(0,209,255,0.09), rgba(0,123,255,0.07) 70%, rgba(255,255,255,0.02)),
+    var(--v4-bg-panel) !important;
 }
 .pr-badge {
-  background: var(--v3-grad-cta) !important;
-  box-shadow: 0 0 24px rgba(0,209,255,0.45), 0 4px 12px rgba(0,0,0,0.4) !important;
+  background: linear-gradient(120deg, var(--v4-cyan), var(--v4-blue)) !important;
+  box-shadow: 0 0 28px rgba(0,209,255,0.55), 0 4px 12px rgba(0,0,0,0.5) !important;
 }
 .pr-price {
-  background: linear-gradient(120deg, var(--v3-cyan), var(--v3-blue)) !important;
+  background: linear-gradient(120deg, var(--v4-cyan), var(--v4-blue)) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   font-variant-numeric: tabular-nums;
+  filter: drop-shadow(0 0 16px rgba(0,209,255,0.25));
 }
-.pr-price-cur { -webkit-text-fill-color: var(--v3-cyan) !important; }
-.pr-feat li::before { color: var(--v3-cyan) !important; }
+.pr-price-cur { -webkit-text-fill-color: var(--v4-cyan) !important; }
+.pr-feat li::before { color: var(--v4-cyan) !important; }
 .pr-cta {
-  background: var(--v3-grad-cta) !important;
-  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  background: var(--v4-grad-cta) !important;
+  box-shadow: 0 0 28px rgba(0,209,255,0.36), inset 0 1px 0 rgba(255,255,255,0.2) !important;
 }
-.pr-cta:hover { box-shadow: var(--v3-glow-l), inset 0 1px 0 rgba(255,255,255,0.25) !important; }
+.pr-cta:hover { box-shadow: 0 0 44px rgba(0,209,255,0.55), inset 0 1px 0 rgba(255,255,255,0.3) !important; }
 .pr-card:not(.pr-featured) .pr-cta {
-  background: rgba(0,209,255,0.06) !important;
-  border: 1px solid var(--v3-border-strong) !important;
-  color: var(--v3-cyan) !important;
+  background: rgba(0,209,255,0.08) !important;
+  border: 1px solid var(--v4-border-strong) !important;
+  color: var(--v4-cyan) !important;
   box-shadow: none !important;
 }
 .pr-card:not(.pr-featured) .pr-cta:hover {
-  background: rgba(0,209,255,0.12) !important;
-  box-shadow: var(--v3-glow-s) !important;
+  background: rgba(0,209,255,0.14) !important;
+  box-shadow: var(--v4-glow-xs) !important;
 }
-.pr-access-note { color: var(--v3-text-2); }
-.pr-access-note strong { color: var(--v3-cyan); }
+.pr-access-note { color: var(--v4-text-2); }
+.pr-access-note strong { color: var(--v4-cyan); }
 .pr-feat-item {
   background:
-    linear-gradient(135deg, rgba(0,209,255,0.03), rgba(0,123,255,0.02)),
-    var(--v3-bg-panel) !important;
-  border: 1px solid var(--v3-border) !important;
+    linear-gradient(135deg, rgba(0,209,255,0.04), rgba(0,123,255,0.02)),
+    var(--v4-bg-panel) !important;
+  border: 1px solid var(--v4-border) !important;
 }
 .pr-feat-item:hover {
-  border-color: var(--v3-border-strong) !important;
-  box-shadow: var(--v3-shadow-2);
+  border-color: var(--v4-border-strong) !important;
+  box-shadow: var(--v4-shadow-2), 0 0 24px rgba(0,209,255,0.10);
 }
 .pr-feat-item .pr-fi-ico {
-  background: linear-gradient(135deg, rgba(0,209,255,0.20), rgba(0,123,255,0.20)) !important;
-  border-color: var(--v3-border-hi) !important;
-  color: var(--v3-cyan) !important;
+  background: linear-gradient(135deg, rgba(0,209,255,0.22), rgba(0,123,255,0.22)) !important;
+  border-color: var(--v4-border-hi) !important;
+  color: var(--v4-cyan) !important;
+  box-shadow: 0 0 16px rgba(0,209,255,0.20);
 }
 .pr-compare {
-  background: var(--v3-bg-panel) !important;
-  border: 1px solid var(--v3-border) !important;
-  border-radius: 16px !important;
+  background: var(--v4-bg-panel) !important;
+  border: 1px solid var(--v4-border) !important;
+  border-radius: 18px !important;
 }
-.pr-compare thead th { background: rgba(0,209,255,0.04) !important; color: var(--v3-text-2) !important; }
-.pr-compare thead th.pr-col-prem { color: var(--v3-cyan) !important; background: rgba(0,209,255,0.08) !important; }
-.pr-compare td.pr-prem { background: rgba(0,209,255,0.03) !important; }
-.pr-compare td.pr-prem::before { color: var(--v3-cyan) !important; }
-.pr-compare tbody tr:hover td { background: rgba(0,209,255,0.05) !important; }
-.pr-compare tbody tr:hover td.pr-prem { background: rgba(0,209,255,0.10) !important; }
-.pr-code-link { color: var(--v3-cyan) !important; }
-.pr-code-link:hover { color: var(--v3-cyan-soft) !important; }
+.pr-compare thead th { background: rgba(0,209,255,0.04) !important; color: var(--v4-text-2) !important; }
+.pr-compare thead th.pr-col-prem { color: var(--v4-cyan) !important; background: rgba(0,209,255,0.10) !important; }
+.pr-compare td.pr-prem { background: rgba(0,209,255,0.04) !important; }
+.pr-compare td.pr-prem::before { color: var(--v4-cyan) !important; }
+.pr-compare tbody tr:hover td { background: rgba(0,209,255,0.06) !important; }
+.pr-compare tbody tr:hover td.pr-prem { background: rgba(0,209,255,0.12) !important; }
+.pr-code-link { color: var(--v4-cyan) !important; }
+.pr-code-link:hover { color: var(--v4-cyan-br) !important; text-shadow: 0 0 12px rgba(0,209,255,0.5); }
 .pr-disclaimer {
-  background: rgba(0,209,255,0.02) !important;
-  border-color: var(--v3-border) !important;
-  border-left: 3px solid var(--v3-cyan) !important;
-  color: var(--v3-text-2) !important;
+  background: rgba(0,209,255,0.03) !important;
+  border-color: var(--v4-border) !important;
+  border-left: 3px solid var(--v4-cyan) !important;
+  color: var(--v4-text-2) !important;
+  box-shadow: -8px 0 24px -8px rgba(0,209,255,0.25);
 }
 
 /* ════════════════════════════════════════════════════════════
-   10) GRAFİK PANELLERİ — institutional çerçeve
-   ════════════════════════════════════════════════════════════ */
-.chart-area, .tradingview-widget-container, [class*="chart-"]:not([class*="charts-"]) {
-  border-radius: var(--v3-radius);
-}
-
-/* ════════════════════════════════════════════════════════════
-   11) TABLOLAR — Bloomberg scan-line hover
+   13) TABLOLAR — Bloomberg scan hover
    ════════════════════════════════════════════════════════════ */
 table { font-variant-numeric: tabular-nums; }
 table thead th {
-  color: var(--v3-text-3) !important;
-  letter-spacing: 0.6px;
+  color: var(--v4-text-3) !important;
+  letter-spacing: 0.7px;
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 10.5px;
+  font-weight: 700;
 }
-table tbody tr { transition: background 180ms var(--v3-ease); }
+table tbody tr { transition: background 200ms var(--v4-ease); }
 table tbody tr:hover {
-  background: linear-gradient(90deg, transparent, rgba(0,209,255,0.05), transparent) !important;
+  background: linear-gradient(90deg, transparent, rgba(0,209,255,0.06), transparent) !important;
+  box-shadow: inset 0 0 0 1px rgba(0,209,255,0.06);
 }
 
 /* ════════════════════════════════════════════════════════════
-   12) SCROLLBAR — minimal cinematic
+   14) SCROLLBAR
    ════════════════════════════════════════════════════════════ */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0,209,255,0.25) transparent;
+  scrollbar-color: rgba(0,209,255,0.30) transparent;
 }
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(0,209,255,0.25), rgba(0,123,255,0.25));
+  background: linear-gradient(180deg, rgba(0,209,255,0.35), rgba(0,123,255,0.35));
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(0,209,255,0.45), rgba(0,123,255,0.45));
+  background: linear-gradient(180deg, rgba(0,209,255,0.55), rgba(0,123,255,0.55));
   background-clip: padding-box;
 }
 
 /* ════════════════════════════════════════════════════════════
-   13) Subtle reveal — sadece kartlar ilk yüklenince
+   15) Reveal animation
    ════════════════════════════════════════════════════════════ */
-@keyframes v3FadeUp {
-  from { opacity: 0; transform: translateY(8px); }
+@keyframes v4FadeUp {
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.glass-card { animation: v3FadeUp 380ms var(--v3-ease-emph) both; }
+.glass-card { animation: v4FadeUp 420ms var(--v4-ease-emph) both; }
 
 /* ════════════════════════════════════════════════════════════
-   14) Focus ring — accessibility
+   16) Focus ring — erişilebilirlik
    ════════════════════════════════════════════════════════════ */
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0,209,255,0.25), 0 0 12px rgba(0,209,255,0.20) !important;
+  box-shadow:
+    0 0 0 3px rgba(0,209,255,0.30),
+    0 0 18px rgba(0,209,255,0.25) !important;
   border-radius: 8px;
 }
 
 /* ════════════════════════════════════════════════════════════
-   15) Bildirim toast'ları (premium feedback)
+   17) Toast'lar — premium feedback
    ════════════════════════════════════════════════════════════ */
-[class*="VDPremiumToast"], [class*="vd-premium-toast"] {
-  background: linear-gradient(180deg, rgba(12,26,46,0.96), rgba(5,8,22,0.98)) !important;
-  border: 1px solid var(--v3-border-hi) !important;
-  box-shadow: var(--v3-shadow-2), 0 0 28px rgba(0,209,255,0.16) !important;
+[class*="VDPremiumToast"], [class*="vd-premium-toast"], [class*="toast"] {
+  background: linear-gradient(180deg, rgba(13,29,54,0.97), rgba(5,8,22,0.99)) !important;
+  border: 1px solid var(--v4-border-hi) !important;
+  box-shadow:
+    var(--v4-shadow-2),
+    0 0 36px rgba(0,209,255,0.22) !important;
+  color: var(--v4-text) !important;
 }
 
 /* ════════════════════════════════════════════════════════════
-   16) Admin Codes Panel (.acp-*) — cinematic uyum
+   18) Admin Codes Panel (.acp-*)
    ════════════════════════════════════════════════════════════ */
-.acp-overlay { background: rgba(2,5,13,0.82) !important; }
+.acp-overlay { background: rgba(2,5,13,0.84) !important; }
 .acp-modal {
-  background: linear-gradient(180deg, rgba(12,26,46,0.96), rgba(5,8,22,0.98)) !important;
-  border: 1px solid var(--v3-border-strong) !important;
-  box-shadow: var(--v3-shadow-3), 0 0 60px rgba(0,209,255,0.10) !important;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(0,209,255,0.10), transparent 60%),
+    linear-gradient(180deg, rgba(13,29,54,0.97), rgba(5,8,22,0.99)) !important;
+  border: 1px solid var(--v4-border-strong) !important;
+  box-shadow: var(--v4-shadow-3), 0 0 80px rgba(0,209,255,0.14) !important;
 }
 .acp-header {
-  background: linear-gradient(120deg, rgba(0,209,255,0.06), rgba(0,123,255,0.04)) !important;
-  border-bottom-color: var(--v3-border-hi) !important;
+  background: linear-gradient(120deg, rgba(0,209,255,0.08), rgba(0,123,255,0.05)) !important;
+  border-bottom-color: var(--v4-border-hi) !important;
 }
 .acp-title {
-  background: linear-gradient(120deg, var(--v3-cyan), var(--v3-blue)) !important;
+  background: linear-gradient(120deg, var(--v4-cyan), var(--v4-blue)) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
+  filter: drop-shadow(0 0 14px rgba(0,209,255,0.35));
 }
 .acp-btn-primary {
-  background: var(--v3-grad-cta) !important;
-  box-shadow: var(--v3-glow-m), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  background: var(--v4-grad-cta) !important;
+  box-shadow: 0 0 32px rgba(0,209,255,0.40), inset 0 1px 0 rgba(255,255,255,0.2) !important;
 }
-.acp-btn-primary:hover { box-shadow: var(--v3-glow-l) !important; }
+.acp-btn-primary:hover { box-shadow: 0 0 48px rgba(0,209,255,0.60) !important; }
 .acp-tab-active {
-  background: linear-gradient(120deg, var(--v3-cyan), var(--v3-blue)) !important;
-  box-shadow: var(--v3-glow-s) !important;
+  background: linear-gradient(120deg, var(--v4-cyan), var(--v4-blue)) !important;
+  box-shadow: 0 0 18px rgba(0,209,255,0.35) !important;
 }
-.acp-code { color: var(--v3-cyan) !important; }
-.acp-code-full { color: var(--v3-cyan) !important; }
-.acp-table tbody tr:hover td { background: rgba(0,209,255,0.05) !important; }
+.acp-code, .acp-code-full { color: var(--v4-cyan) !important; }
+.acp-table tbody tr:hover td { background: rgba(0,209,255,0.06) !important; }
+.acp-badge { box-shadow: 0 0 10px currentColor; opacity: 0.95; }
 
 /* ════════════════════════════════════════════════════════════
-   17) Legal sayfa header/footer — institutional polish
+   19) Legal header/footer
    ════════════════════════════════════════════════════════════ */
 .legal-header {
-  background: rgba(2,5,13,0.85) !important;
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border-bottom: 1px solid var(--v3-border) !important;
+  background: rgba(2,5,13,0.88) !important;
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border-bottom: 1px solid var(--v4-border) !important;
 }
 .legal-logo {
-  background: linear-gradient(90deg, var(--v3-cyan), var(--v3-blue)) !important;
+  background: linear-gradient(90deg, var(--v4-cyan), var(--v4-blue)) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 12px rgba(0,209,255,0.35));
 }
 .legal-footer {
-  border-top: 1px solid var(--v3-border) !important;
-  background: rgba(2,5,13,0.5);
+  border-top: 1px solid var(--v4-border) !important;
+  background: rgba(2,5,13,0.6);
 }
 
 /* ════════════════════════════════════════════════════════════
-   18) MOBİL — kompakt, hover'lar yumuşatılır
+   20) MOBİL
    ════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
-  body::after { background-size: 40px 40px; }
+  body::after { background-size: 42px 42px; }
   .glass-card:hover,
   .smc-pro-card:hover,
   .perf-card:hover,
   .risk-card:hover,
   .ind-card:hover { transform: none; }
+  .glass-card:hover::after { opacity: 0; } /* mobilde Tron köşeler kapalı */
   .founder-section-v2 > div { padding: 28px !important; }
   .pr-card:hover { transform: translateY(-3px); }
 }
 
 /* ════════════════════════════════════════════════════════════
-   19) Erişilebilirlik — hareket azaltma
+   21) Reduced motion
    ════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   body::before { animation: none; }
@@ -656,9 +855,9 @@ table tbody tr:hover {
 }
 
 /* ════════════════════════════════════════════════════════════
-   20) Yardımcı utility class'ları (gelecek için)
+   22) Utility class'ları
    ════════════════════════════════════════════════════════════ */
-.v3-mono { font-family: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
-.v3-text-cyan { color: var(--v3-cyan) !important; }
-.v3-text-success { color: var(--v3-success) !important; }
-.v3-text-danger { color: var(--v3-danger) !important; }
+.v4-mono { font-family: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.v4-text-cyan { color: var(--v4-cyan) !important; }
+.v4-text-success { color: var(--v4-success) !important; }
+.v4-text-danger { color: var(--v4-danger) !important; }
