@@ -168,10 +168,53 @@ const SupabaseDB = (() => {
     return r.json();
   }
 
+  // ═══════════════════════════════════════════════
+  // ANALYSIS ARCHIVE — Public READ (anon key + RLS)
+  // ───────────────────────────────────────────────
+  // RLS gereği anon yalnızca review_status != 'pending' kayıtları görür.
+  //
+  // YAZMA BU SERVİSTE YOKTUR. Tüm insert/update yalnızca server-side
+  // endpoint (api/analysis-archive.js — Aşama 3) + SERVICE ROLE ile
+  // yapılır. Anon key ile yazma RLS tarafından reddedilir (tasarım gereği).
+  // Service role key ASLA client koduna konmaz.
+  // ═══════════════════════════════════════════════
+
+  // Arşiv listesi (public). opts: { sym, status, sinceISO, limit }
+  async function listArchive(opts = {}) {
+    const { sym, status, sinceISO, limit = 50 } = opts;
+    let f = 'order=created_at.desc';
+    if (sym)      f += `&sym=eq.${encodeURIComponent(sym)}`;
+    if (status)   f += `&review_status=eq.${encodeURIComponent(status)}`;
+    if (sinceISO) f += `&created_at=gte.${encodeURIComponent(sinceISO)}`;
+    return _select('analysis_archive', f, Math.min(limit, 200));
+  }
+
+  // Tek kayıt (public). Pending ise RLS gereği null döner.
+  async function getArchiveById(id) {
+    const rows = await _select('analysis_archive', `id=eq.${encodeURIComponent(id)}`, 1);
+    return rows && rows[0] ? rows[0] : null;
+  }
+
+  // İstatistikler (public) — RPC. Pending SAYISI dahil ama pending
+  // satırlarını sızdırmadan (SECURITY DEFINER fonksiyon) döner.
+  async function getArchiveStats() {
+    try {
+      const r = await fetch(`${URL}/rest/v1/rpc/archive_public_stats`, {
+        method:  'POST',
+        headers: HEADERS,
+        body:    '{}',
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch (e) { console.warn('DB archive_public_stats:', e.message); return null; }
+  }
+
   return {
     saveSignal, closeSignal, getSignals, getOpenSignals, getStats,
     loadWeights, updateWeight, saveWeights,
     verifyCode,
+    // Analysis Archive (public read)
+    listArchive, getArchiveById, getArchiveStats,
   };
 
 })();
