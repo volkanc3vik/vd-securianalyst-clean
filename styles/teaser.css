@@ -47,3 +47,33 @@
   .vd-teaser-gate-title { font-size: 18px; }
   .vd-teaser-badge { top: 10px; right: 10px; font-size: 11px; padding: 6px 11px; }
 }
+
+/* ── Phase 3: Teaser scope — Archive feed CTA + modal block ── */
+.aic-teaser-cta {
+  display: flex; align-items: center; gap: 14px; margin-top: 14px;
+  padding: 16px 18px; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(135deg, rgba(0, 209, 255, 0.08), rgba(0, 123, 255, 0.05));
+  border: 1px dashed var(--v4-cyan, #00D1FF); transition: filter .15s ease;
+}
+.aic-teaser-cta:hover { filter: brightness(1.1); }
+.aic-teaser-cta-ic { font-size: 24px; }
+.aic-teaser-cta-tx { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.aic-teaser-cta-tx b { color: var(--v4-text, #EAF6FF); font-size: 13.5px; }
+.aic-teaser-cta-tx span { color: var(--v4-text-2, #7FA9C9); font-size: 11.5px; line-height: 1.45; }
+.aic-teaser-cta-btn {
+  font-size: 12px; font-weight: 700; color: #02050D; white-space: nowrap;
+  background: linear-gradient(135deg, var(--v4-cyan, #00D1FF), var(--v4-blue, #007BFF));
+  border-radius: 999px; padding: 7px 16px;
+}
+.aic-teaser-block { text-align: center; padding: 30px 18px; }
+.aic-teaser-block-ic { font-size: 38px; margin-bottom: 12px; }
+.aic-teaser-block-msg { font-size: 14px; color: var(--v4-text, #EAF6FF); line-height: 1.6; margin-bottom: 20px; }
+.aic-teaser-block-btn {
+  font-family: inherit; font-size: 13.5px; font-weight: 700; color: #02050D; cursor: pointer;
+  background: linear-gradient(135deg, var(--v4-cyan, #00D1FF), var(--v4-blue, #007BFF));
+  border: none; border-radius: 12px; padding: 12px 22px;
+}
+.aic-teaser-block-btn:hover { filter: brightness(1.08); }
+@media (max-width: 560px) {
+  .aic-teaser-cta { flex-direction: column; text-align: center; }
+}
