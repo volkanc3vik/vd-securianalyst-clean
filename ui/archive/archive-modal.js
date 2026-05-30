@@ -48,6 +48,16 @@
     return `<div class="aic-times" data-aic-times>${rows}</div>`;
   }
 
+  // PHASE 3: teaser oturumunda linkteki coin dışı kayıt engellenir
+  function _teaserBlocked(rec) {
+    try {
+      if (!rec || !window.VDAccess || !window.VDTeaser) return false;
+      if (window.VDAccess.level() !== 'teaser') return false;
+      const co = window.VDTeaser.coinOf;
+      return co(rec.sym) !== co(window.VDTeaser.symbol());
+    } catch (e) { return false; }
+  }
+
   function _render(rec) {
     const m = U.statusMeta(rec.review_status);
     const reviewed = rec.review_status && rec.review_status !== 'pending';
@@ -126,6 +136,17 @@
 
     if (!rec) {
       root.innerHTML = `<div class="aic-modal"><div class="aic-modal-header"><span class="aic-modal-sym">—</span><button class="aic-modal-close" data-aic="close" type="button">✕</button></div><div class="aic-modal-body"><div class="aic-empty"><div class="icon">⚠</div>Kayıt bulunamadı veya görüntülenemiyor.</div></div></div>`;
+    } else if (_teaserBlocked(rec)) {
+      // PHASE 3: teaser oturumunda linkteki coin dışındaki analiz açılamaz
+      const msg = (window.VDTeaser && window.VDTeaser.SCOPE_MSG) || 'Bu analiz yalnızca Premium üyeler için kullanılabilir.';
+      root.innerHTML = `<div class="aic-modal"><div class="aic-modal-header"><span class="aic-modal-sym">🔒 ${U.esc(rec.sym || '')}</span><button class="aic-modal-close" data-aic="close" type="button">✕</button></div>
+        <div class="aic-modal-body"><div class="aic-teaser-block">
+          <div class="aic-teaser-block-ic">🔒</div>
+          <div class="aic-teaser-block-msg">${U.esc(msg)}</div>
+          <button class="aic-teaser-block-btn" data-teaser-premium type="button">Premium Erişim Kodu Gir</button>
+        </div></div></div>`;
+      const pb = root.querySelector('[data-teaser-premium]');
+      if (pb) pb.addEventListener('click', () => { _close(); if (typeof window.openPremiumLogin === 'function') window.openPremiumLogin(); else window.location.href = 'index.html#premium'; });
     } else {
       root.innerHTML = _render(rec);
       if (NS.Admin && NS.Admin.isAdmin()) { try { NS.Admin.wire(root, rec); } catch (e) {} }

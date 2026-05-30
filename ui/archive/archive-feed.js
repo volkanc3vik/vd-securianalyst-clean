@@ -18,6 +18,30 @@
 
   function _feedEl() { return document.getElementById(_containerId); }
 
+  // PHASE 3: teaser ise linkteki sembol, değilse null (premium/admin/free → kısıt yok)
+  function _teaserSym() {
+    try { if (window.VDAccess && window.VDAccess.level && window.VDAccess.level() === 'teaser' && window.VDTeaser) return window.VDTeaser.symbol(); } catch (e) {}
+    return null;
+  }
+  function _teaserCtaHTML() {
+    return `
+      <div class="aic-teaser-cta" role="button" tabindex="0" data-teaser-cta>
+        <div class="aic-teaser-cta-ic">🔒</div>
+        <div class="aic-teaser-cta-tx">
+          <b>Premium erişim ile diğer coin analizlerini görüntüleyin</b>
+          <span>Önizleme yalnızca bu coin içindir. Tüm arşiv, Outcome ve AI içgörüleri Premium'da.</span>
+        </div>
+        <span class="aic-teaser-cta-btn">Premium</span>
+      </div>`;
+  }
+  function _wireTeaserCta(el) {
+    el.querySelectorAll('[data-teaser-cta]').forEach(c => {
+      const go = () => { if (typeof window.openPremiumLogin === 'function') window.openPremiumLogin(); else window.location.href = 'index.html#premium'; };
+      c.addEventListener('click', go);
+      c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+  }
+
   function _skeletons(n) {
     return Array.from({ length: n }).map(() => `<div class="aic-skel"></div>`).join('');
   }
@@ -31,12 +55,13 @@
         <div class="aic-empty">
           <div class="icon">◎</div>
           <div>Bu filtrelerle eşleşen analiz bulunamadı.</div>
-        </div>`;
+        </div>${_teaserSym() ? _teaserCtaHTML() : ''}`;
+      _wireTeaserCta(el);
       _renderPagination();
       return;
     }
 
-    el.innerHTML = _items.map(rec => NS.Card.render(rec)).join('');
+    el.innerHTML = _items.map(rec => NS.Card.render(rec)).join('') + (_teaserSym() ? _teaserCtaHTML() : '');
 
     // Kart + buton click → modal
     el.querySelectorAll('.aic-card').forEach(card => {
@@ -52,6 +77,7 @@
     el.querySelectorAll('.aic-detail-btn').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); NS.Modal.open(btn.getAttribute('data-id')); });
     });
+    _wireTeaserCta(el);
 
     _renderPagination();
   }
@@ -86,8 +112,10 @@
 
     let rows = [];
     try {
+      // PHASE 3: teaser oturumunda feed YALNIZ linkteki coin'e kısıtlanır
+      const tSym = _teaserSym();
       rows = window.SupabaseDB ? await window.SupabaseDB.listArchive({
-        sym:      _filter.sym || undefined,
+        sym:      tSym || _filter.sym || undefined,
         status:   _filter.status || undefined,
         sinceISO: _filter.sinceISO || undefined,
         limit:    PAGE_SIZE,
