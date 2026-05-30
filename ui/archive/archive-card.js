@@ -34,11 +34,16 @@
         { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch { return String(iso); }
   }
+  // Kademeli fiyat gösterimi (yalnızca UI; ham DB değeri hesaplarda kullanılmaya devam eder)
+  //  |v| >= 1   → 2 ondalık (68.112 → $68.11 · 1.776 → $1.78)
+  //  |v| >= 0.1 → 4 ondalık (0.986 → $0.9860)
+  //  |v| < 0.1  → 6 ondalık (0.094 → $0.094000) · bilimsel gösterim YOK
   function fmtPrice(n) {
     if (n == null || n === '' || isNaN(+n)) return '—';
     const v = +n;
-    const dec = v >= 100 ? 2 : (v >= 1 ? 3 : 5);
-    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    const a = Math.abs(v);
+    const dec = a >= 1 ? 2 : (a >= 0.1 ? 4 : 6);
+    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: true });
   }
   function fmtPct(n) {
     if (n == null || n === '' || isNaN(+n)) return '—';
