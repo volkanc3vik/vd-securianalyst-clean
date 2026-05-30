@@ -369,3 +369,62 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   ADMIN REVIEW (Aşama 3) — yalnızca admin'e render edilir. Mor YOK.
+   ════════════════════════════════════════════════════════════════════ */
+.aic-admin {
+  margin-top: 18px; padding: 16px;
+  border: 1px solid var(--v4-border-hi, rgba(0,209,255,0.22));
+  border-left: 3px solid var(--v4-cyan, #00D1FF);
+  border-radius: var(--v4-radius, 14px);
+  background: linear-gradient(180deg, rgba(0,209,255,0.05), rgba(7,17,31,0.4));
+}
+.aic-admin-hdr {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 13px; font-weight: 700; color: var(--v4-text, #EAF6FF);
+  letter-spacing: .4px; margin-bottom: 14px;
+}
+.aic-admin-tag {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--v4-cyan, #00D1FF); border: 1px solid var(--v4-border-hi, rgba(0,209,255,0.22));
+  border-radius: 999px; padding: 2px 8px; background: rgba(0,209,255,0.05);
+}
+.aic-admin-draft-flag { font-size: 10.5px; font-weight: 500; color: var(--v4-warn, #FFC247); }
+.aic-admin-l {
+  display: block; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--v4-text-3, #4a6a85); margin: 12px 0 5px;
+}
+.aic-admin-select, .aic-admin-ta {
+  width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px;
+  color: var(--v4-text, #EAF6FF); background: rgba(2,5,13,0.55);
+  border: 1px solid var(--v4-border, rgba(255,255,255,0.08)); border-radius: 10px;
+  padding: 9px 11px; outline: none; transition: border-color .2s ease;
+}
+.aic-admin-select:focus, .aic-admin-ta:focus { border-color: var(--v4-border-strong, rgba(0,209,255,0.38)); }
+.aic-admin-ta { resize: vertical; line-height: 1.5; }
+.aic-admin-chk {
+  display: flex; align-items: center; gap: 8px; margin-top: 12px;
+  font-size: 12.5px; color: var(--v4-text-2, #7FA9C9); cursor: pointer;
+}
+.aic-admin-chk input { accent-color: var(--v4-cyan, #00D1FF); width: 15px; height: 15px; }
+.aic-admin-muted { color: var(--v4-text-3, #4a6a85); font-size: 11px; }
+.aic-admin-actions { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.aic-admin-save {
+  font-family: inherit; font-size: 13px; font-weight: 600; color: #02050D;
+  background: var(--v4-grad-cta, linear-gradient(135deg,#00D1FF,#007BFF));
+  border: none; border-radius: 10px; padding: 9px 18px; cursor: pointer;
+  transition: filter .2s ease;
+}
+.aic-admin-save:hover { filter: brightness(1.08); }
+.aic-admin-status { font-size: 12px; font-weight: 600; color: var(--v4-success, #00FFA3); }
+.aic-admin-info {
+  margin-top: 14px; font-size: 11px; line-height: 1.55; color: var(--v4-text-3, #4a6a85);
+  border-top: 1px solid var(--v4-border, rgba(255,255,255,0.06)); padding-top: 10px;
+}
+.aic-admin-info b { color: var(--v4-warn, #FFC247); }
+@media (max-width: 600px) {
+  .aic-admin { padding: 13px; }
+  .aic-admin-actions { flex-direction: column; align-items: stretch; }
+  .aic-admin-save { width: 100%; }
+}
