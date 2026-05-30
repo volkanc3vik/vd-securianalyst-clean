@@ -275,12 +275,20 @@ export default async function handler(req, res) {
       const interval = klineInterval(rec.review_window_hours || (endMs - startMs) / 3_600_000);
       const symbol = String(rec.sym || '').toUpperCase();
       const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}&startTime=${startMs}&endTime=${endMs}&limit=1500`;
-      let kl;
+      let kr, kl;
       try {
-        const kr = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        kl = await kr.json();
+        kr = await fetch(url, { headers: { 'Accept': 'application/json' } });
       } catch (e) { return res.status(502).json({ ok: false, error: 'price_fetch_failed' }); }
-      if (!Array.isArray(kl) || !kl.length) return res.status(502).json({ ok: false, error: 'no_price_data' });
+      // Coğrafi blok (ör. Vercel iad1/US → Binance fapi 451 "restricted location")
+      if (kr.status === 451) return res.status(451).json({ ok: false, error: 'geo_blocked' });
+      if (!kr.ok) return res.status(502).json({ ok: false, error: 'price_fetch_failed', http: kr.status });
+      try { kl = await kr.json(); } catch (e) { return res.status(502).json({ ok: false, error: 'bad_price_data' }); }
+      if (!Array.isArray(kl)) {
+        const msg = (kl && kl.msg) ? String(kl.msg).toLowerCase() : '';
+        if (msg.includes('restricted') || msg.includes('eligibility')) return res.status(451).json({ ok: false, error: 'geo_blocked' });
+        return res.status(502).json({ ok: false, error: 'no_price_data' });
+      }
+      if (!kl.length) return res.status(502).json({ ok: false, error: 'no_price_data' });
       const highs = kl.map(k => +k[2]).filter(n => !isNaN(n));
       const lows  = kl.map(k => +k[3]).filter(n => !isNaN(n));
       const lastClose = +kl[kl.length - 1][4];
