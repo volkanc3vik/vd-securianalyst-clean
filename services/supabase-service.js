@@ -179,12 +179,26 @@ const SupabaseDB = (() => {
   // Service role key ASLA client koduna konmaz.
   // ═══════════════════════════════════════════════
 
+  // Public okuma için GÜVENLİ kolon allowlist'i (admin_note / internal_review /
+  // ai_review_note HARİÇ). v25 migration'da anon'a yalnızca bu kolonlar GRANT'lendiği
+  // için 'select=*' artık çalışmaz; bu listeyi açıkça istemek ZORUNLU.
+  const ARCHIVE_PUBLIC_COLS = [
+    'id','sym','timeframe','direction_bias','analysis_text','analysis_summary',
+    'price_at_analysis','market_context','analysis_score','source','created_at',
+    'review_status','reviewed_at','review_due_at','review_window_hours',
+    'price_at_review','max_price_window','min_price_window',
+    'max_move_pct','min_move_pct','end_move_pct','result_percent',
+    'direction_realized','validation_score','review_source',
+    'ai_learned','admin_archived',
+    'shared_to_telegram','telegram_msg_id','shared_at'
+  ].join(',');
+
   // Arşiv listesi (public). opts: { sym, status, sinceISO, limit, offset }
   // Pagination: offset ile sayfalama. Dönen satır sayısı limit'e eşitse
   // muhtemelen daha fazla kayıt var (feed "Daha Fazla Yükle" gösterir).
   async function listArchive(opts = {}) {
     const { sym, status, sinceISO, limit = 12, offset = 0 } = opts;
-    let f = 'order=created_at.desc';
+    let f = `select=${ARCHIVE_PUBLIC_COLS}&order=created_at.desc`;
     if (sym)      f += `&sym=eq.${encodeURIComponent(sym)}`;
     if (status)   f += `&review_status=eq.${encodeURIComponent(status)}`;
     if (sinceISO) f += `&created_at=gte.${encodeURIComponent(sinceISO)}`;
@@ -194,7 +208,7 @@ const SupabaseDB = (() => {
 
   // Tek kayıt (public). Pending ise RLS gereği null döner.
   async function getArchiveById(id) {
-    const rows = await _select('analysis_archive', `id=eq.${encodeURIComponent(id)}`, 1);
+    const rows = await _select('analysis_archive', `select=${ARCHIVE_PUBLIC_COLS}&id=eq.${encodeURIComponent(id)}`, 1);
     return rows && rows[0] ? rows[0] : null;
   }
 
