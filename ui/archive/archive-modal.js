@@ -47,6 +47,10 @@
       ? `<div class="aic-ai-learned"><div class="k">🧠 AI Learned</div><div class="v">${U.esc(rec.ai_learned)}</div></div>`
       : '';
 
+    const sharedBadge = rec.shared_to_telegram
+      ? `<div class="aic-shared-badge">✔ Telegram'da paylaşıldı${rec.shared_at ? ' · ' + U.esc(U.fmtDate(rec.shared_at)) : ''}</div>`
+      : '';
+
     return `
       <div class="aic-modal" role="dialog" aria-modal="true" aria-label="${U.esc(rec.sym)} analiz detayı">
         <div class="aic-modal-header">
@@ -60,6 +64,7 @@
           ${aiLearned}
           <!-- Telegram paylaş slotu — Aşama 4'te aktifleşir -->
           <div class="aic-modal-tg-slot" data-aic-tg-slot></div>
+          ${sharedBadge}
           ${(NS.Admin && NS.Admin.isAdmin()) ? NS.Admin.sectionHTML(rec) : ''}
           <div class="aic-modal-legal">
             Bu içerik yatırım tavsiyesi değildir. Geçmiş analizlerin retrospektif
