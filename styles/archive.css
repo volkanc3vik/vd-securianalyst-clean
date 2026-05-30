@@ -591,3 +591,17 @@ body::after {
 .aic-admin-calc:disabled { opacity:.4; cursor:not-allowed; filter:grayscale(.4); }
 .aic-admin-calcmsg { font-size:11.5px; color:var(--v4-text-2, #7FA9C9); }
 .aic-admin-calcmsg b { color:var(--v4-success, #00FFA3); }
+
+/* ── Outcome Tracking Faz 3: Otomatik Sonuç Özeti kutusu ── */
+.aic-outbox {
+  margin:4px 0 14px; padding:12px 14px; border-radius:12px;
+  background:linear-gradient(180deg, rgba(0,209,255,0.06), rgba(0,255,163,0.04));
+  border:1px solid rgba(0,209,255,0.28);
+}
+.aic-outbox-h { font-size:13px; font-weight:800; color:var(--v4-cyan, #00D1FF); margin-bottom:8px; letter-spacing:.2px; }
+.aic-outbox-row { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:3px 0; font-size:12.5px; }
+.aic-outbox-row > span { color:var(--v4-text-2, #7FA9C9); }
+.aic-outbox-row > b { color:var(--v4-text, #EAF6FF); font-weight:700; text-align:right; }
+.aic-outbox .aic-out-v.pos { color:var(--v4-success, #00FFA3); }
+.aic-outbox .aic-out-v.neg { color:var(--v4-danger, #FF3B6B); }
+.aic-outbox-note { margin-top:9px; font-size:10.5px; line-height:1.5; color:var(--v4-text-3, #4a6a85); border-top:1px solid rgba(127,169,201,0.14); padding-top:8px; }
