@@ -63,12 +63,17 @@
   function _buildMessage(rec, vals) {
     const sym = rec.sym || '—';
     const tag = '#' + (sym || '').replace(/[^A-Za-z0-9]/g, '');
-    return [
+    const lines = [
       '📚 ANALYSIS REVIEW',
       '',
       '🪙 ' + sym,
       '📅 Analiz Zamanı: ' + _fmtDateTimeTR(rec.created_at),
-      '📊 İnceleme Zamanı: ' + _fmtDateTimeTR(rec.reviewed_at || new Date().toISOString()),
+    ];
+    // İnceleme Zamanı = reviewed_at (YOKSA satır yazılmaz; created_at ASLA kullanılmaz)
+    if (rec.reviewed_at) lines.push('📊 İnceleme Zamanı: ' + _fmtDateTimeTR(rec.reviewed_at));
+    // Paylaşım Zamanı = shared_at (YOKSA satır yazılmaz)
+    if (rec.shared_at)   lines.push('📤 Paylaşım Zamanı: ' + _fmtDateTimeTR(rec.shared_at));
+    lines.push(
       '',
       '🎯 Sonuç: ' + _tgLabel(vals.review_status),
       '📈 Hareket: ' + _fmtPct(rec.end_move_pct),
@@ -86,8 +91,9 @@
       '',
       '#AnalysisReview',
       tag,
-      '#VDSecuriAnalyst',
-    ].join('\n');
+      '#VDSecuriAnalyst'
+    );
+    return lines.join('\n');
   }
 
   // ── Bölüm HTML ──
@@ -196,7 +202,18 @@
             review_status: vals.review_status, admin_note: vals.admin_note, internal_review: vals.internal_review,
           });
           if (r && r.ok) {
-            if (r.row) { rec.review_status = r.row.review_status; rec.admin_note = r.row.admin_note; rec.internal_review = r.row.internal_review; }
+            if (r.row) {
+              rec.review_status = r.row.review_status; rec.admin_note = r.row.admin_note;
+              rec.internal_review = r.row.internal_review;
+              if (r.row.reviewed_at) rec.reviewed_at = r.row.reviewed_at;
+            }
+            // Modal tarih bloğunu canlı yenile (İnceleme Tarihi görünür olsun)
+            try {
+              const tEl = root.querySelector('[data-aic-times]');
+              if (tEl && window.VDArchive.Modal && window.VDArchive.Modal.timesHTML) {
+                tEl.outerHTML = window.VDArchive.Modal.timesHTML(rec);
+              }
+            } catch (e) {}
             _msg(sec, 'Veritabanına kaydedildi ✓', true);
           } else { _msg(sec, 'DB hatası: ' + ((r && r.error) || 'bilinmiyor') + ' (taslak korundu)', false); }
         } catch (e) { _msg(sec, 'İstek başarısız (taslak korundu)', false); }
@@ -223,6 +240,12 @@
             rec.shared_to_telegram = mark.row.shared_to_telegram;
             rec.telegram_msg_id    = mark.row.telegram_msg_id;
             rec.shared_at          = mark.row.shared_at;
+            try {
+              const tEl = root.querySelector('[data-aic-times]');
+              if (tEl && window.VDArchive.Modal && window.VDArchive.Modal.timesHTML) {
+                tEl.outerHTML = window.VDArchive.Modal.timesHTML(rec);
+              }
+            } catch (e) {}
             _rerender(root, rec);
             _msg(root.querySelector('[data-aic-admin]') || sec, 'Telegram\'da paylaşıldı ✓ (msg ' + sendRes.messageId + ')', true);
           } else {

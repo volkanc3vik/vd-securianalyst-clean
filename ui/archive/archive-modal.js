@@ -26,13 +26,34 @@
     return `<div class="aic-kv"><div class="k">${U.esc(k)}</div><div class="v ${cls || ''}">${U.esc(v)}</div></div>`;
   }
 
+  // Saatli tarih: "30 Mayıs 2026 02:49"
+  function _fmtDT(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      const date = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+      const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      return date + ' ' + time;
+    } catch (e) { return String(iso); }
+  }
+
+  // 3 bağımsız zaman: Analiz (created_at), İnceleme (reviewed_at), Telegram Paylaşım (shared_at).
+  // Boş olanın satırı GÖSTERİLMEZ. created_at ASLA reviewed_at yerine kullanılmaz.
+  function _timesHTML(rec) {
+    const row = (icon, label, iso) =>
+      `<div class="aic-time-row"><span class="ic">${icon}</span><span class="k">${label}</span><span class="v">${U.esc(_fmtDT(iso))}</span></div>`;
+    let rows = row('📅', 'Analiz Tarihi', rec.created_at);
+    if (rec.reviewed_at) rows += row('📊', 'İnceleme Tarihi', rec.reviewed_at);
+    if (rec.shared_at)   rows += row('📤', 'Telegram Paylaşım Tarihi', rec.shared_at);
+    return `<div class="aic-times" data-aic-times>${rows}</div>`;
+  }
+
   function _render(rec) {
     const m = U.statusMeta(rec.review_status);
     const reviewed = rec.review_status && rec.review_status !== 'pending';
 
     const kvCells = [
       _kv('Timeframe', rec.timeframe || '—'),
-      _kv('Analiz Tarihi', U.fmtDate(rec.created_at)),
       _kv('Yön Eğilimi (Bias)', U.directionLabel(rec.direction_bias)),
       _kv('Gerçekleşen Yön', reviewed ? U.directionLabel(rec.direction_realized) : 'Beklemede'),
       _kv('Analiz Anı Fiyatı', U.fmtPrice(rec.price_at_analysis)),
@@ -48,7 +69,7 @@
       : '';
 
     const sharedBadge = rec.shared_to_telegram
-      ? `<div class="aic-shared-badge">✔ Telegram'da paylaşıldı${rec.shared_at ? ' · ' + U.esc(U.fmtDate(rec.shared_at)) : ''}</div>`
+      ? `<div class="aic-shared-badge">✔ Telegram'da paylaşıldı</div>`
       : '';
 
     return `
@@ -60,6 +81,7 @@
         </div>
         <div class="aic-modal-body">
           <p class="aic-modal-text">${U.esc(rec.analysis_text || rec.analysis_summary || '—')}</p>
+          ${_timesHTML(rec)}
           <div class="aic-kv-grid">${kvCells}</div>
           ${aiLearned}
           <!-- Telegram paylaş slotu — Aşama 4'te aktifleşir -->
@@ -109,5 +131,5 @@
     if (closeBtn) { try { closeBtn.focus(); } catch (e) {} }
   }
 
-  NS.Modal = { open, close: _close };
+  NS.Modal = { open, close: _close, timesHTML: _timesHTML };
 })();
