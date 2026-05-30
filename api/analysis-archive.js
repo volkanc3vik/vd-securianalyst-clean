@@ -82,9 +82,20 @@ const DIR_MAP = { LONG: 'bullish', SHORT: 'bearish', BULLISH: 'bullish', BEARISH
 // source CHECK: ai_engine/ti_setup — telegram kökeni market_context.origin'e yazılır
 const VALID_SOURCES = ['ai_engine', 'ti_setup'];
 // PATCH/INSERT sonrası client'a dönülecek kolonlar (admin endpoint → admin_note/internal_review dahil)
-const RETURN_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,source,review_status,admin_note,internal_review,reviewed_at,shared_to_telegram,telegram_msg_id,shared_at,created_at';
+const RETURN_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,source,review_status,admin_note,internal_review,reviewed_at,review_due_at,review_window_hours,shared_to_telegram,telegram_msg_id,shared_at,created_at';
 // Pending liste kartları için (admin) — internal alanlar dahil değil, kart için yeterli
-const LIST_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,analysis_text,review_status,created_at,telegram_msg_id,market_context';
+const LIST_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,analysis_text,review_status,review_due_at,review_window_hours,created_at,telegram_msg_id,market_context';
+
+// ── Outcome Tracking Faz 1: timeframe → inceleme penceresi (saat) ──
+// 15m→24s · 1h→48s · 4h→72s · 1D→168s (7g). Bilinmeyen/auto → 48s.
+function reviewWindowHours(tf) {
+  const t = String(tf || '').toLowerCase().trim();
+  if (/^(1m|3m|5m|15m|30m|45m)$/.test(t)) return 24;
+  if (/^(1h|2h)$/.test(t))               return 48;
+  if (/^(4h|6h|8h|12h)$/.test(t))        return 72;
+  if (/^(1d|2d|3d|1w|1week|daily)$/.test(t)) return 168;
+  return 48; // auto / bilinmeyen → güvenli orta
+}
 
 function clampText(v, max) {
   if (v == null) return null;
@@ -143,6 +154,9 @@ export default async function handler(req, res) {
       }
 
       const mc = (body.market_context && typeof body.market_context === 'object') ? body.market_context : {};
+      // Outcome Tracking Faz 1: inceleme penceresi + due zamanı (hesaplama YOK, sadece zamanlama)
+      const winHours = reviewWindowHours(timeframe);
+      const dueIso = new Date(Date.now() + winHours * 3600 * 1000).toISOString();
       const row = {
         sym, timeframe, direction_bias,
         price_at_analysis: price,
@@ -152,6 +166,8 @@ export default async function handler(req, res) {
         market_context: mc,
         source,
         review_status: 'pending',
+        review_window_hours: winHours,
+        review_due_at: dueIso,
         telegram_msg_id: msgId,
       };
       const rows = await sbFetch(`/analysis_archive?select=${RETURN_COLS}`, {
@@ -167,7 +183,7 @@ export default async function handler(req, res) {
     if (action === 'list_pending') {
       const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 100);
       const rows = await sbFetch(
-        `/analysis_archive?review_status=eq.pending&admin_archived=eq.false&order=created_at.desc&limit=${limit}&select=${LIST_COLS}`,
+        `/analysis_archive?review_status=eq.pending&admin_archived=eq.false&order=review_due_at.asc.nullslast,created_at.desc&limit=${limit}&select=${LIST_COLS}`,
         { method: 'GET' }
       );
       return res.status(200).json({ ok: true, rows: rows || [], count: (rows || []).length });
