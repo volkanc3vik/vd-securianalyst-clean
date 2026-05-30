@@ -198,7 +198,7 @@ const SupabaseDB = (() => {
   // muhtemelen daha fazla kayıt var (feed "Daha Fazla Yükle" gösterir).
   async function listArchive(opts = {}) {
     const { sym, status, sinceISO, limit = 12, offset = 0 } = opts;
-    let f = `select=${ARCHIVE_PUBLIC_COLS}&order=created_at.desc`;
+    let f = `select=${ARCHIVE_PUBLIC_COLS}&admin_archived=eq.false&order=created_at.desc`;
     if (sym)      f += `&sym=eq.${encodeURIComponent(sym)}`;
     if (status)   f += `&review_status=eq.${encodeURIComponent(status)}`;
     if (sinceISO) f += `&created_at=gte.${encodeURIComponent(sinceISO)}`;
