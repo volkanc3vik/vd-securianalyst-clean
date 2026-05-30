@@ -18,10 +18,10 @@
   const TG_CHANNEL = 'free';   // public review kanalı (mevcut telegram-send kanal anahtarı)
 
   const STATUS = [
-    { ui: 'Pending',   db: 'pending',               tg: 'BEKLEMEDE' },
-    { ui: 'Validated', db: 'validated',             tg: 'DOĞRULANDI' },
-    { ui: 'Partial',   db: 'partially_validated',   tg: 'KISMEN DOĞRULANDI' },
-    { ui: 'Rejected',  db: 'not_validated',         tg: 'DOĞRULANMADI' },
+    { ui: 'Pending',   db: 'pending',               tg: 'BEKLEMEDE',           tr: 'Beklemede',          desc: 'Bu analiz henüz sonuç açısından değerlendirilmedi.' },
+    { ui: 'Validated', db: 'validated',             tg: 'DOĞRULANDI',          tr: 'Doğrulandı',         desc: 'Analiz yönü ve sonuçları büyük ölçüde doğrulandı.' },
+    { ui: 'Partial',   db: 'partially_validated',   tg: 'KISMEN DOĞRULANDI',   tr: 'Kısmen Doğrulandı',  desc: 'Analiz kısmen doğru çıktı ancak bazı koşullar beklenen performansı göstermedi.' },
+    { ui: 'Rejected',  db: 'not_validated',         tg: 'DOĞRULANMADI',        tr: 'Doğrulanmadı',       desc: 'Analiz beklenen yönde doğrulanmadı.' },
   ];
   function _tgLabel(db) { const s = STATUS.find(x => x.db === db); return s ? s.tg : (db || '—'); }
 
@@ -113,8 +113,18 @@
     const note      = draft.admin_note    != null ? draft.admin_note    : (rec.admin_note || '');
     const internal  = draft.internal_review != null ? draft.internal_review : (rec.internal_review || '');
     const prep      = !!draft.prep_telegram;
-    const opts = STATUS.map(s => `<option value="${s.db}" ${s.db === curStatus ? 'selected' : ''}>${s.ui}</option>`).join('');
+    const opts = STATUS.map(s =>
+      `<option value="${s.db}" ${s.db === curStatus ? 'selected' : ''}>${s.ui} — ${s.tr}</option>`).join('');
     const draftFlag = draft.savedAt ? `<span class="aic-admin-draft-flag">• yerel taslak</span>` : '';
+
+    // Review Status açıklama (legend) tooltip — DB/değer değişmez, yalnızca bilgilendirme
+    const legend = STATUS.map(s =>
+      `<div class="aic-tip-row"><b>${U.esc(s.ui)}</b> <span class="aic-tip-tr">(${U.esc(s.tr)})</span><br>${U.esc(s.desc)}</div>`).join('');
+    const statusLabel = `Review Status
+      <span class="aic-tip-wrap">
+        <button class="aic-tip-btn" type="button" data-tip-toggle aria-label="Durum açıklamaları">ⓘ</button>
+        <span class="aic-tip" role="tooltip"><div class="aic-tip-title">Durum açıklamaları</div>${legend}</span>
+      </span>`;
 
     const hasKey = _hasKey();
     const keyArea = hasKey
@@ -134,7 +144,7 @@
       <div class="aic-admin" data-aic-admin>
         <div class="aic-admin-hdr">🛡️ Admin Review <span class="aic-admin-tag">yalnızca admin</span>${draftFlag}</div>
         ${shared}
-        <label class="aic-admin-l">Review Status</label>
+        <label class="aic-admin-l">${statusLabel}</label>
         <select class="aic-admin-select" data-aic-status>${opts}</select>
         <label class="aic-admin-l">Admin Note</label>
         <textarea class="aic-admin-ta" data-aic-note rows="3"

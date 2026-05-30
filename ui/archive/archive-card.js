@@ -8,10 +8,10 @@
 
   // ── Shared util ───────────────────────────────────────────────────
   const STATUS = {
-    validated:            { label: 'Doğrulandı',         color: 'var(--v4-success)' },
-    partially_validated:  { label: 'Kısmen Doğrulandı',  color: 'var(--v4-warn)' },
-    not_validated:        { label: 'Doğrulanmadı',       color: 'var(--v4-danger)' },
-    pending:              { label: 'Beklemede',          color: 'var(--v4-text-2)' },
+    validated:            { label: 'Doğrulandı',         color: 'var(--v4-success)', en: 'Validated', desc: 'Analiz yönü ve sonuçları büyük ölçüde doğrulandı.' },
+    partially_validated:  { label: 'Kısmen Doğrulandı',  color: 'var(--v4-warn)',    en: 'Partial',   desc: 'Analiz kısmen doğru çıktı ancak bazı koşullar beklenen performansı göstermedi.' },
+    not_validated:        { label: 'Doğrulanmadı',       color: 'var(--v4-danger)',  en: 'Rejected',  desc: 'Analiz beklenen yönde doğrulanmadı.' },
+    pending:              { label: 'Beklemede',          color: 'var(--v4-text-2)',  en: 'Pending',   desc: 'Bu analiz henüz sonuç açısından değerlendirilmedi.' },
   };
   const DIRECTION = {
     bullish: 'Yükseliş (Bullish)',
@@ -24,6 +24,7 @@
       .replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
   function statusMeta(s) { return STATUS[s] || { label: (s || '—'), color: 'var(--v4-text-2)' }; }
+  function statusDesc(s) { const m = STATUS[s]; return m && m.desc ? m.desc : ''; }
   function directionLabel(d) { return DIRECTION[d] || '—'; }
 
   function fmtDate(iso) {
@@ -49,7 +50,7 @@
     return +n > 0 ? 'pos' : (+n < 0 ? 'neg' : '');
   }
 
-  NS.util = { esc, statusMeta, directionLabel, fmtDate, fmtPrice, fmtPct, pctClass };
+  NS.util = { esc, statusMeta, statusDesc, directionLabel, fmtDate, fmtPrice, fmtPct, pctClass };
 
   // ── Card render (saf fonksiyon) ───────────────────────────────────
   // rec → analysis_archive satırı. HTML string döner.

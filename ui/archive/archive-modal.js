@@ -76,7 +76,7 @@
       <div class="aic-modal" role="dialog" aria-modal="true" aria-label="${U.esc(rec.sym)} analiz detayı">
         <div class="aic-modal-header">
           <span class="aic-modal-sym">${U.esc(rec.sym)}</span>
-          <span class="aic-badge" style="--status-color:${m.color}"><span class="dot"></span>${U.esc(m.label)}</span>
+          <span class="aic-badge" style="--status-color:${m.color}"><span class="dot"></span>${U.esc(m.label)}</span>${m.desc ? `<span class="aic-tip-wrap"><button class="aic-tip-btn" type="button" data-tip-toggle aria-label="Durum açıklaması">ⓘ</button><span class="aic-tip" role="tooltip"><b>${U.esc(m.en || m.label)}</b><br>${U.esc(m.desc)}</span></span>` : ''}
           <button class="aic-modal-close" data-aic="close" aria-label="Kapat" type="button">✕</button>
         </div>
         <div class="aic-modal-body">
@@ -132,6 +132,17 @@
     }
 
     root.querySelectorAll('[data-aic="close"]').forEach(b => b.addEventListener('click', _close));
+    // ⓘ tooltip toggle (dokunmatik/tıklama) — public rozet + admin legend
+    root.addEventListener('click', (e) => {
+      const t = e.target.closest && e.target.closest('[data-tip-toggle]');
+      if (!t) return;
+      e.stopPropagation();
+      const w = t.closest('.aic-tip-wrap');
+      if (!w) return;
+      const wasOpen = w.classList.contains('open');
+      root.querySelectorAll('.aic-tip-wrap.open').forEach(o => o.classList.remove('open'));
+      if (!wasOpen) w.classList.add('open');
+    });
     const closeBtn = root.querySelector('.aic-modal-close');
     if (closeBtn) { try { closeBtn.focus(); } catch (e) {} }
   }
