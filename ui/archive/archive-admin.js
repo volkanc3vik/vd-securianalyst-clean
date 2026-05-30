@@ -15,6 +15,8 @@
   const LS_ACCESS = 'aap_access_v1';
   const LS_DRAFTS = 'archive_admin_drafts_v1';
   const API       = '/api/analysis-archive';
+  // Outcome Tracking Faz 2: son hesaplanan öneri (id eşleşirse modalda preset)
+  let _suggest = null;
   const TG_CHANNEL = 'free';   // public review kanalı (mevcut telegram-send kanal anahtarı)
 
   const STATUS = [
@@ -108,9 +110,11 @@
 
   // ── Bölüm HTML ──
   function sectionHTML(rec) {
+    if (_suggest && _suggest.id !== rec.id) _suggest = null;       // farklı kayıt → temizle
+    const sug       = (_suggest && _suggest.id === rec.id) ? _suggest : null;
     const draft     = getDraft(rec.id) || {};
-    const curStatus = draft.review_status != null ? draft.review_status : (rec.review_status || 'pending');
-    const note      = draft.admin_note    != null ? draft.admin_note    : (rec.admin_note || '');
+    const curStatus = sug ? sug.review_status : (draft.review_status != null ? draft.review_status : (rec.review_status || 'pending'));
+    const note      = sug ? sug.note : (draft.admin_note != null ? draft.admin_note : (rec.admin_note || ''));
     const internal  = draft.internal_review != null ? draft.internal_review : (rec.internal_review || '');
     const prep      = !!draft.prep_telegram;
     const opts = STATUS.map(s =>
@@ -140,10 +144,25 @@
          </div>`
       : '';
 
+    // Outcome Tracking Faz 2: "Sonucu Hesapla" — yalnız Outcome Ready (pending + due geçmiş)
+    const due = rec.review_due_at ? Date.parse(rec.review_due_at) : null;
+    const outcomeReady = rec.review_status === 'pending' && due && !isNaN(due) && due <= Date.now();
+    const calcTitle = !outcomeReady ? 'Yalnızca inceleme zamanı gelmiş (Outcome Ready) pending kayıtlar için'
+                    : !hasKey ? 'Admin anahtarı gerekli' : 'Binance verisinden retrospektif sonuç hesaplar (otomatik kayıt YOK)';
+    const calcMsg = sug
+      ? `✓ Otomatik hesap uygulandı — öneri: <b>${U.esc(sug.review_status)}</b>. Alanları kontrol edip Kaydet ile onaylayın.`
+      : '';
+    const calcRow = `
+      <div class="aic-admin-calcrow">
+        <button class="aic-admin-calc" data-aic-calc type="button" ${(hasKey && outcomeReady) ? '' : 'disabled'} title="${calcTitle}">📊 Sonucu Hesapla</button>
+        <span class="aic-admin-calcmsg" data-aic-calcmsg aria-live="polite">${calcMsg}</span>
+      </div>`;
+
     return `
       <div class="aic-admin" data-aic-admin>
         <div class="aic-admin-hdr">🛡️ Admin Review <span class="aic-admin-tag">yalnızca admin</span>${draftFlag}</div>
         ${shared}
+        ${calcRow}
         <label class="aic-admin-l">${statusLabel}</label>
         <select class="aic-admin-select" data-aic-status>${opts}</select>
         <label class="aic-admin-l">Admin Note</label>
@@ -191,9 +210,52 @@
     wire(root, rec);
   }
 
+  function _calcMsg(sec, text, ok) {
+    const m = sec.querySelector('[data-aic-calcmsg]');
+    if (!m) return;
+    m.innerHTML = U.esc(text);
+    m.style.color = ok === false ? 'var(--v4-danger)' : (ok === true ? 'var(--v4-success)' : 'var(--v4-text-2)');
+  }
+
   function wire(root, rec) {
     const sec = root.querySelector('[data-aic-admin]');
     if (!sec) return;
+
+    // Outcome Tracking Faz 2: "Sonucu Hesapla" (Binance kline → outcome; otomatik kayıt YOK)
+    const calcBtn = sec.querySelector('[data-aic-calc]');
+    if (calcBtn) {
+      calcBtn.addEventListener('click', async () => {
+        if (!_hasKey()) { _calcMsg(sec, 'Önce admin anahtarını etkinleştirin', false); return; }
+        const d = _disp();
+        if (!d || typeof d.adminFetch !== 'function') { _calcMsg(sec, 'Admin sistemi yüklenmedi', false); return; }
+        calcBtn.disabled = true;
+        _calcMsg(sec, 'Binance verisi çekiliyor, hesaplanıyor…', null);
+        try {
+          const r = await d.adminFetch(API, { action: 'set_outcome', id: rec.id });
+          if (r && r.ok) {
+            Object.assign(rec, r.row || {});
+            const sugStatus = (r.suggestion && r.suggestion.review_status) || 'partially_validated';
+            const sugNote = (rec.admin_note && String(rec.admin_note).trim())
+              ? rec.admin_note
+              : ((r.suggestion && r.suggestion.summary) || '');
+            _suggest = { id: rec.id, review_status: sugStatus, note: sugNote };
+            // Modalı taze veriyle yeniden aç → outcome alanları + öneri görünür
+            if (window.VDArchive.Modal && window.VDArchive.Modal.open) window.VDArchive.Modal.open(rec.id);
+          } else {
+            const MAP = {
+              not_ready: 'Henüz inceleme zamanı gelmedi (Outcome Ready değil).',
+              not_pending: 'Kayıt zaten incelenmiş (pending değil).',
+              no_price_data: 'Fiyat verisi bulunamadı — sembol Binance Futures\'ta olmayabilir.',
+              price_fetch_failed: 'Binance verisine ulaşılamadı.',
+              bad_price_data: 'Fiyat verisi okunamadı.',
+              no_entry_price: 'Analiz fiyatı yok, hesaplanamıyor.',
+            };
+            _calcMsg(sec, (MAP[r && r.error] || ('Hesaplanamadı: ' + ((r && r.error) || 'bilinmiyor'))), false);
+            calcBtn.disabled = false;
+          }
+        } catch (e) { _calcMsg(sec, 'Hesaplama isteği başarısız.', false); calcBtn.disabled = false; }
+      });
+    }
 
     // Admin key etkinleştir
     const keyBtn = sec.querySelector('[data-aic-keyset]');
@@ -235,6 +297,7 @@
               }
             } catch (e) {}
             _msg(sec, 'Veritabanına kaydedildi ✓', true);
+            _suggest = null;   // öneri uygulandı/kaydedildi
             // Pending'den çıktıysa: bekleyen paneli + feed + stats tazelensin
             if (rec.review_status && rec.review_status !== 'pending') {
               try { window.dispatchEvent(new CustomEvent('vd:archive:reviewed', { detail: { id: rec.id, review_status: rec.review_status } })); } catch (e) {}

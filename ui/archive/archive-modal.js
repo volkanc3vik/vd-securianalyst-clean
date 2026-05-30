@@ -55,7 +55,7 @@
     const kvCells = [
       _kv('Timeframe', rec.timeframe || '—'),
       _kv('Yön Eğilimi (Bias)', U.directionLabel(rec.direction_bias)),
-      _kv('Gerçekleşen Yön', reviewed ? U.directionLabel(rec.direction_realized) : 'Beklemede'),
+      _kv('Gerçekleşen Yön', rec.direction_realized ? U.directionLabel(rec.direction_realized) : 'Beklemede'),
       _kv('Analiz Anı Fiyatı', U.fmtPrice(rec.price_at_analysis)),
       _kv('İnceleme Fiyatı', U.fmtPrice(rec.price_at_review)),
       _kv('Max Hareket', U.fmtPct(rec.max_move_pct), U.pctClass(rec.max_move_pct)),
