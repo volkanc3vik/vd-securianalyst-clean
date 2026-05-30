@@ -167,7 +167,7 @@ export default async function handler(req, res) {
     if (action === 'list_pending') {
       const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 100);
       const rows = await sbFetch(
-        `/analysis_archive?review_status=eq.pending&order=created_at.desc&limit=${limit}&select=${LIST_COLS}`,
+        `/analysis_archive?review_status=eq.pending&admin_archived=eq.false&order=created_at.desc&limit=${limit}&select=${LIST_COLS}`,
         { method: 'GET' }
       );
       return res.status(200).json({ ok: true, rows: rows || [], count: (rows || []).length });
