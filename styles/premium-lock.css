@@ -15,8 +15,8 @@
   background: rgba(20, 14, 25, 0.96);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(157, 125, 250, 0.45);
-  border-left: 3px solid #9d7dfa;
+  border: 1px solid rgba(0, 209, 255, 0.45);
+  border-left: 3px solid #00D1FF;
   border-radius: 8px;
   padding: 12px 18px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
@@ -91,10 +91,10 @@
 }
 
 .vd-premium-modal {
-  background: linear-gradient(180deg, #1a1228 0%, #14101e 100%);
-  border: 1px solid rgba(157, 125, 250, 0.35);
+  background: linear-gradient(180deg, #0a1626 0%, #06101d 100%);
+  border: 1px solid rgba(0, 209, 255, 0.35);
   border-radius: 14px;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7), 0 0 60px rgba(157, 125, 250, 0.1);
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7), 0 0 60px rgba(0, 209, 255, 0.1);
   max-width: 480px;
   width: 100%;
   max-height: 90vh;
@@ -168,7 +168,7 @@
 }
 
 .vd-premium-modal-check {
-  color: #9d7dfa;
+  color: #00D1FF;
   font-weight: 700;
   flex-shrink: 0;
   font-size: 14px;
@@ -190,7 +190,7 @@
 .vd-premium-modal-cta {
   display: block;
   width: 100%;
-  background: linear-gradient(90deg, #9d7dfa 0%, #b89cff 100%);
+  background: linear-gradient(90deg, #00D1FF 0%, #007BFF 100%);
   border: none;
   color: #fff;
   padding: 13px 20px;
@@ -201,12 +201,12 @@
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
-  box-shadow: 0 4px 16px rgba(157, 125, 250, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 209, 255, 0.3);
 }
 
 .vd-premium-modal-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(157, 125, 250, 0.45);
+  box-shadow: 0 6px 22px rgba(0, 209, 255, 0.45);
 }
 
 .vd-premium-modal-cta:active {
@@ -272,12 +272,12 @@
 
 .vd-lock-overlay-icon {
   font-size: 26px;
-  filter: drop-shadow(0 2px 8px rgba(157, 125, 250, 0.5));
+  filter: drop-shadow(0 2px 8px rgba(0, 209, 255, 0.5));
 }
 
 .vd-lock-overlay-text {
-  background: rgba(157, 125, 250, 0.2);
-  border: 1px solid rgba(157, 125, 250, 0.5);
+  background: rgba(0, 209, 255, 0.2);
+  border: 1px solid rgba(0, 209, 255, 0.5);
   color: #fff;
   padding: 5px 14px;
   border-radius: 6px;
@@ -344,8 +344,8 @@
 .vd-ai-lock-note {
   margin-top: 14px;
   padding: 12px 14px;
-  background: rgba(157, 125, 250, 0.07);
-  border: 1px solid rgba(157, 125, 250, 0.25);
+  background: rgba(0, 209, 255, 0.07);
+  border: 1px solid rgba(0, 209, 255, 0.25);
   border-radius: 8px;
   font-size: 12.5px;
   line-height: 1.6;
@@ -366,7 +366,7 @@
   display: block;
   margin-top: 10px;
   width: 100%;
-  background: linear-gradient(90deg, #9d7dfa 0%, #b89cff 100%);
+  background: linear-gradient(90deg, #00D1FF 0%, #007BFF 100%);
   border: none;
   color: #fff;
   padding: 8px 14px;
@@ -381,7 +381,7 @@
 
 .vd-ai-lock-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(157, 125, 250, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 209, 255, 0.3);
 }
 
 /* ════════════ PREMIUM CTA BANT (alt sabit) ════════════ */
@@ -394,7 +394,7 @@
   background: linear-gradient(180deg, rgba(20, 14, 30, 0.92) 0%, rgba(14, 10, 22, 0.96) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(157, 125, 250, 0.35);
+  border-top: 1px solid rgba(0, 209, 255, 0.35);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
   padding: 12px 20px;
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
@@ -436,7 +436,7 @@
 }
 
 .vd-premium-cta-btn {
-  background: linear-gradient(90deg, #9d7dfa 0%, #b89cff 100%);
+  background: linear-gradient(90deg, #00D1FF 0%, #007BFF 100%);
   border: none;
   color: #fff;
   padding: 9px 20px;
@@ -447,14 +447,14 @@
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
-  box-shadow: 0 3px 12px rgba(157, 125, 250, 0.3);
+  box-shadow: 0 3px 12px rgba(0, 209, 255, 0.3);
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .vd-premium-cta-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(157, 125, 250, 0.45);
+  box-shadow: 0 4px 16px rgba(0, 209, 255, 0.45);
 }
 
 @media (max-width: 640px) {
@@ -564,15 +564,15 @@ header *,
    B.5 PUBLIC SITE — Premium Kod butonu + LoginScreen modal stilleri
    ════════════════════════════════════════════════════════════════ */
 
-/* Topbar "🔑 Premium Kod" butonu — free kullanıcı için belirgin purple */
+/* Topbar "🔑 Premium Kod" butonu — free kullanıcı için belirgin cyan */
 .vd-premium-code-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border: 1px solid rgba(157, 125, 250, 0.4);
+  border: 1px solid rgba(0, 209, 255, 0.4);
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(157, 125, 250, 0.15), rgba(125, 90, 240, 0.15));
+  background: linear-gradient(135deg, rgba(0, 209, 255, 0.15), rgba(125, 90, 240, 0.15));
   color: #c8b6ff;
   font: 600 12px 'Inter', sans-serif;
   letter-spacing: 0.3px;
@@ -582,11 +582,11 @@ header *,
 }
 
 .vd-premium-code-btn:hover {
-  background: linear-gradient(135deg, rgba(157, 125, 250, 0.3), rgba(125, 90, 240, 0.3));
-  border-color: rgba(157, 125, 250, 0.7);
+  background: linear-gradient(135deg, rgba(0, 209, 255, 0.3), rgba(125, 90, 240, 0.3));
+  border-color: rgba(0, 209, 255, 0.7);
   color: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(157, 125, 250, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 209, 255, 0.25);
 }
 
 .vd-premium-code-btn:active {
@@ -628,7 +628,7 @@ header *,
   width: 100%;
   margin-top: 12px;
   padding: 10px 16px;
-  border: 1px solid rgba(157, 125, 250, 0.3);
+  border: 1px solid rgba(0, 209, 255, 0.3);
   border-radius: 8px;
   background: transparent;
   color: #c8b6ff;
@@ -639,8 +639,8 @@ header *,
 }
 
 .vd-premium-modal-code-link:hover {
-  background: rgba(157, 125, 250, 0.1);
-  border-color: rgba(157, 125, 250, 0.6);
+  background: rgba(0, 209, 255, 0.1);
+  border-color: rgba(0, 209, 255, 0.6);
   color: #fff;
 }
 
@@ -699,7 +699,7 @@ header *,
 
 .vd-detail-lock-icon {
   font-size: 30px;
-  filter: drop-shadow(0 2px 10px rgba(157, 125, 250, 0.55));
+  filter: drop-shadow(0 2px 10px rgba(0, 209, 255, 0.55));
 }
 
 .vd-detail-lock-text {
