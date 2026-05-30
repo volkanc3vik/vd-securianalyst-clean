@@ -260,9 +260,17 @@
             const sugNote = (rec.admin_note && String(rec.admin_note).trim())
               ? rec.admin_note
               : (sg.adminNote || sg.summary || '');
-            const sugInternal = (rec.internal_review && String(rec.internal_review).trim())
+            const sugInternalBase = (rec.internal_review && String(rec.internal_review).trim())
               ? rec.internal_review
               : (sg.internalNote || '');
+            // Faz 4: tarihsel istatistik notu (varsa) ekle
+            let sugInternal = sugInternalBase;
+            try {
+              const hist = (window.VDInsights && typeof window.VDInsights.noteForSync === 'function')
+                ? window.VDInsights.noteForSync(rec) : null;
+              if (hist && !(sugInternalBase && sugInternalBase.includes('benzer analizde')))
+                sugInternal = sugInternalBase ? (sugInternalBase + ' ' + hist) : hist;
+            } catch (e) {}
             _suggest = { id: rec.id, review_status: sugStatus, note: sugNote, internal: sugInternal };
             // Modalı taze veriyle yeniden aç → sonuç kutusu + öneri + notlar görünür
             if (window.VDArchive.Modal && window.VDArchive.Modal.open) window.VDArchive.Modal.open(rec.id);
