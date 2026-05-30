@@ -149,6 +149,24 @@ function computeOutcome({ bias, entry, high, low, lastClose }) {
 
   const review_status = score >= 75 ? 'validated' : score >= 50 ? 'partially_validated' : 'not_validated';
 
+  // Phase 3: doğal dil değerlendirme metinleri (düzenlenebilir öneri)
+  const biasWord = bias === 'bullish' ? 'yukarı' : bias === 'bearish' ? 'aşağı' : 'yatay';
+  const dirAdj   = bias === 'bullish' ? 'bullish' : bias === 'bearish' ? 'bearish' : 'nötr';
+  let adminNote, internalNote;
+  if (bias === 'neutral') {
+    adminNote = `Analiz nötr beklentiyle açıldı. Fiyat, inceleme penceresinde sınırlı hareket etti (pencere sonu ${r2(favEnd)}%, maksimum ${r2(favMax)}%). ${review_status === 'validated' ? 'Yatay beklenti büyük ölçüde doğrulandı.' : 'Beklenti kısmen karşılandı.'}`;
+    internalNote = `Nötr kurulum; yön netliği ve volatilite düşük. Benzer durumlarda işlem önceliği azaltılabilir.`;
+  } else if (review_status === 'validated') {
+    adminNote = `Analiz yönü piyasa hareketiyle uyumlu gerçekleşti. Fiyat, inceleme penceresi içinde ${biasWord} yönde ilerledi (pencere sonu ${r2(favEnd)}%, maksimum ${r2(favMax)}%) ve ${dirAdj} beklenti büyük ölçüde doğrulandı.`;
+    internalNote = `Momentum ve trend uyumu bu kurulumda pozitif sonuç verdi. Benzer setup'larda confidence korunabilir.`;
+  } else if (review_status === 'partially_validated') {
+    adminNote = `Analiz yönü kısmen doğrulandı. Fiyat ${biasWord} yönde bir miktar ilerledi (pencere sonu ${r2(favEnd)}%) ancak beklenen güç tam oluşmadı.`;
+    internalNote = `Yön doğru ancak hareketin gücü sınırlıydı. Benzer setup'larda giriş zamanlaması ve teyit sinyalleri gözden geçirilebilir.`;
+  } else {
+    adminNote = `Analiz yönü piyasa hareketiyle uyuşmadı. Fiyat beklenenin aksine/zayıf hareket etti (pencere sonu ${r2(favEnd)}%) ve ${dirAdj} beklenti doğrulanmadı.`;
+    internalNote = `Bu kurulum beklenen yönü vermedi. Benzer koşullarda confidence düşürülebilir veya ek teyit aranabilir.`;
+  }
+
   return {
     price_at_review: r2(lastClose),
     max_move_pct: r2(favMax),
@@ -157,8 +175,12 @@ function computeOutcome({ bias, entry, high, low, lastClose }) {
     result_percent: r2(favEnd),
     direction_realized,
     validation_score: score,
-    suggestion: { review_status, summary:
-      `Otomatik hesap (retrospektif): pencere sonu ${r2(favEnd)}% (bias yönünde), max ${r2(favMax)}%, min ${r2(favMin)}%. Gerçekleşen yön: ${direction_realized}. Tutarlılık skoru ${score}/100. Öneri: ${review_status}.` },
+    suggestion: {
+      review_status,
+      adminNote,
+      internalNote,
+      summary: `Pencere sonu ${r2(favEnd)}% · maksimum ${r2(favMax)}% · gerçekleşen yön ${direction_realized} · skor ${score}/100 · öneri ${review_status}.`,
+    },
   };
 }
 
