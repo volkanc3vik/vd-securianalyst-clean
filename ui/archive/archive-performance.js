@@ -15,12 +15,16 @@
   const MIN_GROUP = 3;     // coin/timeframe sıralaması için min örnek
   const WEIGHT = { validated: 1, partially_validated: 0.5, not_validated: 0 };
 
-  function _isAdmin() {
+  // PREMIUM + ADMIN görür (Free/Visitor/Teaser görmez). VDAccess.isPremium() = premium||admin.
+  function _canView() {
     try {
-      if (NS.Admin && typeof NS.Admin.isAdmin === 'function') return NS.Admin.isAdmin();
+      if (window.VDAccess && typeof window.VDAccess.isPremium === 'function') return window.VDAccess.isPremium();
+    } catch (e) {}
+    try {
       const raw = localStorage.getItem('aap_access_v1');
-      return !!(raw && JSON.parse(raw).isAdmin);
-    } catch (e) { return false; }
+      if (raw) { const d = JSON.parse(raw); if (d && (d.isAdmin === true || (typeof d.bitis === 'number' && d.bitis > Date.now()))) return true; }
+    } catch (e) {}
+    return false;
   }
   const _num = (v) => { const n = Number(v); return isNaN(n) ? null : n; };
   const _isReviewed = (r) => r && r.review_status && WEIGHT[r.review_status] != null;
@@ -70,7 +74,7 @@
 
   // ── Render parçaları ──
   function _card(inner) {
-    return `<div class="aic-perf-card"><div class="aic-perf-hdr">📈 Performans Özeti <span class="aic-perf-tag">yalnızca admin</span></div>${inner}</div>`;
+    return `<div class="aic-perf-card"><div class="aic-perf-hdr">📈 Performans Özeti <span class="aic-perf-tag">premium</span></div>${inner}</div>`;
   }
   const _empty = (t) => `<div class="aic-perf-empty">${esc(t)}</div>`;
   function _tile(label, value, cls) {
@@ -143,7 +147,7 @@
   async function mount() {
     const host = document.getElementById(CID);
     if (!host) return;
-    if (!_isAdmin()) { host.hidden = true; return; }
+    if (!_canView()) { host.hidden = true; return; }
     host.hidden = false;
     host.innerHTML = _card(_empty('Yükleniyor…'));
     let recs = null;

@@ -151,12 +151,17 @@
   const CID = 'aic-insights';
   const ENGINE = window.VDInsights;
 
-  function _isAdmin() {
+  // PREMIUM + ADMIN görür (Free/Visitor/Teaser görmez). VDAccess.isPremium() = premium||admin.
+  function _canView() {
     try {
-      if (NS.Admin && typeof NS.Admin.isAdmin === 'function') return NS.Admin.isAdmin();
+      if (window.VDAccess && typeof window.VDAccess.isPremium === 'function') return window.VDAccess.isPremium();
+    } catch (e) {}
+    // Defensive fallback (VDAccess yoksa): aap_access_v1 admin veya geçerli premium
+    try {
       const raw = localStorage.getItem('aap_access_v1');
-      return !!(raw && JSON.parse(raw).isAdmin);
-    } catch (e) { return false; }
+      if (raw) { const d = JSON.parse(raw); if (d && (d.isAdmin === true || (typeof d.bitis === 'number' && d.bitis > Date.now()))) return true; }
+    } catch (e) {}
+    return false;
   }
   const _rateClass = (r) => (r >= 70 ? 'hi' : r >= 50 ? 'mid' : 'lo');
   function _rowHTML(r) {
@@ -171,7 +176,7 @@
       </div>`;
   }
   function _card(inner) {
-    return `<div class="aic-ins-card"><div class="aic-ins-hdr">🧠 AI Learning Insights <span class="aic-ins-tag">yalnızca admin · istatistiksel</span></div>${inner}</div>`;
+    return `<div class="aic-ins-card"><div class="aic-ins-hdr">🧠 AI Learning Insights <span class="aic-ins-tag">premium · istatistiksel</span></div>${inner}</div>`;
   }
   function _msg(t) { return `<div class="aic-ins-empty">${esc(t)}</div>`; }
 
@@ -196,7 +201,7 @@
   async function mount() {
     const host = document.getElementById(CID);
     if (!host) return;
-    if (!_isAdmin()) { host.hidden = true; return; }
+    if (!_canView()) { host.hidden = true; return; }
     host.hidden = false;
     if (!ENGINE || typeof ENGINE.load !== 'function') {
       console.error(TAG, 'Öğrenme motoru (VDInsights) bulunamadı — kart devre dışı.');
