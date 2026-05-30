@@ -180,8 +180,8 @@ const SupabaseDB = (() => {
   // ═══════════════════════════════════════════════
 
   // Public okuma için GÜVENLİ kolon allowlist'i (admin_note / internal_review /
-  // ai_review_note HARİÇ). v25 migration'da anon'a yalnızca bu kolonlar GRANT'lendiği
-  // için 'select=*' artık çalışmaz; bu listeyi açıkça istemek ZORUNLU.
+  // ai_review_note HARİÇ). shared_at v25 migration'ı UYGULANDIKTAN sonra mevcut
+  // ve anon'a GRANT'li olduğu için tekrar eklendi (modal "Telegram Paylaşım Tarihi").
   const ARCHIVE_PUBLIC_COLS = [
     'id','sym','timeframe','direction_bias','analysis_text','analysis_summary',
     'price_at_analysis','market_context','analysis_score','source','created_at',
