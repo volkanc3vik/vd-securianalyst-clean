@@ -2,7 +2,7 @@
 // modules/premium-config.js
 // PREMIUM SALES FUNNEL — config (fiyat / link / metin / mesaj TEK KAYNAK)
 //
-// Manuel satış modeli: ödeme entegrasyonu YOK. CTA → Telegram/WhatsApp
+// Manuel satış modeli: ödeme entegrasyonu YOK. CTA → Telegram
 // hazır mesajla iletişim → manuel ödeme + manuel premium kod.
 // Funnel hiçbir değeri hardcode etmez; hepsini buradan okur.
 // window.VDPremiumConfig
@@ -56,15 +56,13 @@
 
     // İletişim — gerçek kullanıcı adı/numara buradan kolayca değiştirilir
     contact: {
-      telegramUser: 'vdsecurianalyst',   // t.me/<telegramUser>  (gerçek kullanıcı adını yazın)
-      whatsappNumber: '905555555555',     // ülke koduyla, + ve boşluk olmadan
-      primary: 'telegram',                // ana CTA kanalı: 'telegram' | 'whatsapp'
+      telegramUsername: 'volkanc3vik',   // t.me/<telegramUsername> — buradan yönetilir
     },
 
     // Hazır mesaj şablonları ({plan} → seçilen plan adı)
     messages: {
-      perPlan: 'Merhaba.\n\nVD SecuriAnalyst {plan} erişim almak istiyorum.\n\nBilgi verebilir misiniz?',
-      general: 'Merhaba.\n\nVD SecuriAnalyst Premium erişim hakkında bilgi almak istiyorum.',
+      perPlan: 'Merhaba Volkan Bey.\n\nVD SecuriAnalyst {plan} erişim almak istiyorum.\n\nBilgi verebilir misiniz?',
+      general: 'Merhaba Volkan Bey.\n\nVD SecuriAnalyst Premium erişimi hakkında bilgi almak istiyorum.',
     },
 
     // Sosyal kanıt: yalnız yeterli veri varsa göster

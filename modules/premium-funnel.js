@@ -4,7 +4,7 @@
 //
 // • Hero + premium chip'ler + modül kartları (ikon/başlık/açıklama/glow)
 // • Fayda listesi + güçlü sosyal kanıt (mevcut RPC) + SaaS plan kartları
-// • Plan seç → Telegram/WhatsApp hazır mesaj (config) · ana CTA
+// • Plan seç → Telegram hazır mesaj (config) · tek CTA
 // • Kod-aktivasyon kartı KORUNUR (doLogin'e dokunulmaz) · güven notu
 // Hiçbir mevcut sistem değiştirilmez. window.VDPremiumFunnel
 // ════════════════════════════════════════════════════════════════════
@@ -20,26 +20,20 @@
 
   function _teaserExpired() { try { return !!(window.VDTeaser && window.VDTeaser.isExpired && window.VDTeaser.isExpired()); } catch (e) { return false; } }
 
-  // ── Telegram / WhatsApp hazır mesaj link üretimi ──
+  // ── Telegram hazır mesaj link üretimi (yalnız Telegram) ──
   function _msgFor(planName) {
     const m = CFG().messages || {};
     if (planName && m.perPlan) return m.perPlan.replace('{plan}', planName);
     return m.general || 'Merhaba.';
   }
-  function _contactLink(channel, planName) {
+  function _contactLink(planName) {
     const c = CFG().contact || {};
     const text = encodeURIComponent(_msgFor(planName));
-    if (channel === 'whatsapp') {
-      const num = String(c.whatsappNumber || '').replace(/[^\d]/g, '');
-      return `https://wa.me/${num}?text=${text}`;
-    }
-    const user = String(c.telegramUser || '').replace(/^@/, '');
+    const user = String(c.telegramUsername || c.telegramUser || '').replace(/^@/, '');
     return `https://t.me/${user}?text=${text}`;
   }
   function _openContact(planName) {
-    const c = CFG().contact || {};
-    const url = _contactLink(c.primary === 'whatsapp' ? 'whatsapp' : 'telegram', planName);
-    window.open(url, '_blank', 'noopener');
+    window.open(_contactLink(planName), '_blank', 'noopener');
   }
 
   // ── HTML parçaları ──
@@ -103,12 +97,7 @@
         <div class="vdf-section-ttl">Erişim Planları</div>
         <div class="vdf-plans">${_plansHTML()}</div>
 
-        <button class="vdf-cta" data-vdf-primary type="button">🚀 Premium Erişim Al</button>
-
-        <div class="vdf-contacts">
-          <a class="vdf-contact tg" data-vdf-tg target="_blank" rel="noopener">📱 Telegram ile İletişim</a>
-          <a class="vdf-contact wa" data-vdf-wa target="_blank" rel="noopener">📞 WhatsApp ile İletişim</a>
-        </div>
+        <button class="vdf-cta" data-vdf-primary type="button">🚀 Premium Erişim İçin Telegram'dan Yaz</button>
 
         <div class="vdf-trust">${esc(c.trustNote || '')}</div>
 
@@ -151,8 +140,6 @@
   // ── Wiring ──
   function _wire(screen) {
     const c = CFG().contact || {};
-    const tg = screen.querySelector('[data-vdf-tg]'); if (tg) tg.href = _contactLink('telegram', null);
-    const wa = screen.querySelector('[data-vdf-wa]'); if (wa) wa.href = _contactLink('whatsapp', null);
     const prim = screen.querySelector('[data-vdf-primary]');
     if (prim) prim.addEventListener('click', () => _openContact(null));
     screen.querySelectorAll('[data-vdf-plan]').forEach(b => b.addEventListener('click', () => _openContact(b.getAttribute('data-vdf-plan'))));
