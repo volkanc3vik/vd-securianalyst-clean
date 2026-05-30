@@ -46,7 +46,12 @@
   function _isPristine(id) {
     const el = byId(id);
     if (!el) return false;
-    if (id === 'tiPanelMount') return el.children.length === 0;   // mount henüz çalışmadıysa
+    if (id === 'tiPanelMount') {
+      // Boş VEYA başlangıç shell'i (canlı veri yok) → restore güvenli.
+      // GERÇEK işlenmiş veri varsa ASLA dokunma (canlı render ezilmez).
+      if (el.children.length === 0) return true;
+      return /başlatılıyor|İlk tarama|veri bekleniyor/i.test(el.textContent || '');
+    }
     const kids = Array.from(el.children);
     return kids.length === 0 || kids.every(c => c.classList.contains('loading') || /Taranıyor/i.test(c.textContent || ''));
   }
