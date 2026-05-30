@@ -77,3 +77,28 @@
 @media (max-width: 560px) {
   .aic-teaser-cta { flex-direction: column; text-align: center; }
 }
+
+/* ── Chart Panel Access Gate (#lwcPanel kilit overlay) ── */
+.lwc-gate-overlay {
+  position: absolute; inset: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(2, 6, 14, 0.72); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  border-radius: inherit;
+}
+.lwc-gate-card {
+  text-align: center; max-width: 380px;
+  background: linear-gradient(180deg, rgba(10, 22, 38, 0.96), rgba(6, 14, 26, 0.96));
+  border: 1px solid var(--v4-border-strong, rgba(0, 209, 255, 0.3)); border-radius: 16px;
+  padding: 24px 22px; box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+}
+.lwc-gate-ic { font-size: 34px; margin-bottom: 10px; }
+.lwc-gate-title { font-size: 16px; font-weight: 800; color: var(--v4-cyan, #00D1FF); margin-bottom: 8px; }
+.lwc-gate-msg { font-size: 12.5px; line-height: 1.55; color: var(--v4-text-2, #7FA9C9); margin-bottom: 18px; }
+.lwc-gate-msg b { color: var(--v4-text, #EAF6FF); }
+.lwc-gate-btn {
+  font-family: inherit; font-size: 13px; font-weight: 700; color: #02050D; cursor: pointer;
+  background: linear-gradient(135deg, var(--v4-cyan, #00D1FF), var(--v4-blue, #007BFF));
+  border: none; border-radius: 11px; padding: 11px 20px;
+}
+.lwc-gate-btn:hover { filter: brightness(1.08); }
+@media (max-width: 560px) { .lwc-gate-card { padding: 20px 16px; } .lwc-gate-title { font-size: 15px; } }
