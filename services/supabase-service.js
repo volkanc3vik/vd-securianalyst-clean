@@ -179,14 +179,17 @@ const SupabaseDB = (() => {
   // Service role key ASLA client koduna konmaz.
   // ═══════════════════════════════════════════════
 
-  // Arşiv listesi (public). opts: { sym, status, sinceISO, limit }
+  // Arşiv listesi (public). opts: { sym, status, sinceISO, limit, offset }
+  // Pagination: offset ile sayfalama. Dönen satır sayısı limit'e eşitse
+  // muhtemelen daha fazla kayıt var (feed "Daha Fazla Yükle" gösterir).
   async function listArchive(opts = {}) {
-    const { sym, status, sinceISO, limit = 50 } = opts;
+    const { sym, status, sinceISO, limit = 12, offset = 0 } = opts;
     let f = 'order=created_at.desc';
     if (sym)      f += `&sym=eq.${encodeURIComponent(sym)}`;
     if (status)   f += `&review_status=eq.${encodeURIComponent(status)}`;
     if (sinceISO) f += `&created_at=gte.${encodeURIComponent(sinceISO)}`;
-    return _select('analysis_archive', f, Math.min(limit, 200));
+    if (offset)   f += `&offset=${Math.max(0, parseInt(offset, 10) || 0)}`;
+    return _select('analysis_archive', f, Math.min(limit, 100));
   }
 
   // Tek kayıt (public). Pending ise RLS gereği null döner.
@@ -209,12 +212,26 @@ const SupabaseDB = (() => {
     } catch (e) { console.warn('DB archive_public_stats:', e.message); return null; }
   }
 
+  // Coin filtresi için dinamik distinct coin listesi (public görünür kayıtlar).
+  // RPC: [{ sym, cnt }] döner; review_status != 'pending' coin'leri.
+  async function getArchiveCoins() {
+    try {
+      const r = await fetch(`${URL}/rest/v1/rpc/archive_distinct_coins`, {
+        method:  'POST',
+        headers: HEADERS,
+        body:    '{}',
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch (e) { console.warn('DB archive_distinct_coins:', e.message); return []; }
+  }
+
   return {
     saveSignal, closeSignal, getSignals, getOpenSignals, getStats,
     loadWeights, updateWeight, saveWeights,
     verifyCode,
     // Analysis Archive (public read)
-    listArchive, getArchiveById, getArchiveStats,
+    listArchive, getArchiveById, getArchiveStats, getArchiveCoins,
   };
 
 })();
