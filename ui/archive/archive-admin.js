@@ -115,7 +115,7 @@
     const draft     = getDraft(rec.id) || {};
     const curStatus = sug ? sug.review_status : (draft.review_status != null ? draft.review_status : (rec.review_status || 'pending'));
     const note      = sug ? sug.note : (draft.admin_note != null ? draft.admin_note : (rec.admin_note || ''));
-    const internal  = draft.internal_review != null ? draft.internal_review : (rec.internal_review || '');
+    const internal  = sug ? sug.internal : (draft.internal_review != null ? draft.internal_review : (rec.internal_review || ''));
     const prep      = !!draft.prep_telegram;
     const opts = STATUS.map(s =>
       `<option value="${s.db}" ${s.db === curStatus ? 'selected' : ''}>${s.ui} — ${s.tr}</option>`).join('');
@@ -158,11 +158,32 @@
         <span class="aic-admin-calcmsg" data-aic-calcmsg aria-live="polite">${calcMsg}</span>
       </div>`;
 
+    // Phase 3: Otomatik Sonuç Özeti kutusu — outcome hesaplanmışsa göster (bilgilendirme)
+    let outBox = '';
+    if (rec.validation_score != null) {
+      const vs = Number(rec.validation_score);
+      const sugDb = vs >= 75 ? 'validated' : vs >= 50 ? 'partially_validated' : 'not_validated';
+      const sugMeta = STATUS.find(s => s.db === sugDb);
+      const sugLabel = sugMeta ? `${sugMeta.ui} — ${sugMeta.tr}` : sugDb;
+      const pc = (v) => `aic-out-v ${U.pctClass ? U.pctClass(v) : ''}`;
+      outBox = `
+        <div class="aic-outbox">
+          <div class="aic-outbox-h">📊 Otomatik Sonuç Özeti</div>
+          <div class="aic-outbox-row"><span>Analiz yönü</span><b>${U.esc(U.directionLabel(rec.direction_bias))}</b></div>
+          <div class="aic-outbox-row"><span>Pencere içi maksimum hareket</span><b class="${pc(rec.max_move_pct)}">${U.esc(U.fmtPct(rec.max_move_pct))}</b></div>
+          <div class="aic-outbox-row"><span>Pencere sonu hareket</span><b class="${pc(rec.end_move_pct)}">${U.esc(U.fmtPct(rec.end_move_pct))}</b></div>
+          <div class="aic-outbox-row"><span>Önerilen durum</span><b>${U.esc(sugLabel)}</b></div>
+          <div class="aic-outbox-row"><span>Tutarlılık skoru</span><b>${vs}/100</b></div>
+          <div class="aic-outbox-note">Bu yalnızca retrospektif tutarlılık özetidir; yatırım tavsiyesi değildir. Final karar admin onayındadır.</div>
+        </div>`;
+    }
+
     return `
       <div class="aic-admin" data-aic-admin>
         <div class="aic-admin-hdr">🛡️ Admin Review <span class="aic-admin-tag">yalnızca admin</span>${draftFlag}</div>
         ${shared}
         ${calcRow}
+        ${outBox}
         <label class="aic-admin-l">${statusLabel}</label>
         <select class="aic-admin-select" data-aic-status>${opts}</select>
         <label class="aic-admin-l">Admin Note</label>
@@ -178,7 +199,7 @@
         ${keyArea}
         <div class="aic-admin-actions">
           <button class="aic-admin-save" data-aic-save type="button">Kaydet</button>
-          <button class="aic-admin-tg" data-aic-send type="button" ${(hasKey && curStatus !== 'pending') ? '' : 'disabled'} title="${curStatus === 'pending' ? 'Bu analiz henüz sonuçlanmadı — önce bir sonuç durumu seçip kaydedin.' : ''}">${rec.shared_to_telegram ? 'Yeniden Gönder' : "Telegram'a Gönder"}</button>
+          <button class="aic-admin-tg" data-aic-send type="button" ${(hasKey && rec.review_status && rec.review_status !== 'pending') ? '' : 'disabled'} title="${(!rec.review_status || rec.review_status === 'pending') ? 'Bu analiz henüz sonuçlanmadı — önce bir sonuç durumu seçip Kaydet\'e basın.' : ''}">${rec.shared_to_telegram ? 'Yeniden Gönder' : "Telegram'a Gönder"}</button>
           <span class="aic-admin-status" data-aic-savemsg aria-live="polite"></span>
         </div>
         <div class="aic-admin-info">
@@ -234,12 +255,16 @@
           const r = await d.adminFetch(API, { action: 'set_outcome', id: rec.id });
           if (r && r.ok) {
             Object.assign(rec, r.row || {});
-            const sugStatus = (r.suggestion && r.suggestion.review_status) || 'partially_validated';
+            const sg = r.suggestion || {};
+            const sugStatus = sg.review_status || 'partially_validated';
             const sugNote = (rec.admin_note && String(rec.admin_note).trim())
               ? rec.admin_note
-              : ((r.suggestion && r.suggestion.summary) || '');
-            _suggest = { id: rec.id, review_status: sugStatus, note: sugNote };
-            // Modalı taze veriyle yeniden aç → outcome alanları + öneri görünür
+              : (sg.adminNote || sg.summary || '');
+            const sugInternal = (rec.internal_review && String(rec.internal_review).trim())
+              ? rec.internal_review
+              : (sg.internalNote || '');
+            _suggest = { id: rec.id, review_status: sugStatus, note: sugNote, internal: sugInternal };
+            // Modalı taze veriyle yeniden aç → sonuç kutusu + öneri + notlar görünür
             if (window.VDArchive.Modal && window.VDArchive.Modal.open) window.VDArchive.Modal.open(rec.id);
           } else {
             const MAP = {
@@ -299,6 +324,7 @@
             } catch (e) {}
             _msg(sec, 'Veritabanına kaydedildi ✓', true);
             _suggest = null;   // öneri uygulandı/kaydedildi
+            _syncSendState();  // kaydedilen duruma göre Telegram butonunu güncelle
             // Pending'den çıktıysa: bekleyen paneli + feed + stats tazelensin
             if (rec.review_status && rec.review_status !== 'pending') {
               try { window.dispatchEvent(new CustomEvent('vd:archive:reviewed', { detail: { id: rec.id, review_status: rec.review_status } })); } catch (e) {}
@@ -312,13 +338,14 @@
     // Telegram'a Gönder
     const sendBtn = sec.querySelector('[data-aic-send]');
     const statusSel = sec.querySelector('[data-aic-status]');
-    // Pending iken Telegram butonu pasif (canlı) — "SONUÇ: BEKLEMEDE" gönderimi önlenir
+    // Telegram butonu YALNIZCA kaydedilmiş (DB) sonuç durumu pending değilse aktif.
+    // Öneri (Sonucu Hesapla) dropdown'ı preset etse bile, admin Kaydet'e basana dek kapalı kalır.
     function _syncSendState() {
       if (!sendBtn) return;
-      const pending = statusSel && statusSel.value === 'pending';
+      const pending = !rec.review_status || rec.review_status === 'pending';
       const noKey = !_hasKey();
       sendBtn.disabled = pending || noKey;
-      sendBtn.title = pending ? 'Bu analiz henüz sonuçlanmadı — önce bir sonuç durumu seçip kaydedin.' : '';
+      sendBtn.title = pending ? 'Bu analiz henüz sonuçlanmadı — önce bir sonuç durumu seçip Kaydet\'e basın.' : '';
     }
     if (statusSel) statusSel.addEventListener('change', _syncSendState);
     _syncSendState();
