@@ -33,6 +33,7 @@ const LIMITS = {
   create:        { max: 60, windowMs: 60_000 },
   list_pending:  { max: 60, windowMs: 60_000 },
   get_one:       { max: 120, windowMs: 60_000 },
+  set_outcome:   { max: 30, windowMs: 60_000 },
   update_review: { max: 30, windowMs: 60_000 },
   mark_shared:   { max: 20, windowMs: 60_000 },
 };
@@ -82,7 +83,7 @@ const DIR_MAP = { LONG: 'bullish', SHORT: 'bearish', BULLISH: 'bullish', BEARISH
 // source CHECK: ai_engine/ti_setup — telegram kökeni market_context.origin'e yazılır
 const VALID_SOURCES = ['ai_engine', 'ti_setup'];
 // PATCH/INSERT sonrası client'a dönülecek kolonlar (admin endpoint → admin_note/internal_review dahil)
-const RETURN_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,source,review_status,admin_note,internal_review,reviewed_at,review_due_at,review_window_hours,shared_to_telegram,telegram_msg_id,shared_at,created_at';
+const RETURN_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,source,review_status,admin_note,internal_review,reviewed_at,review_due_at,review_window_hours,price_at_review,max_move_pct,min_move_pct,end_move_pct,result_percent,direction_realized,validation_score,review_source,shared_to_telegram,telegram_msg_id,shared_at,created_at';
 // Pending liste kartları için (admin) — internal alanlar dahil değil, kart için yeterli
 const LIST_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,analysis_text,review_status,review_due_at,review_window_hours,created_at,telegram_msg_id,market_context';
 
@@ -95,6 +96,70 @@ function reviewWindowHours(tf) {
   if (/^(4h|6h|8h|12h)$/.test(t))        return 72;
   if (/^(1d|2d|3d|1w|1week|daily)$/.test(t)) return 168;
   return 48; // auto / bilinmeyen → güvenli orta
+}
+
+// ── Outcome Tracking Faz 2: pencereye göre kline interval ──
+function klineInterval(winHours) {
+  const h = Number(winHours) || 48;
+  if (h <= 24) return '15m';
+  if (h <= 72) return '1h';
+  return '2h';
+}
+
+function r2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
+// ── Saf hesap motoru (test edilebilir) ──
+// bias: bullish|bearish|neutral · entry · high · low · lastClose
+function computeOutcome({ bias, entry, high, low, lastClose }) {
+  const e = Number(entry);
+  const pctHigh = (high - e) / e * 100;   // tepe (>=0 genelde)
+  const pctLow  = (low - e) / e * 100;    // dip (<=0 genelde)
+  const pctEnd  = (lastClose - e) / e * 100;
+
+  let favMax, favMin, favEnd;
+  if (bias === 'bearish') {
+    favMax = -pctLow;   // aşağı hareket = favorable (pozitif)
+    favMin = -pctHigh;  // yukarı hareket = adverse (negatif)
+    favEnd = -pctEnd;
+  } else { // bullish & neutral → ham yön
+    favMax = pctHigh;
+    favMin = pctLow;
+    favEnd = pctEnd;
+  }
+
+  // Gerçekleşen yön: fiyatın GERÇEK hareketi (bias'tan bağımsız)
+  let direction_realized = 'neutral';
+  if (pctEnd >= 0.5) direction_realized = 'bullish';
+  else if (pctEnd <= -0.5) direction_realized = 'bearish';
+
+  // Validation score (retrospektif tutarlılık — başarı garantisi DEĞİL)
+  let score;
+  if (bias === 'neutral') {
+    const a = Math.abs(pctEnd);
+    score = a < 1 ? 60 : a < 3 ? 50 : 42;
+  } else {
+    if (favEnd >= 3)      score = 82 + clamp((favEnd - 3) * 1.5, 0, 13);
+    else if (favEnd >= 1) score = 62 + (favEnd - 1) / 2 * 18;
+    else if (favEnd > -1) score = 45 + (favEnd + 1) / 2 * 14;
+    else                  score = clamp(39 + favEnd * 4, 5, 39);
+    score += clamp(favMax / 3, 0, 5); // favorable excursion küçük bonus
+  }
+  score = clamp(Math.round(score), 0, 95);
+
+  const review_status = score >= 75 ? 'validated' : score >= 50 ? 'partially_validated' : 'not_validated';
+
+  return {
+    price_at_review: r2(lastClose),
+    max_move_pct: r2(favMax),
+    min_move_pct: r2(favMin),
+    end_move_pct: r2(favEnd),
+    result_percent: r2(favEnd),
+    direction_realized,
+    validation_score: score,
+    suggestion: { review_status, summary:
+      `Otomatik hesap (retrospektif): pencere sonu ${r2(favEnd)}% (bias yönünde), max ${r2(favMax)}%, min ${r2(favMin)}%. Gerçekleşen yön: ${direction_realized}. Tutarlılık skoru ${score}/100. Öneri: ${review_status}.` },
+  };
 }
 
 function clampText(v, max) {
@@ -193,6 +258,51 @@ export default async function handler(req, res) {
     const id = body.id;
     if (!id || !UUID_RE.test(String(id))) return res.status(400).json({ ok: false, error: 'invalid_id' });
     const idFilter = `?id=eq.${encodeURIComponent(id)}`;
+
+    // ── SET_OUTCOME: Binance kline → outcome hesabı (review_status'a DOKUNMAZ) ──
+    // Yalnız Outcome Ready & pending. Otomatik review/Telegram YOK; öneri döner.
+    if (action === 'set_outcome') {
+      const rows = await sbFetch(`/analysis_archive${idFilter}&select=*&limit=1`, { method: 'GET' });
+      if (!rows || !rows.length) return res.status(404).json({ ok: false, error: 'not_found' });
+      const rec = rows[0];
+      if (rec.review_status !== 'pending') return res.status(409).json({ ok: false, error: 'not_pending' });
+      const due = rec.review_due_at ? Date.parse(rec.review_due_at) : null;
+      if (!due || due > Date.now()) return res.status(409).json({ ok: false, error: 'not_ready' });
+      const startMs = Date.parse(rec.created_at);
+      const endMs = due;
+      const entry = Number(rec.price_at_analysis);
+      if (!entry || isNaN(entry)) return res.status(422).json({ ok: false, error: 'no_entry_price' });
+      const interval = klineInterval(rec.review_window_hours || (endMs - startMs) / 3_600_000);
+      const symbol = String(rec.sym || '').toUpperCase();
+      const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}&startTime=${startMs}&endTime=${endMs}&limit=1500`;
+      let kl;
+      try {
+        const kr = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        kl = await kr.json();
+      } catch (e) { return res.status(502).json({ ok: false, error: 'price_fetch_failed' }); }
+      if (!Array.isArray(kl) || !kl.length) return res.status(502).json({ ok: false, error: 'no_price_data' });
+      const highs = kl.map(k => +k[2]).filter(n => !isNaN(n));
+      const lows  = kl.map(k => +k[3]).filter(n => !isNaN(n));
+      const lastClose = +kl[kl.length - 1][4];
+      if (!highs.length || !lows.length || isNaN(lastClose)) return res.status(502).json({ ok: false, error: 'bad_price_data' });
+      const high = Math.max(...highs), low = Math.min(...lows);
+
+      const out = computeOutcome({ bias: rec.direction_bias, entry, high, low, lastClose });
+      // Outcome kolonlarını yaz — review_status DEĞİŞMEZ (admin onayı şart)
+      const patch = {
+        price_at_review: out.price_at_review,
+        max_move_pct: out.max_move_pct,
+        min_move_pct: out.min_move_pct,
+        end_move_pct: out.end_move_pct,
+        result_percent: out.result_percent,
+        direction_realized: out.direction_realized,
+        validation_score: out.validation_score,
+        review_source: 'auto',
+      };
+      const upd = await sbFetch(`/analysis_archive${idFilter}&select=*`, { method: 'PATCH', body: JSON.stringify(patch) });
+      if (!upd || !upd.length) return res.status(502).json({ ok: false, error: 'db_error' });
+      return res.status(200).json({ ok: true, row: upd[0], suggestion: out.suggestion, computed: out, meta: { interval, candles: kl.length, high, low, lastClose } });
+    }
 
     // ── GET_ONE: admin tek kayıt (pending dahil) — modal fallback için ──
     if (action === 'get_one') {
