@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Analysis Intelligence Center — VD SecuriAnalyst platformunun ürettiği analizlerin tarihsel arşivi ve şeffaf değerlendirme merkezi. Yatırım tavsiyesi değildir.">
+  <meta name="robots" content="index,follow">
+  <meta property="og:title" content="Analysis Intelligence Center · VD SecuriAnalyst">
+  <meta property="og:description" content="Platform tarafından üretilen analizlerin tarihsel arşivi ve değerlendirme merkezi.">
+  <meta property="og:type" content="website">
+  <title>Analysis Intelligence Center · VD SecuriAnalyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/archive.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="aic-header">
+    <a href="index.html" class="aic-logo">◈ VD <b>SecuriAnalyst</b></a>
+    <nav class="aic-nav">
+      <a href="index.html">Ana Sayfa</a>
+      <a href="legal/contact.html">İletişim</a>
+      <a href="index.html" class="aic-home-btn">Ana Panele Dön</a>
+    </nav>
+  </header>
+
+  <main class="aic-main">
+
+    <!-- 1. HERO -->
+    <section class="aic-hero">
+      <span class="aic-hero-badge">◈ Analysis Intelligence Center</span>
+      <h1>Analysis Intelligence Center</h1>
+      <p>Platform tarafından üretilen analizlerin tarihsel arşivi ve değerlendirme merkezi.</p>
+      <div class="aic-hero-legal">
+        <span>⚠</span>
+        <span>Bu bölüm yatırım tavsiyesi içermez. Geçmiş analizlerin değerlendirme amaçlı
+        arşividir; gelecekteki piyasa hareketlerinin göstergesi olarak yorumlanamaz.</span>
+      </div>
+    </section>
+
+    <!-- 2. STATISTICS -->
+    <section class="aic-stats" id="aic-stats" aria-label="Analiz istatistikleri"></section>
+    <p class="aic-stats-note">
+      Doğrulanma oranı, geçmiş analizlerin piyasa hareketiyle retrospektif tutarlılığını gösterir;
+      bir yatırım performansı, kazanç ya da gelecek getiri göstergesi değildir.
+    </p>
+
+    <!-- 3. FILTERS -->
+    <section class="aic-filters" id="aic-filters" aria-label="Filtreler"></section>
+
+    <!-- 4. ARCHIVE FEED -->
+    <section class="aic-feed" id="aic-feed" aria-label="Analiz arşivi"></section>
+
+    <!-- 5. PAGINATION -->
+    <div class="aic-pagination" id="aic-pagination"></div>
+
+    <!-- (Gelecek: Advanced Statistics container — şimdilik gizli) -->
+    <section id="aic-advanced-stats" hidden aria-hidden="true"></section>
+
+  </main>
+
+  <!-- FOOTER (kendi cinematic footer'ı — footer.js YÜKLENMEZ, çift footer olmasın) -->
+  <footer class="aic-footer" role="contentinfo">
+    <div class="aic-footer-links">
+      <a href="index.html">Ana Sayfa</a>
+      <a href="archive.html">Analiz Arşivi</a>
+      <a href="legal/about.html">Hakkımızda</a>
+      <a href="legal/disclaimer.html">Yatırım Tavsiyesi Değildir</a>
+      <a href="legal/terms.html">Kullanım Koşulları</a>
+      <a href="legal/risk.html">Risk Bildirimi</a>
+      <a href="legal/privacy.html">Gizlilik</a>
+      <a href="legal/kvkk.html">KVKK</a>
+      <a href="legal/cookies.html">Çerez</a>
+      <a href="legal/contact.html">İletişim</a>
+    </div>
+    <div>⚠ Bu platform yatırım tavsiyesi vermez. Tüm içerikler bilgilendirme amaçlıdır. Kripto para işlemleri yüksek risk içerir.</div>
+    <div>© 2026 VD SecuriAnalyst — AI Kripto Analiz Platformu</div>
+  </footer>
+
+  <!-- ── Veri katmanı (Aşama 1) ── -->
+  <script src="modules/archive-config.js"></script>
+  <script src="services/supabase-service.js"></script>
+
+  <!-- ── Archive bileşenleri (yükleme sırası önemli: card util'i tanımlar) ── -->
+  <script src="ui/archive/archive-card.js"></script>
+  <script src="ui/archive/archive-modal.js"></script>
+  <script src="ui/archive/archive-stats.js"></script>
+  <script src="ui/archive/archive-filters.js"></script>
+  <script src="ui/archive/archive-feed.js"></script>
+  <script src="ui/archive/archive-controller.js"></script>
+
+</body>
+</html>
