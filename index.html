@@ -2308,7 +2308,7 @@ function startTimer() {
       <button class="tb-logout" onclick="doLogout()">İptal Et</button>
     </div>
     <button class="nc-btn" id="ncBtn" onclick="NC.toggle()">
-      🔔 <span id="ncBtnTxt">Bildirimler</span>
+      📈 <span id="ncBtnTxt">Olaylar</span>
       <span class="nc-badge" id="ncBadge">0</span>
     </button>
     <button class="notif-btn" id="notifBtn" onclick="requestNotif()">
@@ -2321,26 +2321,29 @@ function startTimer() {
     </div>
   </div>
 
-  <!-- Bildirim Dropdown Paneli -->
+  <!-- Market Event Center Paneli -->
   <div class="nc-panel" id="ncPanel">
     <div class="nc-panel-hdr">
-      <span style="font-size:16px">🔔</span>
-      <span class="nc-panel-title">AI BİLDİRİM MERKEZİ</span>
-      <span class="nc-panel-count" id="ncPanelCount">0 bildirim</span>
+      <span style="font-size:16px">📈</span>
+      <span class="nc-panel-title">MARKET EVENT CENTER</span>
+      <span class="nc-panel-count" id="ncPanelCount">0 olay</span>
       <button class="nc-clear" onclick="NC.clearAll()">Temizle</button>
       <button class="nc-clear" onclick="NC.toggle()" style="margin-left:4px">✕</button>
     </div>
+    <div class="nc-panel-sub" style="padding:2px 14px 8px;font-size:10px;color:var(--text3);line-height:1.4;">
+      Piyasadaki önemli olaylar, risk değişimleri ve öğrenme notları.
+    </div>
     <div class="nc-filters">
-      <button class="nc-filter nf-all active"  id="nf-all"   onclick="NC.filter('all')">Tümü</button>
-      <button class="nc-filter nf-long"  id="nf-long"  onclick="NC.filter('long')">▲ LONG</button>
-      <button class="nc-filter nf-short" id="nf-short" onclick="NC.filter('short')">▼ SHORT</button>
-      <button class="nc-filter nf-warn"  id="nf-warn"  onclick="NC.filter('warn')">⚠ Uyarı</button>
-      <button class="nc-filter nf-entry" id="nf-entry" onclick="NC.filter('entry')">🎯 Referans</button>
-      <button class="nc-filter nf-fake"  id="nf-fake"  onclick="NC.filter('fake')">🪤 Fake</button>
-      <button class="nc-filter nf-crit"  id="nf-crit"  onclick="NC.filter('crit')">🔴 Kritik</button>
+      <button class="nc-filter nf-all active" id="nf-all"      onclick="NC.filter('all')">Tümü</button>
+      <button class="nc-filter"               id="nf-piyasa"   onclick="NC.filter('piyasa')">🌐 Piyasa</button>
+      <button class="nc-filter"               id="nf-likidite" onclick="NC.filter('likidite')">💧 Likidite</button>
+      <button class="nc-filter"               id="nf-momentum" onclick="NC.filter('momentum')">⚡ Momentum</button>
+      <button class="nc-filter"               id="nf-risk"     onclick="NC.filter('risk')">⚠ Risk</button>
+      <button class="nc-filter"               id="nf-ogren"    onclick="NC.filter('ogren')">🎓 Öğren</button>
+      <button class="nc-filter"               id="nf-referans" onclick="NC.filter('referans')">🔗 Referans</button>
     </div>
     <div class="nc-list" id="ncList">
-      <div class="nc-empty"><span>🔔</span>Henüz bildirim yok</div>
+      <div class="nc-empty"><span>📈</span>Henüz piyasa olayı yok</div>
     </div>
   </div>
 
@@ -5517,167 +5520,204 @@ const LWC = (() => {
 // Türkçe AI Trade Assistant — Profesyonel Futures Analizi
 // ════════════════════════════════════════════════════════════════════
 
-// ── NC: Bildirim Merkezi ──────────────────────────────────────────────
+// ── Market Event Center (eski "Bildirim Merkezi" çekirdeği) ───────────
+// NC.add(...) API'si KORUNUR — mevcut ~20 çağrı noktası değişmeden çalışır.
+// Eski dir/level verisi içeride yeni kategorilere dönüştürülür + dedupe uygulanır.
+// Depo: market_events_v1 (eski nc_history_v1'e DOKUNULMAZ). Mor ton YOK.
 const NC = (() => {
-  const KEY    = 'nc_history_v1';
-  const MAX    = 200;
-  let _notifs  = [];
-  let _open    = false;
-  let _filter  = 'all';
-  let _unread  = 0;
-  let _loaded  = false;
+  const KEY       = 'market_events_v1';
+  const MAX       = 100;
+  const DEDUPE_MS = 30 * 60 * 1000;   // aynı olay 30 dk içinde tekrar etmesin
+  const CATS = ['piyasa','likidite','momentum','risk','ogren','referans'];
+  const CAT_META = {
+    piyasa:   { label:'Piyasa',   icon:'🌐', color:'#00D1FF' },
+    likidite: { label:'Likidite', icon:'💧', color:'#2B8EFF' },
+    momentum: { label:'Momentum', icon:'⚡', color:'#00E5A0' },
+    risk:     { label:'Risk',     icon:'⚠',  color:'#FF3D6B' },
+    ogren:    { label:'Öğren',    icon:'🎓', color:'#FFC247' },
+    referans: { label:'Referans', icon:'🔗', color:'#5CDFFF' },
+  };
 
-  // LocalStorage
-  function _save(){
-    try{ localStorage.setItem(KEY, JSON.stringify(_notifs.slice(-MAX))); }catch(e){}
-  }
+  let _events = [];
+  let _open   = false;
+  let _filter = 'all';
+  let _unread = 0;
+  let _loaded = false;
+
+  // ── Depolama ──
+  function _save(){ try{ localStorage.setItem(KEY, JSON.stringify(_events.slice(0, MAX))); }catch(e){} }
   function _load(){
     if(_loaded) return;
-    try{
-      const raw = localStorage.getItem(KEY);
-      if(raw) _notifs = JSON.parse(raw);
-    }catch(e){ _notifs=[]; }
+    try{ const raw = localStorage.getItem(KEY); _events = raw ? (JSON.parse(raw)||[]) : []; }catch(e){ _events = []; }
+    if(!Array.isArray(_events)) _events = [];
     _loaded = true;
   }
 
-  // Yeni bildirim ekle
+  // ── Kategori türetme: eski dir/level/msg → yeni kategori ──
+  function _deriveCategory(opts){
+    if(opts.category && CATS.includes(opts.category)) return opts.category;
+    const dir = (opts.dir || '').toLowerCase();
+    const m   = (opts.msg || '').toLowerCase();
+    const has = (...ks) => ks.some(k => m.includes(k));
+    // 1) mesaj anahtarları (en belirleyici)
+    if(has('likidite','liquidity','liquidation','likidasyon','likit')) return 'likidite';
+    if(has('geçmiş analiz','referans','arşiv','benzer yapı','daha önce','geçmişte doğrul')) return 'referans';
+    if(has('gösterir','anlamına gelir','demektir','öğren','nedir','şu demektir','not:')) return 'ogren';
+    // 2) dir bazlı
+    if(dir === 'fake') return 'risk';
+    if(dir === 'long' || dir === 'short') return 'momentum';
+    if(dir === 'entry') return 'referans';
+    if(dir === 'warn') return 'risk';
+    if(dir === 'info') return 'piyasa';
+    return 'piyasa';
+  }
+
+  // ── Kavram etiketleri (ileride Academy bağlantısı için) ──
+  function _concepts(msg){
+    const m = (msg || '').toLowerCase(); const out = [];
+    const map = { funding:'funding', dominance:'dominance', dominans:'dominance',
+      likidite:'likidite', liquidity:'likidite', momentum:'momentum', hacim:'hacim',
+      volatil:'volatilite', rsi:'rsi', fvg:'fvg', 'order block':'order-block',
+      whale:'whale', balina:'whale' };
+    Object.keys(map).forEach(k => { if(m.includes(k) && !out.includes(map[k])) out.push(map[k]); });
+    return out;
+  }
+
+  // ── Normalize + dedupe ──
+  function _normMsg(msg){
+    return (msg || '').toLowerCase()
+      .replace(/[0-9]+([.,][0-9]+)?/g,'#')   // sayıları sadeleştir
+      .replace(/[%$₺]/g,'')
+      .replace(/\s+/g,' ').trim().slice(0,80);
+  }
+  function _key(sym, cat, msg){ return (sym || 'SYS') + '|' + cat + '|' + _normMsg(msg); }
+  function _isDuplicate(key){
+    const now = Date.now();
+    return _events.some(e => e._k === key && (now - e.ts) < DEDUPE_MS);
+  }
+
+  // ── Olay ekle (eski NC.add ile birebir uyumlu) ──
   function add(opts){
     _load();
-    const n = {
-      id      : Date.now()+'_'+Math.random().toString(36).slice(2,5),
+    opts = opts || {};
+    const cat = _deriveCategory(opts);
+    const key = _key(opts.sym, cat, opts.msg);
+    if(_isDuplicate(key)) return null;     // 30 dk içinde aynı olay → atla
+
+    const ev = {
+      id      : Date.now() + '_' + Math.random().toString(36).slice(2,5),
       ts      : Date.now(),
-      sym     : opts.sym   || '',
-      dir     : opts.dir   || 'info',  // long|short|warn|info|entry|fake
-      level   : opts.level || 'medium',// critical|high|medium|low
-      msg     : opts.msg   || '',
-      conf    : opts.conf  || null,
-      risk    : opts.risk  || null,
-      regime  : opts.regime|| null,
+      sym     : opts.sym || '',
+      category: cat,
+      level   : opts.level || 'medium',  // critical|high|medium|low (içeride önem)
+      msg     : opts.msg || '',
+      conf    : opts.conf || null,
+      risk    : opts.risk || null,
+      regime  : opts.regime || null,
       stage   : opts.stage || null,
+      concepts: _concepts(opts.msg),
+      _k      : key,
       unread  : true,
     };
-    _notifs.unshift(n);
-    if(_notifs.length > MAX) _notifs = _notifs.slice(0, MAX);
+    _events.unshift(ev);
+    if(_events.length > MAX) _events = _events.slice(0, MAX);
     _unread++;
     _save();
     _renderBadge();
     _renderList();
-    _showPopup(n);
-    // Sesli uyarı — kritik
-    if(n.level==='critical'||n.level==='high') _beepNC(n.level);
-    return n.id;
+    _showPopup(ev);
+    if(ev.level === 'critical' || ev.level === 'high') _beep(ev.level);
+    return ev.id;
   }
 
-  // Sesli uyarı
-  function _beepNC(level){
+  // ── Sesli uyarı (önemli olaylar) ──
+  function _beep(level){
     try{
       if(!window._ncAC) window._ncAC = new(window.AudioContext||window.webkitAudioContext)();
-      const freq = level==='critical' ? 880 : 660;
-      const o=window._ncAC.createOscillator(), g=window._ncAC.createGain();
+      const freq = level === 'critical' ? 880 : 660;
+      const o = window._ncAC.createOscillator(), g = window._ncAC.createGain();
       o.connect(g); g.connect(window._ncAC.destination);
-      o.frequency.value=freq; o.type='sine';
-      g.gain.setValueAtTime(.15, window._ncAC.currentTime);
-      g.gain.exponentialRampToValueAtTime(.001, window._ncAC.currentTime+.4);
-      o.start(); o.stop(window._ncAC.currentTime+.4);
+      o.frequency.value = freq; o.type = 'sine';
+      g.gain.setValueAtTime(.12, window._ncAC.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001, window._ncAC.currentTime + .4);
+      o.start(); o.stop(window._ncAC.currentTime + .4);
     }catch(e){}
   }
 
-  // Badge güncelle
+  function _impLabel(level){
+    return (level === 'critical' || level === 'high') ? 'Yüksek' : (level === 'low' ? 'Düşük' : 'Orta');
+  }
+
+  // ── Badge ──
   function _renderBadge(){
     const badge = document.getElementById('ncBadge');
     const btn   = document.getElementById('ncBtn');
     if(badge){
-      if(_unread > 0){
-        badge.textContent = _unread > 99 ? '99+' : _unread;
-        badge.classList.add('show');
-      } else {
-        badge.classList.remove('show');
-      }
+      if(_unread > 0){ badge.textContent = _unread > 99 ? '99+' : _unread; badge.classList.add('show'); }
+      else badge.classList.remove('show');
     }
-    // Kritik bildirim varsa glow
-    const hasCrit = _notifs.slice(0,5).some(n=>n.level==='critical'&&n.unread);
-    if(btn) btn.classList.toggle('has-critical', hasCrit);
+    const hot = _events.slice(0,5).some(e => (e.level==='critical'||e.level==='high') && e.unread);
+    if(btn) btn.classList.toggle('has-critical', hot);
   }
 
-  // Popup goster
-  function _showPopup(n){
+  // ── Popup ──
+  function _showPopup(ev){
     const wrap = document.getElementById('ncPopup');
     if(!wrap) return;
+    const meta = CAT_META[ev.category] || CAT_META.piyasa;
     const item = document.createElement('div');
-    item.className = 'nc-popup-item nc-'+n.level;
-    const dirEmoji = {long:'▲',short:'▼',warn:'⚠',info:'◈',entry:'🎯',fake:'🪤'}[n.dir]||'◈';
-    const dirCol   = {long:'var(--green)',short:'var(--red)',warn:'var(--orange)',info:'var(--purple)',entry:'var(--cyan)',fake:'var(--yellow)'}[n.dir]||'var(--text2)';
+    item.className = 'nc-popup-item nc-' + ev.level;
     item.innerHTML = `
       <div class="ncp-top">
-        <span style="font-weight:800;color:${dirCol}">${dirEmoji} ${n.sym||'SİSTEM'}</span>
+        <span style="font-weight:800;color:${meta.color}">${meta.icon} ${ev.sym ? ev.sym.replace('USDT','') : 'PİYASA'}</span>
         <button class="ncp-close" onclick="this.parentElement.parentElement.remove()">✕</button>
       </div>
-      <div class="ncp-msg">${n.msg}</div>
-    `;
-    item._created = Date.now();
+      <div class="ncp-msg">${ev.msg}</div>`;
     wrap.appendChild(item);
-    // 6 saniye sonra otomatik kaldır
-    setTimeout(()=>{ try{item.remove();}catch(e){} }, 6000);
-    // Max 4 popup
+    setTimeout(() => { try{ item.remove(); }catch(e){} }, 6000);
     while(wrap.children.length > 4) wrap.removeChild(wrap.firstChild);
   }
 
-  // Liste render
+  // ── Liste ──
   function _renderList(){
     const list = document.getElementById('ncList');
     const cnt  = document.getElementById('ncPanelCount');
     if(!list) return;
     _load();
-
-    let filtered = _filter==='all' ? _notifs
-      : _filter==='long'  ? _notifs.filter(n=>n.dir==='long')
-      : _filter==='short' ? _notifs.filter(n=>n.dir==='short')
-      : _filter==='warn'  ? _notifs.filter(n=>n.dir==='warn')
-      : _filter==='entry' ? _notifs.filter(n=>n.dir==='entry')
-      : _filter==='fake'  ? _notifs.filter(n=>n.dir==='fake')
-      : _filter==='crit'  ? _notifs.filter(n=>n.level==='critical')
-      : _notifs;
-
-    if(cnt) cnt.textContent = filtered.length + ' bildirim';
-
+    const filtered = _filter === 'all' ? _events : _events.filter(e => e.category === _filter);
+    if(cnt) cnt.textContent = filtered.length + ' olay';
     if(!filtered.length){
-      list.innerHTML = '<div class="nc-empty"><span>🔔</span>Bu kategoride bildirim yok</div>';
+      list.innerHTML = '<div class="nc-empty"><span>📈</span>Bu kategoride olay yok</div>';
       return;
     }
-
     list.innerHTML = '';
-    filtered.slice(0, 50).forEach(n => {
-      const d  = document.createElement('div');
-      const cls = `nc-item${n.unread?' unread':''} nc-${n.level}`;
-      d.className = cls;
-      const ago  = _timeAgo(n.ts);
-      const dirLabel = {long:'▲ LONG',short:'▼ SHORT',warn:'⚠ UYARI',info:'◈ BİLGİ',entry:'🎯 GİRİŞ',fake:'🪤 FAKE'}[n.dir]||n.dir.toUpperCase();
-      const lvlLabel = {critical:'KRİTİK',high:'YÜKSEK',medium:'ORTA',low:'DÜŞÜK'}[n.level]||n.level;
+    filtered.slice(0,60).forEach(ev => {
+      const meta = CAT_META[ev.category] || CAT_META.piyasa;
+      const d = document.createElement('div');
+      d.className = `nc-item${ev.unread ? ' unread' : ''} nc-${ev.level}`;
+      const ago = _timeAgo(ev.ts);
       d.innerHTML = `
         <div class="nc-item-top">
-          ${n.sym?`<span class="nc-sym">${n.sym.replace('USDT','')}</span>`:'<span class="nc-sym" style="color:var(--text3)">SİSTEM</span>'}
-          <span class="nc-dir ${n.dir}">${dirLabel}</span>
-          <span class="nc-level ${n.level}">${lvlLabel}</span>
+          <span class="nc-sym">${ev.sym ? ev.sym.replace('USDT','') : 'PİYASA'}</span>
+          <span class="nc-dir" style="color:${meta.color};border:1px solid ${meta.color}40;background:${meta.color}14">${meta.icon} ${meta.label}</span>
+          <span class="nc-level ${ev.level}">${_impLabel(ev.level)}</span>
         </div>
-        <div class="nc-msg">${n.msg}</div>
+        <div class="nc-msg">${ev.msg}</div>
         <div class="nc-meta">
-          ${n.conf?`<span>Güven: %${n.conf}</span>`:''}
-          ${n.risk?`<span>Risk: ${n.risk}</span>`:''}
-          ${n.regime?`<span>${n.regime}</span>`:''}
+          ${ev.regime ? `<span>${ev.regime}</span>` : ''}
           <span class="nc-time">${ago}</span>
-        </div>
-      `;
-      d.onclick = ()=>{ n.unread=false; _save(); d.classList.remove('unread'); };
+        </div>`;
+      d.onclick = () => { ev.unread = false; _save(); d.classList.remove('unread'); };
       list.appendChild(d);
     });
   }
 
   function _timeAgo(ts){
-    const s = Math.floor((Date.now()-ts)/1000);
-    if(s<60) return s+'sn önce';
-    if(s<3600) return Math.floor(s/60)+'dk önce';
-    if(s<86400) return Math.floor(s/3600)+'s önce';
-    return Math.floor(s/86400)+'g önce';
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if(s < 60) return s + 'sn önce';
+    if(s < 3600) return Math.floor(s/60) + 'dk önce';
+    if(s < 86400) return Math.floor(s/3600) + 's önce';
+    return Math.floor(s/86400) + 'g önce';
   }
 
   function toggle(){
@@ -5685,39 +5725,45 @@ const NC = (() => {
     const p = document.getElementById('ncPanel');
     if(p) p.classList.toggle('open', _open);
     if(_open){
-      // Tüm görünenleri okundu işaretle
-      _notifs.forEach(n=>{ if(n.unread) n.unread=false; });
-      _unread = 0;
-      _save();
-      _renderBadge();
-      _renderList();
+      _events.forEach(e => { if(e.unread) e.unread = false; });
+      _unread = 0; _save(); _renderBadge(); _renderList();
     }
   }
 
   function filter(key){
     _filter = key;
-    document.querySelectorAll('.nc-filter').forEach(b=>b.classList.remove('active'));
-    const el = document.getElementById('nf-'+key);
+    document.querySelectorAll('.nc-filter').forEach(b => b.classList.remove('active'));
+    const el = document.getElementById('nf-' + key);
     if(el) el.classList.add('active');
     _renderList();
   }
 
   function clearAll(){
-    if(!confirm('Tüm bildirimler silinsin mi?')) return;
-    _notifs=[]; _unread=0; _save(); _renderBadge(); _renderList();
+    if(!confirm('Tüm olay geçmişi silinsin mi?')) return;
+    _events = []; _unread = 0; _save(); _renderBadge(); _renderList();
   }
 
-  // Panel dışına tıklayınca kapat
-  document.addEventListener('click', e=>{
-    if(_open && !e.target.closest('#ncPanel') && !e.target.closest('#ncBtn') && !e.target.closest('#bn-notif')){
-      _open=false;
-      const p=document.getElementById('ncPanel');
+  // ── Public okuma (Dashboard özeti + Timeline için) ──
+  function _clean(e){ const c = {...e}; delete c._k; return c; }
+  function getLatest(n){ _load(); return _events.slice(0, n || 5).map(_clean); }
+  function getAll(){ _load(); return _events.map(_clean); }
+  function getByCategory(cat){ _load(); return _events.filter(e => e.category === cat).map(_clean); }
+  function getBySymbol(sym){ _load(); return _events.filter(e => e.sym === sym).map(_clean); }
+  function getCategories(){ return CATS.slice(); }
+
+  // Panel dışına tıkla → kapat
+  document.addEventListener('click', e => {
+    if(_open && !e.target.closest('#ncPanel') && !e.target.closest('#ncBtn')){
+      _open = false;
+      const p = document.getElementById('ncPanel');
       if(p) p.classList.remove('open');
     }
   });
 
   _load();
-  return{add,toggle,filter,clearAll};
+  const api = { add, toggle, filter, clearAll, getLatest, getAll, getByCategory, getBySymbol, getCategories };
+  if(typeof window !== 'undefined'){ window.NC = api; window.MarketEvents = api; }
+  return api;
 })();
 
 // ════════════════════════════════════════════════════════════════════
