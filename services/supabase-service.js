@@ -235,3 +235,9 @@ const SupabaseDB = (() => {
   };
 
 })();
+
+// ── Global export ────────────────────────────────────────────────
+// const ile tanımlandığı için SupabaseDB otomatik olarak window'a
+// eklenmez (var'ın aksine). Archive componentleri window.SupabaseDB
+// kullandığından, açıkça bağlıyoruz.
+if (typeof window !== 'undefined') window.SupabaseDB = SupabaseDB;
