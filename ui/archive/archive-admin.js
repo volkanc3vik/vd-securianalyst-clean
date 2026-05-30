@@ -159,7 +159,7 @@
         ${keyArea}
         <div class="aic-admin-actions">
           <button class="aic-admin-save" data-aic-save type="button">Kaydet</button>
-          <button class="aic-admin-tg" data-aic-send type="button" ${hasKey ? '' : 'disabled'}>${rec.shared_to_telegram ? 'Yeniden Gönder' : "Telegram'a Gönder"}</button>
+          <button class="aic-admin-tg" data-aic-send type="button" ${(hasKey && curStatus !== 'pending') ? '' : 'disabled'} title="${curStatus === 'pending' ? 'Bu analiz henüz sonuçlanmadı — önce bir sonuç durumu seçip kaydedin.' : ''}">${rec.shared_to_telegram ? 'Yeniden Gönder' : "Telegram'a Gönder"}</button>
           <span class="aic-admin-status" data-aic-savemsg aria-live="polite"></span>
         </div>
         <div class="aic-admin-info">
@@ -247,12 +247,28 @@
 
     // Telegram'a Gönder
     const sendBtn = sec.querySelector('[data-aic-send]');
+    const statusSel = sec.querySelector('[data-aic-status]');
+    // Pending iken Telegram butonu pasif (canlı) — "SONUÇ: BEKLEMEDE" gönderimi önlenir
+    function _syncSendState() {
+      if (!sendBtn) return;
+      const pending = statusSel && statusSel.value === 'pending';
+      const noKey = !_hasKey();
+      sendBtn.disabled = pending || noKey;
+      sendBtn.title = pending ? 'Bu analiz henüz sonuçlanmadı — önce bir sonuç durumu seçip kaydedin.' : '';
+    }
+    if (statusSel) statusSel.addEventListener('change', _syncSendState);
+    _syncSendState();
     if (sendBtn) {
       sendBtn.addEventListener('click', async () => {
+        const vals = _readVals(sec);
+        // GUARD: pending durumunda review gönderme
+        if (vals.review_status === 'pending') {
+          _msg(sec, 'Bu analiz henüz sonuçlanmadı. Önce bir sonuç durumu (Validated / Partial / Rejected) seçip kaydedin.', false);
+          return;
+        }
         if (!_hasKey()) { _msg(sec, 'Önce admin anahtarını etkinleştirin', false); return; }
         const d = _disp();
         if (!d || typeof d.send !== 'function') { _msg(sec, 'Telegram sistemi yüklenmedi', false); return; }
-        const vals = _readVals(sec);
         const text = _buildMessage(rec, vals);
         sendBtn.disabled = true; _msg(sec, 'Telegram\'a gönderiliyor…', null);
         try {

@@ -27,6 +27,27 @@
     } catch (e) { return String(iso); }
   }
   function _price(v) { return (U.fmtPrice ? U.fmtPrice(v) : (v != null ? v : '—')); }
+  // Belirsiz/fallback fiyatı (0, null, NaN) GÖSTERME → "—"
+  function _priceSafe(v) {
+    const n = Number(v);
+    if (v == null || isNaN(n) || n === 0) return '—';
+    return _price(v);
+  }
+  // "az önce" / "3 saat önce" / "1 gün önce"
+  function _relTime(iso) {
+    if (!iso) return '—';
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return '—';
+    const diff = Date.now() - t;
+    if (diff < 0) return 'az önce';
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return 'az önce';
+    if (min < 60) return min + ' dakika önce';
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return hr + ' saat önce';
+    const day = Math.floor(hr / 24);
+    return day + ' gün önce';
+  }
 
   function _shell(inner) {
     const keyArea = _hasKey()
@@ -48,12 +69,16 @@
 
   function _cardHTML(rec) {
     const score = rec.analysis_score != null ? `${rec.analysis_score}/100` : '—';
+    // Telegram gönderim zamanı: market_context.sent_at (varsa) ya da created_at (kayıt anı ≈ gönderim)
+    const mc = rec.market_context || {};
+    const sentISO = mc.sent_at || rec.created_at;
     return `
       <button class="aic-pend-card" data-pend-id="${U.esc(rec.id)}" type="button">
         <span class="aic-pend-sym">${U.esc(rec.sym)}</span>
         <span class="aic-pend-meta">${U.esc(rec.timeframe || '—')} · ${U.esc(_dirLabel(rec.direction_bias))}</span>
-        <span class="aic-pend-meta">Fiyat: ${U.esc(_price(rec.price_at_analysis))} · Skor: ${U.esc(score)}</span>
-        <span class="aic-pend-date">${U.esc(_fmtDT(rec.created_at))}</span>
+        <span class="aic-pend-meta">Analiz Fiyatı: ${U.esc(_priceSafe(rec.price_at_analysis))} · Skor: ${U.esc(score)}</span>
+        <span class="aic-pend-rel">⏱ Gönderildi: ${U.esc(_relTime(sentISO))}</span>
+        <span class="aic-pend-date">${U.esc(_fmtDT(sentISO))}</span>
         <span class="aic-pend-go">İncele →</span>
       </button>`;
   }
