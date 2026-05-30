@@ -4041,6 +4041,30 @@ function buildIv(){
 // ══════════════════════════════════════════
 // RENDER CARD
 // ══════════════════════════════════════════
+// ── Tarama sonuçlarını grid'lere bas (tarama + cache hydrate ortak) ──
+function VDRenderScan(results){
+  if(!Array.isArray(results)) return;
+  const top3L=[...results].sort((a,b)=>b.lScore-a.lScore).slice(0,3);
+  const top3S=[...results].sort((a,b)=>b.sScore-a.sScore).slice(0,3);
+  const topSyms=new Set([...top3L,...top3S].map(i=>i.sym));
+  const jokerL=[...results].filter(i=>!topSyms.has(i.sym)).sort((a,b)=>b.jlScore-a.jlScore)[0];
+  const jokerS=[...results].filter(i=>!topSyms.has(i.sym)).sort((a,b)=>b.jsScore-a.jsScore)[0];
+
+  const lg=document.getElementById('longGrid'),sg=document.getElementById('shortGrid'),jg=document.getElementById('jokerGrid');
+  if(!lg||!sg||!jg) return;
+  lg.innerHTML='';sg.innerHTML='';jg.innerHTML='';
+  if(top3L.length)top3L.forEach(it=>renderCard(it,'long',lg));
+  else lg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Yukarı yönlü görünüm bulunamadı.</div>';
+  if(top3S.length)top3S.forEach(it=>renderCard(it,'short',sg));
+  else sg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Aşağı yönlü görünüm bulunamadı.</div>';
+  if(jokerL){jokerL.lScore=jokerL.jlScore;jokerL.lDesc='Ani kırılım potansiyeli · ATR: '+(jokerL.atr/jokerL.price*100).toFixed(2)+'% · '+oppDesc({score:jokerL.lScore,rsi:jokerL.rsi,mh:jokerL.mh,ema:jokerL.lEma},'long');renderCard(jokerL,'long',jg,true);}
+  if(jokerS){jokerS.sScore=jokerS.jsScore;jokerS.sDesc='Ani düşüş potansiyeli · ATR: '+(jokerS.atr/jokerS.price*100).toFixed(2)+'% · '+oppDesc({score:jokerS.sScore,rsi:jokerS.rsi,mh:jokerS.mh,ema:jokerS.sEma},'short');renderCard(jokerS,'short',jg,true);}
+
+  // ── PHASE 10: Priority Engine scan hook ──
+  try{ P10.onScanComplete(results); }catch(e){}
+}
+window.VDRenderScan = VDRenderScan;
+
 function renderCard(item,dir,container,isJoker=false){
   const col=dir==='long'?'var(--green)':'var(--red)';
   const jCol=dir==='long'?'var(--cyan)':'var(--orange)';
@@ -4139,23 +4163,8 @@ async function scanMarket(){
     await new Promise(r=>setTimeout(r,60));
   }
 
-  const top3L=[...results].sort((a,b)=>b.lScore-a.lScore).slice(0,3);
-  const top3S=[...results].sort((a,b)=>b.sScore-a.sScore).slice(0,3);
-  const topSyms=new Set([...top3L,...top3S].map(i=>i.sym));
-  const jokerL=[...results].filter(i=>!topSyms.has(i.sym)).sort((a,b)=>b.jlScore-a.jlScore)[0];
-  const jokerS=[...results].filter(i=>!topSyms.has(i.sym)).sort((a,b)=>b.jsScore-a.jsScore)[0];
-
-  const lg=document.getElementById('longGrid'),sg=document.getElementById('shortGrid'),jg=document.getElementById('jokerGrid');
-  lg.innerHTML='';sg.innerHTML='';jg.innerHTML='';
-  if(top3L.length)top3L.forEach(it=>renderCard(it,'long',lg));
-  else lg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Yukarı yönlü görünüm bulunamadı.</div>';
-  if(top3S.length)top3S.forEach(it=>renderCard(it,'short',sg));
-  else sg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Aşağı yönlü görünüm bulunamadı.</div>';
-  if(jokerL){jokerL.lScore=jokerL.jlScore;jokerL.lDesc='Ani kırılım potansiyeli · ATR: '+(jokerL.atr/jokerL.price*100).toFixed(2)+'% · '+oppDesc({score:jokerL.lScore,rsi:jokerL.rsi,mh:jokerL.mh,ema:jokerL.lEma},'long');renderCard(jokerL,'long',jg,true);}
-  if(jokerS){jokerS.sScore=jokerS.jsScore;jokerS.sDesc='Ani düşüş potansiyeli · ATR: '+(jokerS.atr/jokerS.price*100).toFixed(2)+'% · '+oppDesc({score:jokerS.sScore,rsi:jokerS.rsi,mh:jokerS.mh,ema:jokerS.sEma},'short');renderCard(jokerS,'short',jg,true);}
-
-  // ── PHASE 10: Priority Engine scan hook ──
-  try{ P10.onScanComplete(results); }catch(e){}
+  // ── Grid render (tarama + cache hydrate ortak yolu) ──
+  VDRenderScan(results);
 
   // ── AI: Tarama sinyallerini kaydet ──────────────────────────────
   // Top 3 Long, Top 3 Short ve Jokerler için giriş/stop/tp hesapla
@@ -4285,6 +4294,7 @@ async function scanMarket(){
   window.VD_STATE = window.VD_STATE || {};
   window.VD_STATE.scanResults = results;
   window._lastScanResults = results; // geriye dönük uyumluluk
+  try{ if(window.VDDashCache) window.VDDashCache.save(results); }catch(e){}
   try{ window.dispatchEvent(new CustomEvent('vd:scan:complete', { detail: { results } })); }catch(e){}
 }
 
@@ -10052,6 +10062,7 @@ const P10 = (() => {
 <script src="services/supabase-service.js"></script>
 <script src="modules/premium-config.js"></script>
 <script src="modules/premium-funnel.js"></script>
+<script src="modules/dashboard-cache.js"></script>
 
 <script>
 // ── CoinGlass setup (API key eklenince devreye girer) ─────────────
