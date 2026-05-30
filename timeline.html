@@ -61,6 +61,23 @@
     .tl-conf-mid { color:var(--v4-warn);    border:1px solid color-mix(in srgb, var(--v4-warn) 35%, transparent); }
     .tl-conf-lo  { color:var(--v4-text-3);  border:1px solid var(--v4-border); }
     .tl-rel { font-size:10.5px; color:var(--v4-text-3); margin-left:auto; }
+    /* Kategori ⓘ tooltip */
+    .tl-cat-wrap { position:relative; display:inline-flex; align-items:center; gap:5px; }
+    .tl-i {
+      font-family:inherit; font-size:10px; line-height:1; color:var(--v4-cyan);
+      background:rgba(0,209,255,0.08); border:1px solid var(--v4-border-hi); border-radius:50%;
+      width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0;
+    }
+    .tl-i:hover, .tl-i:focus-visible { background:rgba(0,209,255,0.18); outline:none; }
+    .tl-tip {
+      display:none; position:absolute; top:calc(100% + 7px); left:0; z-index:60;
+      width:max-content; max-width:260px; text-align:left;
+      background:#0a1422; color:var(--v4-text); border:1px solid var(--v4-border-strong);
+      border-radius:10px; padding:9px 11px; font-size:11px; line-height:1.5; font-weight:400;
+      text-transform:none; letter-spacing:normal; box-shadow:0 8px 26px rgba(0,0,0,0.5);
+    }
+    .tl-tip b { color:var(--v4-cyan); }
+    .tl-cat-wrap:hover .tl-tip, .tl-i:focus-visible + .tl-tip, .tl-cat-wrap.open .tl-tip { display:block; }
     .tl-msg { font-size:13px; color:var(--v4-text); line-height:1.55; }
     .tl-empty {
       font-size:12.5px; color:var(--v4-text-3); border:1px dashed var(--v4-border);
@@ -73,6 +90,7 @@
       .tl-time { font-size:13px; }
       .tl-rel { width:100%; margin-left:0; }
       .tl-summary { gap:12px; }
+      .tl-tip { max-width:200px; left:auto; right:0; }
     }
   </style>
 </head>
