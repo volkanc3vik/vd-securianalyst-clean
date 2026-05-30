@@ -16,14 +16,14 @@
 
   // 8 görünüm kategorisi — mor YOK (cyan/blue/green/amber/red paleti)
   const CATS = [
-    { key: 'momentum', label: 'Momentum',      icon: '⚡', color: 'var(--v4-success)',   kw: ['momentum', 'ivme', 'rsi', 'hacim artış', 'güç kazan', 'hızlan'] },
-    { key: 'likidite', label: 'Likidite',      icon: '💧', color: 'var(--v4-blue)',      kw: ['likidite', 'liquidity', 'likidasyon', 'liquidation', 'likit', 'derinlik'] },
-    { key: 'funding',  label: 'Funding',       icon: '💰', color: 'var(--v4-warn)',      kw: ['funding', 'fonlama', 'fon oranı', 'funding rate'] },
-    { key: 'oi',       label: 'Open Interest', icon: '📊', color: 'var(--v4-cyan)',      kw: ['open interest', 'açık pozisyon', 'oi artış', 'oi düş', ' oi '] },
-    { key: 'breakout', label: 'Breakout',      icon: '🚀', color: 'var(--v4-cyan-br)',   kw: ['breakout', 'kırılım', 'kırdı', 'direnç kır', 'destek kır', 'seviye kır', 'aşıldı'] },
-    { key: 'risk',     label: 'Risk',          icon: '⚠',  color: 'var(--v4-danger)',    kw: ['risk', 'uyarı', 'tehlike', 'fake', 'tuzak', 'manipül', 'sahte', 'dikkat'] },
-    { key: 'smart',    label: 'Smart Money',   icon: '🐋', color: 'var(--v4-blue-elec)', kw: ['smart money', 'whale', 'balina', 'order block', 'fvg', 'smc', 'kurumsal', 'akıllı para'] },
-    { key: 'trend',    label: 'Trend Shift',   icon: '🔀', color: 'var(--v4-teal)',      kw: ['trend', 'yön değiş', 'trend değiş', 'reversal', 'dönüş', 'rejim', 'regime', 'yapı değiş'] },
+    { key: 'momentum', label: 'Momentum',      icon: '⚡', color: 'var(--v4-success)',   kw: ['momentum', 'ivme', 'rsi', 'hacim artış', 'güç kazan', 'hızlan'], desc: 'Fiyat hareketinin güç kazanmasıdır. Hacim ve indikatör desteğiyle trendin hızlandığını gösterebilir.' },
+    { key: 'likidite', label: 'Likidite',      icon: '💧', color: 'var(--v4-blue)',      kw: ['likidite', 'liquidity', 'likidasyon', 'liquidation', 'likit', 'derinlik'], desc: 'Piyasada emirlerin yoğunlaştığı bölgelerdir. Fiyat çoğu zaman bu bölgeleri test edebilir.' },
+    { key: 'funding',  label: 'Funding',       icon: '💰', color: 'var(--v4-warn)',      kw: ['funding', 'fonlama', 'fon oranı', 'funding rate'], desc: 'Vadeli işlemlerde pozisyon taşıma maliyetidir. Aşırı pozitif funding long tarafının kalabalık olduğunu gösterebilir.' },
+    { key: 'oi',       label: 'Open Interest', icon: '📊', color: 'var(--v4-cyan)',      kw: ['open interest', 'açık pozisyon', 'oi artış', 'oi düş', ' oi '], desc: 'Açık pozisyon miktarıdır. Artış, piyasaya yeni para ve ilgi girdiğini gösterebilir.' },
+    { key: 'breakout', label: 'Breakout',      icon: '🚀', color: 'var(--v4-cyan-br)',   kw: ['breakout', 'kırılım', 'kırdı', 'direnç kır', 'destek kır', 'seviye kır', 'aşıldı'], desc: 'Fiyatın önemli destek/direnç bölgesini kırmasıdır. Hacimle desteklenirse daha anlamlıdır.' },
+    { key: 'risk',     label: 'Risk',          icon: '⚠',  color: 'var(--v4-danger)',    kw: ['risk', 'uyarı', 'tehlike', 'fake', 'tuzak', 'manipül', 'sahte', 'dikkat'], desc: 'Sahte kırılım, stop avı, aşırı kalabalık yön veya manipülasyon ihtimalini gösterir.' },
+    { key: 'smart',    label: 'Smart Money',   icon: '🐋', color: 'var(--v4-blue-elec)', kw: ['smart money', 'whale', 'balina', 'order block', 'fvg', 'smc', 'kurumsal', 'akıllı para'], desc: 'Büyük oyuncu/kurumsal para hareketlerini temsil eden piyasa davranışıdır.' },
+    { key: 'trend',    label: 'Trend Shift',   icon: '🔀', color: 'var(--v4-teal)',      kw: ['trend', 'yön değiş', 'trend değiş', 'reversal', 'dönüş', 'rejim', 'regime', 'yapı değiş'], desc: 'Piyasa yönünün değişmeye başladığını gösteren yapı değişimidir.' },
   ];
   const CAT_BY_KEY = {}; CATS.forEach(c => { CAT_BY_KEY[c.key] = c; });
   // NC iç kategorisi → görünüm kategorisi (anahtar kelime eşleşmezse yedek)
@@ -120,7 +120,11 @@
         <div class="tl-main">
           <div class="tl-head">
             <span class="tl-coin">${_esc(_coin(it.sym))}</span>
-            <span class="tl-cat" style="--c:${c.color}">${c.icon} ${_esc(c.label)}</span>
+            <span class="tl-cat-wrap">
+              <span class="tl-cat" style="--c:${c.color}">${c.icon} ${_esc(c.label)}</span>
+              <button class="tl-i" data-tl-tip type="button" aria-label="${_esc(c.label)} açıklaması">ⓘ</button>
+              <span class="tl-tip" role="tooltip"><b>${_esc(c.label)}</b><br>${_esc(c.desc || '')}</span>
+            </span>
             <span class="tl-conf tl-conf-${it.conf.tone}" title="Güven seviyesi">${_esc(it.conf.label)} · %${it.conf.pct}</span>
             <span class="tl-rel">${_esc(_rel(it.ts))}</span>
           </div>
@@ -167,6 +171,20 @@
       <div data-tl-feed></div>`;
     _renderChips(root);
     _renderFeed(root);
+    // Kategori ⓘ tooltip toggle — handler'ı yalnızca BİR kez bağla (re-render güvenli)
+    if (!root._tlTipWired) {
+      root.addEventListener('click', (e) => {
+        const t = e.target.closest && e.target.closest('[data-tl-tip]');
+        if (!t) return;
+        e.stopPropagation();
+        const w = t.closest('.tl-cat-wrap');
+        if (!w) return;
+        const was = w.classList.contains('open');
+        root.querySelectorAll('.tl-cat-wrap.open').forEach(o => o.classList.remove('open'));
+        if (!was) w.classList.add('open');
+      });
+      root._tlTipWired = true;
+    }
   }
 
   window.VDTimeline = { render, _deriveCat, CATS };
