@@ -151,16 +151,6 @@
 }
 .vdf-cta:hover { filter: brightness(1.08); }
 
-.vdf-contacts { display: flex; gap: 10px; max-width: 560px; margin: 0 auto; }
-.vdf-contact {
-  flex: 1; display: block; text-align: center; text-decoration: none; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 700; padding: 13px;
-  border-radius: 12px; border: 1px solid var(--v4-border-hi, rgba(127,169,201,.22));
-  background: rgba(10,20,34,.5); color: var(--v4-text, #EAF6FF); backdrop-filter: blur(6px);
-}
-.vdf-contact.tg { border-color: rgba(0,209,255,.4); color: var(--v4-cyan, #00D1FF); }
-.vdf-contact.wa { border-color: rgba(0,255,163,.4); color: var(--v4-success, #00FFA3); }
-.vdf-contact:hover { filter: brightness(1.1); }
 
 /* ── Güven notu ── */
 .vdf-trust {
@@ -195,6 +185,5 @@
   .vdf-hero-title { font-size: 32px; }
 }
 @media (max-width: 560px) {
-  .vdf-contacts { flex-direction: column; }
-  .vdf-hero-title { font-size: 23px; }
+    .vdf-hero-title { font-size: 23px; }
 }
