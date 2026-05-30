@@ -33,6 +33,21 @@
     if (v == null || isNaN(n) || n === 0) return '—';
     return _price(v);
   }
+  // "az kaldı" / "3 saat sonra" / "2 gün sonra" (gelecek zaman)
+  function _relFuture(iso) {
+    if (!iso) return '—';
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return '—';
+    const diff = t - Date.now();
+    if (diff <= 0) return 'şimdi';
+    const min = Math.floor(diff / 60000);
+    if (min < 60) return min + ' dakika sonra';
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return hr + ' saat sonra';
+    const day = Math.floor(hr / 24);
+    const remHr = hr % 24;
+    return day + ' gün' + (remHr ? ' ' + remHr + ' saat' : '') + ' sonra';
+  }
   // "az önce" / "3 saat önce" / "1 gün önce"
   function _relTime(iso) {
     if (!iso) return '—';
@@ -72,12 +87,27 @@
     // Telegram gönderim zamanı: market_context.sent_at (varsa) ya da created_at (kayıt anı ≈ gönderim)
     const mc = rec.market_context || {};
     const sentISO = mc.sent_at || rec.created_at;
+    // Outcome Tracking Faz 1: review_due_at geçtiyse "Outcome Ready" (türetilmiş; hesaplama YOK)
+    const due = rec.review_due_at ? new Date(rec.review_due_at).getTime() : null;
+    const ready = (rec.review_status === 'pending') && due != null && !isNaN(due) && due <= Date.now();
+    const statusPill = ready
+      ? `<span class="aic-pend-pill aic-pend-ready">🟢 Outcome Ready</span>`
+      : `<span class="aic-pend-pill aic-pend-wait">⏳ Beklemede</span>`;
+    const dueLine = due != null && !isNaN(due)
+      ? (ready
+          ? `<span class="aic-pend-due ready">📊 İncelemeye hazır</span>`
+          : `<span class="aic-pend-due">⏳ İnceleme: ${U.esc(_relFuture(rec.review_due_at))}</span>`)
+      : '';
     return `
-      <button class="aic-pend-card" data-pend-id="${U.esc(rec.id)}" type="button">
-        <span class="aic-pend-sym">${U.esc(rec.sym)}</span>
+      <button class="aic-pend-card${ready ? ' is-ready' : ''}" data-pend-id="${U.esc(rec.id)}" type="button">
+        <span class="aic-pend-toprow">
+          <span class="aic-pend-sym">${U.esc(rec.sym)}</span>
+          ${statusPill}
+        </span>
         <span class="aic-pend-meta">${U.esc(rec.timeframe || '—')} · ${U.esc(_dirLabel(rec.direction_bias))}</span>
         <span class="aic-pend-meta">Analiz Fiyatı: ${U.esc(_priceSafe(rec.price_at_analysis))} · Skor: ${U.esc(score)}</span>
         <span class="aic-pend-rel">⏱ Gönderildi: ${U.esc(_relTime(sentISO))}</span>
+        ${dueLine}
         <span class="aic-pend-date">${U.esc(_fmtDT(sentISO))}</span>
         <span class="aic-pend-go">İncele →</span>
       </button>`;
