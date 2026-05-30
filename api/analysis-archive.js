@@ -30,6 +30,9 @@ function setCors(req, res) {
 // ── Rate limit (in-memory sliding window) ───────────────────────────
 const _rateStore = new Map();
 const LIMITS = {
+  create:        { max: 60, windowMs: 60_000 },
+  list_pending:  { max: 60, windowMs: 60_000 },
+  get_one:       { max: 120, windowMs: 60_000 },
   update_review: { max: 30, windowMs: 60_000 },
   mark_shared:   { max: 20, windowMs: 60_000 },
 };
@@ -74,8 +77,14 @@ async function sbFetch(path, options = {}) {
 // ── Doğrulama yardımcıları ──────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REVIEW_STATUSES = ['pending', 'validated', 'partially_validated', 'not_validated'];
-// PATCH sonrası client'a dönülecek güvenli kolonlar (internal_review/admin_note dahil — admin görür)
-const RETURN_COLS = 'id,sym,review_status,admin_note,internal_review,reviewed_at,shared_to_telegram,telegram_msg_id,shared_at';
+// direction_bias CHECK: bullish/bearish/neutral — sinyal dir (LONG/SHORT) buraya map'lenir
+const DIR_MAP = { LONG: 'bullish', SHORT: 'bearish', BULLISH: 'bullish', BEARISH: 'bearish', BUY: 'bullish', SELL: 'bearish' };
+// source CHECK: ai_engine/ti_setup — telegram kökeni market_context.origin'e yazılır
+const VALID_SOURCES = ['ai_engine', 'ti_setup'];
+// PATCH/INSERT sonrası client'a dönülecek kolonlar (admin endpoint → admin_note/internal_review dahil)
+const RETURN_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,source,review_status,admin_note,internal_review,reviewed_at,shared_to_telegram,telegram_msg_id,shared_at,created_at';
+// Pending liste kartları için (admin) — internal alanlar dahil değil, kart için yeterli
+const LIST_COLS = 'id,sym,timeframe,direction_bias,price_at_analysis,analysis_score,analysis_text,review_status,created_at,telegram_msg_id,market_context';
 
 function clampText(v, max) {
   if (v == null) return null;
@@ -111,11 +120,71 @@ export default async function handler(req, res) {
   const rl = rateLimit(action, getClientIp(req));
   if (!rl.ok) { res.setHeader('Retry-After', String(Math.ceil((rl.retryInMs || 30000) / 1000))); return res.status(429).json({ ok: false, error: 'rate_limited' }); }
 
-  const id = body.id;
-  if (!id || !UUID_RE.test(String(id))) return res.status(400).json({ ok: false, error: 'invalid_id' });
-  const idFilter = `?id=eq.${encodeURIComponent(id)}`;
-
   try {
+    // ── CREATE: Telegram sinyali başarıyla gönderildikten sonra otomatik kayıt ──
+    // id YOK (DB üretir). İlk durum review_status='pending' (takip aşaması).
+    if (action === 'create') {
+      const sym = body.sym ? String(body.sym).toUpperCase().slice(0, 24) : null;
+      if (!sym) return res.status(400).json({ ok: false, error: 'invalid_sym' });
+      const dirRaw = String(body.direction || body.dir || '').toUpperCase();
+      const direction_bias = DIR_MAP[dirRaw] || 'neutral';
+      const timeframe = (body.timeframe ? String(body.timeframe).slice(0, 16) : '') || 'auto';
+      const price = Number(body.price_at_analysis);
+      if (isNaN(price)) return res.status(400).json({ ok: false, error: 'invalid_price' }); // price_at_analysis NOT NULL
+      const source = VALID_SOURCES.includes(body.source) ? body.source : 'ai_engine';
+      const msgId = (body.telegram_msg_id != null && !isNaN(Number(body.telegram_msg_id))) ? Number(body.telegram_msg_id) : null;
+
+      // Idempotency: aynı telegram_msg_id ile kayıt varsa tekrar oluşturma
+      if (msgId != null) {
+        try {
+          const existing = await sbFetch(`/analysis_archive?telegram_msg_id=eq.${msgId}&select=${RETURN_COLS}`, { method: 'GET' });
+          if (existing && existing.length) return res.status(200).json({ ok: true, row: existing[0], deduped: true });
+        } catch (e) { /* devam */ }
+      }
+
+      const mc = (body.market_context && typeof body.market_context === 'object') ? body.market_context : {};
+      const row = {
+        sym, timeframe, direction_bias,
+        price_at_analysis: price,
+        analysis_score: (body.analysis_score != null && !isNaN(Number(body.analysis_score))) ? Number(body.analysis_score) : null,
+        analysis_text: clampText(body.analysis_text, 4000),
+        ai_learned: clampText(body.ai_learned, 4000),
+        market_context: mc,
+        source,
+        review_status: 'pending',
+        telegram_msg_id: msgId,
+      };
+      const rows = await sbFetch(`/analysis_archive?select=${RETURN_COLS}`, {
+        method: 'POST',
+        body: JSON.stringify(row),
+      });
+      if (!rows || !rows.length) return res.status(502).json({ ok: false, error: 'db_error' });
+      return res.status(200).json({ ok: true, row: rows[0], created: true });
+    }
+
+    // ── LIST_PENDING: admin'e özel bekleyen kayıt listesi (service-role, RLS bypass) ──
+    // Anon ASLA buraya erişemez (x-admin-key guard). RLS/public feed DEĞİŞMEZ.
+    if (action === 'list_pending') {
+      const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 100);
+      const rows = await sbFetch(
+        `/analysis_archive?review_status=eq.pending&order=created_at.desc&limit=${limit}&select=${LIST_COLS}`,
+        { method: 'GET' }
+      );
+      return res.status(200).json({ ok: true, rows: rows || [], count: (rows || []).length });
+    }
+
+    // ── id gerektiren işlemler ──
+    const id = body.id;
+    if (!id || !UUID_RE.test(String(id))) return res.status(400).json({ ok: false, error: 'invalid_id' });
+    const idFilter = `?id=eq.${encodeURIComponent(id)}`;
+
+    // ── GET_ONE: admin tek kayıt (pending dahil) — modal fallback için ──
+    if (action === 'get_one') {
+      const rows = await sbFetch(`/analysis_archive${idFilter}&select=*&limit=1`, { method: 'GET' });
+      if (!rows || !rows.length) return res.status(404).json({ ok: false, error: 'not_found' });
+      return res.status(200).json({ ok: true, row: rows[0] });
+    }
+
     if (action === 'update_review') {
       const patch = {};
       if (body.review_status != null) {
