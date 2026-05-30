@@ -428,3 +428,38 @@ body::after {
   .aic-admin-actions { flex-direction: column; align-items: stretch; }
   .aic-admin-save { width: 100%; }
 }
+
+/* ── Aşama 4: admin key alanı, Telegram gönder, paylaşıldı rozeti ── */
+.aic-admin-keyrow { display:flex; gap:8px; margin-top:12px; }
+.aic-admin-key {
+  flex:1; box-sizing:border-box; font-family:inherit; font-size:12.5px; color:var(--v4-text,#EAF6FF);
+  background:rgba(2,5,13,0.55); border:1px solid var(--v4-border,rgba(255,255,255,0.08));
+  border-radius:10px; padding:9px 11px; outline:none;
+}
+.aic-admin-key:focus { border-color:var(--v4-border-strong,rgba(0,209,255,0.38)); }
+.aic-admin-keybtn {
+  font-family:inherit; font-size:12.5px; font-weight:600; color:var(--v4-cyan,#00D1FF);
+  background:rgba(0,209,255,0.06); border:1px solid var(--v4-border-hi,rgba(0,209,255,0.22));
+  border-radius:10px; padding:0 14px; cursor:pointer; white-space:nowrap;
+}
+.aic-admin-keybtn:hover { background:rgba(0,209,255,0.12); }
+.aic-admin-keyok { margin-top:12px; font-size:11.5px; color:var(--v4-success,#00FFA3); }
+.aic-admin-tg {
+  font-family:inherit; font-size:13px; font-weight:600; color:var(--v4-text,#EAF6FF);
+  background:rgba(0,123,255,0.12); border:1px solid var(--v4-blue-elec,#2b8eff);
+  border-radius:10px; padding:9px 16px; cursor:pointer; transition:filter .2s ease;
+}
+.aic-admin-tg:hover:not(:disabled) { filter:brightness(1.12); }
+.aic-admin-tg:disabled { opacity:.45; cursor:not-allowed; }
+.aic-admin-shared, .aic-shared-badge {
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  font-size:12.5px; font-weight:600; color:var(--v4-success,#00FFA3);
+  background:rgba(0,255,163,0.06); border:1px solid rgba(0,255,163,0.25);
+  border-radius:10px; padding:9px 12px; margin-bottom:12px;
+}
+.aic-shared-badge { margin:12px 0; }
+.aic-admin-shared-meta { font-weight:500; color:var(--v4-text-3,#4a6a85); font-size:11px; }
+@media (max-width:600px){
+  .aic-admin-keyrow { flex-direction:column; }
+  .aic-admin-tg { width:100%; }
+}
