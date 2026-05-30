@@ -155,6 +155,8 @@
   }
 
   window.VDTeaser = { isActive, isExpired, symbol, remainingMs, init,
+    coinOf: (s) => (s ? String(s).toUpperCase().replace(/USDT$|USDC$|BUSD$|PERP$/g, '') : ''),
+    SCOPE_MSG: 'Bu analiz yalnızca Premium üyeler için kullanılabilir.',
     // test/debug
     _state: () => _state, _params, _normSym };
 
