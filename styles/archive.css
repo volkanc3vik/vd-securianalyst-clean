@@ -463,3 +463,19 @@ body::after {
   .aic-admin-keyrow { flex-direction:column; }
   .aic-admin-tg { width:100%; }
 }
+
+/* ── Aşama 5: 3 bağımsız zaman satırı (Analiz / İnceleme / Telegram Paylaşım) ── */
+.aic-times {
+  display:flex; flex-direction:column; gap:6px;
+  margin:14px 0 16px; padding:12px 14px;
+  border:1px solid var(--v4-border, rgba(255,255,255,0.06)); border-radius:12px;
+  background:rgba(2,5,13,0.4);
+}
+.aic-time-row { display:flex; align-items:center; gap:10px; font-size:12.5px; flex-wrap:wrap; }
+.aic-time-row .ic { font-size:14px; width:18px; text-align:center; }
+.aic-time-row .k { color:var(--v4-text-3, #4a6a85); min-width:170px; }
+.aic-time-row .v { color:var(--v4-text, #EAF6FF); font-weight:600; font-family:var(--mono, monospace); }
+@media (max-width:600px){
+  .aic-time-row .k { min-width:0; flex:1 1 auto; }
+  .aic-time-row .v { flex:1 1 100%; padding-left:28px; }
+}
