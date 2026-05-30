@@ -116,7 +116,7 @@
 
     // ── Footer note ──
     _addText(modal,
-      'Yakında lansman — detaylar için takipte kalın.',
+      'Premium erişim manuel olarak aktive edilir. Kodun varsa buradan giriş yapabilirsin.',
       'p', 'vd-premium-modal-footer');
 
     overlay.appendChild(modal);
@@ -130,30 +130,38 @@
   }
 
   function _onCtaClick() {
-    // Premium üyelik vitrini (pricing) sayfasına yönlendir.
-    // Mevcut sayfa kök (index.html) olduğundan legal/ alt yoluna gidilir.
+    // "Premium'a Geç" → Premium Sales Funnel (planlar/modüller/fiyatlar/Telegram CTA)
     hide(true);
-    window.location.href = 'legal/premium.html';
+    setTimeout(() => {
+      try {
+        const screen = document.getElementById('loginScreen');
+        if (screen) screen.classList.remove('vd-code-mode');   // satış görünümü (kod modu değil)
+        if (typeof window.openPremiumLogin === 'function') {
+          window.openPremiumLogin();
+        } else if (screen) {
+          screen.style.display = ''; screen.classList.remove('hiding'); screen.classList.add('is-open');
+        }
+      } catch (e) {}
+    }, 100);
   }
 
-  // ── B.5: "Kodum var" linki → premium modal kapat + loginScreen aç ──
+  // "Zaten kodum var" → kod giriş popup'ı (funnel kod modu) · doLogin aynen
   function _onCodeLinkClick() {
     hide(true);  // immediate close
-    // Kısa gecikme ile loginScreen modal'ı aç (hide animasyonu çakışmasın)
     setTimeout(() => {
       try {
         if (typeof window.openPremiumLogin === 'function') {
           window.openPremiumLogin();
         } else {
-          // Fallback: doğrudan class manipülasyonu
           const screen = document.getElementById('loginScreen');
-          if (screen) {
-            screen.style.display = '';
-            screen.classList.remove('hiding');
-            screen.classList.add('is-open');
-          }
+          if (screen) { screen.style.display = ''; screen.classList.remove('hiding'); screen.classList.add('is-open'); }
         }
-      } catch(e) {}
+        // Doğrudan kod giriş kartını göster
+        const screen = document.getElementById('loginScreen');
+        if (screen) screen.classList.add('vd-code-mode');
+        const inp = document.getElementById('loginInput');
+        if (inp) setTimeout(() => inp.focus(), 120);
+      } catch (e) {}
     }, 100);
   }
 
