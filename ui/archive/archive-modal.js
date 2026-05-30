@@ -119,6 +119,11 @@
       rec = window.SupabaseDB ? await window.SupabaseDB.getArchiveById(id) : null;
     } catch (e) { rec = null; }
 
+    // Pending kayıt anon okumada görünmez → admin ise service-role get_one fallback
+    if (!rec && NS.Admin && NS.Admin.isAdmin() && typeof NS.Admin.fetchOne === 'function') {
+      try { rec = await NS.Admin.fetchOne(id); } catch (e) { rec = null; }
+    }
+
     if (!rec) {
       root.innerHTML = `<div class="aic-modal"><div class="aic-modal-header"><span class="aic-modal-sym">—</span><button class="aic-modal-close" data-aic="close" type="button">✕</button></div><div class="aic-modal-body"><div class="aic-empty"><div class="icon">⚠</div>Kayıt bulunamadı veya görüntülenemiyor.</div></div></div>`;
     } else {

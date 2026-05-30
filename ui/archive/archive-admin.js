@@ -32,6 +32,16 @@
   function _disp() { return window.TelegramDispatcher || null; }
   function _hasKey() { const d = _disp(); return !!(d && typeof d.hasAdminKey === 'function' && d.hasAdminKey()); }
 
+  // Admin: tek kayıt service-role ile (pending dahil) — modal fallback için
+  async function fetchOne(id) {
+    const d = _disp();
+    if (!d || typeof d.adminFetch !== 'function' || !_hasKey()) return null;
+    try {
+      const r = await d.adminFetch(API, { action: 'get_one', id });
+      return (r && r.ok && r.row) ? r.row : null;
+    } catch (e) { return null; }
+  }
+
   // ── Yerel taslak ──
   function _drafts() { try { return JSON.parse(localStorage.getItem(LS_DRAFTS) || '{}') || {}; } catch (e) { return {}; } }
   function getDraft(id) { return _drafts()[id] || null; }
@@ -215,6 +225,10 @@
               }
             } catch (e) {}
             _msg(sec, 'Veritabanına kaydedildi ✓', true);
+            // Pending'den çıktıysa: bekleyen paneli + feed + stats tazelensin
+            if (rec.review_status && rec.review_status !== 'pending') {
+              try { window.dispatchEvent(new CustomEvent('vd:archive:reviewed', { detail: { id: rec.id, review_status: rec.review_status } })); } catch (e) {}
+            }
           } else { _msg(sec, 'DB hatası: ' + ((r && r.error) || 'bilinmiyor') + ' (taslak korundu)', false); }
         } catch (e) { _msg(sec, 'İstek başarısız (taslak korundu)', false); }
         finally { saveBtn.disabled = false; }
@@ -257,5 +271,5 @@
     }
   }
 
-  NS.Admin = { isAdmin, sectionHTML, wire, getDraft, STATUS };
+  NS.Admin = { isAdmin, sectionHTML, wire, getDraft, STATUS, fetchOne };
 })();
