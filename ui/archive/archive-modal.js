@@ -60,6 +60,7 @@
           ${aiLearned}
           <!-- Telegram paylaş slotu — Aşama 4'te aktifleşir -->
           <div class="aic-modal-tg-slot" data-aic-tg-slot></div>
+          ${(NS.Admin && NS.Admin.isAdmin()) ? NS.Admin.sectionHTML(rec) : ''}
           <div class="aic-modal-legal">
             Bu içerik yatırım tavsiyesi değildir. Geçmiş analizlerin retrospektif
             değerlendirmesidir; gelecekteki sonuçların göstergesi sayılamaz.
@@ -95,6 +96,7 @@
       root.innerHTML = `<div class="aic-modal"><div class="aic-modal-header"><span class="aic-modal-sym">—</span><button class="aic-modal-close" data-aic="close" type="button">✕</button></div><div class="aic-modal-body"><div class="aic-empty"><div class="icon">⚠</div>Kayıt bulunamadı veya görüntülenemiyor.</div></div></div>`;
     } else {
       root.innerHTML = _render(rec);
+      if (NS.Admin && NS.Admin.isAdmin()) { try { NS.Admin.wire(root, rec); } catch (e) {} }
     }
 
     root.querySelectorAll('[data-aic="close"]').forEach(b => b.addEventListener('click', _close));
