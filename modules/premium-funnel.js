@@ -1,11 +1,11 @@
 // ════════════════════════════════════════════════════════════════════
 // modules/premium-funnel.js
-// PREMIUM SALES FUNNEL — #loginScreen'i satış hunisine dönüştürür.
+// PREMIUM SALES FUNNEL (Phase 5.1) — kurumsal/premium satış ekranı.
 //
-// • Hero + özellik kartları + plan kartları + sosyal kanıt + CTA
-// • Teaser süresi dolduysa üstte özel uyarı
-// • Mevcut kod-aktivasyon kartı (doLogin) KORUNUR → "Premium Kodunu Gir"
-// • Fiyat/link VDPremiumConfig'ten; sosyal kanıt SupabaseDB.getArchiveStats'tan
+// • Hero + premium chip'ler + modül kartları (ikon/başlık/açıklama/glow)
+// • Fayda listesi + güçlü sosyal kanıt (mevcut RPC) + SaaS plan kartları
+// • Plan seç → Telegram/WhatsApp hazır mesaj (config) · ana CTA
+// • Kod-aktivasyon kartı KORUNUR (doLogin'e dokunulmaz) · güven notu
 // Hiçbir mevcut sistem değiştirilmez. window.VDPremiumFunnel
 // ════════════════════════════════════════════════════════════════════
 (function () {
@@ -20,20 +20,58 @@
 
   function _teaserExpired() { try { return !!(window.VDTeaser && window.VDTeaser.isExpired && window.VDTeaser.isExpired()); } catch (e) { return false; } }
 
-  function _featuresHTML() {
-    const f = CFG().features || [];
-    return f.map(x => `<div class="vdf-feat"><span class="vdf-feat-ic">${esc(x.icon)}</span><span>${esc(x.label)}</span></div>`).join('');
+  // ── Telegram / WhatsApp hazır mesaj link üretimi ──
+  function _msgFor(planName) {
+    const m = CFG().messages || {};
+    if (planName && m.perPlan) return m.perPlan.replace('{plan}', planName);
+    return m.general || 'Merhaba.';
+  }
+  function _contactLink(channel, planName) {
+    const c = CFG().contact || {};
+    const text = encodeURIComponent(_msgFor(planName));
+    if (channel === 'whatsapp') {
+      const num = String(c.whatsappNumber || '').replace(/[^\d]/g, '');
+      return `https://wa.me/${num}?text=${text}`;
+    }
+    const user = String(c.telegramUser || '').replace(/^@/, '');
+    return `https://t.me/${user}?text=${text}`;
+  }
+  function _openContact(planName) {
+    const c = CFG().contact || {};
+    const url = _contactLink(c.primary === 'whatsapp' ? 'whatsapp' : 'telegram', planName);
+    window.open(url, '_blank', 'noopener');
+  }
+
+  // ── HTML parçaları ──
+  function _chipsHTML() {
+    const ch = (CFG().hero && CFG().hero.chips) || [];
+    return ch.map(c => `<span class="vdf-chip">${esc(c)}</span>`).join('');
+  }
+  function _modulesHTML() {
+    const mods = CFG().modules || [];
+    return mods.map(m => `
+      <div class="vdf-mod">
+        <div class="vdf-mod-ic">${esc(m.icon)}</div>
+        <div class="vdf-mod-tx">
+          <div class="vdf-mod-ttl">${esc(m.title)}</div>
+          <div class="vdf-mod-desc">${esc(m.desc || '')}</div>
+        </div>
+      </div>`).join('');
+  }
+  function _benefitsHTML() {
+    const bs = CFG().benefits || [];
+    if (!bs.length) return '';
+    return `<div class="vdf-benefits">${bs.map(b => `<div class="vdf-benefit"><span class="vdf-benefit-ck">✓</span>${esc(b)}</div>`).join('')}</div>`;
   }
   function _plansHTML() {
     const p = CFG().plans || [];
     return p.map(x => `
       <div class="vdf-plan${x.highlight ? ' vdf-plan-hot' : ''}">
-        ${x.highlight ? '<div class="vdf-plan-badge">Popüler</div>' : ''}
+        ${x.tag ? `<div class="vdf-plan-tag">${esc(x.tag)}</div>` : ''}
         <div class="vdf-plan-ic">${esc(x.icon)}</div>
         <div class="vdf-plan-name">${esc(x.name)}</div>
         <div class="vdf-plan-price">${esc(x.price)}<small>${esc(x.period || '')}</small></div>
-        <div class="vdf-plan-note">${esc(x.note || '')}</div>
-        <button class="vdf-plan-btn" data-vdf-buy="${esc(x.id)}" type="button">Erişim Al</button>
+        <button class="vdf-plan-btn" data-vdf-plan="${esc(x.name)}" type="button">Planı Seç</button>
       </div>`).join('');
   }
 
@@ -44,17 +82,23 @@
       ? `<div class="vdf-teaser-banner">⏳ <b>Ücretsiz önizleme süreniz sona erdi.</b><br>İncelediğiniz analizin tamamına ve tüm premium araçlara erişmek için premium üyelik gereklidir.</div>`
       : '';
     return `
+      <div class="vdf-grid-bg"></div>
       <div class="vdf-scroll">
         ${banner}
         <div class="vdf-hero">
+          <div class="vdf-hero-badge">◈ VD SECURIANALYST PREMIUM</div>
           <div class="vdf-hero-title">${esc(hero.title || 'Premium')}</div>
           <div class="vdf-hero-sub">${esc(hero.subtitle || '')}</div>
+          <div class="vdf-chips">${_chipsHTML()}</div>
         </div>
 
         <div class="vdf-social" id="vdf-social" hidden></div>
 
-        <div class="vdf-section-ttl">Premium ile açılan modüller</div>
-        <div class="vdf-feats">${_featuresHTML()}</div>
+        <div class="vdf-section-ttl">Premium Modüller</div>
+        <div class="vdf-mods">${_modulesHTML()}</div>
+
+        <div class="vdf-section-ttl">Premium ile Neler Kazanırsın</div>
+        ${_benefitsHTML()}
 
         <div class="vdf-section-ttl">Erişim Planları</div>
         <div class="vdf-plans">${_plansHTML()}</div>
@@ -64,30 +108,39 @@
         <div class="vdf-contacts">
           <a class="vdf-contact tg" data-vdf-tg target="_blank" rel="noopener">📱 Telegram ile İletişim</a>
           <a class="vdf-contact wa" data-vdf-wa target="_blank" rel="noopener">📞 WhatsApp ile İletişim</a>
-          <button class="vdf-contact code" data-vdf-code type="button">🔑 Premium Kodunu Gir</button>
+        </div>
+
+        <div class="vdf-trust">${esc(c.trustNote || '')}</div>
+
+        <div class="vdf-codeline">
+          <span>${esc(c.codeNote || 'Premium kodun varsa buradan giriş yapabilirsin.')}</span>
+          <button class="vdf-codebtn" data-vdf-code type="button">🔑 Premium Kodunu Gir</button>
         </div>
       </div>`;
   }
 
-  // ── Sosyal kanıt (mevcut RPC; veri yoksa gizli) ──
+  // ── Sosyal kanıt (mevcut RPC; az veride gizli) ──
   async function _loadSocial() {
-    if (!(CFG().socialProof && CFG().socialProof.enabled)) return;
+    const sp = CFG().socialProof || {};
+    if (!sp.enabled) return;
     const host = document.getElementById('vdf-social');
     if (!host) return;
     let s = null;
     try { if (window.SupabaseDB && window.SupabaseDB.getArchiveStats) s = await window.SupabaseDB.getArchiveStats(); } catch (e) { console.warn(TAG, 'stats:', e); }
     if (!s || typeof s !== 'object') return;
-    const tiles = [];
-    if (s.total_all != null) tiles.push({ ic: '📊', v: s.total_all, l: 'Toplam analiz' });
     const reviewed = +s.total_reviewed || 0;
-    if (s.validated_pct != null && reviewed >= 5) tiles.push({ ic: '📈', v: s.validated_pct + '%', l: 'Ort. doğrulama oranı' });
-    // Öğrenilen setup sayısı — yalnız VDInsights yüklüyse (aksi halde gösterilmez)
+    const minR = sp.minReviewed != null ? sp.minReviewed : 5;
+    if (reviewed < minR) return;   // az veri → tüm blok gizli
+
+    const tiles = [];
+    tiles.push({ ic: '📊', v: reviewed, l: 'İncelenen Analiz' });
+    if (s.validated_pct != null) tiles.push({ ic: '📈', v: s.validated_pct + '%', l: 'Ort. Doğrulama Oranı' });
+    if (s.validated != null) tiles.push({ ic: '🎯', v: s.validated, l: 'Doğrulanan Analiz' });
     try {
       if (window.VDInsights && window.VDInsights.load && window.VDInsights.computeInsights) {
         const recs = await window.VDInsights.load();
-        const ins = window.VDInsights.computeInsights(recs);
-        const setups = (ins.combos || []).length;
-        if (setups > 0) tiles.push({ ic: '🧠', v: setups, l: 'Öğrenilen setup' });
+        const setups = (window.VDInsights.computeInsights(recs).combos || []).length;
+        if (setups > 0) tiles.push({ ic: '🧠', v: setups, l: 'Öğrenilen Setup' });
       }
     } catch (e) {}
     if (!tiles.length) return;
@@ -95,16 +148,14 @@
     host.hidden = false;
   }
 
-  // ── CTA wiring ──
-  function _openLink(url) { if (url) window.open(url, '_blank', 'noopener'); }
+  // ── Wiring ──
   function _wire(screen) {
     const c = CFG().contact || {};
-    const tg = screen.querySelector('[data-vdf-tg]'); if (tg) tg.href = c.telegram || '#';
-    const wa = screen.querySelector('[data-vdf-wa]'); if (wa) wa.href = c.whatsapp || '#';
+    const tg = screen.querySelector('[data-vdf-tg]'); if (tg) tg.href = _contactLink('telegram', null);
+    const wa = screen.querySelector('[data-vdf-wa]'); if (wa) wa.href = _contactLink('whatsapp', null);
     const prim = screen.querySelector('[data-vdf-primary]');
-    if (prim) prim.addEventListener('click', () => _openLink(c.primary === 'whatsapp' ? c.whatsapp : c.telegram));
-    screen.querySelectorAll('[data-vdf-buy]').forEach(b => b.addEventListener('click', () => _openLink(c.primary === 'whatsapp' ? c.whatsapp : c.telegram)));
-    // Kodunu Gir → mevcut kod kartını göster
+    if (prim) prim.addEventListener('click', () => _openContact(null));
+    screen.querySelectorAll('[data-vdf-plan]').forEach(b => b.addEventListener('click', () => _openContact(b.getAttribute('data-vdf-plan'))));
     const codeBtn = screen.querySelector('[data-vdf-code]');
     if (codeBtn) codeBtn.addEventListener('click', () => {
       screen.classList.add('vd-code-mode');
@@ -112,7 +163,6 @@
     });
   }
 
-  // Kod kartına "← Planlara dön" linki ekle (doLogin/kart yapısına dokunmadan)
   function _augmentCodeCard(screen) {
     const card = screen.querySelector('.login-card');
     if (!card || card.querySelector('.vdf-back')) return;
@@ -136,7 +186,6 @@
     _loadSocial();
   }
 
-  // #premium hash / ?premium=1 ile gelinmişse funnel'ı aç (diğer sayfalardan teaser)
   function _autoOpen() {
     try {
       const hash = (location.hash || '').toLowerCase();
@@ -147,12 +196,9 @@
     } catch (e) {}
   }
 
-  function init() {
-    _inject();
-    _autoOpen();
-  }
+  function init() { _inject(); _autoOpen(); }
 
-  window.VDPremiumFunnel = { init, _inject, _loadSocial };
+  window.VDPremiumFunnel = { init, _inject, _loadSocial, _contactLink };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
