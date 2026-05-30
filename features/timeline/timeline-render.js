@@ -85,11 +85,19 @@
   let _filter = 'all';
   let _items = [];
 
+  // PHASE 3: teaser oturumunda yalnız linkteki coin olayları
+  function _teaserCoin() {
+    try { if (window.VDAccess && window.VDAccess.level && window.VDAccess.level() === 'teaser' && window.VDTeaser) return _coin(window.VDTeaser.symbol()); } catch (e) {}
+    return null;
+  }
+
   function _load() {
     const store = window.VDEventStore;
     const raw = store && store.getAll ? store.getAll() : [];   // yeni→eski
+    const tCoin = _teaserCoin();
     const seen = new Set(); const out = [];
     for (const e of raw) {
+      if (tCoin && _coin(e.sym) !== tCoin) continue;   // teaser: diğer coinler gizli
       // Savunmacı dedupe (NC zaten yazarken dedupe ediyor; burada görsel tekrar engeli)
       const k = e._k || (_coin(e.sym) + '|' + e.category + '|' + String(e.msg || '').slice(0, 60).toLowerCase());
       if (seen.has(k)) continue;
