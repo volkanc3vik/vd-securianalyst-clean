@@ -26,6 +26,15 @@
   }
   function _premiumActive() {
     try { if (window.APP_ACCESS && window.APP_ACCESS.isPremium && window.APP_ACCESS.isPremium()) return true; } catch (e) {}
+    // APP_ACCESS olmayan sayfalar (archive.html) için: access-code premium tespiti
+    // (access-control.js _checkAccessCode ile aynı mantık: geçerli bitis = premium)
+    try {
+      const raw = localStorage.getItem(ACCESS_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && typeof d.bitis === 'number' && d.bitis > Date.now()) return true;
+      }
+    } catch (e) {}
     return false;
   }
   function _teaserActive() {
