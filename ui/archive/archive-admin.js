@@ -245,8 +245,9 @@
             const MAP = {
               not_ready: 'Henüz inceleme zamanı gelmedi (Outcome Ready değil).',
               not_pending: 'Kayıt zaten incelenmiş (pending değil).',
+              geo_blocked: 'Sunucu bölgesi Binance Futures\'a kapalı (451). Vercel fonksiyon bölgesini EU/Asya\'ya alın (ör. fra1) ya da sonucu elle inceleyin.',
               no_price_data: 'Fiyat verisi bulunamadı — sembol Binance Futures\'ta olmayabilir.',
-              price_fetch_failed: 'Binance verisine ulaşılamadı.',
+              price_fetch_failed: 'Binance verisine ulaşılamadı. Sonucu elle inceleyebilirsiniz.',
               bad_price_data: 'Fiyat verisi okunamadı.',
               no_entry_price: 'Analiz fiyatı yok, hesaplanamıyor.',
             };
