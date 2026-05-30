@@ -567,3 +567,6 @@ body::after {
   .aic-tip { max-width:220px; left:auto; right:0; transform:none; }
   .aic-tip::before { left:auto; right:6px; transform:none; }
 }
+
+/* ── Aşama 8: pending kart göreli zaman ── */
+.aic-pend-rel { font-size:11.5px; font-weight:600; color:var(--v4-warn, #FFC247); }
