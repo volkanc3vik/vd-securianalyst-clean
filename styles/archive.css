@@ -532,3 +532,38 @@ body::after {
   .aic-pend-keyrow { flex-direction:column; }
   .aic-pend-refresh { width:100%; }
 }
+
+/* ── Aşama 7: Status açıklama tooltip'leri (ⓘ) — sadece UI bilgilendirme ── */
+.aic-tip-wrap { position:relative; display:inline-flex; align-items:center; vertical-align:middle; margin-left:6px; }
+.aic-tip-btn {
+  font-family:inherit; font-size:12px; line-height:1; color:var(--v4-cyan, #00D1FF);
+  background:rgba(0,209,255,0.08); border:1px solid var(--v4-border-hi, rgba(0,209,255,0.25));
+  border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; padding:0; transition:background .15s ease;
+}
+.aic-tip-btn:hover, .aic-tip-btn:focus-visible { background:rgba(0,209,255,0.18); outline:none; }
+.aic-tip {
+  display:none; position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%);
+  z-index:50; width:max-content; max-width:280px; text-align:left;
+  background:#0a1422; color:var(--v4-text, #EAF6FF);
+  border:1px solid var(--v4-border-strong, rgba(0,209,255,0.38)); border-radius:10px;
+  padding:10px 12px; font-size:11.5px; line-height:1.5; font-weight:400;
+  text-transform:none; letter-spacing:normal;
+  box-shadow:0 8px 28px rgba(0,0,0,0.5); white-space:normal;
+}
+.aic-tip::before {
+  content:''; position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+  border:6px solid transparent; border-bottom-color:var(--v4-border-strong, rgba(0,209,255,0.38));
+}
+/* Hover (masaüstü) + klavye focus + tıklama (mobil → .open) */
+.aic-tip-wrap:hover .aic-tip,
+.aic-tip-btn:focus-visible + .aic-tip,
+.aic-tip-wrap.open .aic-tip { display:block; }
+.aic-tip-title { font-weight:700; font-size:11px; letter-spacing:.3px; color:var(--v4-cyan, #00D1FF); margin-bottom:6px; text-transform:uppercase; }
+.aic-tip-row { margin:6px 0; }
+.aic-tip-row b { color:var(--v4-text, #EAF6FF); }
+.aic-tip-tr { color:var(--v4-text-3, #4a6a85); }
+@media (max-width:600px){
+  .aic-tip { max-width:220px; left:auto; right:0; transform:none; }
+  .aic-tip::before { left:auto; right:6px; transform:none; }
+}
