@@ -75,7 +75,7 @@ async function sbFetch(path, options = {}) {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REVIEW_STATUSES = ['pending', 'validated', 'partially_validated', 'not_validated'];
 // PATCH sonrası client'a dönülecek güvenli kolonlar (internal_review/admin_note dahil — admin görür)
-const RETURN_COLS = 'id,sym,review_status,admin_note,internal_review,shared_to_telegram,telegram_msg_id,shared_at';
+const RETURN_COLS = 'id,sym,review_status,admin_note,internal_review,reviewed_at,shared_to_telegram,telegram_msg_id,shared_at';
 
 function clampText(v, max) {
   if (v == null) return null;
@@ -127,6 +127,19 @@ export default async function handler(req, res) {
       if (body.admin_note != null)      patch.admin_note      = clampText(body.admin_note, 4000);
       if (body.internal_review != null) patch.internal_review = clampText(body.internal_review, 4000);
       if (!Object.keys(patch).length) return res.status(400).json({ ok: false, error: 'nothing_to_update' });
+
+      // reviewed_at: İLK review (reviewed_at boş) VEYA review_status DEĞİŞTİ → şimdi.
+      // created_at ASLA reviewed_at yerine kullanılmaz; yalnızca buradan set edilir.
+      let current = null;
+      try {
+        const cur = await sbFetch(`/analysis_archive${idFilter}&select=review_status,reviewed_at`, { method: 'GET' });
+        current = cur && cur[0] ? cur[0] : null;
+      } catch (e) { current = null; }
+      if (!current) return res.status(404).json({ ok: false, error: 'not_found' });
+      const statusChanged = patch.review_status != null && patch.review_status !== current.review_status;
+      if (!current.reviewed_at || statusChanged) {
+        patch.reviewed_at = new Date().toISOString();
+      }
 
       const rows = await sbFetch(`/analysis_archive${idFilter}&select=${RETURN_COLS}`, {
         method: 'PATCH',
