@@ -49,6 +49,15 @@
     try { return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }); }
     catch (e) { return iso || '—'; }
   }
+  // Saatli tarih: "30 Mayıs 2026 02:49"
+  function _fmtDateTimeTR(iso) {
+    try {
+      const d = new Date(iso);
+      const date = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+      const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      return date + ' ' + time;
+    } catch (e) { return iso || '—'; }
+  }
 
   // Telegram review mesajı (verilen format)
   function _buildMessage(rec, vals) {
@@ -58,7 +67,8 @@
       '📚 ANALYSIS REVIEW',
       '',
       '🪙 ' + sym,
-      '📅 ' + _fmtDateTR(rec.created_at),
+      '📅 Analiz Zamanı: ' + _fmtDateTimeTR(rec.created_at),
+      '📊 İnceleme Zamanı: ' + _fmtDateTimeTR(rec.reviewed_at || new Date().toISOString()),
       '',
       '🎯 Sonuç: ' + _tgLabel(vals.review_status),
       '📈 Hareket: ' + _fmtPct(rec.end_move_pct),
@@ -70,6 +80,9 @@
       '',
       '🧠 AI Learned:',
       (rec.ai_learned || '—'),
+      '',
+      '🚀 Premium Kripto Analiz Platformunu Aç',
+      '🔗 Detaylı Analiz: https://vd-securianalyst.com/archive.html',
       '',
       '#AnalysisReview',
       tag,
