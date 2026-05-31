@@ -7,9 +7,12 @@
   'use strict';
 
   var PANEL_SEL = [
-    '.panel', '.glass', '.market-overview', '.joker-section',
+    '.panel', '.glass', '.joker-section',
     '.signal-card', '.intel-panel', '.intel-card', '.regime-card',
-    '.ti-terminal', '.dash-card', '.mc'
+    '.ti-terminal', '.dash-card', '.mc',
+    /* gerçek kart sınıfları */
+    '.mkt-card', '.glass-card', '.opp', '.ece-panel', '.smc-panel',
+    '.ai-panel', '.ti-panel', '.ti-best', '.ti-card'
   ].join(',');
 
   function variantFor(el) {
