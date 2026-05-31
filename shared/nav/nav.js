@@ -22,6 +22,7 @@
     { key:'translator',   label:'Market Translator',   page:'translator.html', icon:'🔤' },
     { key:'timeline',     label:'Market Timeline',     page:'timeline.html', short:true, shortLabel:'Timeline', icon:'📈' },
     { key:'academy',      label:'VD Academy',          page:'academy.html', icon:'🎓' },
+    { key:'aitrack',      label:'AI Track Record',     page:'track-record.html', short:true, shortLabel:'Track', icon:'🏆' },
     { key:'premium',      label:'Premium',             page:'premium.html', premium:true, icon:'⭐' },
   ];
 
