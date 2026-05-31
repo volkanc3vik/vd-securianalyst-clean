@@ -50,7 +50,7 @@
 
   // ── stiller (kendi kendine enjekte) ──
   var CSS = ''
-    + '.vdtg-bar{position:fixed;left:14px;bottom:14px;z-index:9000;display:flex;align-items:center;gap:10px;'
+    + '.vdtg-bar{position:fixed;left:14px;bottom:14px;z-index:2147483000;display:flex;align-items:center;gap:10px;'
     + 'background:rgba(6,18,28,.92);border:1px solid rgba(0,229,255,.35);border-radius:10px;padding:10px 12px;'
     + 'box-shadow:0 10px 30px rgba(0,0,0,.45);backdrop-filter:blur(8px);max-width:340px;font-family:system-ui,sans-serif;}'
     + '.vdtg-bar .ic{font-size:18px;line-height:1}'
@@ -132,9 +132,12 @@
     var bar = d.getElementById('vdtg-bar'); if (!bar) return;
     try {
       var band = d.querySelector('.vd-premium-cta-band');
-      bar.style.bottom = (band && band.offsetParent !== null)
-        ? (band.getBoundingClientRect().height + 24) + 'px'
-        : '14px';
+      if (band && band.offsetParent !== null) {
+        var h = band.getBoundingClientRect().height || 0;
+        bar.style.bottom = ((h > 0 ? h : 78) + 18) + 'px';   // banner üstüne, ölçüm 0 ise güvenli 78px
+      } else {
+        bar.style.bottom = '16px';
+      }
     } catch (e) {}
   }
 
@@ -158,5 +161,7 @@
   }
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', start); else start();
 
-  w.VDTelegramFunnel = { open: openChannel, track: trackTelegramClick, _channel: function () { return CHANNEL; }, sweep: sweep };
+  console.log('%c[TG_FUNNEL] v2.1 YÜKLENDİ ✓ — konum düzeltmesi aktif','color:#00E5FF;font-weight:bold');
+  console.log('%c[TG_FUNNEL] v2.1 YÜKLENDİ ✓ — konum düzeltmesi aktif · kanal: ' + CHANNEL, 'color:#00E5FF;font-weight:bold');
+  w.VDTelegramFunnel = { open: openChannel, track: trackTelegramClick, _channel: function () { return CHANNEL; }, sweep: sweep, _version: 'v2.1' };
 })(window, document);
