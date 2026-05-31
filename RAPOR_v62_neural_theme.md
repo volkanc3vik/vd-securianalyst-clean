@@ -100,3 +100,24 @@ kartların asıl sınıfı **`.mkt-card`** ve renkleri `index.html` gömülü `<
 - `.btcd-fill`, `.exec-mode-btn.active`, whale/intelligence kalan morları → cyan.
 
 Önizleme: `v62_neural_market.png`
+
+---
+
+## 10) KRİTİK DÜZELTME — yükleme sırası (dashboard değişmiyordu)
+
+**Kök sebep:** `index.html` stylesheet `<link>`'lerini `<head>`'de değil, body içinde
+(satır ~9970–10052) tutuyor. İlk enjeksiyon temamı en baştaki `</head>`'e (satır 1575)
+koymuştu — yani `theme-v2.css` (satır 10050) ve diğer tüm stiller temamdan **sonra**
+yükleniyordu. CSS cascade'inde sonra gelen kazandığı için `theme-v2.css` tüm Neural
+temasını eziyordu. Dashboard'ın değişmemesinin sebebi buydu.
+
+**Düzeltme:** `theme-neural.css` artık **en son stylesheet'ten (premium-funnel.css) sonra**
+enjekte ediliyor (7 sayfanın tümünde). Böylece cascade'i kesinlikle kazanıyor.
+
+**Doğrulama (konsol testi):** Tarayıcı kurulamadığı için (sandbox'ta chromium engelli),
+**WeasyPrint** (saf-Python, gerçek CSS cascade motoru) ile `theme-v2.css` + `theme-neural.css`
+düzeltilmiş sırayla, gerçek `.mkt-card` markup + inline stilleriyle render edildi. Sonuç
+`v62_cascade_proof.png`: ETH kartının inline `#627eea` morlu badge'i dahil her şey maviye
+döndü, BTC amber, kartlar cam + neon kenar, fiyatlar yeşil, sinyaller kırmızı. Yani tema
+artık `theme-v2.css`'i geçerli biçimde eziyor. (Kayan ışık JS ile eklendiği için bu statik
+testte görünmez; tarayıcıda görünür.)
