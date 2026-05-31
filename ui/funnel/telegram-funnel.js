@@ -85,6 +85,7 @@
     bar.querySelector('.go').addEventListener('click', function () { openChannel('site_bar'); });
     bar.querySelector('.x').addEventListener('click', function () { try { sessionStorage.setItem('vdtg_bar_closed', '1'); } catch (e) {} bar.remove(); });
     d.body.appendChild(bar);
+    positionBar();
   }
 
   // ── 2) Footer CTA ──
@@ -126,7 +127,18 @@
     });
   }
 
-  function sweep() { if (suppress()) return; decorateTeasers(); decoratePremiumModal(); injectFooter(); }
+  // funnel şeridini alttaki premium banner'ın ÜSTÜNE konumla (çakışma önleme)
+  function positionBar() {
+    var bar = d.getElementById('vdtg-bar'); if (!bar) return;
+    try {
+      var band = d.querySelector('.vd-premium-cta-band');
+      bar.style.bottom = (band && band.offsetParent !== null)
+        ? (band.getBoundingClientRect().height + 24) + 'px'
+        : '14px';
+    } catch (e) {}
+  }
+
+  function sweep() { if (suppress()) return; decorateTeasers(); decoratePremiumModal(); injectFooter(); positionBar(); }
 
   function start() {
     injectStyle(); injectBar(); sweep();
