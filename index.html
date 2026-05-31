@@ -4292,6 +4292,16 @@ async function scanMarket(){
 // COPY PROMPT
 // ══════════════════════════════════════════
 function copyPrompt(){
+  // Premium gate: free/teaser → Sales Funnel'a yönlendir (kopyalama yok)
+  try {
+    var _prem = (window.VDAccess && window.VDAccess.isPremium && window.VDAccess.isPremium())
+             || (window.APP_ACCESS && window.APP_ACCESS.isPremium && window.APP_ACCESS.isPremium());
+    if (!_prem) {
+      if (typeof window.openPremiumLogin === 'function') window.openPremiumLogin();
+      else if (window.VDPremiumModal && window.VDPremiumModal.show) window.VDPremiumModal.show();
+      return;
+    }
+  } catch(e) {}
   if(!TK||!KL.length||!IND){alert('Önce bir coin yükleyin.');return;}
   const last=KL[KL.length-1],f6=n=>n!=null?(+n).toFixed(6):'—';
   const{rsi:r,macd:m,ema9:e9,ema21:e21,ema50:e50,bb:b,atr:at}=IND;
@@ -10045,6 +10055,7 @@ const P10 = (() => {
 <script src="ui/premium/detail-lock.js"></script>
 <script src="ui/premium/ai-comment-lock.js"></script>
 <script src="ui/premium/card-detail-lock.js"></script>
+<script src="ui/premium/claude-copy-lock.js"></script>
 <script src="ui/academy/academy-chart-consumer.js"></script>
 <script src="ui/premium/premium-cta.js"></script>
 <script src="modules/premium-init.js"></script>
