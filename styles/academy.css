@@ -132,3 +132,10 @@ body.ac-body{
   background:rgba(0,209,255,.07);border:1px solid var(--ac-bd-hi);border-radius:11px;padding:11px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
 .ac-chart-btn:hover{background:rgba(0,209,255,.13);border-color:var(--ac-cyan)}
 .ac-soon{font-size:9px;font-weight:800;color:#02050D;background:var(--ac-warn);border-radius:6px;padding:2px 7px}
+
+/* ═══ PHASE 3: tıklanabilir Timeline satırı + aktif Grafikte Göster ═══ */
+.ac-tl-row[data-ac-tl]{cursor:pointer;transition:all .15s}
+.ac-tl-row[data-ac-tl]:hover{border-color:var(--ac-bd-hi);background:rgba(0,209,255,.08)}
+.ac-tl-go{flex:none;font-size:11px;opacity:.5;transition:opacity .15s}
+.ac-tl-row[data-ac-tl]:hover .ac-tl-go{opacity:1}
+.ac-chart-btn{font-weight:800}
