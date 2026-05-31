@@ -192,3 +192,35 @@
   .tm-readline { justify-content: center; }
   .tm-radar { max-width: 280px; margin: 0 auto; }
 }
+
+/* ============================================================
+   GERÇEK İSTİHBARAT PANELİ (.ti-*) -> terminal görünümü
+   ============================================================ */
+.ti-panel { background: var(--tm-panel) !important; border: 1px solid var(--tm-line) !important; border-radius: var(--tm-r-lg) !important; backdrop-filter: blur(14px); }
+.ti-header-title { color: var(--tm-accent) !important; font-family: var(--tm-mono) !important; letter-spacing: 2px; }
+.ti-header-pulse { background: var(--tm-ok) !important; box-shadow: 0 0 9px var(--tm-ok) !important; }
+.ti-header-meta  { color: var(--tm-dim) !important; font-family: var(--tm-mono) !important; }
+.ti-card, .ti-row-2 > * { background: var(--tm-panel-2) !important; border: 1px solid var(--tm-line-soft) !important; border-radius: var(--tm-r) !important; }
+.ti-card-label, .ti-card-label * { color: var(--tm-dim) !important; letter-spacing: 1.5px; font-family: var(--tm-mono); }
+.ti-card-label-dot { box-shadow: 0 0 6px currentColor; }
+.ti-mm-headline { color: var(--tm-tx) !important; }
+.ti-mm-detail, .ti-pressure-detail, .ti-rationale { color: var(--tm-muted) !important; }
+.ti-best { background: var(--tm-panel-2) !important; border: 1px solid var(--tm-line) !important; border-radius: var(--tm-r-lg) !important; }
+.ti-best-sym { color: var(--tm-accent) !important; font-family: var(--tm-mono) !important; }
+.ti-best-dir.short, .ti-best-dir .short { color: var(--tm-danger) !important; }
+.ti-best-dir.long,  .ti-best-dir .long  { color: var(--tm-ok) !important; }
+.ti-best-tier { background: rgba(0,229,255,.1) !important; color: var(--tm-accent) !important; border: 1px solid var(--tm-line) !important; }
+.ti-best-level-val { font-family: var(--tm-mono) !important; }
+.ti-conf-chip { background: rgba(25,240,160,.07) !important; border: 1px solid rgba(25,240,160,.3) !important; color: var(--tm-ok) !important; border-radius: var(--tm-r) !important; }
+.ti-mat-bar, .ti-mat-wrap { background: rgba(255,255,255,.06) !important; }
+.ti-mat-fill { background: linear-gradient(90deg, var(--tm-ok), var(--tm-accent)) !important; box-shadow: 0 0 8px rgba(0,229,255,.5); }
+.ti-metric-confidence { color: var(--tm-accent) !important; } .ti-metric-risk { color: var(--tm-ok) !important; }
+.ti-metric-val { font-family: var(--tm-mono) !important; }
+.ti-major-sym { color: var(--tm-accent) !important; font-family: var(--tm-mono) !important; }
+.ti-major-dir.short { color: var(--tm-danger) !important; } .ti-major-dir.long { color: var(--tm-ok) !important; }
+.ti-regime-badge { font-family: var(--tm-mono) !important; }
+.ti-activity-ts { color: var(--tm-dim) !important; font-family: var(--tm-mono) !important; }
+.ti-activity-msg { color: var(--tm-muted) !important; }
+.ti-cat-setup, .ti-regime-badge.purple { color: var(--tm-accent) !important; background: rgba(0,229,255,.1) !important; }
+.ti-empty, .ti-empty-title { color: var(--tm-muted) !important; }
+.ti-source-dot { font-family: var(--tm-mono) !important; }
