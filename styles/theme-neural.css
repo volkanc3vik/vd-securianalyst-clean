@@ -5,31 +5,7 @@
    Bu dosya theme-v2.css'ten SONRA yuklenir, cascade'i kazanir.
    ============================================================ */
 
-:root {
-  /* Neural palet */
-  --nx-bg:        #02060C;
-  --nx-bg2:       #050C16;
-  --nx-cy:        #00E5FF;   /* neon cyan  = veri / analiz */
-  --nx-bl:        #2D7FF9;   /* electric blue */
-  --nx-gn:        #19F0A0;   /* yesil      = long / pozitif */
-  --nx-rd:        #FF4D6D;   /* kirmizi    = short / negatif */
-  --nx-am:        #FFB531;   /* amber      = joker / uyari / yuksek risk */
-  --nx-tx:        #DBEFF8;
-  --nx-t2:        #7FA8B8;
-  --nx-t3:        #436E7C;
-  --nx-glass:     rgba(0,18,28,0.50);
-  --nx-glass2:    rgba(0,12,20,0.62);
-  --nx-gb:        rgba(0,229,255,0.22);   /* cam kenar  */
-  --nx-gb-soft:   rgba(0,229,255,0.12);
-  --nx-grid:      rgba(0,229,255,0.045);
-
-  /* theme-v2 token'larini Neural'e hizala (tek kaynak) */
-  --v4-cyan:      #00E5FF !important;
-  --v4-cyan-br:   #5cf2ff !important;
-  --v4-cyan-soft: #36e9ff !important;
-  --purple:       #00E5FF !important;
-  --v2-purple:    #00E5FF !important;
-}
+/* Token'lar artık styles/theme.css'te (tek kaynak). */
 
 /* ---------- Zemin: saf siyah + izgara + hafif glow ---------- */
 html, body {
@@ -189,11 +165,19 @@ html, body {
 /* ============================================================
    PIYASA REJIMI  (.regime-*)
    ============================================================ */
-.regime-badge { background: rgba(0,229,255,0.08) !important; color: var(--nx-cy) !important; border: 1px solid var(--nx-gb) !important; }
-.regime-bar   { background: rgba(255,255,255,0.07) !important; }
-.regime-bar > * { background: var(--nx-cy) !important; box-shadow: 0 0 8px var(--nx-cy); }
+/* DİKKAT: .regime-bar bir İLERLEME ÇUBUĞU DEĞİL — dot/badge/açıklama/squeeze
+   tutan bir SATIR kapsayıcısıdır. Çocuklarına asla blok arka plan verme. */
+.regime-bar {
+  background: var(--nx-glass) !important;
+  border: 1px solid var(--nx-gb-soft) !important;
+  border-radius: 6px !important;
+  display: flex; align-items: center; gap: 10px;
+}
 .regime-dot   { box-shadow: 0 0 7px currentColor; }
-.regime-desc  { color: var(--nx-t2) !important; }
+.regime-badge { background: rgba(0,229,255,0.08) !important; color: var(--nx-cy) !important; border: 1px solid var(--nx-gb) !important; }
+.regime-desc  { color: var(--nx-t2) !important; background: none !important; box-shadow: none !important; }
+.squeeze-badge { background: rgba(255,181,49,0.06) !important; color: var(--nx-am) !important; border: 1px solid rgba(255,181,49,0.30) !important; box-shadow: none !important; }
+.squeeze-badge.sq-inactive { background: none !important; color: var(--nx-t3) !important; border-color: var(--nx-gb-soft) !important; }
 
 /* ============================================================
    JOKER  (.joker-*) — amber tehlike dili
@@ -298,3 +282,69 @@ a, .link, .accent { color: var(--nx-cy); }
 .whale-alert-txt b, .ti-cat-setup, .ti-regime-badge.purple { color: var(--nx-cy) !important; }
 .ti-regime-badge.purple { background: rgba(0,229,255,0.10) !important; border-color: rgba(0,229,255,0.4) !important; }
 .tm-sniper { background: rgba(0,229,255,0.12) !important; color: var(--nx-cy) !important; border-color: rgba(0,229,255,0.3) !important; }
+
+/* ============================================================
+   YÖN FIRSAT KARTLARI  (.opp.*)  — Yukarı/Aşağı/Joker görünüm
+   ============================================================ */
+.opp { background: var(--nx-glass) !important; border: 1px solid var(--nx-gb) !important; border-radius: 8px !important; position: relative; overflow: hidden; }
+.opp.long  { border-color: rgba(25,240,160,0.30) !important; }
+.opp.short { border-color: rgba(255,77,109,0.30) !important; }
+.opp.joker-long, .opp.joker-short { border-color: rgba(255,181,49,0.30) !important; }
+.opp-glow { opacity: 0.12 !important; }
+.opp.long  .opp-glow { background: var(--nx-gn) !important; }
+.opp.short .opp-glow { background: var(--nx-rd) !important; }
+.opp.joker-long .opp-glow, .opp.joker-short .opp-glow { background: var(--nx-am) !important; }
+.opp-dir.long  { color: var(--nx-gn) !important; }
+.opp-dir.short { color: var(--nx-rd) !important; }
+.opp-dir.joker-l, .opp-dir.joker-s { color: var(--nx-am) !important; }
+.opp-sym   { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-tx) !important; }
+.opp-price { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-t2) !important; }
+.opp-ind, .opp-inds { color: var(--nx-t2) !important; }
+.opp-desc  { color: var(--nx-t3) !important; }
+.opp-btn   { color: var(--nx-cy) !important; }
+
+/* ============================================================
+   PİYASA İSTİHBARAT TERMİNALİ  (.ti-*)  — AI terminal HUD
+   ============================================================ */
+.ti-panel { background: var(--nx-glass2) !important; border: 1px solid var(--nx-gb) !important; border-radius: 8px !important; }
+.ti-header-title { color: var(--nx-cy) !important; letter-spacing: 1.5px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.ti-header-pulse { background: var(--nx-cy) !important; box-shadow: 0 0 9px var(--nx-cy) !important; }
+.ti-header-meta  { color: var(--nx-t3) !important; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.ti-empty, .ti-empty-title { color: var(--nx-t2) !important; }
+
+.ti-card { background: rgba(0,229,255,0.04) !important; border: 1px solid var(--nx-gb-soft) !important; border-radius: 6px !important; position: relative; overflow: hidden; }
+.ti-card-label { color: var(--nx-t3) !important; letter-spacing: 1px; }
+.ti-card-label-dot { box-shadow: 0 0 6px currentColor; }
+
+/* best setup kartı (lider) */
+.ti-best { background: var(--nx-glass) !important; border: 1px solid var(--nx-gb) !important; border-radius: 8px !important; }
+.ti-best-sym { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-cy) !important; }
+.ti-best-dir.long,  .ti-best-dir .long  { color: var(--nx-gn) !important; }
+.ti-best-dir.short, .ti-best-dir .short { color: var(--nx-rd) !important; }
+.ti-best-tier { background: rgba(0,229,255,0.10) !important; color: var(--nx-cy) !important; border: 1px solid var(--nx-gb) !important; }
+.ti-best-level-label { color: var(--nx-t3) !important; }
+.ti-best-level-val   { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-tx) !important; }
+
+/* onay çipleri + meter + metrikler */
+.ti-conf-chip { background: rgba(25,240,160,0.07) !important; border: 1px solid rgba(25,240,160,0.30) !important; color: var(--nx-gn) !important; border-radius: 3px !important; }
+.ti-mat-bar, .ti-mat-wrap { background: rgba(255,255,255,0.07) !important; border-radius: 3px !important; overflow: hidden; }
+.ti-mat-fill { background: linear-gradient(90deg, var(--nx-gn), var(--nx-cy)) !important; box-shadow: 0 0 8px rgba(0,229,255,0.5); }
+.ti-mat-label { color: var(--nx-t3) !important; }
+.ti-metric-val { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-tx) !important; }
+.ti-metric-label { color: var(--nx-t3) !important; }
+.ti-metric-confidence { color: var(--nx-cy) !important; }
+.ti-metric-risk { color: var(--nx-gn) !important; }
+.ti-rationale, .ti-rationale-label, .ti-mm-detail, .ti-pressure-detail { color: var(--nx-t2) !important; }
+.ti-rationale-label, .ti-needs-label, .ti-pressure-label { color: var(--nx-t3) !important; }
+.ti-partial-badge { background: rgba(255,181,49,0.08) !important; color: var(--nx-am) !important; border: 1px solid rgba(255,181,49,0.35) !important; }
+
+/* majors */
+.ti-major-sym { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-cy) !important; }
+.ti-major-dir.long  { color: var(--nx-gn) !important; }
+.ti-major-dir.short { color: var(--nx-rd) !important; }
+.ti-major-stat, .ti-major-summary { color: var(--nx-t2) !important; }
+.ti-major-vs { color: var(--nx-t3) !important; }
+
+/* activity feed */
+.ti-activity-msg { color: var(--nx-t2) !important; }
+.ti-activity-ts  { color: var(--nx-t3) !important; font-family: ui-monospace, Menlo, Consolas, monospace; }
