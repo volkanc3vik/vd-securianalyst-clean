@@ -3,36 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="VD Academy · VD SecuriAnalyst">
+  <meta name="description" content="VD Academy · Canlı piyasa eğitimi — formasyonlar, Smart Money, göstergeler ve daha fazlası">
   <meta name="robots" content="index,follow">
   <title>VD Academy · VD SecuriAnalyst</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="shared/nav/page-base.css">
   <link rel="stylesheet" href="shared/nav/nav.css">
+  <link rel="stylesheet" href="styles/academy.css">
 </head>
-<body>
+<body class="ac-body">
   <header class="vd-page-header">
     <a href="index.html" class="vd-page-logo">◈ VD <b>SecuriAnalyst</b></a>
   </header>
 
-  <main class="vd-ph-main">
-    <span class="vd-ph-badge">◈ VD Academy</span>
-    <h1>VD Academy</h1>
-    <p class="vd-ph-lead">Formasyonlar, grafik yapıları ve trader eğitimi. Piyasa olaylarını anlamaktan, onları yorumlamayı öğrenmeye geçiş katmanı.</p>
-    <div class="vd-ph-grid">
-      <div class="vd-ph-feature"><div class="t">🎓 Eğitim Kartları</div><div class="d">Formasyonlar, mum yapıları ve temel piyasa kavramları kısa kartlarla.</div></div>
-      <div class="vd-ph-feature"><div class="t">🔗 Olay → Ders Bağlantısı</div><div class="d">Timeline'daki 'Öğren' kategorisi olayları, ilgili Academy derslerine bağlanabilecek şekilde tasarlanıyor.</div></div>
+  <div class="ac-gridbg"></div>
+  <main class="ac-wrap">
+    <section class="ac-hero">
+      <span class="ac-badge">◈ VD ACADEMY · LIVE MARKET EDUCATION</span>
+      <h1>Piyasayı görürken, anlamını öğren</h1>
+      <p>Formasyonlar, Smart Money kavramları, göstergeler ve futures temelleri. Timeline'da gördüğün her olay, burada bir derse bağlanır — gördüğünü yorumlamayı öğrenirsin.</p>
+      <div><span class="ac-access" id="acAccess">◈ Free — temel erişim</span></div>
+    </section>
+
+    <div class="ac-toolbar">
+      <div class="ac-searchbox"><input id="acSearch" type="text" placeholder="Ders ara — örn. liquidity, RSI, breakout…" autocomplete="off"></div>
+      <span class="ac-count" id="acCount">—</span>
     </div>
-    <div class="vd-ph-soon"><span>⚠</span><span>Bu katman yapım aşamasındadır. Event kategorileri (özellikle 'Öğren'), ileride buradaki derslerle eşleştirilecek.</span></div>
-    <div><a href="index.html" class="vd-ph-back">← Dashboard'a Dön</a></div>
+
+    <div class="ac-filters" id="acFilters"></div>
+    <div class="ac-grid" id="acGrid"></div>
+
+    <footer class="ac-footer">
+      <div>⚠ Bu platform yatırım tavsiyesi vermez. Tüm içerikler eğitim ve bilgilendirme amaçlıdır.</div>
+      <div style="margin-top:8px"><a href="index.html">← Dashboard'a Dön</a> · © 2026 VD SecuriAnalyst</div>
+    </footer>
   </main>
 
-  <footer class="vd-ph-footer">
-    <div>⚠ Bu platform yatırım tavsiyesi vermez. Tüm içerikler bilgilendirme amaçlıdır.</div>
-    <div style="margin-top:8px">© 2026 VD SecuriAnalyst — AI Kripto Analiz Platformu</div>
-  </footer>
-
+  <!-- Access + teaser (mevcut sistem; salt okuma) -->
+  <script src="modules/access-levels.js"></script>
+  <script src="modules/teaser-access.js"></script>
+  <!-- Academy modülleri -->
+  <script src="ui/academy/academy-data.js"></script>
+  <script src="ui/academy/event-lesson-map.js"></script>
+  <script src="ui/academy/academy.js"></script>
   <script src="shared/nav/nav.js"></script>
 </body>
 </html>
