@@ -166,8 +166,19 @@
   }
 
   function show(opts) {
-    // Mevcut modal varsa önce kapat (overlay duplicate olmasın)
+    // ESKİ MOR POPUP KALDIRILDI → tüm "Premium'a Geç" çağrıları doğrudan
+    // Premium Sales Funnel'ı açar. (API korunur; tüm mevcut çağıranlar çalışır.)
     hide(true);
+    if (typeof window.openPremiumLogin === 'function') {
+      try {
+        const screen = document.getElementById('loginScreen');
+        if (screen) screen.classList.remove('vd-code-mode');
+        window.openPremiumLogin();
+        return;
+      } catch (e) {}
+    }
+    // Funnel yoksa (örn. funnel barındırmayan sayfa) → premium giriş sayfasına yönlendir
+    if (!document.getElementById('loginScreen')) { try { location.href = 'index.html#premium'; return; } catch (e) {} }
 
     const overlay = _build(opts || {});
     document.body.appendChild(overlay);

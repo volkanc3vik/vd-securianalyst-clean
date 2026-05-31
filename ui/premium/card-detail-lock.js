@@ -72,42 +72,78 @@
     // 2) Onay barı / grid / eksik onay / teknik zamanlama / etiketler → gizle
     HIDE_SELECTORS.forEach(sel => card.querySelectorAll(sel).forEach(_hide));
 
-    // 3) sc-stats: fiyat bloğunu komple gizle; metrik bloğunda Güven/Risk hariç gizle
+    // 3) sc-stats: fiyat bloğunda DEĞERLERİ 🔒 Premium Veri ile maskele (blok görünür kalır);
+    //    metrik bloğunda Güven/Risk hariç gizle
     card.querySelectorAll('.sc-stats').forEach(block => {
       const labels = Array.from(block.querySelectorAll('.sc-stat-lbl')).map(l => (l.textContent || '').trim());
       const isPrices = labels.some(l => PRICE_LABELS.test(l));
-      if (isPrices) { _hide(block); return; }
+      if (isPrices) {
+        block.querySelectorAll('.sc-stat').forEach(st => {
+          const val = st.querySelector('.sc-stat-val');
+          if (val && !val.hasAttribute('data-vd-vorig')) {
+            val.setAttribute('data-vd-vorig', val.innerHTML);
+            val.innerHTML = '<span class="vd-lock-val">🔒 Premium</span>';
+          }
+        });
+        return;
+      }
       block.querySelectorAll('.sc-stat').forEach(st => {
         const lbl = (st.querySelector('.sc-stat-lbl')?.textContent || '').trim();
         if (!KEEP_LABELS.test(lbl)) _hide(st);
       });
     });
 
-    // 4) Kilit notu (bir kez)
+    // 4) Kilit notu (bir kez) + kartı tıklanabilir yap → Sales Funnel
     if (!card.querySelector('.' + NOTE_CLASS)) {
       const note = document.createElement('div');
       note.className = NOTE_CLASS;
-      note.textContent = NOTE_TEXT;
-      note.style.cssText = 'margin:10px 0 4px;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:600;text-align:center;color:#00D1FF;background:rgba(0,209,255,.07);border:1px solid rgba(0,209,255,.28)';
+      note.innerHTML = '🔒 Bu analizin detayları Premium üyeler için açıktır. <span class="vd-locknote-cta">Görmek için dokun →</span>';
+      note.style.cssText = 'margin:10px 0 4px;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:600;text-align:center;color:#00D1FF;background:rgba(0,209,255,.07);border:1px solid rgba(0,209,255,.28);cursor:pointer';
       const ai = card.querySelector('.sc-ai-comment');
       if (ai) card.insertBefore(note, ai); else card.appendChild(note);
+    }
+    if (!card.hasAttribute('data-vd-clickbound')) {
+      card.setAttribute('data-vd-clickbound', '1');
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', _onLockedCardClick);
     }
 
     card.setAttribute(LOCK_ATTR, '1');
   }
 
   function _unlockCard(card) {
-    if (card.getAttribute(LOCK_ATTR) !== '1') return;
     const symEl = card.querySelector('.sc-sym');
     if (symEl && symEl.hasAttribute(SYM_ATTR)) { symEl.textContent = symEl.getAttribute(SYM_ATTR); symEl.removeAttribute(SYM_ATTR); }
+    // fiyat değerlerini geri yükle
+    card.querySelectorAll('.sc-stat-val[data-vd-vorig]').forEach(v => { v.innerHTML = v.getAttribute('data-vd-vorig'); v.removeAttribute('data-vd-vorig'); });
     _unhideAll(card);
-    const note = card.querySelector('.' + NOTE_CLASS); if (note) note.remove();
+    card.querySelectorAll('.' + NOTE_CLASS).forEach(n => n.remove());
+    if (card.hasAttribute('data-vd-clickbound')) { card.removeEventListener('click', _onLockedCardClick); card.removeAttribute('data-vd-clickbound'); card.style.cursor = ''; }
     card.removeAttribute(LOCK_ATTR);
   }
 
+  function _onLockedCardClick(e) {
+    // tıklanınca Premium Sales Funnel aç (eski mor popup YOK)
+    e.preventDefault(); e.stopPropagation();
+    if (typeof window.openPremiumLogin === 'function') window.openPremiumLogin();
+    else if (window.VDPremiumModal && window.VDPremiumModal.show) window.VDPremiumModal.show();
+    else location.href = 'index.html#premium';
+  }
+
+  function _teaserActive() {
+    try { return !!(window.VDTeaser && window.VDTeaser.isActive && window.VDTeaser.isActive()); } catch (e) { return false; }
+  }
+
+  let _teaserTimer = null;
   function _scan() {
-    const premium = _isPremium();
-    document.querySelectorAll(CARD_SEL).forEach(card => { premium ? _unlockCard(card) : _lockCard(card); });
+    // Premium/admin → tam aç. Aktif teaser (Telegram, ilk 5 dk) → daha fazla detay göster (aç).
+    const open = _isPremium() || _teaserActive();
+    document.querySelectorAll(CARD_SEL).forEach(card => { open ? _unlockCard(card) : _lockCard(card); });
+    // teaser süresi bitince otomatik Free moduna düş
+    if (_teaserActive() && !_teaserTimer) {
+      let ms = 5000; try { ms = Math.min(Math.max(window.VDTeaser.remainingMs() + 500, 1000), 6 * 60000); } catch (e) {}
+      _teaserTimer = setTimeout(() => { _teaserTimer = null; _scan(); }, ms);
+    }
   }
   function _schedule() { if (_raf) return; _raf = true; requestAnimationFrame(() => { _raf = false; _scan(); }); }
 
