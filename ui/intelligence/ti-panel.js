@@ -192,7 +192,31 @@ window.TIPanel = (() => {
       if (meta) meta.innerHTML = '<span class="ti-partial-badge">PARTIAL</span> ' + _relativeTime(_lastCommitTs);
     }
 
+    // ── RADAR HERO (yeni terminal UI) — veri snap'ten OKUNUR, motor/mount DEĞİŞMEZ ──
+    const _bs = snap.bestSetup || {};
+    const _ss = snap.scanStats || {};
+    const _scanned = _ss.scored;
+    const _total   = _ss.total != null ? _ss.total : _ss.scored;
+    const _eng     = _ss.engines;
+    const _next    = _ss.nextScan;
+    const _pctBar  = (_scanned != null && _total) ? Math.round(_scanned / _total * 100) : 100;
+    const _statline = [
+      _scanned != null ? `TARANAN <b>${_scanned}${_total ? '/' + _total : ''}</b>` : '',
+      _eng != null     ? `MOTOR <b>${_eng}</b>` : '',
+      _next            ? `SONRAKİ <b>${_esc(_next)}</b>` : ''
+    ].filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+    const _radarHero = window.VDRadarCore ? `
+      <div class="tm-radarwrap">
+        <div class="tm-scanlabel"><span class="dot"></span> TARAMA AKTİF${_total ? ` · ${_total} COIN` : ''}</div>
+        <div class="tm-radar">${window.VDRadarCore.svg({
+          confluence: (_bs.score != null ? +_bs.score : (_bs.maturity && _bs.maturity.percent)),
+          symbol: _bs.sym || '—', direction: _bs.dir || '' })}</div>
+        <div class="tm-scanbar"><i style="width:${_pctBar}%"></i></div>
+        ${_statline ? `<div class="tm-scanfoot">${_statline}</div>` : ''}
+      </div>` : '';
+
     grid.innerHTML = `
+      ${_radarHero}
       ${regimeRow}
       ${majorsRow}
       ${pressureRow}
