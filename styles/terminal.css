@@ -224,3 +224,17 @@
 .ti-cat-setup, .ti-regime-badge.purple { color: var(--tm-accent) !important; background: rgba(0,229,255,.1) !important; }
 .ti-empty, .ti-empty-title { color: var(--tm-muted) !important; }
 .ti-source-dot { font-family: var(--tm-mono) !important; }
+
+/* ============================================================
+   RADAR HERO — ortalı düzen (Image 2) + boyut sabitleme
+   (en sonda → önceki .tm-radar/.tm-intel kurallarını ezer)
+   ============================================================ */
+.tm-radar svg { width: 300px !important; height: 300px !important; max-width: 100%; display: block; margin: 0 auto; overflow: visible; }
+.tm-radarwrap { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 10px 0 20px; }
+.tm-scanlabel { display: flex; align-items: center; gap: 8px; font: 600 12px/1 var(--tm-mono); letter-spacing: 2px; color: var(--tm-ok); text-transform: uppercase; }
+.tm-scanlabel .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tm-ok); box-shadow: 0 0 8px var(--tm-ok); }
+.tm-scanbar { width: min(72%, 560px); height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.tm-scanbar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--tm-accent), var(--tm-accent2)); box-shadow: 0 0 8px rgba(0,229,255,0.5); }
+.tm-scanfoot { font: 600 12px/1 var(--tm-mono); letter-spacing: 1.5px; color: var(--tm-muted); }
+.tm-scanfoot b { color: var(--tm-accent); }
+@media (max-width: 720px) { .tm-radar svg { width: 240px !important; height: 240px !important; } .tm-scanbar { width: 86%; } }
