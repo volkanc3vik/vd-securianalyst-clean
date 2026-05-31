@@ -83,3 +83,20 @@ Track Record / Timeline / mobil için de ayrıca önizleme çıkarırım.
 
 Tema tek satırla kapatılabilir: ilgili sayfadaki `theme-neural.css` ve
 `neural-scanline.js` satırlarını silmek yeterli — motor/veri etkilenmez.
+
+---
+
+## 9) v62 yama — gerçek kart sınıfları (PİYASA DURUMU düzeltmesi)
+
+İlk turda tema yalnızca sarmalayıcı sınıflara (`.market-overview` vb.) uygulanmıştı;
+kartların asıl sınıfı **`.mkt-card`** ve renkleri `index.html` gömülü `<style>` bloğunda
++ inline `style=""` ile tanımlıydı, bu yüzden kartlar değişmemiş görünüyordu. Düzeltildi:
+
+- `.mkt-card` artık cam + neon cyan kenar + kayan ışık (scanline selektörüne eklendi).
+- **ETH moru kaldırıldı:** `.mkt-card.eth::before`, `.mkt-card.eth .mkt-card-glow`,
+  `.mkt-icon.eth` ve `#ethBadge` (`#627eea / #a78bfa`) → electric blue (#2D7FF9 / cyan).
+- `.mkt-price/.mkt-chg/.mkt-stat-val` yön renk kodu (yeşil/kırmızı), mono rakamlar.
+- `.mkt-signal.bull/bear/neut` → yeşil/kırmızı/amber.
+- `.btcd-fill`, `.exec-mode-btn.active`, whale/intelligence kalan morları → cyan.
+
+Önizleme: `v62_neural_market.png`
