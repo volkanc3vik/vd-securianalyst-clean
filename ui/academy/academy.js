@@ -155,9 +155,10 @@
   }
 
   function _gotoChart(lessonId, sym) {
-    try { sessionStorage.setItem('vd_academy_chart_intent', JSON.stringify({ lesson: lessonId, sym, ts: Date.now() })); } catch (e) {}
-    const qs = (sym ? ('?lesson=' + encodeURIComponent(lessonId) + '&sym=' + encodeURIComponent(sym)) : '#chart');
-    location.href = 'index.html' + qs;
+    // örnek coin yoksa makul bir varsayılan ile yine grafiğe gidip katmanı aç
+    const finalSym = (sym && sym.replace(/USDT$/,'') ? sym : 'BTCUSDT');
+    try { sessionStorage.setItem('vd_academy_chart_intent', JSON.stringify({ lesson: lessonId, sym: finalSym, ts: Date.now() })); } catch (e) {}
+    location.href = 'index.html?lesson=' + encodeURIComponent(lessonId) + '&sym=' + encodeURIComponent(finalSym);
   }
 
   function _wire() {
@@ -185,7 +186,7 @@
         // Şimdilik ders+coin parametresiyle dashboard'a yönlendirme köprüsü (zararsız).
         const id = cb.dataset.id;
         const card = cb.closest('.ac-card');
-        const firstCoin = card?.querySelector('.ac-coin')?.textContent?.trim();
+        const firstCoin = card?.querySelector('.ac-coin:not(.ac-coin-more)')?.textContent?.trim();
         _gotoChart(id, firstCoin ? firstCoin + 'USDT' : '');
       }
     });
