@@ -74,7 +74,7 @@
           <div class="ac-sec-lbl">🕒 Son Timeline Olayları ${tags ? `<span class="ac-evtags-inline">${tags}</span>` : ''}</div>
           <div class="ac-timeline" data-timeline>…</div>
         </div>
-        <button class="ac-chart-btn" type="button" data-ac-chart data-id="${esc(les.id)}">📈 Grafikte Göster <span class="ac-soon">yakında</span></button>
+        <button class="ac-chart-btn" type="button" data-ac-chart data-id="${esc(les.id)}">📈 Grafikte Göster →</button>
       </article>`;
   }
 
@@ -103,7 +103,7 @@
     const tlBox = cardEl.querySelector('[data-timeline]');
     if (tlBox) {
       if (ex.events.length) {
-        tlBox.innerHTML = ex.events.map(e => `<div class="ac-tl-row"><span class="ac-tl-coin">${esc(e.sym)}</span><span class="ac-tl-msg">${esc(e.msg||'')}</span><span class="ac-tl-time">${_rel(e.ts)}</span></div>`).join('');
+        tlBox.innerHTML = ex.events.map(e => `<div class="ac-tl-row" data-ac-tl data-coin="${esc(e.sym)}" data-id="${esc(id)}" title="Grafikte Göster"><span class="ac-tl-coin">${esc(e.sym)}</span><span class="ac-tl-msg">${esc(e.msg||'')}</span><span class="ac-tl-time">${_rel(e.ts)}</span><span class="ac-tl-go">📈</span></div>`).join('');
       } else {
         tlBox.innerHTML = '<span class="ac-ex-empty">İlgili Timeline olayı henüz yok.</span>';
       }
@@ -154,6 +154,12 @@
     wrap.innerHTML = btn('all','Tümü','◈') + D().categories.map(c => btn(c.id, c.label, c.icon)).join('');
   }
 
+  function _gotoChart(lessonId, sym) {
+    try { sessionStorage.setItem('vd_academy_chart_intent', JSON.stringify({ lesson: lessonId, sym, ts: Date.now() })); } catch (e) {}
+    const qs = (sym ? ('?lesson=' + encodeURIComponent(lessonId) + '&sym=' + encodeURIComponent(sym)) : '#chart');
+    location.href = 'index.html' + qs;
+  }
+
   function _wire() {
     document.getElementById('acFilters')?.addEventListener('click', e => {
       const b = e.target.closest('.ac-filter'); if (!b) return;
@@ -169,7 +175,10 @@
       // Timeline olay etiketine tıkla → kartın timeline bölümünü vurgula
       const tag = e.target.closest('[data-evtag]');
       if (tag) { const sec = tag.closest('.ac-card')?.querySelector('.ac-tl-sec'); if (sec) { sec.classList.add('ac-flash'); sec.scrollIntoView({behavior:'smooth',block:'nearest'}); setTimeout(()=>sec.classList.remove('ac-flash'),1200); } return; }
-      // Phase 3 stub: Grafikte Göster
+      // Timeline olayı satırı → o coin ile grafik köprüsü
+      const row = e.target.closest('[data-ac-tl]');
+      if (row) { _gotoChart(row.dataset.id, (row.dataset.coin||'') + 'USDT'); return; }
+      // Grafikte Göster
       const cb = e.target.closest('[data-ac-chart]');
       if (cb) {
         // Phase 3'te AI Grafik Analizi açılıp formasyon highlight edilecek.
@@ -177,9 +186,7 @@
         const id = cb.dataset.id;
         const card = cb.closest('.ac-card');
         const firstCoin = card?.querySelector('.ac-coin')?.textContent?.trim();
-        const sym = firstCoin ? firstCoin + 'USDT' : '';
-        try { sessionStorage.setItem('vd_academy_chart_intent', JSON.stringify({ lesson:id, sym, ts:Date.now() })); } catch (e) {}
-        location.href = 'index.html' + (sym ? ('?lesson=' + encodeURIComponent(id) + '&sym=' + encodeURIComponent(sym)) : '#chart');
+        _gotoChart(id, firstCoin ? firstCoin + 'USDT' : '');
       }
     });
     window.addEventListener('vd:access:changed', () => { _renderGrid(); });
