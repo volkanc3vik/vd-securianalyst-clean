@@ -229,3 +229,72 @@ a, .link, .accent { color: var(--nx-cy); }
 *::-webkit-scrollbar-track { background: var(--nx-bg2); }
 *::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.25); border-radius: 6px; }
 *::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,0.45); }
+
+/* ============================================================
+   GERCEK PANEL/KART SINIFLARI  (v62 düzeltme)
+   index.html gömülü stil + marka renkleri burada eziliyor.
+   ============================================================ */
+
+/* --- Market overview kartlari (.mkt-card) --- */
+.mkt-card,
+.glass-card, .opp, .ece-panel, .smc-panel, .ai-panel,
+.ti-panel, .ti-best, .ti-card {
+  background: var(--nx-glass) !important;
+  border: 1px solid var(--nx-gb) !important;
+  border-radius: 8px !important;
+  position: relative;
+  overflow: hidden;
+}
+.mkt-card:hover { border-color: var(--nx-cy) !important; box-shadow: 0 8px 30px rgba(0,229,255,0.10) !important; }
+
+/* üst aksan cizgisi: mor -> cyan/mavi (marka tonu korunur, mor gider) */
+.mkt-card.btc::before  { background: linear-gradient(90deg, var(--nx-am), #ffd45e) !important; }
+.mkt-card.eth::before  { background: linear-gradient(90deg, var(--nx-bl), var(--nx-cy)) !important; }
+.mkt-card.btcd::before { background: linear-gradient(90deg, var(--nx-cy), var(--nx-bl)) !important; }
+
+/* köşe glow blob: ETH morunu mavi yap */
+.mkt-card.btc  .mkt-card-glow { background: var(--nx-am) !important; }
+.mkt-card.eth  .mkt-card-glow { background: var(--nx-bl) !important; }
+.mkt-card.btcd .mkt-card-glow { background: var(--nx-cy) !important; }
+
+/* ikon çipleri: ETH morunu mavi yap */
+.mkt-icon.btc  { background: linear-gradient(135deg, var(--nx-am), #ffd45e) !important; }
+.mkt-icon.eth  { background: linear-gradient(135deg, var(--nx-bl), var(--nx-cy)) !important; }
+.mkt-icon.btcd { background: linear-gradient(135deg, var(--nx-cy), var(--nx-bl)) !important; }
+
+/* ETH badge inline #627eea -> mavi */
+#ethBadge { background: rgba(45,127,249,0.12) !important; border: 1px solid rgba(45,127,249,0.35) !important; color: var(--nx-bl) !important; }
+#btcBadge { background: rgba(255,181,49,0.10) !important; border: 1px solid rgba(255,181,49,0.30) !important; color: var(--nx-am) !important; }
+
+/* fiyat & değişim renk kodu */
+.mkt-name { color: var(--nx-tx) !important; }
+.mkt-sub  { color: var(--nx-t3) !important; }
+.mkt-price       { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-cy) !important; }
+.mkt-price.up    { color: var(--nx-gn) !important; }
+.mkt-price.dn    { color: var(--nx-rd) !important; }
+.mkt-chg.up      { color: var(--nx-gn) !important; }
+.mkt-chg.dn      { color: var(--nx-rd) !important; }
+
+/* stat kutuları */
+.mkt-stat       { background: rgba(0,229,255,0.045) !important; border: 1px solid var(--nx-gb-soft) !important; border-radius: 4px !important; }
+.mkt-stat-lbl   { color: var(--nx-t3) !important; }
+.mkt-stat-val   { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--nx-tx) !important; }
+.mkt-stat-val.up{ color: var(--nx-gn) !important; }
+.mkt-stat-val.dn{ color: var(--nx-rd) !important; }
+
+/* sinyal etiketi */
+.mkt-signal.bull { background: rgba(25,240,160,0.06) !important; border: 1px solid rgba(25,240,160,0.30) !important; color: var(--nx-gn) !important; }
+.mkt-signal.bear { background: rgba(255,77,109,0.06) !important; border: 1px solid rgba(255,77,109,0.30) !important; color: var(--nx-rd) !important; }
+.mkt-signal.neut { background: rgba(255,181,49,0.06) !important; border: 1px solid rgba(255,181,49,0.30) !important; color: var(--nx-am) !important; }
+
+/* dominance metre */
+.btcd-track { background: rgba(255,255,255,0.07) !important; }
+.btcd-fill  { background: linear-gradient(90deg, var(--nx-cy), var(--nx-bl)) !important; box-shadow: 0 0 8px rgba(0,229,255,0.5); }
+
+/* exec mode bar (COMPACT/PRO/QUANT) aktif -> cyan */
+.exec-mode-btn.active { background: rgba(0,229,255,0.15) !important; border-color: var(--nx-cy) !important; color: var(--nx-cy) !important; }
+
+/* whale / intelligence kalan mor temizligi */
+.whale-alert-txt b, .ti-cat-setup, .ti-regime-badge.purple { color: var(--nx-cy) !important; }
+.ti-regime-badge.purple { background: rgba(0,229,255,0.10) !important; border-color: rgba(0,229,255,0.4) !important; }
+.tm-sniper { background: rgba(0,229,255,0.12) !important; color: var(--nx-cy) !important; border-color: rgba(0,229,255,0.3) !important; }
