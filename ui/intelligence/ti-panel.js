@@ -195,23 +195,24 @@ window.TIPanel = (() => {
     // ── RADAR HERO (yeni terminal UI) — veri snap'ten OKUNUR, motor/mount DEĞİŞMEZ ──
     const _bs = snap.bestSetup || {};
     const _ss = snap.scanStats || {};
-    const _dirShort = _bs.dir === 'SHORT';
+    const _scanned = _ss.scored;
+    const _total   = _ss.total != null ? _ss.total : _ss.scored;
+    const _eng     = _ss.engines;
+    const _next    = _ss.nextScan;
+    const _pctBar  = (_scanned != null && _total) ? Math.round(_scanned / _total * 100) : 100;
+    const _statline = [
+      _scanned != null ? `TARANAN <b>${_scanned}${_total ? '/' + _total : ''}</b>` : '',
+      _eng != null     ? `MOTOR <b>${_eng}</b>` : '',
+      _next            ? `SONRAKİ <b>${_esc(_next)}</b>` : ''
+    ].filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
     const _radarHero = window.VDRadarCore ? `
-      <div class="tm-intel" style="margin-bottom:18px">
+      <div class="tm-radarwrap">
+        <div class="tm-scanlabel"><span class="dot"></span> TARAMA AKTİF${_total ? ` · ${_total} COIN` : ''}</div>
         <div class="tm-radar">${window.VDRadarCore.svg({
           confluence: (_bs.score != null ? +_bs.score : (_bs.maturity && _bs.maturity.percent)),
-          symbol: _bs.sym || '—', direction: _bs.dir || '',
-          scanned: _ss.scored, total: _ss.total, engines: _ss.engines })}</div>
-        <div class="tm-intel-read">
-          <div class="row"><span class="tm-badge ok">● TARAMA AKTİF</span></div>
-          <div class="row" style="margin-top:8px"><span class="tm-k">LİDER SETUP</span></div>
-          <div class="row"><span class="tm-intel-lead">${_esc(_bs.sym || '—')}</span> <span class="tm-num ${_dirShort ? 'tm-dn' : 'tm-up'}" style="font-weight:700;font-size:15px">${_dirShort ? '▼ SHORT' : '▲ LONG'}</span></div>
-          <div class="tm-readline">
-            ${_ss.scored != null ? `<div class="cell"><span class="tm-k">TARANAN</span><span class="tm-v tm-ac">${_ss.scored}</span></div>` : ''}
-            ${_ss.engines != null ? `<div class="cell"><span class="tm-k">MOTOR</span><span class="tm-v tm-ac">${_ss.engines}</span></div>` : ''}
-            ${_bs.score != null ? `<div class="cell"><span class="tm-k">SKOR</span><span class="tm-v tm-ac">${_bs.score}</span></div>` : ''}
-          </div>
-        </div>
+          symbol: _bs.sym || '—', direction: _bs.dir || '' })}</div>
+        <div class="tm-scanbar"><i style="width:${_pctBar}%"></i></div>
+        ${_statline ? `<div class="tm-scanfoot">${_statline}</div>` : ''}
       </div>` : '';
 
     grid.innerHTML = `
@@ -275,4 +276,3 @@ window.TIPanel = (() => {
 
   return { mount, unmount, render: _render };
 })();
- 
