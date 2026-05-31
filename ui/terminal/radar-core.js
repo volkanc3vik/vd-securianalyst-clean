@@ -137,3 +137,4 @@
 
   w.VDRadarCore = RadarCore;
 })(window);
+ 
