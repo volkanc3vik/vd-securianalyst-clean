@@ -192,7 +192,30 @@ window.TIPanel = (() => {
       if (meta) meta.innerHTML = '<span class="ti-partial-badge">PARTIAL</span> ' + _relativeTime(_lastCommitTs);
     }
 
+    // ── RADAR HERO (yeni terminal UI) — veri snap'ten OKUNUR, motor/mount DEĞİŞMEZ ──
+    const _bs = snap.bestSetup || {};
+    const _ss = snap.scanStats || {};
+    const _dirShort = _bs.dir === 'SHORT';
+    const _radarHero = window.VDRadarCore ? `
+      <div class="tm-intel" style="margin-bottom:18px">
+        <div class="tm-radar">${window.VDRadarCore.svg({
+          confluence: (_bs.score != null ? +_bs.score : (_bs.maturity && _bs.maturity.percent)),
+          symbol: _bs.sym || '—', direction: _bs.dir || '',
+          scanned: _ss.scored, total: _ss.total, engines: _ss.engines })}</div>
+        <div class="tm-intel-read">
+          <div class="row"><span class="tm-badge ok">● TARAMA AKTİF</span></div>
+          <div class="row" style="margin-top:8px"><span class="tm-k">LİDER SETUP</span></div>
+          <div class="row"><span class="tm-intel-lead">${_esc(_bs.sym || '—')}</span> <span class="tm-num ${_dirShort ? 'tm-dn' : 'tm-up'}" style="font-weight:700;font-size:15px">${_dirShort ? '▼ SHORT' : '▲ LONG'}</span></div>
+          <div class="tm-readline">
+            ${_ss.scored != null ? `<div class="cell"><span class="tm-k">TARANAN</span><span class="tm-v tm-ac">${_ss.scored}</span></div>` : ''}
+            ${_ss.engines != null ? `<div class="cell"><span class="tm-k">MOTOR</span><span class="tm-v tm-ac">${_ss.engines}</span></div>` : ''}
+            ${_bs.score != null ? `<div class="cell"><span class="tm-k">SKOR</span><span class="tm-v tm-ac">${_bs.score}</span></div>` : ''}
+          </div>
+        </div>
+      </div>` : '';
+
     grid.innerHTML = `
+      ${_radarHero}
       ${regimeRow}
       ${majorsRow}
       ${pressureRow}
