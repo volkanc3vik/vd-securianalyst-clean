@@ -133,6 +133,7 @@
       }
     } catch (e) {}
     if (!tiles.length) return;
+    tiles.push({ ic: '📡', v: 'Aktif', l: 'Outcome Tracking' });
     host.innerHTML = tiles.map(t => `<div class="vdf-stat"><div class="vdf-stat-v">${t.ic} ${esc(t.v)}</div><div class="vdf-stat-l">${esc(t.l)}</div></div>`).join('');
     host.hidden = false;
   }
