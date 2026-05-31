@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Market Timeline · VD SecuriAnalyst">
+  <meta name="robots" content="index,follow">
+  <title>Market Timeline · VD SecuriAnalyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared/nav/page-base.css">
+  <link rel="stylesheet" href="shared/nav/nav.css">
+  <link rel="stylesheet" href="styles/teaser.css">
+  <style>
+    /* ── Market Timeline (Phase 1) — cinematic, mor YOK ── */
+    .tl-wrap { max-width:760px; margin:0 auto; text-align:left; }
+    .tl-summary { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; margin:0 0 22px; font-size:12.5px; color:var(--v4-text-3); }
+    .tl-summary b { color:var(--v4-cyan); font-weight:800; }
+    /* Filtre çipleri */
+    .tl-chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:0 0 26px; }
+    .tl-chip {
+      font-family:inherit; font-size:12px; font-weight:600; color:var(--v4-text-2);
+      background:var(--v4-bg-panel); border:1px solid var(--v4-border); border-radius:999px;
+      padding:7px 13px; cursor:pointer; transition:border-color .15s ease, color .15s ease, background .15s ease;
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .tl-chip:hover { border-color:var(--v4-border-strong); color:var(--v4-text); }
+    .tl-chip.on { background:var(--v4-grad-cta); color:#02050D; border-color:transparent; }
+    .tl-chip.dim { opacity:.4; }
+    .tl-chip-n { font-size:10px; font-weight:800; opacity:.85; background:rgba(255,255,255,.08); border-radius:999px; padding:1px 6px; }
+    .tl-chip.on .tl-chip-n { background:rgba(2,5,13,.18); }
+    /* Zaman çizgisi */
+    .tl-line { position:relative; padding-left:0; }
+    .tl-card {
+      position:relative; display:grid; grid-template-columns:64px 1fr; gap:14px; align-items:start;
+      padding:0 0 18px 0;
+    }
+    .tl-card::before { /* dikey çizgi */
+      content:''; position:absolute; left:71px; top:22px; bottom:-4px; width:2px;
+      background:linear-gradient(180deg, var(--c), transparent); opacity:.35;
+    }
+    .tl-card:last-child::before { display:none; }
+    .tl-node {
+      position:absolute; left:66px; top:7px; width:12px; height:12px; border-radius:50%;
+      background:var(--c); box-shadow:0 0 0 4px color-mix(in srgb, var(--c) 22%, transparent);
+    }
+    .tl-when { text-align:right; padding-top:2px; }
+    .tl-time { display:block; font-size:14px; font-weight:800; color:var(--v4-text); font-variant-numeric:tabular-nums; }
+    .tl-date { font-size:10.5px; color:var(--v4-text-3); }
+    .tl-main {
+      background:var(--v4-bg-panel); border:1px solid var(--v4-border);
+      border-left:3px solid var(--c); border-radius:12px; padding:12px 14px;
+    }
+    .tl-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:7px; }
+    .tl-coin { font-size:13px; font-weight:800; color:var(--v4-text); letter-spacing:.3px; }
+    .tl-cat {
+      font-size:10.5px; font-weight:700; color:var(--c);
+      border:1px solid color-mix(in srgb, var(--c) 40%, transparent); border-radius:7px; padding:2px 8px;
+    }
+    .tl-conf { font-size:10px; font-weight:700; border-radius:7px; padding:2px 8px; }
+    .tl-conf-hi  { color:var(--v4-success); border:1px solid color-mix(in srgb, var(--v4-success) 35%, transparent); }
+    .tl-conf-mid { color:var(--v4-warn);    border:1px solid color-mix(in srgb, var(--v4-warn) 35%, transparent); }
+    .tl-conf-lo  { color:var(--v4-text-3);  border:1px solid var(--v4-border); }
+    .tl-rel { font-size:10.5px; color:var(--v4-text-3); margin-left:auto; }
+    /* Kategori ⓘ tooltip */
+    .tl-cat-wrap { position:relative; display:inline-flex; align-items:center; gap:5px; }
+    .tl-i {
+      font-family:inherit; font-size:10px; line-height:1; color:var(--v4-cyan);
+      background:rgba(0,209,255,0.08); border:1px solid var(--v4-border-hi); border-radius:50%;
+      width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0;
+    }
+    .tl-i:hover, .tl-i:focus-visible { background:rgba(0,209,255,0.18); outline:none; }
+    .tl-tip {
+      display:none; position:absolute; top:calc(100% + 7px); left:0; z-index:60;
+      width:max-content; max-width:260px; text-align:left;
+      background:#0a1422; color:var(--v4-text); border:1px solid var(--v4-border-strong);
+      border-radius:10px; padding:9px 11px; font-size:11px; line-height:1.5; font-weight:400;
+      text-transform:none; letter-spacing:normal; box-shadow:0 8px 26px rgba(0,0,0,0.5);
+    }
+    .tl-tip b { color:var(--v4-cyan); }
+    .tl-cat-wrap:hover .tl-tip, .tl-i:focus-visible + .tl-tip, .tl-cat-wrap.open .tl-tip { display:block; }
+    .tl-msg { font-size:13px; color:var(--v4-text); line-height:1.55; }
+    .tl-empty {
+      font-size:12.5px; color:var(--v4-text-3); border:1px dashed var(--v4-border);
+      border-radius:12px; padding:22px; text-align:center;
+    }
+    @media (max-width:600px){
+      .tl-card { grid-template-columns:50px 1fr; gap:10px; }
+      .tl-card::before { left:57px; }
+      .tl-node { left:52px; }
+      .tl-time { font-size:13px; }
+      .tl-rel { width:100%; margin-left:0; }
+      .tl-summary { gap:12px; }
+      .tl-tip { max-width:200px; left:auto; right:0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="vd-page-header">
+    <a href="index.html" class="vd-page-logo">◈ VD <b>SecuriAnalyst</b></a>
+  </header>
+
+  <main class="vd-ph-main">
+    <span class="vd-ph-badge">◈ Market Timeline</span>
+    <h1>Market Timeline</h1>
+    <p class="vd-ph-lead">Tüm coinler için piyasa olaylarının kronolojik akışı. Market Event Center ile <b>AYNI</b> veri kaynağını kullanır: Dashboard son olayları, Timeline ise tüm akışı 8 kategoride gösterir.</p>
+
+    <!-- Gerçek Timeline buraya render edilir (features/timeline/timeline-render.js) -->
+    <div id="tlRoot" class="tl-wrap"></div>
+
+    <div style="margin-top:30px"><a href="index.html" class="vd-ph-back">← Dashboard'a Dön</a></div>
+  </main>
+
+  <footer class="vd-ph-footer">
+    <div>⚠ Bu platform yatırım tavsiyesi vermez. Tüm içerikler bilgilendirme amaçlıdır.</div>
+    <div style="margin-top:8px">© 2026 VD SecuriAnalyst — AI Kripto Analiz Platformu</div>
+  </footer>
+
+  <!-- Event Center verisini okuyan paylaşılan katman (read-only) -->
+  <script src="features/timeline/event-store.js"></script>
+  <script src="modules/access-levels.js"></script>
+  <script src="modules/teaser-access.js"></script>
+  <!-- Market Timeline render (8 kategori türetme + kronolojik akış) -->
+  <script src="features/timeline/timeline-render.js"></script>
+  <script src="shared/nav/nav.js"></script>
+</body>
+</html>
