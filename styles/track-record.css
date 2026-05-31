@@ -1,0 +1,81 @@
+/* ════════════════════════════════════════════════════════════════
+   AI TRACK RECORD CENTER — dark navy + cyan · glassmorphism · mobil · mor YOK
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  --tr-cyan:#00D1FF; --tr-blue:#007BFF; --tr-success:#00FFA3; --tr-warn:#FFC247; --tr-bad:#FF3B6B;
+  --tr-text:#EAF6FF; --tr-text2:#7FA9C9; --tr-text3:#4a6a85;
+  --tr-bd:rgba(127,169,201,.14); --tr-bd-hi:rgba(0,209,255,.28);
+}
+*{box-sizing:border-box}
+body.tr-body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--tr-text);min-height:100vh;overflow-x:hidden;
+  background:radial-gradient(1200px 600px at 50% -10%,rgba(0,123,255,.16),transparent 60%),radial-gradient(900px 500px at 100% 110%,rgba(0,209,255,.08),transparent 55%),linear-gradient(180deg,#030914,#02060e);}
+.tr-wrap{width:100%;max-width:980px;margin:0 auto;padding:18px 18px 60px}
+
+.tr-hero{text-align:center;padding:30px 0 16px}
+.tr-badge{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--tr-cyan);background:rgba(0,209,255,.08);border:1px solid rgba(0,209,255,.25);border-radius:999px;padding:5px 14px;margin-bottom:14px}
+.tr-hero h1{font-size:30px;font-weight:900;margin:0 0 10px;background:linear-gradient(180deg,#EAF6FF,#9FD9FF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tr-hero p{font-size:13.5px;line-height:1.6;color:var(--tr-text2);max-width:600px;margin:0 auto}
+.tr-access{display:inline-block;margin-top:12px;font-size:11px;font-weight:700;padding:5px 13px;border-radius:999px;border:1px solid var(--tr-bd-hi);color:var(--tr-cyan);background:rgba(0,209,255,.06)}
+.tr-access-free{color:var(--tr-text2);border-color:var(--tr-bd)}
+
+/* tarih filtreleri */
+.tr-filters{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0 20px}
+.tr-filter{font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--tr-text2);background:rgba(10,22,38,.5);border:1px solid var(--tr-bd);border-radius:999px;padding:8px 16px;transition:all .15s}
+.tr-filter:hover{border-color:var(--tr-bd-hi);color:var(--tr-text)}
+.tr-filter.active{color:#02050D;background:linear-gradient(135deg,var(--tr-cyan),var(--tr-blue));border-color:transparent}
+
+/* gauge — genel başarı */
+.tr-gauge{text-align:center;padding:26px 18px;border-radius:18px;margin-bottom:16px;
+  background:linear-gradient(180deg,rgba(0,209,255,.1),rgba(0,123,255,.04));border:1px solid var(--tr-bd-hi)}
+.tr-gauge-v{font-size:54px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--tr-cyan),var(--tr-success));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tr-gauge-l{font-size:13px;font-weight:700;color:var(--tr-text);margin-top:8px}
+.tr-gauge-sub{font-size:11px;color:var(--tr-text3);margin-top:4px}
+
+/* scorecard */
+.tr-score{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.tr-sc{text-align:center;padding:14px 6px;border-radius:12px;background:rgba(10,20,34,.5);border:1px solid var(--tr-bd)}
+.tr-sc-v{font-size:22px;font-weight:900;color:var(--tr-text)}
+.tr-sc-l{font-size:10px;color:var(--tr-text2);margin-top:3px;text-transform:uppercase;letter-spacing:.03em}
+.tr-sc.ok .tr-sc-v{color:var(--tr-success)} .tr-sc.warn .tr-sc-v{color:var(--tr-warn)} .tr-sc.bad .tr-sc-v{color:var(--tr-bad)}
+.tr-sc-total{background:rgba(0,209,255,.06);border-color:var(--tr-bd-hi)} .tr-sc-total .tr-sc-v{color:var(--tr-cyan)}
+
+.tr-sec-ttl{font-size:13px;font-weight:800;color:var(--tr-cyan);margin:18px 0 11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tr-sec-sub{font-size:10px;font-weight:600;color:var(--tr-text3)}
+
+/* en başarılı */
+.tr-best{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tr-kv{padding:14px;border-radius:12px;background:rgba(10,20,34,.5);border:1px solid var(--tr-bd)}
+.tr-kv-l{font-size:11px;color:var(--tr-text2);margin-bottom:5px}
+.tr-kv-v{font-size:16px;font-weight:800;color:var(--tr-text)}
+.tr-kv-s{font-size:10px;color:var(--tr-text3);margin-top:3px}
+
+/* şeffaflık — son analizler */
+.tr-trans-note{font-size:11.5px;color:var(--tr-text2);background:rgba(255,194,71,.06);border:1px solid rgba(255,194,71,.25);border-radius:10px;padding:9px 12px;margin-bottom:10px}
+.tr-trans-note b{color:var(--tr-warn)}
+.tr-recent{display:flex;flex-direction:column;gap:7px}
+.tr-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(10,20,34,.42);border:1px solid var(--tr-bd);font-size:12px}
+.tr-row-coin{font-weight:800;color:var(--tr-cyan);flex:none;min-width:54px}
+.tr-row-tf{font-size:10px;color:var(--tr-text3);flex:none}
+.tr-row-sum{color:var(--tr-text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-st{flex:none;font-size:10px;font-weight:800;padding:3px 9px;border-radius:7px}
+.tr-st-ok{color:var(--tr-success);background:rgba(0,255,163,.1);border:1px solid rgba(0,255,163,.3)}
+.tr-st-warn{color:var(--tr-warn);background:rgba(255,194,71,.1);border:1px solid rgba(255,194,71,.3)}
+.tr-st-bad{color:var(--tr-bad);background:rgba(255,59,107,.1);border:1px solid rgba(255,59,107,.3)}
+
+/* kilit (free) */
+.tr-lock{margin-top:8px;padding:22px;border-radius:14px;text-align:center;background:rgba(0,209,255,.05);border:1px dashed rgba(0,209,255,.3)}
+.tr-lock-ic{font-size:26px;margin-bottom:8px}
+.tr-lock-tx{font-size:12.5px;line-height:1.6;color:var(--tr-text2);max-width:520px;margin:0 auto 14px}
+.tr-lock-tx b{color:var(--tr-cyan)}
+.tr-lock-btn{font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;color:#02050D;background:linear-gradient(135deg,var(--tr-cyan),var(--tr-blue));border:none;border-radius:11px;padding:12px 22px}
+.tr-lock-btn:hover{filter:brightness(1.08)}
+
+.tr-empty{text-align:center;color:var(--tr-text3);font-size:13px;padding:40px 0}
+.tr-footer{margin-top:36px;text-align:center;font-size:11px;color:var(--tr-text3);line-height:1.7}
+.tr-footer a{color:var(--tr-cyan);text-decoration:none}
+
+@media (max-width:560px){
+  .tr-score{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tr-best{grid-template-columns:minmax(0,1fr)}
+  .tr-hero h1{font-size:24px} .tr-gauge-v{font-size:44px}
+}
