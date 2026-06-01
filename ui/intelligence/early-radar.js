@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// EARLY OPPORTUNITY RADAR  (Phase / build 86)
+// EARLY OPPORTUNITY RADAR  (Phase / build 89 — Elite kilit kartı)
 // 9/9 setup ÖNCESİ kademeli erken-uyarı katmanı: WATCH → ARMED → CONFIRMED.
 //
 // SALT-OKUNUR: yalnız window.VD_STATE.scanResults okunur. Scanner çekirdeği,
@@ -286,7 +286,34 @@
       </table></div>`;
   }
 
-  // ── Elite kapısı: radar yalnız Elite (veya admin) için görünür ──
+  // ── Elite olmayanlar için: panel kaybolmaz, kilitli görünür (premium.html ELITE GATE stili) ──
+  function renderLocked() {
+    const mount = document.getElementById('earlyRadar');
+    if (!mount) return;
+    mount.style.display = '';
+    mount.innerHTML = `
+      <div style="position:relative;border:1px solid rgba(157,125,250,.45);background:linear-gradient(180deg,rgba(157,125,250,.09),rgba(157,125,250,.02));border-radius:16px;padding:22px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:700;color:#e6edf6">⚡ Early Opportunity Radar</span>
+          <span style="font-size:11px;color:#c9b6ff;border:1px solid rgba(157,125,250,.5);border-radius:20px;padding:2px 9px">🔒 ELITE</span>
+        </div>
+        <div style="color:#cdd6e4;font-size:13.5px;line-height:1.6;margin:0 0 14px">
+          Erken Fırsat Radarı, hacim henüz girmeden yapı olgunlaşırken coinleri
+          <b style="color:#c9b6ff">İzleme → Hazır → Teyitli</b> aşamalarında gösterir. Bu katman <b style="color:#c9b6ff">Elite</b> üyelere özeldir.
+        </div>
+        <ul style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none">
+          <li style="font-size:12px;color:#b9a7e8;background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);border-radius:20px;padding:5px 12px">Yapı Olgunluğu (Readiness)</li>
+          <li style="font-size:12px;color:#b9a7e8;background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);border-radius:20px;padding:5px 12px">Squeeze · Sıkışma · Hacim Uyanışı</li>
+          <li style="font-size:12px;color:#b9a7e8;background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);border-radius:20px;padding:5px 12px">Aşama Geçiş Takibi</li>
+        </ul>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#c9b6ff;border:1px solid rgba(157,125,250,.5);background:transparent">Elite Hakkında</a>
+          <a href="https://t.me/volkanc3vik?text=Merhaba%2C%20Elite%20Pass%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." target="_blank" rel="noopener" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#04101f;background:linear-gradient(135deg,#b39dfa,#3b9eff)">Elite Pass Satın Al</a>
+        </div>
+      </div>`;
+  }
+
+  // ── Elite kapısı: radar yalnız Elite (veya admin) için açılır ──
   function isElite() {
     try { return !!(window.VDAccess && typeof window.VDAccess.isElite === 'function' && window.VDAccess.isElite()); }
     catch (e) { return false; }
@@ -296,7 +323,7 @@
   function run() {
     const mount = document.getElementById('earlyRadar');
     if (!mount) return;
-    if (!isElite()) { mount.style.display = 'none'; return; }  // free/premium → gizli
+    if (!isElite()) { renderLocked(); return; }  // free/premium → kilitli kart (kaybolmaz)
     mount.style.display = '';
     const results = (window.VD_STATE && window.VD_STATE.scanResults) || window._lastScanResults || [];
     if (!Array.isArray(results) || !results.length) return;
