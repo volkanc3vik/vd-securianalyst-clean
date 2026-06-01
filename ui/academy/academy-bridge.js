@@ -84,5 +84,48 @@
     return { total: reviewed.length, validated, partial, rejected, rate };
   }
 
-  window.VDAcademyBridge = { examplesFor, loadArchive, outcomeFor, _eventsForLesson };
+  // ── PHASE 10: Enrichment başarı oranları (archive-stats) → ders kartı ──
+  // SALT OKUMA. /api/archive-stats çıktısındaki learning.* kırılımlarını derse bağlar.
+  const STAT_MAP = {
+    rsi:                { src: 'byStructure', keys: ['RSI Expansion', 'Aşırı Satım Tepkisi'] },
+    momentum:           { src: 'byStructure', keys: ['Trend + Momentum'] },
+    trend:              { src: 'byStructure', keys: ['Trend + Momentum'] },
+    funding:            { src: 'byFunding' },
+    atr:                { src: 'byVolatility' },
+    'long-short-ratio': { src: 'byLongShort' },
+    bollinger:          { src: 'byRegime' },
+  };
+  let _statsCache = null, _statsPromise = null;
+  function loadStats() {
+    if (_statsCache) return Promise.resolve(_statsCache);
+    if (_statsPromise) return _statsPromise;
+    _statsPromise = (async () => {
+      try { const r = await fetch('/api/archive-stats'); const d = await r.json(); _statsCache = (d && d.ok) ? d : {}; }
+      catch (e) { _statsCache = {}; }
+      return _statsCache;
+    })();
+    return _statsPromise;
+  }
+  // ders → { state:'ok'|'insufficient'|'collecting'|null, label, rate, n }
+  function conditionStatFor(lessonId) {
+    const m = STAT_MAP[lessonId];
+    if (!m || !_statsCache) return null;
+    const L = _statsCache.learning || {};
+    const arr = L[m.src] || [];
+    const minS = L.minSample || 20;
+    if (!arr.length) return { state: 'collecting' };
+    if (m.keys) {
+      const gs = arr.filter(g => m.keys.includes(g.key));
+      if (!gs.length) return { state: 'collecting' };
+      const total = gs.reduce((a, g) => a + (g.total || 0), 0);
+      const success = gs.reduce((a, g) => a + (g.success || 0), 0);
+      if (total < minS) return { state: 'insufficient', n: total };
+      return { state: 'ok', label: m.keys[0], rate: total ? Math.round(success / total * 1000) / 10 : null, n: total };
+    }
+    const best = arr.find(g => !g.insufficient);
+    if (!best) { const top = arr[0]; return { state: 'insufficient', n: top ? top.total : 0 }; }
+    return { state: 'ok', label: best.key, rate: best.successRate, n: best.total };
+  }
+
+  window.VDAcademyBridge = { examplesFor, loadArchive, outcomeFor, _eventsForLesson, loadStats, conditionStatFor };
 })();

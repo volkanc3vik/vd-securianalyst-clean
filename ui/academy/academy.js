@@ -70,6 +70,7 @@
         </div>
         ${examplesBox}
         <div class="ac-sec"><div class="ac-sec-lbl">📊 Sonuç İstatistiği <span class="ac-sec-sub">(son 30 gün)</span></div><div class="ac-outcome" data-outcome>…</div></div>
+        <div class="ac-sec" data-condstat hidden><div class="ac-sec-lbl">📊 Enrichment Başarısı <span class="ac-sec-sub">(arşiv geneli)</span></div><div class="ac-condstat">…</div></div>
         <div class="ac-sec ac-tl-sec">
           <div class="ac-sec-lbl">🕒 Son Timeline Olayları ${tags ? `<span class="ac-evtags-inline">${tags}</span>` : ''}</div>
           <div class="ac-timeline" data-timeline>…</div>
@@ -133,6 +134,29 @@
     });
   }
 
+  function _hydrateCondStat() {
+    const B = window.VDAcademyBridge; if (!B || !B.loadStats) return;
+    B.loadStats().then(() => {
+      document.querySelectorAll('.ac-card [data-condstat]').forEach(sec => {
+        const card = sec.closest('.ac-card'); if (!card) return;
+        let s = null; try { s = B.conditionStatFor(card.dataset.id); } catch (e) {}
+        if (!s) { sec.remove(); return; }              // bu ders için eşleme yok → bölümü kaldır
+        const box = sec.querySelector('.ac-condstat'); if (!box) return;
+        sec.removeAttribute('hidden');
+        if (s.state === 'ok') {
+          box.innerHTML = `<div class="ac-oc-grid">
+              <div class="ac-oc"><div class="ac-oc-v">${s.n}</div><div class="ac-oc-l">örnek</div></div>
+              <div class="ac-oc rate"><div class="ac-oc-v">%${s.rate}</div><div class="ac-oc-l">başarı</div></div>
+            </div>${s.label ? `<div class="ac-ex-count">${esc(s.label)}</div>` : ''}`;
+        } else if (s.state === 'insufficient') {
+          box.innerHTML = `<span class="ac-ex-empty">Yetersiz Veri (n=${s.n || 0} · min 20).</span>`;
+        } else {
+          box.innerHTML = '<span class="ac-ex-empty">Veri Toplanıyor — v76 sonrası kayıtlardan dolar.</span>';
+        }
+      });
+    });
+  }
+
   // ── Filtre + arama ──
   function _visible(les) {
     if (_filter !== 'all' && les.cat !== _filter) return false;
@@ -147,6 +171,7 @@
     // hydrate
     grid.querySelectorAll('.ac-card').forEach(_hydrateCard);
     if (_isPremium()) _hydrateOutcome();
+    if (_isPremium()) _hydrateCondStat();
   }
   function _renderFilters() {
     const wrap = document.getElementById('acFilters'); if (!wrap) return;
