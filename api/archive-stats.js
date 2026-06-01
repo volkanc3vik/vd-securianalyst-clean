@@ -44,6 +44,15 @@ function riskBucket(mc) {
   return 'Bilinmiyor';
 }
 const confBand = (s) => s == null ? 'Bilinmiyor' : s >= 90 ? '90+' : s >= 80 ? '80-90' : s >= 70 ? '70-80' : '<70';
+const rsiBand  = (mc) => {
+  const v = mc && mc.rsi != null ? Number(mc.rsi) : null;
+  if (v == null) return null;
+  if (v >= 65) return 'RSI Yüksek (≥65)';
+  if (v <= 35) return 'RSI Düşük (≤35)';
+  return 'RSI Orta (35-65)';
+};
+
+const MIN_SAMPLE = 20; // öğrenme için min örnek — altı "Yetersiz Veri"
 
 // grup sayacı: {grup: {v,p,f}} → oran tablosu
 function groupRates(rows, keyFn) {
@@ -120,9 +129,67 @@ export default async function handler(req, res) {
     const timeline = { available: false,
       note: 'Timeline olay eşleştirmesi için archive kaydında olay etiketi (market_context.timeline_event) gerekir. Şu an bu veri tutulmuyor — eklenince otomatik hesaplanır.' };
 
+    // ════════ PHASE 8 — ÖĞRENME KATMANI (sadece gözlem, karar YOK) ════════
+    // min örnek 20 altı = Yetersiz Veri (yanıltıcı istatistik üretme)
+    const flagMin = (arr) => arr.map(g => Object.assign({}, g, {
+      insufficient: g.total < MIN_SAMPLE,
+      displayRate: g.total < MIN_SAMPLE ? null : g.successRate,
+    }));
+
+    const learnStructure  = flagMin(byStructure);
+    const learnConfidence = flagMin(byConfidence);
+    const learnRisk       = flagMin(byRisk);
+    const learnCoin       = flagMin(byCoin);
+    const learnRsi        = flagMin(groupRates(reviewed, r => rsiBand(r.market_context)));
+
+    // Coin: en iyi / en zayıf (yalnız yeterli örnek)
+    const sufficientCoins = learnCoin.filter(c => !c.insufficient);
+    const topCoins  = sufficientCoins.slice(0, 5);
+    const weakCoins = [...sufficientCoins].sort((a, b) => (a.successRate || 0) - (b.successRate || 0)).slice(0, 5);
+
+    // Düşük risk + 90+ confidence kombinasyonu
+    const combo = reviewed.filter(r => riskBucket(r.market_context) === 'Düşük Risk' && (r.analysis_score || 0) >= 90);
+    const comboV = combo.filter(r => r.review_status === 'validated').length;
+    const comboRate = combo.length >= MIN_SAMPLE ? pct(comboV, combo.length) : null;
+
+    // ── AI GÖZLEMLERİ (öneri DEĞİL, sadece gözlem) — yalnız yeterli örnekte ──
+    const observations = [];
+    const avg = overall.successRate;
+    if (comboRate != null) observations.push(`Düşük risk + 90 üzeri confidence kombinasyonu ${combo.length} analizde %${comboRate} başarı göstermiştir.`);
+    const bestStruct = learnStructure.find(s => !s.insufficient);
+    if (bestStruct && avg != null) {
+      const diff = r1(bestStruct.successRate - avg);
+      if (diff > 0) observations.push(`${bestStruct.key} yapısı, sistem ortalamasının %${diff} üzerinde performans göstermektedir (${bestStruct.total} örnek).`);
+    }
+    if (weakCoins.length && avg != null) {
+      const w = weakCoins[0];
+      if (w.successRate != null && w.successRate < avg) observations.push(`${w.key} analizleri sistem ortalamasının altında performans göstermektedir (%${w.successRate}, ${w.total} örnek).`);
+    }
+    const obsNote = observations.length ? null : `Henüz ${MIN_SAMPLE}+ örnekli yeterli veri yok — gözlemler doğrulanmış analizler biriktikçe otomatik üretilecek.`;
+
+    // ── TELEGRAM AI LEARNING REPORT (veri hazır, gönderim YOK) ──
+    const pick = (arr) => { const x = arr.find(g => !g.insufficient); return x ? { key: x.key, rate: x.successRate, n: x.total } : null; };
+    const learningReport = {
+      ready: observations.length > 0,
+      enIyiYapi: pick(learnStructure),
+      enIyiCoin: topCoins[0] ? { key: topCoins[0].key, rate: topCoins[0].successRate, n: topCoins[0].total } : null,
+      enIyiRisk: pick(learnRisk),
+      enIyiKosul: pick(learnRsi), // ölçülebilen koşul = RSI bandı (funding/OI yok)
+    };
+
+    const learning = {
+      minSample: MIN_SAMPLE,
+      byStructure: learnStructure, byConfidence: learnConfidence, byRisk: learnRisk,
+      byRsi: learnRsi, topCoins, weakCoins,
+      combo: { total: combo.length, success: comboV, rate: comboRate, insufficient: combo.length < MIN_SAMPLE },
+      observations, obsNote, learningReport,
+      marketConditions: { available: false,
+        note: 'Funding / Open Interest / Volatilite archive\'da tutulmuyor → koşul-başarı analizi üretilemez. Ölçülebilen koşul: RSI bandı. Funding/OI için scanner market_context\'e bu alanları yazmalı.' },
+    };
+
     return res.status(200).json({
       ok: true, generated_at: new Date().toISOString(),
-      overall, byCoin, byStructure, byConfidence, byRisk, expectation, weekly, academy, timeline,
+      overall, byCoin, byStructure, byConfidence, byRisk, expectation, weekly, academy, timeline, learning,
       gaps: {
         structure_persisted: false,
         structure_note: 'Yapı kalıcı kolon değil; rsi/score/yön ile türetiliyor. Tam doğruluk için scanner market_context.structure yazmalı.',
