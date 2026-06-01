@@ -17,7 +17,7 @@
   // key, label, page, scroll(selector, sadece index içi), short(mobil alt nav), icon
   const LAYERS = [
     { key:'dashboard',    label:'Dashboard',           page:'index.html', scroll:'#marketSection,.market-overview', short:true,  shortLabel:'Dashboard', icon:'🏠' },
-    { key:'intelligence', label:'Intelligence Center', page:'index.html', scroll:'#mainPanel',                       short:true,  shortLabel:'Intel',     icon:'📊', hash:'intel' },
+    { key:'intelligence', label:'Intelligence Center', page:'intelligence-center.html', short:true,  shortLabel:'Intel',     icon:'📊', gate:'premium' },
     { key:'archive',      label:'Analysis Archive',    page:'archive.html', short:true, shortLabel:'Archive',  icon:'◈' },
     { key:'translator',   label:'Market Translator',   page:'translator.html', icon:'🔤' },
     { key:'timeline',     label:'Market Timeline',     page:'timeline.html', short:true, shortLabel:'Timeline', icon:'📈' },
@@ -41,6 +41,31 @@
   function _isIndex() { return _basename() === 'index.html'; }
 
   function _esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // ── Erişim seviyesi (gate'li menü görünürlüğü) ────────────────────
+  // VDAccess varsa onu kullan; yoksa aap_access_v1'den minimal fallback (free gizli kalsın).
+  function _accessLevel() {
+    try { if (window.VDAccess && window.VDAccess.level) return window.VDAccess.level(); } catch (e) {}
+    try {
+      const raw = localStorage.getItem('aap_access_v1');
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && d.isAdmin === true) return 'admin';
+        if (d && typeof d.bitis === 'number' && d.bitis > Date.now()) {
+          const plan = String(d.plan_id || '').toLowerCase();
+          const prev = String(d.code_preview || '').toUpperCase();
+          return (plan.startsWith('elite') || prev.includes('ELITE')) ? 'elite' : 'premium';
+        }
+      }
+    } catch (e) {}
+    return 'free';
+  }
+  // gate:'premium' → free göremez (premium/elite/admin görür). gate yoksa herkes görür.
+  function _layerVisible(l) {
+    if (l.gate === 'premium') return _accessLevel() !== 'free';
+    return true;
+  }
+  function _visibleLayers() { return LAYERS.filter(_layerVisible); }
 
   // ── Navigasyon eylemi ─────────────────────────────────────────────
   function go(key) {
@@ -78,18 +103,18 @@
 
   // ── Markup üreticiler ─────────────────────────────────────────────
   function _topnavHTML(cur) {
-    const items = LAYERS.map(l =>
+    const items = _visibleLayers().map(l =>
       `<a href="${l.page}${l.hash?'#'+l.hash:''}" data-key="${l.key}" class="${l.key===cur?'active':''}${l.premium?' vdn-premium':''}">${_esc(l.label)}</a>`
     ).join('');
     return items;
   }
   function _drawerHTML(cur) {
-    return LAYERS.map(l =>
+    return _visibleLayers().map(l =>
       `<a href="${l.page}${l.hash?'#'+l.hash:''}" data-key="${l.key}" class="${l.key===cur?'active':''}"><span class="ic">${l.icon}</span>${_esc(l.label)}</a>`
     ).join('');
   }
   function _bottomItemsHTML(cur, cls, icCls, lblCls) {
-    return LAYERS.filter(l=>l.short).map(l =>
+    return _visibleLayers().filter(l=>l.short).map(l =>
       `<a href="${l.page}${l.hash?'#'+l.hash:''}" data-key="${l.key}" class="${cls}${l.key===cur?' active':''}"><span class="${icCls}">${l.icon}</span><span class="${lblCls}">${_esc(l.shortLabel||l.label)}</span></a>`
     ).join('');
   }
