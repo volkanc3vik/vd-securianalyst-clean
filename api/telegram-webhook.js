@@ -13,6 +13,8 @@
 //      SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 // ════════════════════════════════════════════════════════════════════
 
+import crypto from 'node:crypto';
+
 const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL_ID = process.env.TELEGRAM_FREE_CHANNEL_ID;
 const SECRET     = process.env.TELEGRAM_WEBHOOK_SECRET;
@@ -45,12 +47,104 @@ const sbSelect = (table, q) => sb(`${table}?${q}`);
 const sbInsert = (table, row, prefer = 'return=representation') => sb(table, { method: 'POST', body: row, prefer });
 const sbPatch  = (table, q, patch) => sb(`${table}?${q}`, { method: 'PATCH', body: patch, prefer: 'return=representation' });
 
+// ════════════ ÖDÜL MOTORU (Phase 5) ════════════
+// Premium kod sistemi (access_codes) ile mevcut formatı KORUYARAK bağlanır.
+// admin-codes.js'e DOKUNULMAZ; access_codes'a service_role ile doğrudan yazılır.
+const PLANS = {
+  weekly:  { name: 'Weekly Access',  days: 7,  price: 100, prefix: 'WEEK'  },
+  monthly: { name: 'Monthly Access', days: 30, price: 300, prefix: 'MONTH' },
+};
+// kademe → ödül (admin-codes formatıyla birebir)
+const REWARD_TIERS = [
+  { tier: 3,  plan: 'weekly',  label: '7 Gün Premium'  },
+  { tier: 10, plan: 'monthly', label: '30 Gün Premium' },
+  { tier: 25, plan: null,      label: 'Elite Adayı'    }, // kod yok, sadece etiket
+];
+
+function genCodeChunk() {
+  const ab = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const b = crypto.randomBytes(4); let o = '';
+  for (let i = 0; i < 4; i++) o += ab[b[i] % ab.length];
+  return o;
+}
+const genCode    = (planId) => `VD-${PLANS[planId].prefix}-${genCodeChunk()}-${genCodeChunk()}`;
+const sha256      = (s) => crypto.createHash('sha256').update(s).digest('hex');
+const makePreview = (c) => { const p = c.split('-'); return p.length === 4 ? `${p[0]}-${p[1]}-****-${p[3]}` : c; };
+
+// access_codes'a ödül kodu yaz (admin-codes 'create' ile aynı şema), düz kodu döndür
+async function grantPremiumCode(planId) {
+  const plan = PLANS[planId];
+  const code = genCode(planId);
+  const row = {
+    code_hash: sha256(code), code_preview: makePreview(code),
+    plan_id: planId, plan_name: plan.name, duration_days: plan.days, price_usd: plan.price,
+    status: 'unused', source: 'referral_reward', created_by: 'tg_referral',
+    max_devices: 2, active_devices: 0, device_ids: [],
+  };
+  const inserted = await sbInsert('access_codes', row); // service_role yetkili (admin-codes da böyle yazıyor)
+  const id = inserted && inserted[0] && inserted[0].id;
+  return { code, id, preview: row.code_preview };
+}
+
+// LAZY doğrulama + ödül kontrolü — /start, /davet, /liderlik'te çağrılır
+async function validateAndReward(tgId, chatId) {
+  try {
+    // 1) 48s dolan + hâlâ üye + henüz geçersiz kayıtları geçerli yap
+    const nowIso = new Date().toISOString();
+    const matured = await sbSelect('tg_referrals',
+      `referrer_tg_id=eq.${tgId}&still_member=eq.true&is_valid=eq.false&valid_after=lt.${nowIso}&select=id`);
+    if (matured && matured.length) {
+      const ids = matured.map(r => r.id);
+      await sbPatch('tg_referrals', `id=in.(${ids.join(',')})`, { is_valid: true });
+    }
+    // 2) geçerli davet sayısını yeniden say (still_member & is_valid)
+    const validRows = await sbSelect('tg_referrals',
+      `referrer_tg_id=eq.${tgId}&still_member=eq.true&is_valid=eq.true&select=id`);
+    const validCount = (validRows || []).length;
+    await sbPatch('tg_users', `tg_id=eq.${tgId}`, { valid_invite_count: validCount });
+
+    // 3) hak edilen ama henüz verilmemiş ödülleri ver
+    const given = await sbSelect('tg_rewards', `referrer_tg_id=eq.${tgId}&select=tier`);
+    const givenTiers = new Set((given || []).map(r => r.tier));
+    for (const rt of REWARD_TIERS) {
+      if (validCount < rt.tier || givenTiers.has(rt.tier)) continue;
+      let codeInfo = null;
+      if (rt.plan) { try { codeInfo = await grantPremiumCode(rt.plan); } catch (e) { console.warn('[TG_REWARD] kod üretilemedi:', e.message); continue; } }
+      // önce geçmişe yaz (idempotency — unique index çift veriyi engeller), sonra DM
+      try {
+        await sbInsert('tg_rewards', {
+          referrer_tg_id: tgId, tier: rt.tier, reward_label: rt.label,
+          plan_id: rt.plan, access_code_id: (codeInfo && codeInfo.id) || null,
+          code_preview: (codeInfo && codeInfo.preview) || null,
+        }, 'return=minimal');
+        await sbPatch('tg_users', `tg_id=eq.${tgId}`, { last_reward_tier: rt.tier });
+      } catch (e) {
+        // unique çakışması = zaten verilmiş → DM atma, geç
+        console.warn('[TG_REWARD] zaten verilmiş veya yazılamadı:', rt.tier, e.message); continue;
+      }
+      // DM (kullanıcı botu açtığı için DM atılabilir)
+      if (chatId) {
+        if (rt.plan && codeInfo) {
+          await sendMsg(chatId,
+            `🎉 <b>Tebrikler!</b>\n${rt.tier} geçerli davete ulaştın.\n<b>${rt.label}</b> ödülün hazır.\n\n` +
+            `Premium kodun:\n<code>${codeInfo.code}</code>\n\nBu kodu sitede girerek aktive et. 🚀`);
+        } else {
+          await sendMsg(chatId,
+            `🎉 <b>Tebrikler!</b>\n${rt.tier} geçerli davete ulaştın.\n<b>${rt.label}</b> oldun! Elite sistemi yakında aktifleşince haber vereceğiz. 👑`);
+        }
+      }
+      console.log('[TG_REWARD] verildi:', tgId, 'tier', rt.tier);
+    }
+    return validCount;
+  } catch (e) { console.warn('[TG_REWARD] validateAndReward err:', e.message); return null; }
+}
+
 // ════════════ MESAJ FORMATLARI (merkezi — Phase 4) ════════════
 const REWARD = { target: 3, label: '7 gün Premium' }; // ilk kademe (Phase 5'te aktifleşir)
 
 // Paylaş butonu URL'i (URL-ENCODE'lu)
 function shareUrl(inviteLink) {
-  const txt = "VD SecuriAnalyst — ücretsiz AI kripto analizleri, market özeti ve örnek setup'lar 👇";
+  const txt = "Merhaba 👋\nBen VD SecuriAnalyst kullanıyorum.\nÜcretsiz analizler ve piyasa içgörüleri için katılabilirsin:";
   return `https://t.me/share/url?url=${encodeURIComponent(inviteLink || '')}&text=${encodeURIComponent(txt)}`;
 }
 // inline klavye: Paylaş = URL buton (callback gerekmez), diğerleri callback
@@ -58,16 +152,24 @@ function mainKb(inviteLink) {
   const rows = [];
   if (inviteLink) rows.push([{ text: '📢 Davet Linkimi Paylaş', url: shareUrl(inviteLink) }]);
   rows.push([{ text: '📊 Davet Durumum', callback_data: 'davet' }, { text: '🏆 Liderlik', callback_data: 'liderlik' }]);
-  rows.push([{ text: '🚀 Premium Bilgi', callback_data: 'premium' }]);
+  rows.push([{ text: '🎁 Ödüller', callback_data: 'odul' }]);
   return { inline_keyboard: rows };
 }
 
-function fmtStart(user) {
-  return `Merhaba 👋\n<b>VD SecuriAnalyst</b> davet sistemine hoş geldin.\n\n` +
-    `Kişisel davet linkin:\n${user.invite_link}\n\n` +
-    `Bu linki paylaş. Kanala katılan kullanıcılar <b>senin davetin</b> olarak sayılır.\n\n` +
-    `🎁 Ödül sistemi yakında aktif olacak.\n\n` +
-    `Komutlar:\n/davet — Davet durumun\n/liderlik — Liderlik tablosu`;
+function fmtStart(user, leader) {
+  const total = user.invite_count || 0, valid = user.valid_invite_count || 0;
+  const pending = Math.max(0, total - valid);
+  let s = `Merhaba 👋\n<b>VD SecuriAnalyst</b> davet sistemine hoş geldin.\n\n`;
+  s += `📊 <b>Durumun</b>\nToplam Davet: <b>${total}</b>\nGeçerli Davet: <b>${valid}</b>\nBekleyen Davet: <b>${pending}</b>\n\n`;
+  s += `🔗 <b>Davet Linkin</b>\n${user.invite_link}\nBu linki paylaşarak ödül kazanabilirsin.\n\n`;
+  if (leader && ((leader.valid_invite_count || 0) > 0 || (leader.invite_count || 0) > 0)) {
+    const ln = leader.username ? '@' + esc(leader.username) : esc(leader.first_name || 'kullanıcı');
+    const lc = leader.valid_invite_count || leader.invite_count || 0;
+    s += `🏆 <b>Bu Haftanın Lideri</b>\n${ln} — ${lc} geçerli davet\n\n`;
+  }
+  s += `Ödülleri görmek için 🎁 <b>Ödüller</b> butonuna bas.\n\n`;
+  s += `Komutlar:\n/davet — Davet durumun\n/liderlik — Liderlik tablosu`;
+  return s;
 }
 function fmtDavet(user) {
   const total   = user.invite_count || 0;
@@ -85,7 +187,7 @@ function fmtDavet(user) {
 }
 function fmtLiderlik(rows) {
   if (!rows || !rows.length) return 'Henüz liderlik verisi oluşmadı. İlk davet edenlerden biri ol. 🚀';
-  let txt = '🏆 <b>Haftalık Davet Liderleri</b>\n\n';
+  let txt = '🏆 <b>Haftalık Liderler</b>\n\n';
   rows.forEach((r, i) => {
     const name  = r.username ? '@' + esc(r.username) : esc(r.first_name || 'kullanıcı'); // HTML escape
     const medal = ['🥇', '🥈', '🥉'][i] || `${i + 1}.`;
@@ -93,12 +195,12 @@ function fmtLiderlik(rows) {
   });
   return txt;
 }
-function fmtPremium() {
-  return `🚀 <b>Premium Bilgi</b>\n\n` +
-    `Premium ödül sistemi yakında aktif olacak.\n\n` +
-    `Davet ettiğin ve <b>48 saat kanalda kalan</b> kullanıcılar "geçerli davet" sayılır.\n` +
-    `Hedef: <b>${REWARD.target} geçerli davet → ${REWARD.label}</b>\n\n` +
-    `Şimdiden davet biriktir — sistem açıldığında ödülün hazır olur. 💪`;
+function fmtRewards() {
+  return `🎁 <b>Davet Ödülleri</b>\n\n` +
+    `3 Davet → <b>7 Gün Premium</b>\n` +
+    `10 Davet → <b>30 Gün Premium</b>\n` +
+    `25 Davet → <b>Elite Adayı</b>\n\n` +
+    `⏳ Geçerli davetler 48 saat sonra aktifleşir.`;
 }
 
 // kullanıcı kaydını getir/oluştur + davet linkini garanti et
@@ -125,14 +227,20 @@ async function ensureUser(from, chatId) {
 
 // ── /start ──
 async function onStart(msg) {
-  const user = await ensureUser(msg.from, msg.chat.id);
+  let user = await ensureUser(msg.from, msg.chat.id);
   if (!user) return;
-  await sendMsg(msg.chat.id, fmtStart(user), { reply_markup: mainKb(user.invite_link) });
+  const tgId = String(msg.from.id);
+  await validateAndReward(tgId, msg.chat.id);
+  const fresh = await sbSelect('tg_users', `tg_id=eq.${tgId}&select=invite_count,valid_invite_count,invite_link`);
+  user = (fresh && fresh[0]) || user;
+  const leaders = await sbSelect('tg_users', `select=username,first_name,invite_count,valid_invite_count&order=valid_invite_count.desc,invite_count.desc&limit=1`);
+  await sendMsg(msg.chat.id, fmtStart(user, leaders && leaders[0]), { reply_markup: mainKb(user.invite_link) });
 }
 
 // ── /davet ──
 async function onDavet(msg) {
   const tgId = String(msg.from.id);
+  await validateAndReward(tgId, msg.chat.id);
   const rows = await sbSelect('tg_users', `tg_id=eq.${tgId}&select=invite_count,valid_invite_count,invite_link`);
   const user = rows && rows[0];
   if (!user) { await sendMsg(msg.chat.id, 'Önce /start yazarak davet linki al.'); return; }
@@ -141,6 +249,7 @@ async function onDavet(msg) {
 
 // ── /liderlik ──
 async function onLiderlik(msg) {
+  await validateAndReward(String(msg.from.id), msg.chat.id);
   const rows = await sbSelect('tg_users',
     `select=username,first_name,invite_count,valid_invite_count&order=valid_invite_count.desc,invite_count.desc&limit=10`);
   await sendMsg(msg.chat.id, fmtLiderlik(rows));
@@ -155,6 +264,7 @@ async function onCallback(cq) {
   if (!chatId || !from) return;
 
   if (data === 'davet') {
+    await validateAndReward(String(from.id), chatId);
     const rows = await sbSelect('tg_users', `tg_id=eq.${String(from.id)}&select=invite_count,valid_invite_count,invite_link`);
     const user = rows && rows[0];
     if (!user) { await sendMsg(chatId, 'Önce /start yazarak davet linki al.'); return; }
@@ -162,8 +272,8 @@ async function onCallback(cq) {
   } else if (data === 'liderlik') {
     const rows = await sbSelect('tg_users', `select=username,first_name,invite_count,valid_invite_count&order=valid_invite_count.desc,invite_count.desc&limit=10`);
     await sendMsg(chatId, fmtLiderlik(rows));
-  } else if (data === 'premium') {
-    await sendMsg(chatId, fmtPremium()); // SADECE bilgi — kod üretmez
+  } else if (data === 'odul') {
+    await sendMsg(chatId, fmtRewards());
   }
 }
 
