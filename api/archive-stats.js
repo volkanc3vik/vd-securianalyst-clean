@@ -124,12 +124,9 @@ export default async function handler(req, res) {
       topRisk: topKey(groupRates(w, r => riskBucket(r.market_context))),
     };
 
-    // ACADEMY = yapı bazlı (örnek + başarı). TIMELINE = veri yok (dürüst).
+    // ACADEMY = yapı bazlı (örnek + başarı).
     const academy = byStructure.map(s => ({ yapi: s.key, ornek: s.total, basari: s.successRate }));
-    const timeline = (learnTimeline && learnTimeline.length)
-      ? { available: true, byEvent: learnTimeline, note: 'Timeline olay-başarı verisi birikiyor (Phase 9).' }
-      : { available: false,
-          note: 'Timeline olay etiketi (timeline_event) YENİ kayıtlardan toplanıyor (Phase 9). Scanner gerçek olay tespitini market_context.timeline_event olarak yayınladıkça dolacak — şu an tespit edilemediğinde null yazılıyor (uydurma yok).' };
+    // NOT (Phase 10 fix): 'timeline' tanımı learnTimeline'a bağlı; Phase 9 bloğundan SONRAYA taşındı (TDZ hatası giderildi).
 
     // ════════ PHASE 8 — ÖĞRENME KATMANI (sadece gözlem, karar YOK) ════════
     // min örnek 20 altı = Yetersiz Veri (yanıltıcı istatistik üretme)
@@ -146,14 +143,27 @@ export default async function handler(req, res) {
 
     // ── PHASE 9 zenginleştirme alanları (veri geldikçe otomatik dolar) ──
     const fundBand = (mc) => { const f = mc && mc.funding_rate != null ? Number(mc.funding_rate) : null;
-      if (f == null) return null; if (f < 0) return 'Negatif Funding'; if (f < 0.0005) return 'Düşük Funding'; return 'Yüksek Funding'; };
+      if (f == null) return null; if (Math.abs(f) < 0.0001) return 'Nötr Funding'; return f > 0 ? 'Pozitif Funding' : 'Negatif Funding'; };
+    const lsBand = (mc) => { const v = mc && mc.long_short_ratio != null ? Number(mc.long_short_ratio) : null;
+      if (v == null) return null; if (v > 1.1) return 'Long Baskın'; if (v < 0.9) return 'Short Baskın'; return 'Dengeli'; };
     const mcv = (r, k) => (r.market_context && r.market_context[k] != null) ? r.market_context[k] : null;
     const learnFunding   = flagMin(groupRates(reviewed, r => fundBand(r.market_context)));
+    const learnLongShort = flagMin(groupRates(reviewed, r => lsBand(r.market_context)));
     const learnRegime    = flagMin(groupRates(reviewed, r => mcv(r, 'market_regime')));
     const learnVol       = flagMin(groupRates(reviewed, r => mcv(r, 'volatility_band')));
     const learnTimeline  = flagMin(groupRates(reviewed, r => mcv(r, 'timeline_event')));
     const learnLiquidity = flagMin(groupRates(reviewed, r => mcv(r, 'liquidity_event')));
-    const hasCond = learnFunding.length || learnRegime.length || learnVol.length;
+    // Open Interest: open_interest_change YOK → şimdilik sadece "veri var/yok" (ileride change ile genişler)
+    const oiHave = reviewed.filter(r => mcv(r, 'open_interest') != null).length;
+    const oiPresence = { withData: oiHave, withoutData: reviewed.length - oiHave,
+      note: 'Open Interest değeri toplanıyor; değişim (open_interest_change) verisi henüz yok — bu kırılım ileride genişletilecek.' };
+    const hasCond = learnFunding.length || learnRegime.length || learnVol.length || learnLongShort.length;
+
+    // ── timeline (learnTimeline tanımlandıktan SONRA — TDZ fix) ──
+    const timeline = (learnTimeline && learnTimeline.length)
+      ? { available: true, byEvent: learnTimeline, note: 'Timeline olay-başarı verisi birikiyor (Phase 9).' }
+      : { available: false,
+          note: 'Timeline olay etiketi (timeline_event) YENİ kayıtlardan toplanıyor (Phase 9). Scanner gerçek olay tespitini market_context.timeline_event olarak yayınladıkça dolacak — şu an tespit edilemediğinde null yazılıyor (uydurma yok).' };
 
     // Coin: en iyi / en zayıf (yalnız yeterli örnek)
     const sufficientCoins = learnCoin.filter(c => !c.insufficient);
@@ -174,6 +184,18 @@ export default async function handler(req, res) {
       const diff = r1(bestStruct.successRate - avg);
       if (diff > 0) observations.push(`${bestStruct.key} yapısı, sistem ortalamasının %${diff} üzerinde performans göstermektedir (${bestStruct.total} örnek).`);
     }
+    // PHASE 10 — market koşulu gözlemleri (yalnız n≥20; yetersizse cümle üretilmez = uydurma yok)
+    const obsCond = (arr, suffix) => {
+      const best = arr.find(g => !g.insufficient);
+      if (best && avg != null && best.successRate != null) {
+        const diff = r1(best.successRate - avg);
+        if (diff > 0) observations.push(`${best.key} ${suffix} sistem ortalamasının %${diff} üzerinde uyum göstermiştir (${best.total} örnek).`);
+      }
+    };
+    obsCond(learnVol, 'volatilite koşulunda,');
+    obsCond(learnFunding, 'koşulunda,');
+    obsCond(learnRegime, 'rejiminde,');
+    obsCond(learnLongShort, 'dağılımında,');
     if (weakCoins.length && avg != null) {
       const w = weakCoins[0];
       if (w.successRate != null && w.successRate < avg) observations.push(`${w.key} analizleri sistem ortalamasının altında performans göstermektedir (%${w.successRate}, ${w.total} örnek).`);
@@ -185,17 +207,21 @@ export default async function handler(req, res) {
     const learningReport = {
       ready: observations.length > 0,
       enIyiYapi: pick(learnStructure),
+      enIyiVolatilite: pick(learnVol),
+      enIyiRejim: pick(learnRegime),
+      enIyiFunding: pick(learnFunding),
+      enIyiLongShort: pick(learnLongShort),
       enIyiCoin: topCoins[0] ? { key: topCoins[0].key, rate: topCoins[0].successRate, n: topCoins[0].total } : null,
       enIyiRisk: pick(learnRisk),
-      enIyiKosul: pick(learnRsi), // ölçülebilen koşul = RSI bandı (funding/OI yok)
+      enIyiKosul: pick(learnRsi), // geriye dönük: RSI bandı
     };
 
     const learning = {
       minSample: MIN_SAMPLE,
       byStructure: learnStructure, byConfidence: learnConfidence, byRisk: learnRisk,
       byRsi: learnRsi, topCoins, weakCoins,
-      byFunding: learnFunding, byRegime: learnRegime, byVolatility: learnVol,
-      byTimeline: learnTimeline, byLiquidity: learnLiquidity,
+      byFunding: learnFunding, byLongShort: learnLongShort, byRegime: learnRegime, byVolatility: learnVol,
+      byTimeline: learnTimeline, byLiquidity: learnLiquidity, oiPresence,
       combo: { total: combo.length, success: comboV, rate: comboRate, insufficient: combo.length < MIN_SAMPLE },
       observations, obsNote, learningReport,
       marketConditions: { available: !!hasCond,
