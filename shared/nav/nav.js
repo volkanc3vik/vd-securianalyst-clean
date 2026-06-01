@@ -24,6 +24,7 @@
     { key:'academy',      label:'VD Academy',          page:'academy.html', icon:'🎓' },
     { key:'aitrack',      label:'AI Track Record',     page:'track-record.html', short:true, shortLabel:'Track', icon:'🏆' },
     { key:'performans',   label:'Performans',          page:'archive-intelligence.html', icon:'🧠' },
+    { key:'learning',     label:'AI Learning',         page:'outcome-intelligence.html', icon:'🤖' },
     { key:'premium',      label:'Premium',             page:'premium.html', premium:true, icon:'⭐' },
   ];
 
