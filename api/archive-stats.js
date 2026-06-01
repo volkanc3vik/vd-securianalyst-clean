@@ -1,0 +1,135 @@
+// ════════════════════════════════════════════════════════════════════
+// VD SecuriAnalyst — ARCHIVE INTELLIGENCE STATS (Phase 7, READ-ONLY)
+// analysis_archive'dan performans istatistikleri hesaplar. Modeli DEĞİŞTİRMEZ, sadece ölçer.
+// DOKUNMAZ: scanner, telegram gönderim, referral, premium, kod sistemi.
+// GET /api/archive-stats  → JSON aggregate (public transparency verisi)
+// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// ════════════════════════════════════════════════════════════════════
+
+const SB_URL = process.env.SUPABASE_URL;
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function sb(path) {
+  const h = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: h });
+  const data = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(`supabase_${r.status}`);
+  return data;
+}
+
+const r1 = (n) => Math.round(Number(n) * 10) / 10;
+const pct = (num, den) => den > 0 ? r1((num / den) * 100) : null;
+
+// "Yapı" — market_context.structure varsa onu kullan; yoksa rsi/score/dir'den dürüst türet
+function yapi(mc, bias) {
+  if (mc && mc.structure) return String(mc.structure);
+  const rsi = mc && mc.rsi != null ? Number(mc.rsi) : null;
+  const score = mc && mc.score != null ? Number(mc.score) : null;
+  if (rsi != null) {
+    if (rsi >= 68) return 'Güçlü Momentum + RSI Genişlemesi';
+    if (rsi <= 32) return 'Aşırı Satım Tepkisi + Dönüş Yapısı';
+    if (bias === 'bullish' && rsi >= 52) return 'Trend + Momentum Uyumu';
+    if (bias === 'bearish' && rsi <= 48) return 'Trend + Momentum Uyumu';
+    return 'Yapısal Denge + Momentum Takibi';
+  }
+  if (score != null && score >= 90) return 'Çok Faktörlü Güçlü Yapı';
+  return 'Çok Faktörlü AI Yapısı';
+}
+
+function riskBucket(mc) {
+  const v = mc && mc.risk != null ? String(mc.risk).toLowerCase() : '';
+  if (/düş|dus|low/.test(v)) return 'Düşük Risk';
+  if (/orta|med/.test(v))    return 'Orta Risk';
+  if (/yük|yuk|high/.test(v))return 'Yüksek Risk';
+  return 'Bilinmiyor';
+}
+const confBand = (s) => s == null ? 'Bilinmiyor' : s >= 90 ? '90+' : s >= 80 ? '80-90' : s >= 70 ? '70-80' : '<70';
+
+// grup sayacı: {grup: {v,p,f}} → oran tablosu
+function groupRates(rows, keyFn) {
+  const g = {};
+  for (const r of rows) {
+    const k = keyFn(r); if (!k) continue;
+    g[k] = g[k] || { v: 0, p: 0, f: 0 };
+    if (r.review_status === 'validated') g[k].v++;
+    else if (r.review_status === 'partially_validated') g[k].p++;
+    else if (r.review_status === 'not_validated') g[k].f++;
+  }
+  return Object.entries(g).map(([key, c]) => {
+    const n = c.v + c.p + c.f;
+    return { key, total: n, success: c.v, partial: c.p, fail: c.f,
+      successRate: pct(c.v, n), weightedRate: pct(c.v + c.p * 0.5, n),
+      lowSample: n < 5 };
+  }).sort((a, b) => (b.successRate || 0) - (a.successRate || 0));
+}
+
+export default async function handler(req, res) {
+  if (!SB_URL || !SB_KEY) return res.status(500).json({ ok: false, error: 'env_missing' });
+  try {
+    // değerlendirilmiş (pending hariç) kayıtlar
+    const cols = 'sym,direction_bias,analysis_score,review_status,result_percent,direction_realized,tg_exp_pct,tg_exp_hi,market_context,created_at';
+    const rows = await sb(`analysis_archive?review_status=in.(validated,partially_validated,not_validated)` +
+      `&select=${cols}&order=created_at.desc&limit=2000`);
+
+    const reviewed = rows || [];
+    const v = reviewed.filter(r => r.review_status === 'validated').length;
+    const p = reviewed.filter(r => r.review_status === 'partially_validated').length;
+    const f = reviewed.filter(r => r.review_status === 'not_validated').length;
+    const n = v + p + f;
+
+    // GENEL
+    const overall = { total: n, success: v, partial: p, fail: f,
+      successRate: pct(v, n), weightedRate: pct(v + p * 0.5, n) };
+
+    // COIN / YAPI / CONFIDENCE / RİSK
+    const byCoin       = groupRates(reviewed, r => r.sym).slice(0, 20);
+    const byStructure  = groupRates(reviewed, r => yapi(r.market_context, r.direction_bias));
+    const byConfidence = groupRates(reviewed, r => confBand(r.analysis_score))
+      .sort((a, b) => ['90+', '80-90', '70-80', '<70', 'Bilinmiyor'].indexOf(a.key) - ['90+', '80-90', '70-80', '<70', 'Bilinmiyor'].indexOf(b.key));
+    const byRisk       = groupRates(reviewed, r => riskBucket(r.market_context))
+      .sort((a, b) => ['Düşük Risk', 'Orta Risk', 'Yüksek Risk', 'Bilinmiyor'].indexOf(a.key) - ['Düşük Risk', 'Orta Risk', 'Yüksek Risk', 'Bilinmiyor'].indexOf(b.key));
+
+    // AI BEKLENTİ PERFORMANSI (exp kayıtlı olanlar)
+    const exp = reviewed.filter(r => r.tg_exp_pct != null && r.result_percent != null);
+    let uyumlu = 0, asti = 0, uyumsuz = 0;
+    for (const r of exp) {
+      const e = Number(r.tg_exp_pct), real = Number(r.result_percent), hi = r.tg_exp_hi != null ? Number(r.tg_exp_hi) : null;
+      const sameDir = (e > 0 && real > 0) || (e < 0 && real < 0) || e === 0;
+      if (!sameDir && Math.abs(real) >= 0.5) uyumsuz++;
+      else if (hi != null && Math.abs(real) >= hi) asti++;
+      else uyumlu++;
+    }
+    const expectation = { sampled: exp.length, uyumlu, asti, uyumsuz,
+      uyumOrani: pct(uyumlu + asti, exp.length), note: exp.length < 5 ? 'Yeterli beklenti-kayıtlı veri yok (engine paylaşımları biriktikçe dolar).' : null };
+
+    // HAFTALIK (son 7 gün)
+    const wk = new Date(Date.now() - 7 * 864e5).toISOString();
+    const w = reviewed.filter(r => r.created_at >= wk);
+    const wv = w.filter(r => r.review_status === 'validated').length;
+    const wAll = w.length;
+    const topKey = (arr) => arr.length ? arr[0].key : null;
+    const weekly = {
+      total: wAll, success: wv, successRate: pct(wv, wAll),
+      topCoin: topKey(groupRates(w, r => r.sym)),
+      topStructure: topKey(groupRates(w, r => yapi(r.market_context, r.direction_bias))),
+      topRisk: topKey(groupRates(w, r => riskBucket(r.market_context))),
+    };
+
+    // ACADEMY = yapı bazlı (örnek + başarı). TIMELINE = veri yok (dürüst).
+    const academy = byStructure.map(s => ({ yapi: s.key, ornek: s.total, basari: s.successRate }));
+    const timeline = { available: false,
+      note: 'Timeline olay eşleştirmesi için archive kaydında olay etiketi (market_context.timeline_event) gerekir. Şu an bu veri tutulmuyor — eklenince otomatik hesaplanır.' };
+
+    return res.status(200).json({
+      ok: true, generated_at: new Date().toISOString(),
+      overall, byCoin, byStructure, byConfidence, byRisk, expectation, weekly, academy, timeline,
+      gaps: {
+        structure_persisted: false,
+        structure_note: 'Yapı kalıcı kolon değil; rsi/score/yön ile türetiliyor. Tam doğruluk için scanner market_context.structure yazmalı.',
+        timeline_linkage: false,
+      },
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+}
