@@ -80,6 +80,9 @@ const PLANS = {
   daily:   { name: 'Daily Access',   days: 1,  price: 20,  prefix: 'DAY'   },
   weekly:  { name: 'Weekly Access',  days: 7,  price: 100, prefix: 'WEEK'  },
   monthly: { name: 'Monthly Access', days: 30, price: 300, prefix: 'MONTH' },
+  // ── ELITE (Phase 12) — Premium + Elite Intelligence. İlk sürüm 7 gün.
+  //    İleride farklı süreler: elite30/elite90 satırı ekle (mimari hazır). ──
+  elite7:  { name: 'Elite Pass (7 gün)', days: 7, price: 0, prefix: 'ELITE', tier: 'elite' },
 };
 
 function genCodeChunk() {
