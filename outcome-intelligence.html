@@ -27,6 +27,9 @@ const API='/api/archive-stats';
 const rate=(g)=>g.insufficient?'<span class="warn">Yetersiz Veri</span>':((g.successRate==null?'—':g.successRate+'%'));
 const cls=(x)=>x==null?'':x>=70?'ok':x>=50?'warn':'bad';
 function rows(arr,medal){return (arr&&arr.length)?arr.map(g=>`<div class="row"><span class="k">${medal||''}${g.key} ${g.insufficient?'<span class="ins">(n='+g.total+')</span>':'<span class="k" style="font-weight:400">('+g.success+'/'+g.total+')</span>'}</span><span class="v ${g.insufficient?'':cls(g.successRate)}">${rate(g)}</span></div>`).join(''):'<p class="note">Veri yok.</p>';}
+// Phase 10: enrichment kırılımları — alan hiç yoksa "Veri Toplanıyor"
+const rowsC=(arr)=>(arr&&arr.length)?rows(arr):'<p class="note">Veri Toplanıyor — bu alan yalnızca v76 sonrası kayıtlarda mevcut; yeterli veri birikince otomatik dolar.</p>';
+const rep=(o)=>o?`${o.key} <span class="k" style="font-weight:400">(%${o.rate==null?'—':o.rate}, n=${o.n})</span>`:'—';
 fetch(API).then(r=>r.json()).then(d=>{
  if(!d.ok){document.getElementById('app').innerHTML='<p class="bad">Hata: '+(d.error||'?')+'</p>';return;}
  document.getElementById('gen').textContent='· '+new Date(d.generated_at).toLocaleString('tr-TR');
@@ -46,16 +49,31 @@ fetch(API).then(r=>r.json()).then(d=>{
   <div class="card"><h2>Market Koşulu (RSI)</h2>${rows(L.byRsi)}<p class="note">${L.marketConditions.note}</p></div>
  </div>
  <div class="grid">
+  <div class="card"><h2>Funding Bazlı Başarı</h2>${rowsC(L.byFunding)}</div>
+  <div class="card"><h2>Long / Short Bazlı Başarı</h2>${rowsC(L.byLongShort)}</div>
+  <div class="card"><h2>Volatilite Bazlı Başarı</h2>${rowsC(L.byVolatility)}</div>
+ </div>
+ <div class="grid">
+  <div class="card"><h2>Market Regime Bazlı Başarı</h2>${rowsC(L.byRegime)}</div>
+  <div class="card"><h2>Open Interest Verisi</h2>
+   <div class="row"><span class="k">Veri olan kayıt</span><span class="v">${L.oiPresence.withData}</span></div>
+   <div class="row"><span class="k">Veri olmayan</span><span class="v">${L.oiPresence.withoutData}</span></div>
+   <p class="note">${L.oiPresence.note}</p>
+  </div>
+ </div>
+ <div class="grid">
   <div class="card"><h2>Düşük Risk + 90+ Confidence</h2>
    <div class="row"><span class="k">Örnek</span><span class="v">${L.combo.total}</span></div>
    <div class="row"><span class="k">Başarı</span><span class="v ${L.combo.insufficient?'':cls(L.combo.rate)}">${L.combo.insufficient?'<span class="warn">Yetersiz Veri</span>':(L.combo.rate==null?'—':L.combo.rate+'%')}</span></div>
   </div>
   <div class="card"><h2>📊 AI Learning Report (Telegram için hazır)</h2>
-   <div class="row"><span class="k">En iyi yapı</span><span class="v">${lr.enIyiYapi?lr.enIyiYapi.key+' (%'+lr.enIyiYapi.rate+')':'—'}</span></div>
-   <div class="row"><span class="k">En iyi coin</span><span class="v">${lr.enIyiCoin?lr.enIyiCoin.key+' (%'+lr.enIyiCoin.rate+')':'—'}</span></div>
-   <div class="row"><span class="k">En iyi risk</span><span class="v">${lr.enIyiRisk?lr.enIyiRisk.key+' (%'+lr.enIyiRisk.rate+')':'—'}</span></div>
-   <div class="row"><span class="k">En iyi koşul</span><span class="v">${lr.enIyiKosul?lr.enIyiKosul.key+' (%'+lr.enIyiKosul.rate+')':'—'}</span></div>
-   <p class="note">${lr.ready?'Rapor verisi hazır (gönderim sonraki faz).':'Yeterli veri birikince hazır olacak.'}</p>
+   <div class="row"><span class="k">En iyi yapı</span><span class="v">${rep(lr.enIyiYapi)}</span></div>
+   <div class="row"><span class="k">En iyi volatilite</span><span class="v">${rep(lr.enIyiVolatilite)}</span></div>
+   <div class="row"><span class="k">En iyi rejim</span><span class="v">${rep(lr.enIyiRejim)}</span></div>
+   <div class="row"><span class="k">En iyi funding</span><span class="v">${rep(lr.enIyiFunding)}</span></div>
+   <div class="row"><span class="k">En iyi long/short</span><span class="v">${rep(lr.enIyiLongShort)}</span></div>
+   <div class="row"><span class="k">En iyi coin</span><span class="v">${rep(lr.enIyiCoin)}</span></div>
+   <p class="note">${lr.ready?'Rapor verisi hazır (Telegram gönderimi sonraki faz).':'Yeterli veri birikince hazır olacak.'}</p>
   </div>
   <div class="card"><h2>Timeline Entegrasyonu</h2><p class="note">${d.timeline.note}</p></div>
  </div>`;
