@@ -40,9 +40,15 @@ function dayWindow(now = new Date()) {
   return { startISO: start.toISOString(), endISO: end.toISOString(), label: ymd };
 }
 function weekWindow(now = new Date()) {
-  const today = dayWindow(now);
-  const start = new Date(new Date(today.startISO).getTime() - 6 * 24 * 3600e3); // son 7 gün
-  return { startISO: start.toISOString(), endISO: today.endISO, label: 'Son 7 gün' };
+  // Takvim haftası: Pazartesi 00:00 → Pazar 23:59 (Istanbul). Pazar 20:00 cron'unda "bu hafta"yı kapsar.
+  const ymd = istanbulYMD(now);
+  const dayStart = new Date(`${ymd}T00:00:00+03:00`);
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(now); // Mon..Sun
+  const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }[wd] ?? 0;
+  const start = new Date(dayStart.getTime() - offset * 24 * 3600e3);
+  const end = new Date(start.getTime() + 7 * 24 * 3600e3);
+  return { startISO: start.toISOString(), endISO: end.toISOString(),
+    label: `${istanbulYMD(start)} — ${istanbulYMD(new Date(end.getTime() - 1))}` };
 }
 // 11.6 — ileri hazır (henüz kullanılmıyor)
 function monthWindow(now = new Date()) {
@@ -132,13 +138,63 @@ Bugün:
   return { text: `<b>VD SECURIANALYST</b>\nDAILY AI SUMMARY\n\n${body}${FOOTER}`, meta: m };
 }
 
-// ════════ RENDER: WEEKLY (11.3) — sıradaki adımda doldurulacak ════════
+// ════════ RENDER: WEEKLY (11.3) — takvim haftası ════════
+function riskBucket(mc) {
+  const v = mc && mc.risk != null ? String(mc.risk).toLowerCase() : '';
+  if (/düş|dus|low/.test(v)) return 'Düşük Risk';
+  if (/orta|med/.test(v)) return 'Orta Risk';
+  if (/yük|yuk|high/.test(v)) return 'Yüksek Risk';
+  return null;
+}
+function weeklyObservation(rows, weekAvg) {
+  // 1) en iyi yapı n≥20 ve hafta ortalamasının üstündeyse
+  const tg = topGroup(rows, r => mcv(r, 'structure'));
+  if (tg.state === 'ok' && weekAvg != null && tg.rate > weekAvg) {
+    return `Bu hafta ${tg.key} yapısı, hafta ortalamasının üzerinde uyum göstermiştir (%${tg.rate}, ${tg.n} örnek).`;
+  }
+  // 2) düşük risk + 90+ confidence kombinasyonu n≥20 ise
+  const combo = rows.filter(r => REVIEWED.has(r.review_status) && riskBucket(r.market_context) === 'Düşük Risk' && (r.analysis_score || 0) >= 90);
+  if (combo.length >= MIN_SAMPLE) {
+    const cv = combo.filter(r => r.review_status === 'validated').length;
+    return `Bu hafta düşük risk + 90 üzeri confidence kombinasyonu %${pct(cv, combo.length)} uyum göstermiştir (${combo.length} örnek).`;
+  }
+  return null;
+}
 function buildWeekly(rows, win) {
-  // Foundation hazır; tam render Daily doğrulandıktan SONRA aktif edilecek.
-  return {
-    text: `<b>VD SECURIANALYST</b>\nAI WEEKLY REPORT\n\n<i>Haftalık rapor bir sonraki adımda aktifleşecek.</i>${FOOTER}`,
-    meta: { stub: true },
+  const m = baseMetrics(rows);
+  if (m.total === 0) {
+    const body = `📅 ${win.label}\n\nBu hafta kayıtlı analiz bulunmuyor.\n<i>Veri Toplanıyor</i>`;
+    return { text: `<b>VD SECURIANALYST</b>\nAI WEEKLY REPORT\n\n${body}${FOOTER}`, meta: m };
+  }
+  // başarı oranı: yalnız reviewed ≥ MIN_SAMPLE ise göster (yanıltıcı oran üretme)
+  const basari = m.reviewed >= MIN_SAMPLE ? `%${m.successRate}` : `Yetersiz Veri (n=${m.reviewed})`;
+  const top = {
+    coin: showTop(topGroup(rows, r => r.sym)),
+    yapi: showTop(topGroup(rows, r => mcv(r, 'structure'))),
+    vol:  showTop(topGroup(rows, r => mcv(r, 'volatility_band'))),
+    rejim:showTop(topGroup(rows, r => mcv(r, 'market_regime'))),
+    risk: showTop(topGroup(rows, r => riskBucket(r.market_context))),
   };
+  const obs = weeklyObservation(rows, m.successRate);
+  const body =
+`📅 ${win.label}
+
+Bu hafta:
+• Toplam analiz: <b>${m.total}</b>
+• Doğrulanan: <b>${m.validated}</b>
+• Başarı oranı: <b>${basari}</b>
+
+🏆 En başarılı coin: ${top.coin}
+🧩 En başarılı yapı: ${top.yapi}
+🌪️ En başarılı volatilite: ${top.vol}
+🧭 En başarılı rejim: ${top.rejim}
+🛡️ En başarılı risk: ${top.risk}
+
+🧠 AI Gözlemi:
+${obs || 'Gözlem için yeterli doğrulanmış veri henüz yok (min 20 örnek).'}
+
+<i>Bu rapor geçmiş analizlerin retrospektif özetidir.</i>`;
+  return { text: `<b>VD SECURIANALYST</b>\nAI WEEKLY REPORT\n\n${body}${FOOTER}`, meta: m };
 }
 
 // ════════ Tip kayıt defteri (11.1 + 11.6 hazırlık) ════════
