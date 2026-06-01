@@ -61,7 +61,8 @@
     const ema9 = num(ind.ema9), ema21 = num(ind.ema21);
     const mh = num(ind.macd && ind.macd.histogram != null ? ind.macd.histogram : item.mh);
     const score = num(isLong ? item.lScore : item.sScore);
-    const risk = num(item.risk);
+    const risk = (item.risk && typeof item.risk === 'object' && item.risk.score != null)
+      ? num(item.risk.score) : num(item.risk);
     const closes = Array.isArray(item.closes) ? item.closes : null;
     const candles = Array.isArray(item.candles) ? item.candles : null;
 
