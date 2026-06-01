@@ -111,9 +111,14 @@
               <label class="acp-field">
                 <span>Plan</span>
                 <select data-acp-create="plan_id">
-                  <option value="daily">Daily ($20 / 1 gün)</option>
-                  <option value="weekly" selected>Weekly ($100 / 7 gün)</option>
-                  <option value="monthly">Monthly ($300 / 30 gün)</option>
+                  <optgroup label="Premium Kod">
+                    <option value="daily">Daily ($20 / 1 gün)</option>
+                    <option value="weekly" selected>Weekly ($100 / 7 gün)</option>
+                    <option value="monthly">Monthly ($300 / 30 gün)</option>
+                  </optgroup>
+                  <optgroup label="Elite Kod">
+                    <option value="elite7">⭐ Elite Pass (7 gün)</option>
+                  </optgroup>
                 </select>
               </label>
               <label class="acp-field">
