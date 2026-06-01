@@ -286,8 +286,18 @@
       </table></div>`;
   }
 
+  // ── Elite kapısı: radar yalnız Elite (veya admin) için görünür ──
+  function isElite() {
+    try { return !!(window.VDAccess && typeof window.VDAccess.isElite === 'function' && window.VDAccess.isElite()); }
+    catch (e) { return false; }
+  }
+
   // ── Tarama tetikleyici ──
   function run() {
+    const mount = document.getElementById('earlyRadar');
+    if (!mount) return;
+    if (!isElite()) { mount.style.display = 'none'; return; }  // free/premium → gizli
+    mount.style.display = '';
     const results = (window.VD_STATE && window.VD_STATE.scanResults) || window._lastScanResults || [];
     if (!Array.isArray(results) || !results.length) return;
     _lastScanAt = Date.now();
@@ -303,6 +313,9 @@
   // ilk yüklemede mevcut sonuç varsa göster
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule);
   else schedule();
+  // access-levels.js radar'dan sonra yüklenebildiği için birkaç gecikmeli yeniden-kontrol
+  setTimeout(schedule, 1500);
+  setTimeout(schedule, 4000);
 
   window.VDEarlyRadar = { run, _state: ST, _cfg: CFG };
 })();
