@@ -40,14 +40,32 @@
   function _teaserActive() {
     try { return !!(window.VDTeaser && window.VDTeaser.isActive && window.VDTeaser.isActive()); } catch (e) { return false; }
   }
+  // ── ELITE (Phase 12) — Elite = Premium + Elite Intelligence Access ──
+  // Tespit: geçerli süreli access kodu + plan_id 'elite' ile başlıyor VEYA code_preview 'ELITE' içeriyor.
+  // (verify-code Edge Function code_preview döndürdüğü için fallback güvenli.)
+  function _eliteActive() {
+    try {
+      const raw = localStorage.getItem(ACCESS_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      if (!d || typeof d !== 'object') return false;
+      if (!(typeof d.bitis === 'number' && d.bitis > Date.now())) return false; // süre geçerli mi
+      const plan = String(d.plan_id || '').toLowerCase();
+      const prev = String(d.code_preview || '').toUpperCase();
+      return plan.startsWith('elite') || prev.includes('ELITE');
+    } catch (e) { return false; }
+  }
 
   window.VDAccess = {
     isAdmin: _adminActive,
     isPremium: () => _premiumActive() || _adminActive(),
     isTeaser: () => _teaserActive() && !_premiumActive() && !_adminActive(),
+    // Elite içeriğine erişim (admin her zaman görür)
+    isElite: () => _eliteActive() || _adminActive(),
     // En yüksek seviye
     level() {
       if (_adminActive()) return 'admin';
+      if (_eliteActive()) return 'elite';
       if (_premiumActive()) return 'premium';
       if (_teaserActive()) return 'teaser';
       return 'free';
