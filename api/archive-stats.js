@@ -126,8 +126,10 @@ export default async function handler(req, res) {
 
     // ACADEMY = yapı bazlı (örnek + başarı). TIMELINE = veri yok (dürüst).
     const academy = byStructure.map(s => ({ yapi: s.key, ornek: s.total, basari: s.successRate }));
-    const timeline = { available: false,
-      note: 'Timeline olay eşleştirmesi için archive kaydında olay etiketi (market_context.timeline_event) gerekir. Şu an bu veri tutulmuyor — eklenince otomatik hesaplanır.' };
+    const timeline = (learnTimeline && learnTimeline.length)
+      ? { available: true, byEvent: learnTimeline, note: 'Timeline olay-başarı verisi birikiyor (Phase 9).' }
+      : { available: false,
+          note: 'Timeline olay etiketi (timeline_event) YENİ kayıtlardan toplanıyor (Phase 9). Scanner gerçek olay tespitini market_context.timeline_event olarak yayınladıkça dolacak — şu an tespit edilemediğinde null yazılıyor (uydurma yok).' };
 
     // ════════ PHASE 8 — ÖĞRENME KATMANI (sadece gözlem, karar YOK) ════════
     // min örnek 20 altı = Yetersiz Veri (yanıltıcı istatistik üretme)
@@ -141,6 +143,17 @@ export default async function handler(req, res) {
     const learnRisk       = flagMin(byRisk);
     const learnCoin       = flagMin(byCoin);
     const learnRsi        = flagMin(groupRates(reviewed, r => rsiBand(r.market_context)));
+
+    // ── PHASE 9 zenginleştirme alanları (veri geldikçe otomatik dolar) ──
+    const fundBand = (mc) => { const f = mc && mc.funding_rate != null ? Number(mc.funding_rate) : null;
+      if (f == null) return null; if (f < 0) return 'Negatif Funding'; if (f < 0.0005) return 'Düşük Funding'; return 'Yüksek Funding'; };
+    const mcv = (r, k) => (r.market_context && r.market_context[k] != null) ? r.market_context[k] : null;
+    const learnFunding   = flagMin(groupRates(reviewed, r => fundBand(r.market_context)));
+    const learnRegime    = flagMin(groupRates(reviewed, r => mcv(r, 'market_regime')));
+    const learnVol       = flagMin(groupRates(reviewed, r => mcv(r, 'volatility_band')));
+    const learnTimeline  = flagMin(groupRates(reviewed, r => mcv(r, 'timeline_event')));
+    const learnLiquidity = flagMin(groupRates(reviewed, r => mcv(r, 'liquidity_event')));
+    const hasCond = learnFunding.length || learnRegime.length || learnVol.length;
 
     // Coin: en iyi / en zayıf (yalnız yeterli örnek)
     const sufficientCoins = learnCoin.filter(c => !c.insufficient);
@@ -181,10 +194,13 @@ export default async function handler(req, res) {
       minSample: MIN_SAMPLE,
       byStructure: learnStructure, byConfidence: learnConfidence, byRisk: learnRisk,
       byRsi: learnRsi, topCoins, weakCoins,
+      byFunding: learnFunding, byRegime: learnRegime, byVolatility: learnVol,
+      byTimeline: learnTimeline, byLiquidity: learnLiquidity,
       combo: { total: combo.length, success: comboV, rate: comboRate, insufficient: combo.length < MIN_SAMPLE },
       observations, obsNote, learningReport,
-      marketConditions: { available: false,
-        note: 'Funding / Open Interest / Volatilite archive\'da tutulmuyor → koşul-başarı analizi üretilemez. Ölçülebilen koşul: RSI bandı. Funding/OI için scanner market_context\'e bu alanları yazmalı.' },
+      marketConditions: { available: !!hasCond,
+        note: hasCond ? 'Market koşulu verisi birikiyor (Phase 9 zenginleştirme).'
+          : 'Funding / Open Interest / Volatilite YENİ kayıtlardan itibaren toplanıyor (Phase 9). Yeterli veri birikince koşul-başarı analizi otomatik açılır. Eski kayıtlarda bu alanlar yok.' },
     };
 
     return res.status(200).json({
