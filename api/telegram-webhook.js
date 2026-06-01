@@ -230,6 +230,8 @@ async function onStart(msg) {
   let user = await ensureUser(msg.from, msg.chat.id);
   if (!user) return;
   const tgId = String(msg.from.id);
+  const startParam = (msg.text || '').split(/\s+/)[1] || ''; // deep-link: "/start join" (kanal butonu) vb.
+  if (startParam) console.log('[TG_WEBHOOK] /start param:', startParam, 'from', tgId);
   await validateAndReward(tgId, msg.chat.id);
   const fresh = await sbSelect('tg_users', `tg_id=eq.${tgId}&select=invite_count,valid_invite_count,invite_link`);
   user = (fresh && fresh[0]) || user;
@@ -246,6 +248,9 @@ async function onDavet(msg) {
   if (!user) { await sendMsg(msg.chat.id, 'Önce /start yazarak davet linki al.'); return; }
   await sendMsg(msg.chat.id, fmtDavet(user), { reply_markup: mainKb(user.invite_link) });
 }
+
+// ── /odul ──
+async function onOdul(msg) { await sendMsg(msg.chat.id, fmtRewards()); }
 
 // ── /liderlik ──
 async function onLiderlik(msg) {
@@ -353,6 +358,7 @@ export default async function handler(req, res) {
       if (/^\/start\b/.test(text))         await onStart(update.message);
       else if (/^\/davet\b/.test(text))    await onDavet(update.message);
       else if (/^\/liderlik\b/.test(text)) await onLiderlik(update.message);
+      else if (/^\/odul\b/.test(text))     await onOdul(update.message);
     } else if (update.chat_member) {
       await onChatMember(update.chat_member);
     } else if (update.callback_query) {
