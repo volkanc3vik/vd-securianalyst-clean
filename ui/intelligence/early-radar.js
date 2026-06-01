@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// EARLY OPPORTUNITY RADAR  (Phase / build 89 — Elite kilit kartı)
+// EARLY OPPORTUNITY RADAR  (Phase / build 90 — tıklanabilir satır → grafik analizör)
 // 9/9 setup ÖNCESİ kademeli erken-uyarı katmanı: WATCH → ARMED → CONFIRMED.
 //
 // SALT-OKUNUR: yalnız window.VD_STATE.scanResults okunur. Scanner çekirdeği,
@@ -258,8 +258,9 @@
       const dcol = r.dir === 'LONG' ? '#36d399' : '#f87272';
       const dtxt = r.dir === 'LONG' ? '▲ LONG' : '▼ SHORT';
       const ev = r.lastEvent ? `${esc(r.lastEvent.label)}<br><span style="color:#8b98ac">${relTime(r.lastEvent.at)}</span>` : '—';
-      return `<tr style="border-top:1px solid #1e2836">
-        <td style="padding:7px 6px;font-weight:700">${esc(r.sym.replace('USDT', ''))}</td>
+      const symSafe = esc(r.sym).replace(/'/g, '');
+      return `<tr data-sym="${symSafe}" class="er-row" style="border-top:1px solid #1e2836;cursor:pointer" title="Grafik analizinde aç: ${esc(r.sym.replace('USDT',''))}">
+        <td style="padding:7px 6px;font-weight:700;color:#cbb6ff">${esc(r.sym.replace('USDT', ''))} <span style="color:#7c5cff;font-size:10px">↗</span></td>
         <td style="padding:7px 6px;color:${dcol};font-weight:600">${dtxt}</td>
         <td style="padding:7px 6px">${badge(r.stage)}</td>
         <td style="padding:7px 6px;text-align:center">${r.s.score != null ? r.s.score : '—'}</td>
@@ -284,6 +285,28 @@
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table></div>`;
+
+    // Satıra tıkla → grafik analizör o coine geçsin + ana panele kay
+    try {
+      const rowsEls = mount.querySelectorAll('tr.er-row');
+      rowsEls.forEach(tr => {
+        tr.addEventListener('mouseenter', () => { tr.style.background = 'rgba(124,92,255,.08)'; });
+        tr.addEventListener('mouseleave', () => { tr.style.background = ''; });
+        tr.addEventListener('click', () => {
+          const sym = tr.getAttribute('data-sym');
+          if (!sym) return;
+          if (typeof window.openCoin === 'function') { window.openCoin(sym); return; }
+          // Yedek: openCoin yoksa loadCoin + kaydır
+          if (typeof window.loadCoin === 'function') {
+            window.SYM = sym;
+            const inp = document.getElementById('symInput'); if (inp) inp.value = sym;
+            try { window.loadCoin(sym, window.INTV || '15m'); } catch (e) {}
+            const el = document.getElementById('mainPanel');
+            if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 200);
+          }
+        });
+      });
+    } catch (e) { /* tıklama bağlanamazsa tablo yine de çalışır */ }
   }
 
   // ── Elite olmayanlar için: panel kaybolmaz, kilitli görünür (premium.html ELITE GATE stili) ──
