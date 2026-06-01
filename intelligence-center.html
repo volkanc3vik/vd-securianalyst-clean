@@ -11,17 +11,20 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 .full{grid-column:1/-1}
 .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-size:14px}.row:last-child{border:0}
 .k{color:var(--mut)}.v{font-weight:600}
-.big{font-size:30px;font-weight:700;color:var(--elite)}
-.bar{height:8px;background:#1a2330;border-radius:6px;overflow:hidden;margin:10px 0 4px}
+.bar{height:8px;background:#1a2330;border-radius:6px;overflow:hidden;margin:12px 0 4px}
 .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--elite))}
-.status{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(157,125,250,.15);color:var(--elite);border:1px solid rgba(157,125,250,.4)}
-.elite-list{list-style:none;padding:0;margin:8px 0 0}.elite-list li{padding:6px 0;font-size:14px;color:var(--tx)}.elite-list li .lk{color:var(--elite)}
-.lock{text-align:center;border:1px solid rgba(157,125,250,.4);background:rgba(157,125,250,.06);border-radius:14px;padding:22px 16px;margin-top:6px}
-.lock .ic{font-size:30px}.lock .ttl{font-size:16px;font-weight:700;margin:8px 0 4px}.lock .tx{color:var(--mut);font-size:13px;margin-bottom:14px}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px}
+.badge-req{background:rgba(251,189,35,.12);color:var(--warn);border:1px solid rgba(251,189,35,.45)}
+.badge-active{background:rgba(54,211,153,.12);color:var(--ok);border:1px solid rgba(54,211,153,.45)}
+.badge-admin{background:rgba(157,125,250,.15);color:var(--elite);border:1px solid rgba(157,125,250,.45)}
+.sell{background:#0e1622;border:1px solid var(--bd);border-left:3px solid var(--elite);border-radius:12px;padding:16px 18px;margin-bottom:16px;font-size:14px;line-height:1.6}
+.sell b{color:var(--elite)}.sell ul{margin:10px 0 0;padding-left:18px}.sell li{margin:4px 0}
+.lockcard .card{border-left:3px solid rgba(157,125,250,.5)}
+.collecting{color:var(--mut);font-size:13px;font-style:italic;margin:0}
+.cta{text-align:center;border:1px solid rgba(157,125,250,.4);background:rgba(157,125,250,.06);border-radius:14px;padding:20px 16px;margin-top:6px}
+.cta .ttl{font-size:16px;font-weight:700;margin:6px 0 4px;color:var(--elite)}.cta .tx{color:var(--mut);font-size:13px;margin-bottom:14px}
 .btn{display:inline-block;text-decoration:none;font-weight:600;font-size:14px;padding:10px 18px;border-radius:10px;background:linear-gradient(90deg,var(--ac),var(--elite));color:#04101f}
 .note{color:var(--mut);font-size:12px;margin-top:8px}
-.scaffold .card{border-left:3px solid var(--elite)}
-.collecting{color:var(--mut);font-size:13px;font-style:italic}
 .disc{color:var(--mut);font-size:12px;border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:16px;border-left:3px solid var(--warn)}
 </style></head><body>
 <header class="aic-header">
@@ -36,97 +39,107 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 <script src="modules/access-levels.js"></script>
 <script>
 (function(){
-  const TARGET = 50; // Elite aktivasyon hedefi (validated + partial)
+  const TARGET = 50;
   const app = document.getElementById('app');
-
   function level(){ try { return (window.VDAccess && window.VDAccess.level) ? window.VDAccess.level() : 'free'; } catch(e){ return 'free'; } }
   function isElite(){ try { return !!(window.VDAccess && window.VDAccess.isElite && window.VDAccess.isElite()); } catch(e){ return false; } }
+
+  // Rol bazlı erişim rozeti
+  function accessBadge(lvl){
+    if (lvl === 'admin')   return '<span class="badge badge-admin">🛡 Elite Admin Access</span>';
+    if (lvl === 'elite')   return '<span class="badge badge-active">🟢 Elite Access Active</span>';
+    return '<span class="badge badge-req">🔒 Elite Access Required</span>'; // premium
+  }
+
+  // Elite Activation Progress kutusu (tüm erişim katmanlarında)
+  function progressBox(lvl, count){
+    const rate = Math.min(100, Math.round((count / TARGET) * 100));
+    const status = count >= TARGET ? 'Active' : 'Collecting Market Intelligence';
+    return `
+      <div class="card full">
+        <h2>Elite Activation Progress</h2>
+        ${accessBadge(lvl)}
+        <div class="row" style="margin-top:14px"><span class="k">Validated Records</span><span class="v">${count} / ${TARGET}</span></div>
+        <div class="bar"><i style="width:${rate}%"></i></div>
+        <div class="row"><span class="k">Learning Progress</span><span class="v">${rate}%</span></div>
+        <div class="row"><span class="k">Activation Threshold</span><span class="v">50 Validated Outcomes</span></div>
+        <div class="row"><span class="k">Status</span><span class="v">${status}</span></div>
+      </div>`;
+  }
+
+  // Kilitli özellik kartları (merak uyandırır)
+  const FEATURES = [
+    '🔒 Elite Coin Ranking',
+    '🔒 Elite Structure Ranking',
+    '🔒 Elite Market Conditions',
+    '🔒 Elite Volatility Intelligence',
+    '🔒 Elite Regime Intelligence',
+    '🔒 Elite Opportunity Matrix',
+  ];
+  function featureCards(msg){
+    return `<div class="grid lockcard">` +
+      FEATURES.map(t => `<div class="card"><h2>${t}</h2><p class="collecting">${msg}</p></div>`).join('') +
+      `</div>`;
+  }
 
   // FREE → erişim yok
   function renderFree(){
     app.innerHTML = `
-      <div class="lock">
-        <div class="ic">🔒</div>
-        <div class="ttl">Intelligence Center — Premium Erişim Gerekli</div>
-        <div class="tx">Bu bölüm Premium ve Elite üyelere açıktır.</div>
+      <div class="cta">
+        <div style="font-size:30px">🔒</div>
+        <div class="ttl">Premium Erişim Gerekli</div>
+        <div class="tx">Elite Intelligence Center, Premium ve Elite üyelere açıktır.</div>
         <a class="btn" href="premium.html">Premium'a Göz At →</a>
       </div>`;
   }
 
-  // PREMIUM → placeholder (kilitli, merak uyandırır)
+  // PREMIUM → satış odaklı placeholder
   function renderPremium(count){
-    const rate = Math.min(100, Math.round((count / TARGET) * 100));
-    app.innerHTML = `
-      <div class="grid">
-        <div class="card full">
-          <h2>Elite Engine Status</h2>
-          <span class="status">Collecting Market Intelligence</span>
-          <div class="row" style="margin-top:12px"><span class="k">Validated Records</span><span class="v">${count} / ${TARGET}</span></div>
-          <div class="bar"><i style="width:${rate}%"></i></div>
-          <div class="row"><span class="k">Current Learning Rate</span><span class="v">${rate}%</span></div>
-          <div class="row"><span class="k">Estimated Activation</span><span class="v">Veri Toplanıyor</span></div>
-        </div>
-      </div>
-      <div class="card full">
-        <h2>Elite Intelligence</h2>
-        <ul class="elite-list">
-          <li><span class="lk">✓</span> Coin Ranking</li>
-          <li><span class="lk">✓</span> Structure Ranking</li>
-          <li><span class="lk">✓</span> Market Conditions</li>
-          <li><span class="lk">✓</span> Opportunity Matrix</li>
-          <li><span class="lk">✓</span> Weekly Elite Reports</li>
+    app.innerHTML =
+      `<div class="grid">${progressBox('premium', count)}</div>` +
+      `<div class="sell">
+        <b>Elite Intelligence Layer</b>, AI Learning ve Archive sonuçları yeterli veri seviyesine ulaştığında aktifleşen üst düzey analiz katmanıdır.
+        <br><br><b>Elite Pass</b> ile şunlar açılır:
+        <ul>
+          <li>En güçlü coin sıralamaları</li>
+          <li>En başarılı yapı kombinasyonları</li>
+          <li>Market koşulu istihbaratı</li>
+          <li>Opportunity Matrix</li>
+          <li>Elite AI Reports</li>
         </ul>
-      </div>
-      <div class="lock">
-        <div class="ic">🔒</div>
+      </div>` +
+      featureCards('Elite Pass ile açılır.') +
+      `<div class="cta">
+        <div style="font-size:30px">🔒</div>
         <div class="ttl">Elite Access Required</div>
-        <div class="tx">AI Learning sistemi yeterli doğrulanmış veri topladığında ve Elite erişimin olduğunda bu katman açılır.</div>
+        <div class="tx">Bu katman Elite erişim ve yeterli doğrulanmış veri ile aktifleşir.</div>
         <a class="btn" href="premium.html">Elite Pass Hakkında →</a>
       </div>`;
   }
 
-  // ELITE / ADMIN → erişim açık, bölüm iskeleti (hesaplama motoru sonraki fazda)
-  function renderElite(count){
-    const rate = Math.min(100, Math.round((count / TARGET) * 100));
-    const active = count >= TARGET;
-    const card = (title) => `<div class="card"><h2>${title}</h2><p class="collecting">${active ? 'Hazırlanıyor…' : 'Veri Toplanıyor — yeterli doğrulanmış veri birikince aktifleşecek.'}</p></div>`;
-    app.innerHTML = `
-      <div class="grid">
-        <div class="card full">
-          <h2>Elite Engine Status</h2>
-          <span class="status" style="background:rgba(54,211,153,.12);color:var(--ok);border-color:rgba(54,211,153,.4)">Elite Access · Aktif</span>
-          <div class="row" style="margin-top:12px"><span class="k">Validated Records</span><span class="v">${count} / ${TARGET}</span></div>
-          <div class="bar"><i style="width:${rate}%"></i></div>
-          <div class="row"><span class="k">Learning Rate</span><span class="v">${rate}%</span></div>
-          <div class="row"><span class="k">Engine</span><span class="v">${active ? 'Aktif' : 'Collecting Intelligence'}</span></div>
-        </div>
-      </div>
-      <div class="grid scaffold">
-        ${card('Elite Coin Ranking')}
-        ${card('Elite Structure Ranking')}
-        ${card('Elite Market Conditions')}
-        ${card('Elite Volatility Intelligence')}
-        ${card('Elite Regime Intelligence')}
-        ${card('Elite Opportunity Matrix')}
-      </div>
-      <div class="card full scaffold"><h2>AI Intelligence Reports</h2><p class="collecting">${active ? 'Hazırlanıyor…' : 'Veri Toplanıyor — Elite raporları yeterli veri birikince üretilecek.'}</p></div>
-      <p class="note">Elite hesaplama motoru bir sonraki fazda devreye alınacaktır. Şu an gerçek sayım gösterilir; uydurma veri üretilmez.</p>`;
+  // ELITE / ADMIN → erişim açık, profesyonel "toplanıyor" mesajı
+  function renderElite(lvl, count){
+    const msg = 'Market Intelligence data is being collected. Elite metrics will activate after sufficient validated outcomes.';
+    app.innerHTML =
+      `<div class="grid">${progressBox(lvl, count)}</div>` +
+      featureCards(msg) +
+      `<div class="card full lockcard" style="border-left:3px solid rgba(157,125,250,.5)">
+        <h2>🔒 AI Intelligence Reports</h2><p class="collecting">${msg}</p>
+      </div>` +
+      `<p class="note">Elite hesaplama motoru bir sonraki fazda devreye alınacaktır. Şu an gerçek sayım gösterilir; uydurma veri üretilmez.</p>`;
   }
 
   function boot(){
     const lvl = level();
     if (lvl === 'free') { renderFree(); return; }
     const elite = isElite();
-    // validated + partial sayısını archive-stats'tan al
     fetch('/api/archive-stats').then(r=>r.json()).then(d=>{
       let count = 0;
       try { if (d && d.ok && d.overall) count = (d.overall.success||0) + (d.overall.partial||0); } catch(e){}
       try { document.getElementById('gen').textContent = '· ' + new Date(d.generated_at||Date.now()).toLocaleString('tr-TR'); } catch(e){}
-      if (elite) renderElite(count); else renderPremium(count);
-    }).catch(()=>{ if (elite) renderElite(0); else renderPremium(0); });
+      if (elite) renderElite(lvl, count); else renderPremium(count);
+    }).catch(()=>{ if (elite) renderElite(lvl, 0); else renderPremium(0); });
   }
-
-  // VDAccess hazır olana kadar minik bekleme (script sırası güvencesi)
   let tries=0;
   (function wait(){ if (window.VDAccess || tries++>20) return boot(); setTimeout(wait,80); })();
 })();
