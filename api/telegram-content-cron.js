@@ -46,6 +46,16 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&a
 const r1  = (n) => Math.round(Number(n) * 10) / 10;
 const r2  = (n) => Math.round(Number(n) * 100) / 100;
 
+// created_at → "01 Haziran 2026 09:00" (Europe/Istanbul)
+function trDate(iso) {
+  try {
+    return new Intl.DateTimeFormat('tr-TR', {
+      timeZone: 'Europe/Istanbul', day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(new Date(iso)).replace(',', '');
+  } catch (e) { return null; }
+}
+
 // Binance public — güncel fiyat (key gerekmez)
 async function currentPrice(sym) {
   try {
@@ -100,7 +110,7 @@ async function postAnalysis() {
     `or=(shared_to_telegram.is.null,shared_to_telegram.eq.false)` +
     `&analysis_score=gte.80&created_at=gte.${sinceIso}` +
     `&order=analysis_score.desc,created_at.desc&limit=1` +
-    `&select=id,sym,direction_bias,price_at_analysis,analysis_score,market_context`);
+    `&select=id,sym,direction_bias,price_at_analysis,analysis_score,market_context,created_at`);
   const r = rows && rows[0];
   if (!r) { console.log('[TG_CONTENT] paylaşılacak yeni analiz yok'); return false; }
 
@@ -119,12 +129,15 @@ async function postAnalysis() {
   if (price != null) txt += `Mevcut Fiyat: <b>${price}</b>\n`;
   if (bt) txt += `Beklenti Bölgesi: <b>${bt}</b>\n`;
   txt += `Yapı: <b>${esc(yapi(mc, bias))}</b>\n`;
+  const zaman = trDate(r.created_at);
+  if (zaman) txt += `\n🕒 Analiz Zamanı:\n<b>${zaman}</b>\n`;
   txt += `\n🔍 Detaylı Analizi Gör: ${SITE}/?symbol=${encodeURIComponent(r.sym)}&ref=tg\n\n`;
   txt += NOT_BLOCK + FOOTER;
 
   const res = await post(txt);
   if (res && res.ok) {
-    const patch = { shared_to_telegram: true, telegram_msg_id: res.result.message_id, shared_at: new Date().toISOString() };
+    const patch = { shared_to_telegram: true, telegram_msg_id: res.result.message_id, shared_at: new Date().toISOString(),
+      market_context: Object.assign({}, mc, { posted_via: 'telegram_auto_analysis' }) };
     if (band) {
       patch.tg_exp_lo = band.lo; patch.tg_exp_hi = band.hi;
       patch.tg_exp_pct = bias === 'bearish' ? -band.mid : bias === 'neutral' ? 0 : band.mid;
