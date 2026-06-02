@@ -2560,6 +2560,76 @@ function startTimer() {
 <!-- ══ EARLY OPPORTUNITY RADAR (build 86) — salt-okunur erken-uyarı katmanı ══ -->
 <div id="earlyRadar" style="margin-top:16px;background:#111722;border:1px solid #1e2836;border-radius:14px;padding:14px"></div>
 
+  <!-- AI KARAR MOTORU (taşındı: Early Radar ile Futures arası) -->
+  <!-- AŞAMA 1: AI REASONING + ECE 2.0 + WS STATUS -->
+  <div class="glass-card" id="phase1Section">
+    <div class="gc-title" style="display:flex;align-items:center;gap:10px">
+      ◈ AI Karar Motoru
+      <span style="font-size:10px;font-weight:600;margin-left:auto" id="wsStatus">○ WS Bağlantı Yok</span>
+    </div>
+
+    <!-- AI NARRATOR — Anthropic Opus 4.7 -->
+    <div style="background:rgba(0,0,0,.25);border:1px solid rgba(157,125,250,.25);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase">◈ AI Market Yorumu</span>
+        <span id="aiNarratorBadge" style="font-size:9px;padding:1px 8px;background:rgba(255,255,255,.06);border-radius:8px;color:var(--text3)">⚪ API Key Yok</span>
+        <span id="aiNarratorTs" style="font-size:9px;color:var(--text3);margin-left:auto">—</span>
+      </div>
+      <div id="aiNarratorText" style="font-size:11px;color:var(--text3);line-height:1.6">
+        Coin seçince Opus 4.7 analiz başlayacak...<br>
+        <span style="font-size:9px;color:var(--text3);opacity:.6">API key eklenince aktif olur.</span>
+      </div>
+    </div>
+    <style>
+    @keyframes aiPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+    </style>
+
+    <!-- PHASE 2: WS Health Monitor -->
+    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(0,212,255,.12);border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ WebSocket Health Monitor</div>
+      <div id="wsHealthPanel" style="font-size:11px;color:var(--text3)">Bağlantı bekleniyor...</div>
+    </div>
+
+    <!-- PHASE 2: Realtime Market Data -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <!-- Volume Delta -->
+      <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;">
+        <div id="vdPanel" style="font-size:11px;color:var(--text3)">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">◈ VOLUME DELTA</div>
+          Coin seçilince görünecek...
+        </div>
+      </div>
+      <!-- Order Book Imbalance -->
+      <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;">
+        <div id="obPanel" style="font-size:11px;color:var(--text3)">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">◈ ORDER BOOK</div>
+          Coin seçilince görünecek...
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Reasoning Panel -->
+    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ AI Karar Gerekçesi</div>
+      <div id="aiReasoningPanel" style="font-size:11px;color:var(--text3)">Coin seçince AI analizi burada görünecek...</div>
+    </div>
+
+    <!-- PHASE 3: Ağırlıklı Confirmation Engine -->
+    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(157,125,250,.2);border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ AI Karar Motoru — Phase 3</div>
+      <div id="phase3Panel" style="font-size:11px;color:var(--text3)">Coin seçince ağırlıklı AI analizi başlayacak...</div>
+    </div>
+
+    <!-- ECE 2.0 -->
+    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ Entry Confirmation (8 Koşul)</div>
+      <div id="ece2Stages">
+        <div style="font-size:11px;color:var(--text3);padding:6px 0">Coin seçince koşullar değerlendirilecek...</div>
+      </div>
+    </div>
+  </div>
+
+
 <!-- ══ FUTURES MANUEL İŞLEM PANELİ — yeni mimari ══ -->
 <div id="futuresPanelMount" style="margin-top:16px"></div>
 
@@ -2861,73 +2931,6 @@ function startTimer() {
   </div>
 
 
-  <!-- AŞAMA 1: AI REASONING + ECE 2.0 + WS STATUS -->
-  <div class="glass-card" id="phase1Section">
-    <div class="gc-title" style="display:flex;align-items:center;gap:10px">
-      ◈ AI Karar Motoru
-      <span style="font-size:10px;font-weight:600;margin-left:auto" id="wsStatus">○ WS Bağlantı Yok</span>
-    </div>
-
-    <!-- AI NARRATOR — Anthropic Opus 4.7 -->
-    <div style="background:rgba(0,0,0,.25);border:1px solid rgba(157,125,250,.25);border-radius:12px;padding:12px;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase">◈ AI Market Yorumu</span>
-        <span id="aiNarratorBadge" style="font-size:9px;padding:1px 8px;background:rgba(255,255,255,.06);border-radius:8px;color:var(--text3)">⚪ API Key Yok</span>
-        <span id="aiNarratorTs" style="font-size:9px;color:var(--text3);margin-left:auto">—</span>
-      </div>
-      <div id="aiNarratorText" style="font-size:11px;color:var(--text3);line-height:1.6">
-        Coin seçince Opus 4.7 analiz başlayacak...<br>
-        <span style="font-size:9px;color:var(--text3);opacity:.6">API key eklenince aktif olur.</span>
-      </div>
-    </div>
-    <style>
-    @keyframes aiPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
-    </style>
-
-    <!-- PHASE 2: WS Health Monitor -->
-    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(0,212,255,.12);border-radius:10px;padding:10px 12px;margin-bottom:12px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ WebSocket Health Monitor</div>
-      <div id="wsHealthPanel" style="font-size:11px;color:var(--text3)">Bağlantı bekleniyor...</div>
-    </div>
-
-    <!-- PHASE 2: Realtime Market Data -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-      <!-- Volume Delta -->
-      <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;">
-        <div id="vdPanel" style="font-size:11px;color:var(--text3)">
-          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">◈ VOLUME DELTA</div>
-          Coin seçilince görünecek...
-        </div>
-      </div>
-      <!-- Order Book Imbalance -->
-      <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;">
-        <div id="obPanel" style="font-size:11px;color:var(--text3)">
-          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">◈ ORDER BOOK</div>
-          Coin seçilince görünecek...
-        </div>
-      </div>
-    </div>
-
-    <!-- AI Reasoning Panel -->
-    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;margin-bottom:12px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ AI Karar Gerekçesi</div>
-      <div id="aiReasoningPanel" style="font-size:11px;color:var(--text3)">Coin seçince AI analizi burada görünecek...</div>
-    </div>
-
-    <!-- PHASE 3: Ağırlıklı Confirmation Engine -->
-    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(157,125,250,.2);border-radius:10px;padding:12px;margin-bottom:12px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ AI Karar Motoru — Phase 3</div>
-      <div id="phase3Panel" style="font-size:11px;color:var(--text3)">Coin seçince ağırlıklı AI analizi başlayacak...</div>
-    </div>
-
-    <!-- ECE 2.0 -->
-    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">◈ Entry Confirmation (8 Koşul)</div>
-      <div id="ece2Stages">
-        <div style="font-size:11px;color:var(--text3);padding:6px 0">Coin seçince koşullar değerlendirilecek...</div>
-      </div>
-    </div>
-  </div>
 
   <!-- ENTRY CONFIRMATION ENGINE -->
   <div class="glass-card" id="ecePanel">
