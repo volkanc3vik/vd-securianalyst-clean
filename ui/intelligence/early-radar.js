@@ -309,9 +309,10 @@
       // ARMED gücü → 3 kademe (Readiness'e göre). Sıralama zaten value'ya göre, güçlü üstte.
       let tier = 0, tCls = '', tDot = '', tTag = '';
       if (r.stage === 'ARMED') {
-        if (r.value >= 88)      { tier = 3; tCls = 'er-t3'; tDot = '<span class="er-dot-t3" title="3. Kademe — En güçlü olgunluk"></span>'; tTag = '<span class="er-tag-t3" title="En güçlü ARMED — tam olgun">★ GÜÇLÜ</span>'; }
-        else if (r.value >= 77) { tier = 2; tCls = 'er-t2'; tDot = '<span class="er-dot-t2" title="2. Kademe — Olgunlaşıyor"></span>'; tTag = '<span class="er-tag-t2" title="Orta-güçlü ARMED">⚡ HAZIR</span>'; }
-        else                    { tier = 1; tCls = 'er-t1'; tDot = '<span class="er-dot-t1" title="1. Kademe — Erken ARMED"></span>'; tTag = '<span class="er-tag-t1" title="Zayıf ARMED — izle">○ ERKEN</span>'; }
+        const vr = r.s && r.s.volRatio != null ? r.s.volRatio : null;  // hacmin 1.30 teyidine yolculuğu
+        if (vr != null && vr >= 1.20)      { tier = 3; tCls = 'er-t3'; tDot = '<span class="er-dot-t3" title="Teyide çok yakın (hacim ≥1.20×)"></span>'; tTag = '<span class="er-tag-t3" title="Hacim teyide çok yaklaştı — birazdan CONFIRMED">★ GÜÇLÜ</span>'; }
+        else if (vr != null && vr >= 1.10) { tier = 2; tCls = 'er-t2'; tDot = '<span class="er-dot-t2" title="Hazırlanıyor (hacim 1.10–1.20×)"></span>'; tTag = '<span class="er-tag-t2" title="Hacim toplanıyor">⚡ HAZIR</span>'; }
+        else                                { tier = 1; tCls = 'er-t1'; tDot = '<span class="er-dot-t1" title="Yeni uyanıyor (hacim 1.00–1.10×)"></span>'; tTag = '<span class="er-tag-t1" title="Hacim yeni uyanıyor">○ ERKEN</span>'; }
       }
       return `<tr data-sym="${symSafe}" class="er-row${tCls ? ' ' + tCls : ''}" style="border-top:1px solid #1e2836;cursor:pointer" title="Grafik analizinde aç: ${esc(r.sym.replace('USDT',''))}">
         <td style="padding:7px 6px;font-weight:700;color:#cbb6ff">${esc(r.sym.replace('USDT', ''))} <span style="color:#7c5cff;font-size:10px">↗</span>${tDot}</td>
