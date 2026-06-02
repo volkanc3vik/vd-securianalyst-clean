@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// EARLY OPPORTUNITY RADAR  (Phase / build 94 — ARMED 3 kademe: kırmızı/turuncu/altın)
+// EARLY OPPORTUNITY RADAR  (Phase / build 96 — Teyit Yolu: hacim→1.30 takibi)
 // 9/9 setup ÖNCESİ kademeli erken-uyarı katmanı: WATCH → ARMED → CONFIRMED.
 //
 // SALT-OKUNUR: yalnız window.VD_STATE.scanResults okunur. Scanner çekirdeği,
@@ -232,6 +232,31 @@
     return `<span title="${label}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};margin-right:3px"></span>`;
   }
 
+  // ── Teyit Yolu: CONFIRMED'in 3 şartı (Hacim≥1.30 · Hizalama tam · Skor≥0.60) ──
+  function confirmCell(s) {
+    const vr = s.volRatio;
+    // Hacim oranı → 1.30 hedefi
+    let volTxt, volCol, pct;
+    if (vr == null) { volTxt = '—'; volCol = '#8b98ac'; pct = 0; }
+    else {
+      volTxt = vr.toFixed(2) + '×';
+      pct = Math.max(0, Math.min(100, (vr / 1.30) * 100));
+      volCol = vr >= 1.30 ? '#36d399' : vr >= 1.00 ? '#ff8a3d' : '#8b98ac';
+    }
+    const bar = `<div style="height:4px;background:#1e2836;border-radius:3px;margin-top:3px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${volCol}"></div></div>`;
+    // 3 şart durumu (CONFIRMED eşikleri)
+    const okVol = vr != null && vr >= 1.30;
+    const okAlign = s.align >= 0.99;
+    const okConf = s.conf >= 0.60;
+    const pip = (ok, lbl, full) => `<span title="${lbl}: ${ok ? 'tamam' : 'bekliyor'} (hedef ${full})" style="font-size:9px;font-weight:700;color:${ok ? '#36d399' : '#5b6677'}">${ok ? '✓' : '○'}${lbl}</span>`;
+    return `<div style="min-width:96px">
+      <div style="font-size:11px;font-weight:700;color:${volCol}">Hacim ${volTxt} <span style="color:#5b6677;font-weight:500">/ 1.30</span></div>
+      ${bar}
+      <div style="display:flex;gap:6px;margin-top:4px">${pip(okAlign, 'Hiza', '3/3')}${pip(okConf, 'Skor', '≥80')}${pip(okVol, 'Teyit', '1.30×')}</div>
+    </div>`;
+  }
+
   function render(rows) {
     const mount = document.getElementById('earlyRadar');
     if (!mount) return;
@@ -296,6 +321,7 @@
         <td style="padding:7px 6px;text-align:center">${r.s.risk != null ? r.s.risk : '—'}</td>
         <td style="padding:7px 6px;text-align:center;font-weight:700">${r.value} ${arrow(r.value, r.prevReadiness)}</td>
         <td style="padding:7px 6px;text-align:center;white-space:nowrap">${chip((r.s.squeeze || 0) >= 0.5, 'Squeeze')}${chip((r.s.compress || 0) >= 0.5, 'Compression')}${chip(r.s.volFiring, 'Volume Awakening')}</td>
+        <td style="padding:7px 6px">${confirmCell(r.s)}</td>
         <td style="padding:7px 6px;font-size:11px"><span style="color:#9fe0c0">${esc(rs.why)}</span>${rs.miss !== '—' ? `<br><span style="color:#c79a6a">Eksik: ${esc(rs.miss)}</span>` : ''}</td>
         <td style="padding:7px 6px;font-size:11px">${ev}</td>
         <td style="padding:7px 6px;font-size:11px;color:#8b98ac">${relTime(r.stageSince)}</td>
@@ -309,6 +335,7 @@
           <th style="padding:6px;text-align:left">Coin</th><th style="padding:6px;text-align:left">Yön</th>
           <th style="padding:6px;text-align:left">Aşama</th><th style="padding:6px">Conf</th><th style="padding:6px">Risk</th>
           <th style="padding:6px">Readiness</th><th style="padding:6px">S·C·V</th>
+          <th style="padding:6px;text-align:left">Teyit Yolu</th>
           <th style="padding:6px;text-align:left">Neden / Eksik</th><th style="padding:6px;text-align:left">Son Değişim</th>
           <th style="padding:6px;text-align:left">Aşama Yaşı</th>
         </tr></thead>
