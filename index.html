@@ -4061,6 +4061,19 @@ function renderCard(item,dir,container,isJoker=false){
   const dirTxt=isJoker?(dir==='long'?'🃏 JOKER LONG':'🃏 JOKER SHORT'):(dir==='long'?'▲ LONG':'▼ SHORT');
   const dec=item.price>1000?0:item.price>100?2:item.price>1?4:item.price>0.01?5:7;
 
+  // ── Leader Alignment (bilgi katmanı): kart yönü vs BTC/ETH yönü ──
+  const _setupDir=dir==='long'?'LONG':'SHORT';
+  const _L=window.VD_LEADERS||{btc:null,eth:null};
+  let _laTxt,_laCol,_laTip;
+  const _btcAgree=_L.btc&&_L.btc===_setupDir, _btcCounter=_L.btc&&_L.btc!==_setupDir;
+  const _ethAgree=_L.eth&&_L.eth===_setupDir, _ethCounter=_L.eth&&_L.eth!==_setupDir;
+  if(_btcCounter){ _laTxt='🔴 Counter Trend'; _laCol='var(--red)'; _laTip='BTC ters yönde — dikkat'; }
+  else if(_btcAgree&&(_ethAgree||!_L.eth)){ _laTxt='🟢 Strong Alignment'; _laCol='var(--green)'; _laTip='BTC'+(_ethAgree?' + ETH':'')+' aynı yönde'; }
+  else if(_btcAgree&&_ethCounter){ _laTxt='🟡 BTC uyumlu · ETH ters'; _laCol='var(--yellow)'; _laTip='BTC uyumlu, ETH ters (uyarı)'; }
+  else if(!_L.btc&&_ethAgree){ _laTxt='🟢 ETH destekli'; _laCol='var(--green)'; _laTip='BTC nötr, ETH aynı yönde'; }
+  else if(!_L.btc&&_ethCounter){ _laTxt='🟡 ETH ters'; _laCol='var(--yellow)'; _laTip='BTC nötr, ETH ters (uyarı)'; }
+  else { _laTxt='⚪ Neutral'; _laCol='var(--text3)'; _laTip='Piyasa lideri nötr'; }
+
   const d=document.createElement('div');d.className=cardClass;
   d.innerHTML=`<div class="opp-glow"></div>
     <div class="opp-dir ${dirClass}">${dirTxt}</div>
@@ -4079,6 +4092,10 @@ function renderCard(item,dir,container,isJoker=false){
       <div class="opp-ind">EMA: <b>${ema}</b></div>
       <div class="opp-ind">MACD: <b style="color:${item.mh>0?'var(--green)':'var(--red)'}">${item.mh>0?'▲':'▼'}</b></div>
       <div class="opp-ind">24s: <b style="color:${item.chg>=0?'var(--green)':'var(--red)'}">${chgStr}</b></div>
+    </div>
+    <div class="leader-align" title="${_laTip}" style="display:flex;align-items:center;gap:6px;margin:8px 0 2px;padding:5px 9px;border-radius:8px;background:${_laCol}14;border:1px solid ${_laCol}40">
+      <span style="font-size:10px;color:var(--text3);letter-spacing:.04em">LEADER ALIGNMENT</span>
+      <span style="margin-left:auto;font-size:11.5px;font-weight:700;color:${_laCol}">${_laTxt}</span>
     </div>
     <div class="opp-desc">${desc}${isJoker?'<br><span style="color:'+jCol+';font-weight:600">⚡ Yüksek volatilite — yüksek dikkat gerektirir</span>':''}</div>
     <button class="opp-btn" style="background:${mainCol}12;color:${mainCol};border:1px solid ${mainCol}44">Grafikte İncele →</button>`;
@@ -4164,6 +4181,20 @@ async function scanMarket(){
   const topSyms=new Set([...top3L,...top3S].map(i=>i.sym));
   const jokerL=[...results].filter(i=>!topSyms.has(i.sym)).sort((a,b)=>b.jlScore-a.jlScore)[0];
   const jokerS=[...results].filter(i=>!topSyms.has(i.sym)).sort((a,b)=>b.jsScore-a.jsScore)[0];
+
+  // ── LEADER ALIGNMENT (bilgi katmanı): BTC/ETH yönünü mevcut tarama sonucundan türet ──
+  // Ekstra Binance çağrısı YOK; scanner core'a/sinyale/kart görünürlüğüne dokunmaz.
+  try{
+    const leaderDir=(sym)=>{
+      const it=results.find(r=>r.sym===sym); if(!it||!it.ind) return null;
+      const {ema9,ema21,ema50}=it.ind, mh=it.ind.macd?it.ind.macd.histogram:0, r=it.ind.rsi;
+      if(ema9==null||ema21==null||ema50==null) return null;
+      if(ema9>ema21&&ema21>ema50&&mh>0&&r>=50) return 'LONG';
+      if(ema9<ema21&&ema21<ema50&&mh<0&&r<=50) return 'SHORT';
+      return null; // nötr/yatay
+    };
+    window.VD_LEADERS={btc:leaderDir('BTCUSDT'),eth:leaderDir('ETHUSDT')};
+  }catch(e){ window.VD_LEADERS={btc:null,eth:null}; }
 
   const lg=document.getElementById('longGrid'),sg=document.getElementById('shortGrid'),jg=document.getElementById('jokerGrid');
   lg.innerHTML='';sg.innerHTML='';jg.innerHTML='';
