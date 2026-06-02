@@ -36,7 +36,7 @@ const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID  = process.env.EARLY_ALERT_CHAT_ID || '1148433599';
 const TOP_N    = Math.max(10, Math.min(300, +(process.env.EARLY_ALERT_TOP_N || 150)));
 const COOLDOWN_MIN = Math.max(0, +(process.env.EARLY_ALERT_COOLDOWN_MIN || 20));
-const GOLD_MIN = Math.max(50, +(process.env.EARLY_ALERT_MIN || 77)); // 77 = turuncu HAZIR + altın GÜÇLÜ (kırmızı hariç)
+const GOLD_MIN = Math.max(50, +(process.env.EARLY_ALERT_MIN || 88)); // 88 = SADECE altın GÜÇLÜ (turuncu/kırmızı hariç)
 const STATE_TABLE = 'early_alert_state';
 
 // ── Supabase REST ───────────────────────────────────────────────────
