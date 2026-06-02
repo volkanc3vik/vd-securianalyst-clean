@@ -303,20 +303,27 @@ function buildMessage(ev, item) {
 }
 function labelFromScore(t) { return t <= 25 ? 'DÜŞÜK' : t <= 50 ? 'ORTA' : t <= 75 ? 'YÜKSEK' : 'ÇOK YÜKSEK'; }
 
-// ── Grafik: kendi mum verimizden QuickChart PNG (sunucu render YOK) ──
-function chartUrl(sym, closes, dir) {
-  if (!Array.isArray(closes) || closes.length < 10) return null;
-  const data = closes.slice(-48).map(c => +(+c).toPrecision(5));
-  const line = dir === 'LONG' ? '#36d399' : '#f87272';
+// ── Grafik: kendi mum verimizden QuickChart MUM (candlestick) PNG ──
+function chartUrl(sym, candles, dir) {
+  if (!Array.isArray(candles) || candles.length < 10) return null;
+  const cs = candles.slice(-40).map((c, i) => ({
+    x: i,
+    o: +(+c.o).toPrecision(6), h: +(+c.h).toPrecision(6),
+    l: +(+c.l).toPrecision(6), c: +(+c.c).toPrecision(6),
+  }));
   const cfg = {
-    type: 'line',
-    data: { labels: data.map(() => ''), datasets: [{ data, borderColor: line, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.25 }] },
+    type: 'candlestick',
+    data: { datasets: [{
+      data: cs,
+      color: { up: '#36d399', down: '#f87272', unchanged: '#8b98ac' },
+      borderColor: { up: '#36d399', down: '#f87272', unchanged: '#8b98ac' },
+    }] },
     options: {
       plugins: { legend: { display: false }, title: { display: true, text: `${sym} · 15m`, color: '#e6edf6', font: { size: 16 } } },
-      scales: { x: { display: false }, y: { ticks: { color: '#8b98ac' }, grid: { color: '#1e2836' } } },
+      scales: { x: { display: false }, y: { position: 'right', ticks: { color: '#8b98ac' }, grid: { color: '#1e2836' } } },
     },
   };
-  return `https://quickchart.io/chart?bkg=%23111722&w=520&h=280&c=${encodeURIComponent(JSON.stringify(cfg))}`;
+  return `https://quickchart.io/chart?bkg=%23111722&w=520&h=300&v=4&c=${encodeURIComponent(JSON.stringify(cfg))}`;
 }
 // ── Canlı TradingView linki ──
 function tvLink(sym) {
@@ -465,7 +472,7 @@ export default async function handler(req, res) {
         const cap = `${tier} · ${item.sym}\n${DIR_TR[ev.dir] || ev.dir} · Readiness ${ev.value}/100`;
         // Önce grafik fotoğrafı (varsa), sonra detay metin
         let photoOk = false;
-        const cu = chartUrl(item.sym, item.closes, ev.dir);
+        const cu = chartUrl(item.sym, item.candles, ev.dir);
         if (cu) { const p = await sendPhoto(cu, cap); photoOk = p.ok; }
         const r = await sendDM(msg);
         sent.push({ sym: ev.sym, dir: ev.dir, readiness: ev.value, photo: photoOk, ok: r.ok, error: r.error });
