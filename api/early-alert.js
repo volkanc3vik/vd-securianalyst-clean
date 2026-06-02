@@ -277,6 +277,12 @@ function buildMessage(ev, item) {
   msg += `Stage:\nARMED (${ev.value >= 88 ? 'Altın' : 'Turuncu'})\n\n`;
   msg += `Structure Readiness:\n${ev.value}/100\n\n`;
   msg += `Zaman Uyumu:\n✓ 15m kurulum + 1h trend aynı yönde\n\n`;
+  // Piyasa lideri uyumu (BTC/ETH)
+  const mk = ev.market;
+  if (mk) {
+    const q = Math.max(0, Math.min(100, ev.value + (mk.bonus || 0)));
+    msg += `Piyasa Uyumu:\nBTC: ${mk.btcTxt}\nETH: ${mk.ethTxt}\nKalite: ${mk.label}\nKalite Skoru: ${q}/100\n\n`;
+  }
   msg += `Hacim Durumu:\n${volLine}\n\n`;
   msg += `Neden:\n${why.length ? why.join('\n') : '—'}\n\n`;
   msg += `Eksik:\n${miss.length ? miss.map(m => '• ' + m).join('\n') : '—'}\n`;
@@ -330,6 +336,27 @@ function chartUrl(sym, candles, dir, tf) {
 function tvLink(sym) {
   const base = sym.replace('USDT', '');
   return `https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P&interval=15`;
+}
+
+// ── Piyasa lideri uyumu (BTC katı, ETH yumuşak) ──
+// btcDir/ethDir: 'LONG' | 'SHORT' | null(nötr/yatay).  dir: setup yönü.
+// Not: BTC açıkça ters olanlar zaten ELENDİ (buraya gelmez). Burada yalnız bonus/uyarı/etiket.
+function marketInfo(dir, btcDir, ethDir) {
+  const arrow = (d) => d === 'LONG' ? 'Yukarı' : d === 'SHORT' ? 'Aşağı' : null;
+  let btcTxt, ethTxt, bonus = 0, ethWarn = false;
+  if (btcDir === dir) { btcTxt = `✓ Uyumlu (${arrow(btcDir)})`; bonus += 5; }
+  else { btcTxt = '• Nötr / Yatay'; }
+  if (ethDir === dir) { ethTxt = `✓ Uyumlu (${arrow(ethDir)}) · bonus`; bonus += 3; }
+  else if (ethDir && ethDir !== dir) { ethTxt = `⚠ Ters (${arrow(ethDir)}) · uyarı`; bonus -= 4; ethWarn = true; }
+  else { ethTxt = '• Nötr / Yatay'; }
+  let label;
+  if (btcDir === dir && ethDir === dir) label = '🟢 Yüksek Uyum';
+  else if (btcDir === dir && ethWarn) label = '🟡 BTC uyumlu · ETH uyarısı';
+  else if (btcDir === dir) label = '🟢 İyi (BTC uyumlu)';
+  else if (ethDir === dir) label = '🟡 Nötr piyasa · ETH destekli';
+  else if (ethWarn) label = '🟡 Nötr piyasa · ETH uyarısı';
+  else label = '⚪ Nötr piyasa';
+  return { btcTxt, ethTxt, bonus, ethWarn, label };
 }
 
 // ── Binance JSON çekme yardımcısı ──
@@ -467,6 +494,13 @@ export default async function handler(req, res) {
 
     // 2b) 1H TREND FİLTRESİ — yalnız 15m yönü ile 1h trendi AYNI olanlar geçer.
     //     (Sadece az sayıdaki ARMED adayına 1h çekilir → hız/limit korunur.)
+    // + PİYASA LİDERİ UYUMU: BTC açıkça ters → ele · BTC nötr → geç · BTC uyumlu → kalite+
+    //   ETH ikinci teyit: uyumlu → bonus · ters → uyarı (elemez) · nötr → etkisiz.
+    let btcDir = null, ethDir = null;
+    if (armed.length) {
+      try { btcDir = (await htfTrend('BTCUSDT')).dir; } catch (e) {}
+      try { ethDir = (await htfTrend('ETHUSDT')).dir; } catch (e) {}
+    }
     const gold = [];          // filtreden geçen güçlü adaylar
     const htfCandles = {};     // sym → 1h mumlar (grafik için)
     for (let i = 0; i < armed.length; i += BATCH) {
@@ -477,8 +511,11 @@ export default async function handler(req, res) {
         if (tr.status !== 'fulfilled') return;
         const { dir: htfDir, candles } = tr.value;
         if (candles) htfCandles[ev.sym] = candles;
-        if (htfDir && htfDir === ev.dir) gold.push(ev); // 15m ↔ 1h uyumu
-        // 1h ters/yatay → elenir (zayıf sayılır)
+        if (!(htfDir && htfDir === ev.dir)) return;            // 15m ↔ 1h uyumu yoksa elenir
+        // BTC kapısı: açıkça ters yönde ise ELE (piyasa liderine tamamen ters sinyal alma)
+        if (btcDir && btcDir !== ev.dir) return;
+        ev.market = marketInfo(ev.dir, btcDir, ethDir);          // uyum + kalite bilgisi
+        gold.push(ev);
       });
     }
 
