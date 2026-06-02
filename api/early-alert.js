@@ -36,7 +36,7 @@ const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID  = process.env.EARLY_ALERT_CHAT_ID || '1148433599';
 const TOP_N    = Math.max(10, Math.min(300, +(process.env.EARLY_ALERT_TOP_N || 150)));
 const COOLDOWN_MIN = Math.max(0, +(process.env.EARLY_ALERT_COOLDOWN_MIN || 20));
-const GOLD_MIN = 88;          // Altın ARMED Readiness eşiği
+const GOLD_MIN = Math.max(50, +(process.env.EARLY_ALERT_MIN || 77)); // 77 = turuncu HAZIR + altın GÜÇLÜ (kırmızı hariç)
 const STATE_TABLE = 'early_alert_state';
 
 // ── Supabase REST ───────────────────────────────────────────────────
@@ -256,11 +256,27 @@ function buildMessage(ev, item) {
   const riskLabel = (item.risk && item.risk.label) ? item.risk.label
     : (item.risk && item.risk.score != null ? labelFromScore(item.risk.score) : '—');
 
-  let msg = '⚡ ALTIN ARMED RADAR\n\n';
+  // Kademe (anlık Readiness'e göre): 88+ GÜÇLÜ (altın), 77-87 HAZIR (turuncu)
+  const tier = ev.value >= 88 ? '🥇 GÜÇLÜ' : '🟠 HAZIR';
+
+  // Anlaşılır hacim satırı (o anki gerçek değer)
+  const vr = ev.s.volRatio;
+  let volLine;
+  if (vr == null) volLine = 'Hacim verisi yok';
+  else {
+    const pctOfBase = Math.round(vr * 100);              // tabanın %'si
+    const toTarget = vr >= 1.30 ? 'teyit eşiği geçildi'  // 1.30+
+      : `teyide ${Math.round((1.30 - vr) * 100)} puan kaldı`;
+    const durum = vr >= 1.30 ? 'TEYİT' : vr >= 1.00 ? 'UYANIYOR' : 'düşük';
+    volLine = `${vr.toFixed(2)}× (normalin %${pctOfBase}'i) · ${durum} · ${toTarget}`;
+  }
+
+  let msg = `⚡ ARMED RADAR — ${tier}\n\n`;
   msg += `Coin:\n${item.sym}\n\n`;
   msg += `Yön:\n${DIR_TR[ev.dir] || ev.dir}\n\n`;
-  msg += `Stage:\nARMED\n\n`;
+  msg += `Stage:\nARMED (${ev.value >= 88 ? 'Altın' : 'Turuncu'})\n\n`;
   msg += `Structure Readiness:\n${ev.value}/100\n\n`;
+  msg += `Hacim Durumu:\n${volLine}\n\n`;
   msg += `Neden:\n${why.length ? why.join('\n') : '—'}\n\n`;
   msg += `Eksik:\n${miss.length ? miss.map(m => '• ' + m).join('\n') : '—'}\n`;
 
@@ -280,10 +296,33 @@ function buildMessage(ev, item) {
     msg += `Risk Seviyesi:\n${fmtP(lv.stop)}\n`;
   }
   msg += '\n━━━━━━━━━━\n';
+  msg += `📈 Canlı Grafik:\n${tvLink(item.sym)}\n`;
+  msg += '\n━━━━━━━━━━\n';
   msg += 'Bu sadece kişisel izleme uyarısıdır.\nYatırım tavsiyesi değildir.';
   return msg;
 }
 function labelFromScore(t) { return t <= 25 ? 'DÜŞÜK' : t <= 50 ? 'ORTA' : t <= 75 ? 'YÜKSEK' : 'ÇOK YÜKSEK'; }
+
+// ── Grafik: kendi mum verimizden QuickChart PNG (sunucu render YOK) ──
+function chartUrl(sym, closes, dir) {
+  if (!Array.isArray(closes) || closes.length < 10) return null;
+  const data = closes.slice(-48).map(c => +(+c).toPrecision(5));
+  const line = dir === 'LONG' ? '#36d399' : '#f87272';
+  const cfg = {
+    type: 'line',
+    data: { labels: data.map(() => ''), datasets: [{ data, borderColor: line, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.25 }] },
+    options: {
+      plugins: { legend: { display: false }, title: { display: true, text: `${sym} · 15m`, color: '#e6edf6', font: { size: 16 } } },
+      scales: { x: { display: false }, y: { ticks: { color: '#8b98ac' }, grid: { color: '#1e2836' } } },
+    },
+  };
+  return `https://quickchart.io/chart?bkg=%23111722&w=520&h=280&c=${encodeURIComponent(JSON.stringify(cfg))}`;
+}
+// ── Canlı TradingView linki ──
+function tvLink(sym) {
+  const base = sym.replace('USDT', '');
+  return `https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P&interval=15`;
+}
 
 // ── Binance: evren + mum çekme ──
 async function getJSON(url) {
@@ -332,6 +371,17 @@ async function sendDM(text) {
   const data = await r.json().catch(() => ({}));
   return { ok: r.ok && data.ok, error: data.description || (r.ok ? null : `http_${r.status}`) };
 }
+// ── Telegram grafik fotoğrafı (kısa başlıkla) ──
+async function sendPhoto(photoUrl, caption) {
+  if (!TG_TOKEN || !photoUrl) return { ok: false, error: 'no_photo' };
+  const r = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: CHAT_ID, photo: photoUrl, caption: (caption || '').slice(0, 1000) }),
+  });
+  const data = await r.json().catch(() => ({}));
+  return { ok: r.ok && data.ok, error: data.description || (r.ok ? null : `http_${r.status}`) };
+}
 
 // ── Guard ──
 function authorized(req) {
@@ -375,7 +425,7 @@ export default async function handler(req, res) {
 
     // 3) Durum (spam koruması) — Supabase
     let state = [];
-    try { state = await sbFetch(`/${STATE_TABLE}?select=symbol,dir,active,notified_at`); }
+    try { state = await sbFetch(`/${STATE_TABLE}?select=symbol,dir,active,notified_at,last_readiness`); }
     catch (e) { if (!dry) throw e; }
     const stMap = {};
     (Array.isArray(state) ? state : []).forEach(r => { stMap[r.symbol] = r; });
@@ -391,7 +441,9 @@ export default async function handler(req, res) {
       else if (!row.active) {                                  // önce çıkmış, geri gelmiş
         const since = row.notified_at ? (now - Date.parse(row.notified_at)) : Infinity;
         send = since >= cooldownMs;                            // soğuma geçtiyse tekrar
-      } // (active && aynı yön) → gönderme (devam ediyor)
+      } else if ((row.last_readiness || 0) < 88 && ev.value >= 88) {
+        send = true;                                           // turuncu → ALTIN yükselişi (önemli)
+      } // (active && aynı yön & kademe değişmedi) → gönderme
       if (send) {
         toSend.push(ev);
         toUpsert.push({ symbol: ev.sym, dir: ev.dir, last_readiness: ev.value, active: true, notified_at: new Date().toISOString() });
@@ -407,9 +459,16 @@ export default async function handler(req, res) {
     const sent = [];
     if (!dry) {
       for (const ev of toSend) {
-        const msg = buildMessage(ev, items[ev.sym]);
+        const item = items[ev.sym];
+        const msg = buildMessage(ev, item);
+        const tier = ev.value >= 88 ? '🥇 GÜÇLÜ' : '🟠 HAZIR';
+        const cap = `${tier} · ${item.sym}\n${DIR_TR[ev.dir] || ev.dir} · Readiness ${ev.value}/100`;
+        // Önce grafik fotoğrafı (varsa), sonra detay metin
+        let photoOk = false;
+        const cu = chartUrl(item.sym, item.closes, ev.dir);
+        if (cu) { const p = await sendPhoto(cu, cap); photoOk = p.ok; }
         const r = await sendDM(msg);
-        sent.push({ sym: ev.sym, dir: ev.dir, readiness: ev.value, ok: r.ok, error: r.error });
+        sent.push({ sym: ev.sym, dir: ev.dir, readiness: ev.value, photo: photoOk, ok: r.ok, error: r.error });
       }
       if (toUpsert.length) {
         await sbFetch(`/${STATE_TABLE}?on_conflict=symbol`, {
