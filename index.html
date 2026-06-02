@@ -2513,7 +2513,7 @@ function startTimer() {
 <div class="scan-card">
   <div class="scan-dot" id="scanDot"></div>
   <span class="scan-txt" id="scanTxt">Binance Futures hazırlanıyor...</span>
-  <button class="gbtn gbtn-sm" onclick="startScan()">⟳ Yeniden Tara</button>
+  <button class="gbtn gbtn-sm" onclick="clearTimeout(scanTimer);startScanLoop()">⟳ Yeniden Tara</button>
   <div class="prog-wrap" id="progWrap"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
 </div>
 
@@ -4095,6 +4095,20 @@ async function startScan(){
     FUTURES_SYMS=await getFuturesSymbols();
   }
   await scanMarket();
+}
+
+// ── Tarama döngüsü: "bitince RESCAN_WAIT bekle, sonra tekrar" (çakışmasız) ──
+const RESCAN_WAIT=60000; // tarama bitince bekleme (60 sn)
+let _scanLoopBusy=false;
+async function startScanLoop(){
+  if(_scanLoopBusy) return;        // zaten bir tarama dönüyorsa yeni başlatma
+  _scanLoopBusy=true;
+  try{ await startScan(); }catch(e){}
+  finally{
+    _scanLoopBusy=false;
+    clearTimeout(scanTimer);
+    scanTimer=setTimeout(startScanLoop, RESCAN_WAIT); // bitti → 60 sn sonra yeniden
+  }
 }
 
 async function scanMarket(){
@@ -9320,7 +9334,10 @@ if(_origUI_Phase7){
   clearInterval(refreshTimer);
   refreshTimer=setInterval(()=>{if(TK)loadCoin(SYM,INTV);},30000);
   clearInterval(scanTimer);
-  scanTimer=setInterval(startScan,120000);
+  // Tarama döngüsü: SABİT interval yerine "bitince 60 sn bekle, sonra tekrar"
+  // → tarama uzun sürse bile üst üste binmez (çakışma yok); kartlar + Early Radar
+  //   her tarama sonunda vd:scan:complete ile otomatik güncellenir.
+  startScanLoop();
   clearInterval(tickerTimer);
   tickerTimer=setInterval(()=>{updateTicker();updateMarketOverview();},20000);
 
@@ -9343,7 +9360,7 @@ setTimeout(()=>{
 function initApp(isAdmin){
   try{ startClock(); }catch(e){}
   try{ loadCoin(SYM,INTV); }catch(e){}
-  setTimeout(()=>{ try{ startScan(); }catch(e){} }, 2000);
+  setTimeout(()=>{ try{ startScanLoop(); }catch(e){} }, 2000);
 }
 </script>
 
