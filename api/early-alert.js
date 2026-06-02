@@ -36,7 +36,7 @@ const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID  = process.env.EARLY_ALERT_CHAT_ID || '1148433599';
 const TOP_N    = Math.max(10, Math.min(300, +(process.env.EARLY_ALERT_TOP_N || 150)));
 const COOLDOWN_MIN = Math.max(0, +(process.env.EARLY_ALERT_COOLDOWN_MIN || 20));
-const GOLD_MIN = Math.max(50, +(process.env.EARLY_ALERT_MIN || 88)); // 88 = SADECE altın GÜÇLÜ (turuncu/kırmızı hariç)
+const GOLD_VR = Math.max(1.0, +(process.env.EARLY_ALERT_GOLD_VR || 1.20)); // ALTIN = ARMED + hacim teyide yakın (volRatio ≥ 1.20)
 const STATE_TABLE = 'early_alert_state';
 
 // ── Supabase REST ───────────────────────────────────────────────────
@@ -256,11 +256,10 @@ function buildMessage(ev, item) {
   const riskLabel = (item.risk && item.risk.label) ? item.risk.label
     : (item.risk && item.risk.score != null ? labelFromScore(item.risk.score) : '—');
 
-  // Kademe (anlık Readiness'e göre): 88+ GÜÇLÜ (altın), 77-87 HAZIR (turuncu)
-  const tier = ev.value >= 88 ? '🥇 GÜÇLÜ' : '🟠 HAZIR';
-
   // Anlaşılır hacim satırı (o anki gerçek değer)
   const vr = ev.s.volRatio;
+  // Kademe: hacim teyide yakınlığına göre (≥1.20 altın GÜÇLÜ, 1.10-1.20 turuncu HAZIR)
+  const tier = (vr != null && vr >= 1.20) ? '🥇 GÜÇLÜ' : '🟠 HAZIR';
   let volLine;
   if (vr == null) volLine = 'Hacim verisi yok';
   else {
@@ -274,7 +273,7 @@ function buildMessage(ev, item) {
   let msg = `⚡ ARMED RADAR — ${tier}\n\n`;
   msg += `Coin:\n${item.sym}\n\n`;
   msg += `Yön:\n${DIR_TR[ev.dir] || ev.dir}\n\n`;
-  msg += `Stage:\nARMED (${ev.value >= 88 ? 'Altın' : 'Turuncu'})\n\n`;
+  msg += `Stage:\nARMED (${(vr != null && vr >= 1.20) ? 'Altın · teyide yakın' : 'Turuncu'})\n\n`;
   msg += `Structure Readiness:\n${ev.value}/100\n\n`;
   msg += `Zaman Uyumu:\n✓ 15m kurulum + 1h trend aynı yönde\n\n`;
   // Piyasa lideri uyumu (BTC/ETH)
@@ -488,7 +487,8 @@ export default async function handler(req, res) {
         const item = res2.value;
         items[item.sym] = item;
         const ev = evaluate(item);
-        if (ev.stage === 'ARMED' && ev.value >= GOLD_MIN) armed.push(ev);
+        // ALTIN = ARMED + hacim teyide yakın (volRatio ≥ GOLD_VR). Readiness'e bağlı değil.
+        if (ev.stage === 'ARMED' && ev.s.volRatio != null && ev.s.volRatio >= GOLD_VR) armed.push(ev);
       });
     }
 
@@ -537,9 +537,7 @@ export default async function handler(req, res) {
       else if (!row.active) {                                  // önce çıkmış, geri gelmiş
         const since = row.notified_at ? (now - Date.parse(row.notified_at)) : Infinity;
         send = since >= cooldownMs;                            // soğuma geçtiyse tekrar
-      } else if ((row.last_readiness || 0) < 88 && ev.value >= 88) {
-        send = true;                                           // turuncu → ALTIN yükselişi (önemli)
-      } // (active && aynı yön & kademe değişmedi) → gönderme
+      } // (active && aynı yön) → gönderme (altın durum devam ediyor) // (active && aynı yön & kademe değişmedi) → gönderme
       if (send) {
         toSend.push(ev);
         toUpsert.push({ symbol: ev.sym, dir: ev.dir, last_readiness: ev.value, active: true, notified_at: new Date().toISOString() });
@@ -558,8 +556,9 @@ export default async function handler(req, res) {
         const ev = toSend[k];
         const item = items[ev.sym];
         const msg = buildMessage(ev, item);
-        const tier = ev.value >= 88 ? '🥇 GÜÇLÜ' : '🟠 HAZIR';
-        const cap = `${tier} · ${item.sym}\n${DIR_TR[ev.dir] || ev.dir} · Readiness ${ev.value}/100\n⏱ Üst: 15m · Alt: 1h (trend onayı)`;
+        const _vr = ev.s.volRatio;
+        const tier = (_vr != null && _vr >= 1.20) ? '🥇 GÜÇLÜ' : '🟠 HAZIR';
+        const cap = `${tier} · ${item.sym}\n${DIR_TR[ev.dir] || ev.dir} · Hacim ${_vr != null ? _vr.toFixed(2) + '× /1.30' : '—'}\n⏱ Üst: 15m · Alt: 1h (trend onayı)`;
         // İki grafiği TEK albümde gönder (15m + 1h yan yana)
         const cu15 = chartUrl(item.sym, item.candles, ev.dir, '15m');
         const c1h = htfCandles[ev.sym];
