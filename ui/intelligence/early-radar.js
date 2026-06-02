@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// EARLY OPPORTUNITY RADAR  (Phase / build 90 — tıklanabilir satır → grafik analizör)
+// EARLY OPPORTUNITY RADAR  (Phase / build 94 — ARMED 3 kademe: kırmızı/turuncu/altın)
 // 9/9 setup ÖNCESİ kademeli erken-uyarı katmanı: WATCH → ARMED → CONFIRMED.
 //
 // SALT-OKUNUR: yalnız window.VD_STATE.scanResults okunur. Scanner çekirdeği,
@@ -240,6 +240,28 @@
 
     const stale = Date.now() - _lastScanAt > CFG.staleMs;
     const head = `
+      <style>
+        @keyframes erArmedPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.35)}}
+        @keyframes erGoldShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        /* 1. Kademe — Kırmızı (65-76) */
+        @keyframes erT1Glow{0%,100%{box-shadow:inset 3px 0 0 #f0506e}50%{box-shadow:inset 3px 0 0 rgba(240,80,110,.4)}}
+        tr.er-t1{background:rgba(240,80,110,.06);animation:erT1Glow 1.8s ease-in-out infinite}
+        tr.er-t1:hover{background:rgba(240,80,110,.12) !important}
+        .er-dot-t1{display:inline-block;width:7px;height:7px;border-radius:50%;background:#f0506e;margin-left:6px;animation:erArmedPulse 1.3s ease-in-out infinite;vertical-align:middle}
+        .er-tag-t1{display:inline-block;margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.05em;color:#f0506e;background:rgba(240,80,110,.13);border:1px solid rgba(240,80,110,.45);border-radius:6px;padding:1px 6px;vertical-align:middle}
+        /* 2. Kademe — Turuncu (77-87) */
+        @keyframes erT2Glow{0%,100%{box-shadow:inset 3px 0 0 #ff8a3d}50%{box-shadow:inset 3px 0 0 rgba(255,138,61,.4)}}
+        tr.er-t2{background:rgba(255,138,61,.07);animation:erT2Glow 1.5s ease-in-out infinite}
+        tr.er-t2:hover{background:rgba(255,138,61,.13) !important}
+        .er-dot-t2{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff8a3d;margin-left:6px;animation:erArmedPulse 1.1s ease-in-out infinite;vertical-align:middle}
+        .er-tag-t2{display:inline-block;margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.05em;color:#ff8a3d;background:rgba(255,138,61,.14);border:1px solid rgba(255,138,61,.45);border-radius:6px;padding:1px 6px;vertical-align:middle}
+        /* 3. Kademe — Altın şaşaalı (88+) */
+        @keyframes erT3Glow{0%,100%{box-shadow:inset 3px 0 0 #ffd24a, 0 0 14px rgba(255,210,74,.25)}50%{box-shadow:inset 3px 0 0 #fff1c0, 0 0 22px rgba(255,210,74,.5)}}
+        tr.er-t3{background:linear-gradient(90deg,rgba(255,210,74,.13),rgba(255,210,74,.04));animation:erT3Glow 1.4s ease-in-out infinite}
+        tr.er-t3:hover{background:linear-gradient(90deg,rgba(255,210,74,.2),rgba(255,210,74,.07)) !important}
+        .er-dot-t3{display:inline-block;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6d6,#ffd24a 60%,#e0a800);margin-left:6px;animation:erArmedPulse 0.9s ease-in-out infinite;vertical-align:middle;box-shadow:0 0 6px rgba(255,210,74,.8)}
+        .er-tag-t3{display:inline-block;margin-left:6px;font-size:9px;font-weight:900;letter-spacing:.06em;color:#3a2c00;border-radius:6px;padding:1px 7px;vertical-align:middle;background:linear-gradient(90deg,#ffe9a0,#ffd24a,#ffe9a0,#ffd24a);background-size:200% 100%;animation:erGoldShimmer 2.2s linear infinite;border:1px solid rgba(255,210,74,.7)}
+      </style>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <span style="font-size:13px;font-weight:700;color:#e6edf6">⚡ Early Opportunity Radar</span>
         <span style="font-size:10px;color:#8b98ac">${stale ? '· bayat veri' : '· canlı'}</span>
@@ -259,10 +281,17 @@
       const dtxt = r.dir === 'LONG' ? '▲ LONG' : '▼ SHORT';
       const ev = r.lastEvent ? `${esc(r.lastEvent.label)}<br><span style="color:#8b98ac">${relTime(r.lastEvent.at)}</span>` : '—';
       const symSafe = esc(r.sym).replace(/'/g, '');
-      return `<tr data-sym="${symSafe}" class="er-row" style="border-top:1px solid #1e2836;cursor:pointer" title="Grafik analizinde aç: ${esc(r.sym.replace('USDT',''))}">
-        <td style="padding:7px 6px;font-weight:700;color:#cbb6ff">${esc(r.sym.replace('USDT', ''))} <span style="color:#7c5cff;font-size:10px">↗</span></td>
+      // ARMED gücü → 3 kademe (Readiness'e göre). Sıralama zaten value'ya göre, güçlü üstte.
+      let tier = 0, tCls = '', tDot = '', tTag = '';
+      if (r.stage === 'ARMED') {
+        if (r.value >= 88)      { tier = 3; tCls = 'er-t3'; tDot = '<span class="er-dot-t3" title="3. Kademe — En güçlü olgunluk"></span>'; tTag = '<span class="er-tag-t3" title="En güçlü ARMED — tam olgun">★ GÜÇLÜ</span>'; }
+        else if (r.value >= 77) { tier = 2; tCls = 'er-t2'; tDot = '<span class="er-dot-t2" title="2. Kademe — Olgunlaşıyor"></span>'; tTag = '<span class="er-tag-t2" title="Orta-güçlü ARMED">⚡ HAZIR</span>'; }
+        else                    { tier = 1; tCls = 'er-t1'; tDot = '<span class="er-dot-t1" title="1. Kademe — Erken ARMED"></span>'; tTag = '<span class="er-tag-t1" title="Zayıf ARMED — izle">○ ERKEN</span>'; }
+      }
+      return `<tr data-sym="${symSafe}" class="er-row${tCls ? ' ' + tCls : ''}" style="border-top:1px solid #1e2836;cursor:pointer" title="Grafik analizinde aç: ${esc(r.sym.replace('USDT',''))}">
+        <td style="padding:7px 6px;font-weight:700;color:#cbb6ff">${esc(r.sym.replace('USDT', ''))} <span style="color:#7c5cff;font-size:10px">↗</span>${tDot}</td>
         <td style="padding:7px 6px;color:${dcol};font-weight:600">${dtxt}</td>
-        <td style="padding:7px 6px">${badge(r.stage)}</td>
+        <td style="padding:7px 6px">${badge(r.stage)}${tTag}</td>
         <td style="padding:7px 6px;text-align:center">${r.s.score != null ? r.s.score : '—'}</td>
         <td style="padding:7px 6px;text-align:center">${r.s.risk != null ? r.s.risk : '—'}</td>
         <td style="padding:7px 6px;text-align:center;font-weight:700">${r.value} ${arrow(r.value, r.prevReadiness)}</td>
