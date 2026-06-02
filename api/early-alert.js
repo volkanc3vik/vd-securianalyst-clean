@@ -332,6 +332,13 @@ function tvLink(sym) {
   return `https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P&interval=15`;
 }
 
+// ── Binance JSON çekme yardımcısı ──
+async function getJSON(url) {
+  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!r.ok) throw new Error(`binance_${r.status}`);
+  return r.json();
+}
+
 // ── 1 saatlik trend yönü (filtre için) — yalnız ARMED adaylarına çağrılır ──
 async function htfTrend(sym) {
   try {
