@@ -276,6 +276,7 @@ function buildMessage(ev, item) {
   msg += `Yön:\n${DIR_TR[ev.dir] || ev.dir}\n\n`;
   msg += `Stage:\nARMED (${ev.value >= 88 ? 'Altın' : 'Turuncu'})\n\n`;
   msg += `Structure Readiness:\n${ev.value}/100\n\n`;
+  msg += `Zaman Uyumu:\n✓ 15m kurulum + 1h trend aynı yönde\n\n`;
   msg += `Hacim Durumu:\n${volLine}\n\n`;
   msg += `Neden:\n${why.length ? why.join('\n') : '—'}\n\n`;
   msg += `Eksik:\n${miss.length ? miss.map(m => '• ' + m).join('\n') : '—'}\n`;
@@ -304,7 +305,7 @@ function buildMessage(ev, item) {
 function labelFromScore(t) { return t <= 25 ? 'DÜŞÜK' : t <= 50 ? 'ORTA' : t <= 75 ? 'YÜKSEK' : 'ÇOK YÜKSEK'; }
 
 // ── Grafik: kendi mum verimizden QuickChart MUM (candlestick) PNG ──
-function chartUrl(sym, candles, dir) {
+function chartUrl(sym, candles, dir, tf) {
   if (!Array.isArray(candles) || candles.length < 10) return null;
   const cs = candles.slice(-40).map((c, i) => ({
     x: i,
@@ -319,7 +320,7 @@ function chartUrl(sym, candles, dir) {
       borderColor: { up: '#36d399', down: '#f87272', unchanged: '#8b98ac' },
     }] },
     options: {
-      plugins: { legend: { display: false }, title: { display: true, text: `${sym} · 15m`, color: '#e6edf6', font: { size: 16 } } },
+      plugins: { legend: { display: false }, title: { display: true, text: `${sym} · ${tf || '15m'}`, color: '#e6edf6', font: { size: 16 } } },
       scales: { x: { display: false }, y: { position: 'right', ticks: { color: '#8b98ac' }, grid: { color: '#1e2836' } } },
     },
   };
@@ -331,11 +332,22 @@ function tvLink(sym) {
   return `https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P&interval=15`;
 }
 
-// ── Binance: evren + mum çekme ──
-async function getJSON(url) {
-  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
-  if (!r.ok) throw new Error(`binance_${r.status}`);
-  return r.json();
+// ── 1 saatlik trend yönü (filtre için) — yalnız ARMED adaylarına çağrılır ──
+async function htfTrend(sym) {
+  try {
+    const kl = await getJSON(`${FBASE}/fapi/v1/klines?symbol=${sym}&interval=1h&limit=100`);
+    if (!Array.isArray(kl) || kl.length < 55) return { dir: null, candles: null };
+    const closes = kl.map(k => +k[4]);
+    const candles = kl.map(k => ({ h: +k[2], l: +k[3], c: +k[4], o: +k[1], v: +k[5] }));
+    const e9 = calcEMA(closes, 9), e21 = calcEMA(closes, 21), e50 = calcEMA(closes, 50);
+    const e9v = e9.at(-1), e21v = e21.at(-1), e50v = e50.at(-1);
+    const m = calcMACD(closes), r = calcRSI(closes);
+    // LONG eğilimi: EMA dizilimi yukarı + MACD pozitif + RSI 50 üstü
+    const longTrend = e9v > e21v && e21v > e50v && m.hist > 0 && r >= 50;
+    const shortTrend = e9v < e21v && e21v < e50v && m.hist < 0 && r <= 50;
+    const dir = longTrend ? 'LONG' : shortTrend ? 'SHORT' : null;
+    return { dir, candles };
+  } catch (e) { return { dir: null, candles: null }; }
 }
 async function getTopSymbols(n) {
   const tickers = await getJSON(`${FBASE}/fapi/v1/ticker/24hr`);
@@ -389,6 +401,22 @@ async function sendPhoto(photoUrl, caption) {
   const data = await r.json().catch(() => ({}));
   return { ok: r.ok && data.ok, error: data.description || (r.ok ? null : `http_${r.status}`) };
 }
+// ── Telegram albüm: birden çok grafiği TEK mesajda yan yana gönderir ──
+async function sendMediaGroup(photoUrls, caption) {
+  if (!TG_TOKEN || !photoUrls || !photoUrls.length) return { ok: false, error: 'no_photos' };
+  const media = photoUrls.filter(Boolean).map((url, i) => (
+    i === 0 ? { type: 'photo', media: url, caption: (caption || '').slice(0, 1000) }
+            : { type: 'photo', media: url }
+  ));
+  if (media.length === 1) return sendPhoto(media[0].media, caption); // tek foto → normal
+  const r = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMediaGroup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: CHAT_ID, media }),
+  });
+  const data = await r.json().catch(() => ({}));
+  return { ok: r.ok && data.ok, error: data.description || (r.ok ? null : `http_${r.status}`) };
+}
 
 // ── Guard ──
 function authorized(req) {
@@ -416,7 +444,7 @@ export default async function handler(req, res) {
 
     // 2) Mumları batch'le çek + değerlendir
     const BATCH = 15;
-    const gold = [];   // şu an altın ARMED olanlar
+    const armed = [];   // 15m'de ARMED + eşik üstü adaylar
     const items = {};
     for (let i = 0; i < syms.length; i += BATCH) {
       const slice = syms.slice(i, i + BATCH);
@@ -426,7 +454,24 @@ export default async function handler(req, res) {
         const item = res2.value;
         items[item.sym] = item;
         const ev = evaluate(item);
-        if (ev.stage === 'ARMED' && ev.value >= GOLD_MIN) gold.push(ev);
+        if (ev.stage === 'ARMED' && ev.value >= GOLD_MIN) armed.push(ev);
+      });
+    }
+
+    // 2b) 1H TREND FİLTRESİ — yalnız 15m yönü ile 1h trendi AYNI olanlar geçer.
+    //     (Sadece az sayıdaki ARMED adayına 1h çekilir → hız/limit korunur.)
+    const gold = [];          // filtreden geçen güçlü adaylar
+    const htfCandles = {};     // sym → 1h mumlar (grafik için)
+    for (let i = 0; i < armed.length; i += BATCH) {
+      const slice = armed.slice(i, i + BATCH);
+      const trends = await Promise.allSettled(slice.map(ev => htfTrend(ev.sym)));
+      trends.forEach((tr, j) => {
+        const ev = slice[j];
+        if (tr.status !== 'fulfilled') return;
+        const { dir: htfDir, candles } = tr.value;
+        if (candles) htfCandles[ev.sym] = candles;
+        if (htfDir && htfDir === ev.dir) gold.push(ev); // 15m ↔ 1h uyumu
+        // 1h ters/yatay → elenir (zayıf sayılır)
       });
     }
 
@@ -465,17 +510,23 @@ export default async function handler(req, res) {
     // 4) Gönder + durum yaz (dry değilse)
     const sent = [];
     if (!dry) {
-      for (const ev of toSend) {
+      for (let k = 0; k < toSend.length; k++) {
+        const ev = toSend[k];
         const item = items[ev.sym];
         const msg = buildMessage(ev, item);
         const tier = ev.value >= 88 ? '🥇 GÜÇLÜ' : '🟠 HAZIR';
-        const cap = `${tier} · ${item.sym}\n${DIR_TR[ev.dir] || ev.dir} · Readiness ${ev.value}/100`;
-        // Önce grafik fotoğrafı (varsa), sonra detay metin
+        const cap = `${tier} · ${item.sym}\n${DIR_TR[ev.dir] || ev.dir} · Readiness ${ev.value}/100\n⏱ Üst: 15m · Alt: 1h (trend onayı)`;
+        // İki grafiği TEK albümde gönder (15m + 1h yan yana)
+        const cu15 = chartUrl(item.sym, item.candles, ev.dir, '15m');
+        const c1h = htfCandles[ev.sym];
+        const cu1h = c1h ? chartUrl(item.sym, c1h, ev.dir, '1h') : null;
         let photoOk = false;
-        const cu = chartUrl(item.sym, item.candles, ev.dir);
-        if (cu) { const p = await sendPhoto(cu, cap); photoOk = p.ok; }
+        const p = await sendMediaGroup([cu15, cu1h], cap);
+        photoOk = p.ok;
+        // Detay metin
         const r = await sendDM(msg);
-        sent.push({ sym: ev.sym, dir: ev.dir, readiness: ev.value, photo: photoOk, ok: r.ok, error: r.error });
+        sent.push({ sym: ev.sym, dir: ev.dir, readiness: ev.value, photo: photoOk, photoErr: p.error, ok: r.ok, error: r.error });
+        if (k < toSend.length - 1) await new Promise(res => setTimeout(res, 500)); // sohbet kısıtlamasını önle
       }
       if (toUpsert.length) {
         await sbFetch(`/${STATE_TABLE}?on_conflict=symbol`, {
