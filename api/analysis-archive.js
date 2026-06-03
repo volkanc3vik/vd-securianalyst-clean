@@ -269,8 +269,12 @@ export default async function handler(req, res) {
     // Anon ASLA buraya erişemez (x-admin-key guard). RLS/public feed DEĞİŞMEZ.
     if (action === 'list_pending') {
       const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 100);
+      // newest=true → en yeni açılan önce (setup-tracker paneli). Aksi halde mevcut davranış (due en yakın önce).
+      const order = body.newest
+        ? 'created_at.desc'
+        : 'review_due_at.asc.nullslast,created_at.desc';
       const rows = await sbFetch(
-        `/analysis_archive?review_status=eq.pending&admin_archived=eq.false&order=review_due_at.asc.nullslast,created_at.desc&limit=${limit}&select=${LIST_COLS}`,
+        `/analysis_archive?review_status=eq.pending&admin_archived=eq.false&order=${order}&limit=${limit}&select=${LIST_COLS}`,
         { method: 'GET' }
       );
       return res.status(200).json({ ok: true, rows: rows || [], count: (rows || []).length });
