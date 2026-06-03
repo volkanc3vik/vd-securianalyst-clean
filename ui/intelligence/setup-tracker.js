@@ -151,16 +151,21 @@
     .st-row{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:9px 10px;border:1px solid var(--border);border-radius:10px;margin-bottom:7px;cursor:pointer;transition:border-color .15s,background .15s;background:rgba(255,255,255,.015);}
     .st-row:hover{border-color:var(--green);background:rgba(0,229,160,.05);}
     /* Öncelik rozeti = coin logosu (renk = kademe) */
-    .st-pri{width:54px;height:54px;display:flex;align-items:center;justify-content:center;flex-shrink:0;perspective:420px;}
+    .st-pri{width:54px;height:54px;display:flex;align-items:center;justify-content:center;flex-shrink:0;perspective:420px;border-radius:50%;}
     .st-coinimg{width:50px;height:50px;display:block;border-radius:50%;}
-    .st-c2 .st-coinimg{filter:drop-shadow(0 0 5px rgba(255,140,40,.5));}
-    .st-c3 .st-coinimg{opacity:.92;}
+    .st-c2 .st-coinimg{filter:drop-shadow(0 0 4px rgba(255,120,30,.5));}
+    .st-c3 .st-coinimg{opacity:.95;}
     .st-c0 .st-coinimg{opacity:.55;filter:grayscale(.4);}
+    /* Kademe halkaları — küçükken bile net ayrışsın */
+    .st-c1.st-pri{box-shadow:0 0 0 2px #ffd24a, 0 0 15px 2px rgba(157,125,250,.7);}  /* altın halka + ELITE mor aura */
+    .st-c2.st-pri{box-shadow:0 0 0 2px rgba(255,120,30,.85), 0 0 7px rgba(255,120,30,.4);}
+    .st-c3.st-pri{box-shadow:0 0 0 1.5px rgba(150,160,175,.7);}
+    .st-c0.st-pri{box-shadow:0 0 0 1.5px rgba(120,128,140,.35);}
     /* ALTIN — gerçek 3D para dönüşü (ön ↔ arka yüz) */
     .st-coin3d{width:50px;height:50px;position:relative;transform-style:preserve-3d;animation:st-flip 4.2s linear infinite;}
     .st-face{position:absolute;inset:0;width:50px;height:50px;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
     .st-face.back{transform:rotateY(180deg);}
-    .st-c1 .st-face{filter:drop-shadow(0 0 4px rgba(255,200,80,.65));}
+    .st-c1 .st-face{filter:drop-shadow(0 0 4px rgba(255,210,90,.7));}
     @keyframes st-flip{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
     .st-mid{min-width:0;}
     .st-line1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
