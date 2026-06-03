@@ -130,10 +130,10 @@
   }
 
   function _tier(a) {
-    if (!a) return { p: '—', cls: 'st-p0', name: 'yetersiz veri' };
-    if (a.combined >= GOLD_MIN && a.totalN >= GOLD_MIN_N) return { p: '#1', cls: 'st-p1', name: 'ALTIN' };
-    if (a.combined >= ORANGE_MIN) return { p: '#2', cls: 'st-p2', name: 'TURUNCU' };
-    return { p: '#3', cls: 'st-p3', name: 'GRİ' };
+    if (!a) return { cls: 'st-c0', img: 'coin-gray', name: 'yetersiz veri' };
+    if (a.combined >= GOLD_MIN && a.totalN >= GOLD_MIN_N) return { cls: 'st-c1', img: 'coin-gold', name: 'ALTIN' };
+    if (a.combined >= ORANGE_MIN) return { cls: 'st-c2', img: 'coin-orange', name: 'TURUNCU' };
+    return { cls: 'st-c3', img: 'coin-gray', name: 'GRİ' };
   }
 
   function _injectCSS() {
@@ -150,14 +150,18 @@
     .st-sub{font-size:11px;color:var(--text3);margin:2px 0 9px;}
     .st-row{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:9px 10px;border:1px solid var(--border);border-radius:10px;margin-bottom:7px;cursor:pointer;transition:border-color .15s,background .15s;background:rgba(255,255,255,.015);}
     .st-row:hover{border-color:var(--green);background:rgba(0,229,160,.05);}
-    /* Öncelik rozeti */
-    .st-pri{width:52px;min-height:50px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0;border:1.5px solid;font-weight:900;}
-    .st-pri-no{font-size:16px;line-height:1;}
-    .st-pri-nm{font-size:8px;font-weight:800;letter-spacing:.5px;}
-    .st-p1{color:#04101f;background:linear-gradient(135deg,#ffd76a,#ffb020);border-color:#ffd76a;box-shadow:0 0 14px rgba(255,200,80,.4);}
-    .st-p2{color:#ff9b3d;background:rgba(255,140,40,.13);border-color:rgba(255,140,40,.6);}
-    .st-p3{color:var(--text2);background:rgba(255,255,255,.05);border-color:var(--border);}
-    .st-p0{color:var(--text3);background:rgba(255,255,255,.03);border-color:var(--border);}
+    /* Öncelik rozeti = coin logosu (renk = kademe) */
+    .st-pri{width:54px;height:54px;display:flex;align-items:center;justify-content:center;flex-shrink:0;perspective:420px;}
+    .st-coinimg{width:50px;height:50px;display:block;border-radius:50%;}
+    .st-c2 .st-coinimg{filter:drop-shadow(0 0 5px rgba(255,140,40,.5));}
+    .st-c3 .st-coinimg{opacity:.92;}
+    .st-c0 .st-coinimg{opacity:.55;filter:grayscale(.4);}
+    /* ALTIN — gerçek 3D para dönüşü (ön ↔ arka yüz) */
+    .st-coin3d{width:50px;height:50px;position:relative;transform-style:preserve-3d;animation:st-flip 4.2s linear infinite;}
+    .st-face{position:absolute;inset:0;width:50px;height:50px;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+    .st-face.back{transform:rotateY(180deg);}
+    .st-c1 .st-face{filter:drop-shadow(0 0 4px rgba(255,200,80,.65));}
+    @keyframes st-flip{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
     .st-mid{min-width:0;}
     .st-line1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
     .st-sym{font-size:14px;font-weight:800;color:var(--text);}
@@ -181,7 +185,7 @@
     document.head.appendChild(el);
   }
 
-  function _combClass(cls) { return cls === 'st-p1' ? 'c1' : cls === 'st-p2' ? 'c2' : cls === 'st-p3' ? 'c3' : 'c0'; }
+  function _combClass(cls) { return cls === 'st-c1' ? 'c1' : cls === 'st-c2' ? 'c2' : cls === 'st-c3' ? 'c3' : 'c0'; }
 
   function _rowHTML(rec, insights, coinStats) {
     const sym = String(rec.sym || '').toUpperCase();
@@ -198,10 +202,9 @@
     const combTxt = a ? '%' + a.combined : '—';
     return `
       <div class="st-row" data-sym="${_esc(sym)}" title="Birleşik öncelik: ${_esc(t.name)}">
-        <div class="st-pri ${t.cls}">
-          <span class="st-pri-no">${_esc(t.p)}</span>
-          <span class="st-pri-nm">${_esc(t.name)}</span>
-        </div>
+        ${t.cls === 'st-c1'
+          ? `<div class="st-pri st-c1" title="Öncelik: ${_esc(t.name)}"><div class="st-coin3d"><img class="st-face front" src="assets/coin-gold-front.png" alt=""><img class="st-face back" src="assets/coin-gold-back.png" alt=""></div></div>`
+          : `<div class="st-pri ${t.cls}" title="Öncelik: ${_esc(t.name)}"><img class="st-coinimg" src="assets/${t.img}.png" alt="${_esc(t.name)}" loading="lazy"></div>`}
         <div class="st-mid">
           <div class="st-line1">
             <span class="st-sym">${_esc(sym)}</span>
@@ -286,7 +289,7 @@
           ? `Öncelik = (genel setup uyumu + coinin kendi geçmişi) kanıt-ağırlıklı ortalaması · ${insights.total} doğrulanmış analizden.`
           : `Henüz yeterli doğrulanmış geçmiş yok — öncelikler veri biriktikçe netleşir.`;
         host.innerHTML = _shell(
-          `<div class="st-sub">En yeni açılan ${rows.length} takip · 🥇#1 Altın · 🟠#2 Turuncu · ⬜#3 Gri</div>` +
+          `<div class="st-sub">En yeni açılan ${rows.length} takip · 🥇 Altın · 🟠 Turuncu · ⬜ Gri (logo rengi = öncelik)</div>` +
           rows.map(r => _rowHTML(r, insights, coinStats)).join('') +
           `<div class="st-note">${_esc(learnNote)} ⚠ Geçmiş tutarlılığı gösterir; gelecek getiri garantisi değildir.</div>`
         );
