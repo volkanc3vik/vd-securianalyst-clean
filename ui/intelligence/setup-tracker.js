@@ -244,7 +244,7 @@
     if (!d || typeof d.adminFetch !== 'function') return { err: 'no_disp' };
     if (!_hasKey()) return { err: 'no_key' };
     try {
-      const r = await d.adminFetch('/api/analysis-archive', { action: 'list_pending', limit: FETCH_LIMIT });
+      const r = await d.adminFetch('/api/analysis-archive', { action: 'list_pending', limit: FETCH_LIMIT, newest: true });
       const list = (r && (r.rows || r.list || r.data)) || (Array.isArray(r) ? r : []);
       return { rows: Array.isArray(list) ? list : [] };
     } catch (e) {
