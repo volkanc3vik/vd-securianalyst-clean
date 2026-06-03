@@ -166,6 +166,8 @@
     .st-face{position:absolute;inset:0;width:50px;height:50px;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
     .st-face.back{transform:rotateY(180deg);}
     .st-c1 .st-face{filter:drop-shadow(0 0 4px rgba(255,210,90,.7));}
+    .st-c2 .st-face{filter:drop-shadow(0 0 4px rgba(255,120,30,.6));}
+    .st-c2 .st-coin3d{animation-duration:5.2s;}
     @keyframes st-flip{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
     .st-mid{min-width:0;}
     .st-line1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -207,8 +209,8 @@
     const combTxt = a ? '%' + a.combined : '—';
     return `
       <div class="st-row" data-sym="${_esc(sym)}" title="Birleşik öncelik: ${_esc(t.name)}">
-        ${t.cls === 'st-c1'
-          ? `<div class="st-pri st-c1" title="Öncelik: ${_esc(t.name)}"><div class="st-coin3d"><img class="st-face front" src="assets/coin-gold-front.png" alt=""><img class="st-face back" src="assets/coin-gold-back.png" alt=""></div></div>`
+        ${(t.cls === 'st-c1' || t.cls === 'st-c2')
+          ? `<div class="st-pri ${t.cls}" title="Öncelik: ${_esc(t.name)}"><div class="st-coin3d"><img class="st-face front" src="assets/${t.cls === 'st-c1' ? 'coin-gold' : 'coin-orange'}-front.png" alt=""><img class="st-face back" src="assets/${t.cls === 'st-c1' ? 'coin-gold' : 'coin-orange'}-back.png" alt=""></div></div>`
           : `<div class="st-pri ${t.cls}" title="Öncelik: ${_esc(t.name)}"><img class="st-coinimg" src="assets/${t.img}.png" alt="${_esc(t.name)}" loading="lazy"></div>`}
         <div class="st-mid">
           <div class="st-line1">
