@@ -24,11 +24,17 @@ window.TelegramDispatcher = (() => {
   const MAX_RETRY = 1;
   const _cooldownMap = new Map(); // key: 'BTCUSDT|LONG|free' → timestamp
 
-  // ── Session-only admin key ────────────────────────────────────────
+  // ── Session-scoped admin key (Volkan isteği, build 109) ───────────
   // Modül scope'unda tutulur, dışarıdan _adminKey olarak erişilemez.
-  // localStorage/sessionStorage'a YAZILMAZ — sayfa kapanınca uçar.
-  // console.log'da hiç görünmez.
+  // sessionStorage'da hatırlanır: SAYFA YENİLEMEDE tekrar sormaz,
+  // TARAYICI KAPANINCA otomatik unutulur (disk'e/localStorage'a YAZILMAZ →
+  // başka PC'de iz kalmaz). console.log'da hiç görünmez.
+  const _AK_SS = 'vd_ak_session';
   let _adminKey = null;
+  try {
+    const _saved = sessionStorage.getItem(_AK_SS);
+    if (typeof _saved === 'string' && _saved.length > 0) _adminKey = _saved;
+  } catch (e) {}
 
   function _log(...args) { console.log('[TG]', ...args); }
   function _warn(...args) { console.warn('[TG]', ...args); }
@@ -41,9 +47,11 @@ window.TelegramDispatcher = (() => {
   function setAdminKey(key) {
     if (typeof key !== 'string' || key.length === 0) {
       _adminKey = null;
+      try { sessionStorage.removeItem(_AK_SS); } catch (e) {}
       return false;
     }
     _adminKey = key;
+    try { sessionStorage.setItem(_AK_SS, key); } catch (e) {}
     return true;
   }
   function hasAdminKey() {
@@ -51,6 +59,7 @@ window.TelegramDispatcher = (() => {
   }
   function clearAdminKey() {
     _adminKey = null;
+    try { sessionStorage.removeItem(_AK_SS); } catch (e) {}
   }
 
   // ── Admin API sarmalı (key private kalır, dışarı sızmaz) ──────────
