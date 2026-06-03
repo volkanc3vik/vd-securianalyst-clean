@@ -133,17 +133,17 @@ function computeOutcome({ bias, entry, high, low, lastClose }) {
   if (pctEnd >= 0.5) direction_realized = 'bullish';
   else if (pctEnd <= -0.5) direction_realized = 'bearish';
 
-  // Validation score (retrospektif tutarlılık — başarı garantisi DEĞİL)
+  // Validation score — MAX favorable hareket bazlı (işlem o noktayı GÖRÜR).
+  // Volkan kararı: pencere sonu değil, pencere İÇİNDEKİ maksimum favorable hareket esas alınır.
   let score;
   if (bias === 'neutral') {
     const a = Math.abs(pctEnd);
     score = a < 1 ? 60 : a < 3 ? 50 : 42;
   } else {
-    if (favEnd >= 3)      score = 82 + clamp((favEnd - 3) * 1.5, 0, 13);
-    else if (favEnd >= 1) score = 62 + (favEnd - 1) / 2 * 18;
-    else if (favEnd > -1) score = 45 + (favEnd + 1) / 2 * 14;
-    else                  score = clamp(39 + favEnd * 4, 5, 39);
-    score += clamp(favMax / 3, 0, 5); // favorable excursion küçük bonus
+    if (favMax >= 2)        score = 75 + clamp((favMax - 2) * 2.5, 0, 20);   // %2+ → validated (75..95)
+    else if (favMax >= 1)   score = 58 + (favMax - 1) * 17;                  // %1-2 → 58..75
+    else if (favMax >= 0.4) score = 45 + (favMax - 0.4) / 0.6 * 13;          // %0.4-1 → 45..58
+    else                    score = clamp(20 + favMax * 60, 5, 45);          // zayıf/ters
   }
   score = clamp(Math.round(score), 0, 95);
 
@@ -157,11 +157,11 @@ function computeOutcome({ bias, entry, high, low, lastClose }) {
     adminNote = `Analiz nötr beklentiyle açıldı. Fiyat, inceleme penceresinde sınırlı hareket etti (pencere sonu ${r2(favEnd)}%, maksimum ${r2(favMax)}%). ${review_status === 'validated' ? 'Yatay beklenti büyük ölçüde doğrulandı.' : 'Beklenti kısmen karşılandı.'}`;
     internalNote = `Nötr kurulum; yön netliği ve volatilite düşük. Benzer durumlarda işlem önceliği azaltılabilir.`;
   } else if (review_status === 'validated') {
-    adminNote = `Analiz yönü piyasa hareketiyle uyumlu gerçekleşti. Fiyat, inceleme penceresi içinde ${biasWord} yönde ilerledi (pencere sonu ${r2(favEnd)}%, maksimum ${r2(favMax)}%) ve ${dirAdj} beklenti büyük ölçüde doğrulandı.`;
-    internalNote = `Momentum ve trend uyumu bu kurulumda pozitif sonuç verdi. Benzer setup'larda confidence korunabilir.`;
+    adminNote = `Analiz yönü piyasa hareketiyle uyumlu gerçekleşti. Fiyat, inceleme penceresi içinde ${biasWord} yönde maksimum ${r2(favMax)}% ilerledi (pencere sonu ${r2(favEnd)}%) ve ${dirAdj} beklenti doğrulandı.`;
+    internalNote = `Hareket beklenen yönde güçlü bir maksimum (%${r2(favMax)}) üretti. Benzer setup'larda confidence korunabilir.`;
   } else if (review_status === 'partially_validated') {
-    adminNote = `Analiz yönü kısmen doğrulandı. Fiyat ${biasWord} yönde bir miktar ilerledi (pencere sonu ${r2(favEnd)}%) ancak beklenen güç tam oluşmadı.`;
-    internalNote = `Yön doğru ancak hareketin gücü sınırlıydı. Benzer setup'larda giriş zamanlaması ve teyit sinyalleri gözden geçirilebilir.`;
+    adminNote = `Analiz yönü kısmen doğrulandı. Fiyat ${biasWord} yönde maksimum ${r2(favMax)}% ilerledi (pencere sonu ${r2(favEnd)}%) ancak hareketin gücü sınırlı kaldı.`;
+    internalNote = `Yön doğru, maksimum hareket (%${r2(favMax)}) orta seviyede. Benzer setup'larda giriş zamanlaması/teyit gözden geçirilebilir.`;
   } else {
     adminNote = `Analiz yönü piyasa hareketiyle uyuşmadı. Fiyat beklenenin aksine/zayıf hareket etti (pencere sonu ${r2(favEnd)}%) ve ${dirAdj} beklenti doğrulanmadı.`;
     internalNote = `Bu kurulum beklenen yönü vermedi. Benzer koşullarda confidence düşürülebilir veya ek teyit aranabilir.`;

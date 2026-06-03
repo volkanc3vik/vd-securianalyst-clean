@@ -73,11 +73,11 @@ function computeOutcome({ bias, entry, high, low, lastClose }) {
     const a = Math.abs(pctEnd);
     score = a < 1 ? 60 : a < 3 ? 50 : 42;
   } else {
-    if (favEnd >= 3)      score = 82 + clamp((favEnd - 3) * 1.5, 0, 13);
-    else if (favEnd >= 1) score = 62 + (favEnd - 1) / 2 * 18;
-    else if (favEnd > -1) score = 45 + (favEnd + 1) / 2 * 14;
-    else                  score = clamp(39 + favEnd * 4, 5, 39);
-    score += clamp(favMax / 3, 0, 5);
+    // MAX favorable hareket bazlı (analysis-archive.js ile BİREBİR — Volkan kararı)
+    if (favMax >= 2)        score = 75 + clamp((favMax - 2) * 2.5, 0, 20);
+    else if (favMax >= 1)   score = 58 + (favMax - 1) * 17;
+    else if (favMax >= 0.4) score = 45 + (favMax - 0.4) / 0.6 * 13;
+    else                    score = clamp(20 + favMax * 60, 5, 45);
   }
   score = clamp(Math.round(score), 0, 95);
 
