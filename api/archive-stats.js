@@ -98,6 +98,13 @@ export default async function handler(req, res) {
     const byRisk       = groupRates(reviewed, r => riskBucket(r.market_context))
       .sort((a, b) => ['Düşük Risk', 'Orta Risk', 'Yüksek Risk', 'Bilinmiyor'].indexOf(a.key) - ['Düşük Risk', 'Orta Risk', 'Yüksek Risk', 'Bilinmiyor'].indexOf(b.key));
 
+    // Yeterli örneklemli (≥5 gözlem) — 3-örneklik fluke'ları eler, kanıt-ağırlıklı sıralar (Elite Center için)
+    const _strong = arr => (arr || []).filter(x => (x.total || 0) >= 5)
+      .sort((a, b) => ((b.weightedRate || 0) * Math.min(1, b.total / 10)) - ((a.weightedRate || 0) * Math.min(1, a.total / 10)) || (b.total || 0) - (a.total || 0))
+      .slice(0, 8);
+    const byCoinStrong      = _strong(groupRates(reviewed, r => r.sym));
+    const byStructureStrong = _strong(byStructure);
+
     // AI BEKLENTİ PERFORMANSI (exp kayıtlı olanlar)
     const exp = reviewed.filter(r => r.tg_exp_pct != null && r.result_percent != null);
     let uyumlu = 0, asti = 0, uyumsuz = 0;
@@ -231,7 +238,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true, generated_at: new Date().toISOString(),
-      overall, byCoin, byStructure, byConfidence, byRisk, expectation, weekly, academy, timeline, learning,
+      overall, byCoin, byStructure, byCoinStrong, byStructureStrong, byConfidence, byRisk, expectation, weekly, academy, timeline, learning,
       gaps: {
         structure_persisted: false,
         structure_note: 'Yapı kalıcı kolon değil; rsi/score/yön ile türetiliyor. Tam doğruluk için scanner market_context.structure yazmalı.',
