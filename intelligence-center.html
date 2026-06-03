@@ -36,6 +36,34 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 .cta .ttl{font-size:16px;font-weight:700;margin:6px 0 4px;color:var(--elite)}.cta .tx{color:var(--mut);font-size:13px;margin-bottom:14px}
 .note{color:var(--mut);font-size:12px;margin-top:8px}
 .disc{color:var(--mut);font-size:12px;border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:16px;border-left:3px solid var(--warn)}
+.ehead{display:flex;gap:22px;flex-wrap:wrap;align-items:center;background:linear-gradient(180deg,rgba(157,125,250,.09),transparent);border:1px solid var(--bd);border-left:3px solid var(--elite);border-radius:12px;padding:13px 18px;margin-bottom:16px}
+.ehead .hm{display:flex;flex-direction:column}
+.ehead .hm b{font-size:19px;font-variant-numeric:tabular-nums;line-height:1.1}
+.ehead .hm span{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.ehead .asof{margin-left:auto;color:var(--mut);font-size:11px;font-variant-numeric:tabular-nums}
+.epair{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.epanel{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.epanel-h{font-size:12px;color:var(--tx);font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:7px}
+.epanel-h::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--elite);box-shadow:0 0 8px var(--elite)}
+.epanel-sub{color:var(--mut);font-size:11px;margin:5px 0 12px;line-height:1.45}
+.erow{padding:10px 0;border-bottom:1px solid var(--bd)}.erow:last-child{border:0}
+.erow-top{display:flex;align-items:center;gap:9px}
+.erank{font-size:11px;font-weight:800;color:var(--elite);min-width:20px;font-variant-numeric:tabular-nums}
+.elabel{flex:1;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.epct{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;font-size:15px;font-weight:800}
+.epct.hi{color:var(--ok)}.epct.mid{color:var(--warn)}.epct.lo{color:var(--bad)}
+.ebar{height:5px;background:#1a2330;border-radius:4px;overflow:hidden;margin:6px 0 4px}
+.ebar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--elite));transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.erow-bot{display:flex;justify-content:space-between;align-items:center}
+.en{font-size:10px;color:var(--mut);font-variant-numeric:tabular-nums}
+.econf{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:5px}
+.econf.h{background:rgba(54,211,153,.12);color:var(--ok);border:1px solid rgba(54,211,153,.4)}
+.econf.m{background:rgba(59,158,255,.12);color:var(--ac);border:1px solid rgba(59,158,255,.4)}
+.econf.l{background:rgba(251,189,35,.1);color:var(--warn);border:1px solid rgba(251,189,35,.35);opacity:.9}
+.emicro{color:var(--mut);font-size:10px;margin-top:11px;font-style:italic;border-top:1px solid var(--bd);padding-top:8px}
+.coming .card{opacity:.72}
+.coming h2 .tag{float:right;font-size:8.5px;color:var(--elite);border:1px solid rgba(157,125,250,.4);border-radius:5px;padding:1px 6px;letter-spacing:.03em}
+@media(max-width:680px){.epair{grid-template-columns:1fr}}
 </style></head><body>
 <header class="aic-header">
   <a href="index.html" class="aic-logo">◈ VD <b>SecuriAnalyst</b></a>
@@ -119,19 +147,72 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       `<div class="sell">
         <b>Elite Intelligence Layer</b>, AI Learning ve Archive sonuçları yeterli veri seviyesine ulaştığında aktifleşen üst düzey analiz katmanıdır.
         <br><br><b>Elite Pass</b> ile şunlar açılır:
-        <ul><li>En güçlü coin sıralamaları</li><li>En başarılı yapı kombinasyonları</li><li>Market koşulu istihbaratı</li><li>Opportunity Matrix</li><li>Elite AI Reports</li></ul>
+        <ul><li>Coin bazlı gözlemlenen tutarlılık</li><li>Yapı bazlı gözlemlenen tutarlılık</li><li>Market koşulu istihbaratı</li><li>Opportunity Matrix</li><li>Elite AI Reports</li></ul>
       </div>` +
       featureCards(st) + flagshipReports(st) +
       `<p class="note">Elite Intelligence Engine is currently learning from validated outcomes.</p>`;
   }
 
-  function renderElite(lvl, count){
-    const dataReady = count >= TARGET;
-    const st = cardState(true, dataReady); // elite/admin: erişim var → 🟢 (veri gelince 🔓)
+  // ── ELITE MVP: Gözlemlenen Tutarlılık (Learning Confidence) ──────────────
+  // Çerçeve: coin/yapı TAVSİYESİ DEĞİL → AI'nın geçmiş doğrulanmış kayıtlardaki
+  // gözlemlenen tutarlılığı. Veri: /api/archive-stats (byCoin / byStructure).
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function rateOf(it){ const t=it.total||((it.success||0)+(it.partial||0)+(it.fail||0)); return t?Math.round(((it.success||0)+(it.partial||0)*0.5)/t*100):0; }
+  function confOf(rate,n){ if(n>=10&&rate>=75)return{c:'h',t:'Yüksek Güven'}; if(n>=5)return{c:'m',t:'Orta Güven'}; return{c:'l',t:'Düşük Örneklem'}; }
+  function pctCls(r){ return r>=75?'hi':r>=60?'mid':'lo'; }
+  function scoreOf(it){ const r=rateOf(it), n=it.total||0; return r*Math.min(1,n/10); } // örneklem-ağırlıklı (fluke üste çıkmasın)
+  function rankItems(items){
+    return (items||[]).slice().filter(it=>it&&(it.total||0)>0)
+      .sort((a,b)=>{ const a5=(a.total||0)>=5?1:0,b5=(b.total||0)>=5?1:0; if(a5!==b5)return b5-a5; return scoreOf(b)-scoreOf(a)||(b.total||0)-(a.total||0); })
+      .slice(0,5);
+  }
+  function consistencyPanel(title, sub, items){
+    const top=rankItems(items);
+    const body = top.length ? top.map((it,i)=>{
+      const r=rateOf(it), n=it.total||0, cf=confOf(r,n);
+      return `<div class="erow">
+        <div class="erow-top"><span class="erank">#${i+1}</span><span class="elabel">${esc(it.key)}</span><span class="epct ${pctCls(r)}">%${r}</span></div>
+        <div class="ebar"><i data-w="${r}"></i></div>
+        <div class="erow-bot"><span class="en">${n} gözlem</span><span class="econf ${cf.c}">${cf.t}</span></div>
+      </div>`;
+    }).join('') : `<p class="collecting">Henüz yeterli gözlem yok.</p>`;
+    return `<div class="epanel"><div class="epanel-h">${title}</div><div class="epanel-sub">${sub}</div>${body}
+      <div class="emicro">Geçmiş doğrulanmış kayıtlardan türetilmiş gözlem · yatırım tavsiyesi değildir.</div></div>`;
+  }
+  function eheadStrip(d){
+    const o=d.overall||{}; const total=o.total||0; const rate=rateOf(o); const cnt=(o.success||0)+(o.partial||0);
+    let asof=''; try{ asof=new Date(d.generated_at||Date.now()).toLocaleString('tr-TR'); }catch(e){}
+    return `<div class="ehead">
+      <div class="hm"><b>${cnt}</b><span>Doğrulanmış sonuç</span></div>
+      <div class="hm"><b>%${rate}</b><span>Genel tutarlılık</span></div>
+      <div class="hm"><b>${total}</b><span>Toplam analiz</span></div>
+      <div class="asof">as of ${esc(asof)}</div>
+    </div>`;
+  }
+  function comingNext(){
+    const mods=['Elite Market Conditions','Elite Volatility Intelligence','Elite Regime Intelligence','Elite Opportunity Matrix'];
+    const cards=mods.map(m=>`<div class="card"><h2>${m}<span class="tag">PHASE 13.1+</span></h2><p class="collecting">Veri modeli hazırlanıyor — yakında.</p><div class="cstat">Status: <span class="s-collect">Hazırlanıyor</span></div></div>`).join('');
+    return `<div class="grid coming">${cards}</div>
+      <div class="flagship"><h2>🔓 AI Intelligence Reports</h2><p class="fd">Coin ve yapı tutarlılığını birleştiren üst düzey araştırma katmanı.</p><span class="ftag">Elite'in en güçlü bölümü — yakında</span></div>`;
+  }
+
+  function renderElite(lvl, d, count){
+    d = d || {};
+    const coin = consistencyPanel(
+      'GÖZLEMLENEN TUTARLILIK — COİN BAZLI',
+      'AI\'nın geçmiş doğrulanmış analizlerinde bu coinlerde gözlemlenen tutarlılık (Learning Confidence). Coin tavsiyesi değildir.',
+      d.byCoin);
+    const struct = consistencyPanel(
+      'GÖZLEMLENEN TUTARLILIK — YAPI BAZLI',
+      'Hangi analiz yapılarının geçmişte daha tutarlı doğrulandığının gözlemi (Observed Consistency).',
+      d.byStructure);
     app.innerHTML =
       `<div class="grid">${progressBox(lvl, count)}</div>` +
-      featureCards(st) + flagshipReports(st) +
-      `<p class="note">Elite Intelligence Engine is currently learning from validated outcomes.</p>`;
+      eheadStrip(d) +
+      `<div class="epair">${coin}${struct}</div>` +
+      comingNext() +
+      `<p class="note">Elite Intelligence, incelenmiş geçmiş sonuçlardan türetilen istatistiksel gözlemlerdir; yatırım tavsiyesi değildir.</p>`;
+    requestAnimationFrame(()=>{ try{ document.querySelectorAll('.ebar>i[data-w]').forEach(i=>{ i.style.width=i.getAttribute('data-w')+'%'; }); }catch(e){} });
   }
 
   function boot(){
@@ -142,8 +223,8 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       let count = 0;
       try { if (d && d.ok && d.overall) count = (d.overall.success||0) + (d.overall.partial||0); } catch(e){}
       try { document.getElementById('gen').textContent = '· ' + new Date(d.generated_at||Date.now()).toLocaleString('tr-TR'); } catch(e){}
-      if (elite) renderElite(lvl, count); else renderPremium(count);
-    }).catch(()=>{ if (elite) renderElite(lvl, 0); else renderPremium(0); });
+      if (elite) renderElite(lvl, d, count); else renderPremium(count);
+    }).catch(()=>{ if (elite) renderElite(lvl, {}, 0); else renderPremium(0); });
   }
   let tries=0;
   (function wait(){ if (window.VDAccess || tries++>20) return boot(); setTimeout(wait,80); })();
