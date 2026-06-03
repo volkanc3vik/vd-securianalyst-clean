@@ -166,7 +166,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       .sort((a,b)=>{ const a5=(a.total||0)>=5?1:0,b5=(b.total||0)>=5?1:0; if(a5!==b5)return b5-a5; return scoreOf(b)-scoreOf(a)||(b.total||0)-(a.total||0); })
       .slice(0,5);
   }
-  function consistencyPanel(title, sub, items){
+  function consistencyPanel(title, sub, items, emptyMsg){
     const top=rankItems(items);
     const body = top.length ? top.map((it,i)=>{
       const r=rateOf(it), n=it.total||0, cf=confOf(r,n);
@@ -175,7 +175,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
         <div class="ebar"><i data-w="${r}"></i></div>
         <div class="erow-bot"><span class="en">${n} gözlem</span><span class="econf ${cf.c}">${cf.t}</span></div>
       </div>`;
-    }).join('') : `<p class="collecting">Henüz yeterli gözlem yok.</p>`;
+    }).join('') : `<p class="collecting">${emptyMsg||'Henüz yeterli gözlem yok.'}</p>`;
     return `<div class="epanel"><div class="epanel-h">${title}</div><div class="epanel-sub">${sub}</div>${body}
       <div class="emicro">Geçmiş doğrulanmış kayıtlardan türetilmiş gözlem · yatırım tavsiyesi değildir.</div></div>`;
   }
@@ -198,14 +198,18 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 
   function renderElite(lvl, d, count){
     d = d || {};
+    const coinItems   = (d.byCoinStrong && d.byCoinStrong.length)      ? d.byCoinStrong      : (d.byCoin||[]).filter(x=>(x.total||0)>=5);
+    const structItems = (d.byStructureStrong && d.byStructureStrong.length) ? d.byStructureStrong : (d.byStructure||[]).filter(x=>(x.total||0)>=5);
     const coin = consistencyPanel(
       'GÖZLEMLENEN TUTARLILIK — COİN BAZLI',
       'AI\'nın geçmiş doğrulanmış analizlerinde bu coinlerde gözlemlenen tutarlılık (Learning Confidence). Coin tavsiyesi değildir.',
-      d.byCoin);
+      coinItems,
+      'Coin bazlı için yeterli örneklem (≥5 gözlem) henüz birikmedi. Yapı tarafı hazır; veri arttıkça coinler de dolacak.');
     const struct = consistencyPanel(
       'GÖZLEMLENEN TUTARLILIK — YAPI BAZLI',
       'Hangi analiz yapılarının geçmişte daha tutarlı doğrulandığının gözlemi (Observed Consistency).',
-      d.byStructure);
+      structItems,
+      'Yapı bazlı için yeterli örneklem (≥5 gözlem) henüz birikmedi.');
     app.innerHTML =
       `<div class="grid">${progressBox(lvl, count)}</div>` +
       eheadStrip(d) +
