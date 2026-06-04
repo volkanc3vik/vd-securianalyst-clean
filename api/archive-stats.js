@@ -105,6 +105,23 @@ export default async function handler(req, res) {
     const byCoinStrong      = _strong(groupRates(reviewed, r => r.sym));
     const byStructureStrong = _strong(byStructure);
 
+    // Opportunity Matrix: yön (bias) × risk çapraz gözlemlenen tutarlılık (Elite)
+    const _biasLabel = b => b === 'bullish' ? 'Yukarı Yönlü' : b === 'bearish' ? 'Aşağı Yönlü' : b === 'neutral' ? 'Nötr' : 'Diğer';
+    const _MX_RISK = ['Düşük Risk', 'Orta Risk', 'Yüksek Risk'];
+    const opportunityMatrix = ['bullish', 'bearish', 'neutral'].map(b => ({
+      bias: b, label: _biasLabel(b),
+      cells: _MX_RISK.map(rk => {
+        let v = 0, p = 0, n = 0;
+        for (const r of reviewed) {
+          if ((r.direction_bias || '') !== b || riskBucket(r.market_context) !== rk) continue;
+          n++;
+          if (r.review_status === 'validated') v++;
+          else if (r.review_status === 'partially_validated') p++;
+        }
+        return { risk: rk, total: n, rate: n ? pct(v + p * 0.5, n) : null, lowSample: n < 5 };
+      })
+    }));
+
     // AI BEKLENTİ PERFORMANSI (exp kayıtlı olanlar)
     const exp = reviewed.filter(r => r.tg_exp_pct != null && r.result_percent != null);
     let uyumlu = 0, asti = 0, uyumsuz = 0;
@@ -238,7 +255,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true, generated_at: new Date().toISOString(),
-      overall, byCoin, byStructure, byCoinStrong, byStructureStrong, byConfidence, byRisk, expectation, weekly, academy, timeline, learning,
+      overall, byCoin, byStructure, byCoinStrong, byStructureStrong, opportunityMatrix, byConfidence, byRisk, expectation, weekly, academy, timeline, learning,
       gaps: {
         structure_persisted: false,
         structure_note: 'Yapı kalıcı kolon değil; rsi/score/yön ile türetiliyor. Tam doğruluk için scanner market_context.structure yazmalı.',
