@@ -64,6 +64,32 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 .coming .card{opacity:.72}
 .coming h2 .tag{float:right;font-size:8.5px;color:var(--elite);border:1px solid rgba(157,125,250,.4);border-radius:5px;padding:1px 6px;letter-spacing:.03em}
 @media(max-width:680px){.epair{grid-template-columns:1fr}}
+.csub{color:var(--mut);font-size:10.5px;margin:-4px 0 10px;line-height:1.4}
+.mrow{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)}
+.mrow:last-child{border:0}
+.mlabel{font-size:12px;font-weight:600;color:var(--tx)}
+.mpct{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;font-size:13px;font-weight:800;text-align:right}
+.mpct.hi{color:var(--ok)}.mpct.mid{color:var(--warn)}.mpct.lo{color:var(--bad)}
+.mbar{grid-column:1/-1;height:4px;background:#1a2330;border-radius:3px;overflow:hidden;margin-top:1px}
+.mbar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--elite));transition:width .7s ease}
+.mn{grid-column:1/-1;font-size:9.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+.watch{margin-top:12px;border-top:1px dashed var(--bd);padding-top:10px}
+.watch-h{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
+.wchip{display:inline-block;font-size:10.5px;color:var(--mut);background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:6px;padding:3px 8px;margin:0 5px 5px 0;font-variant-numeric:tabular-nums}
+.wchip b{color:var(--tx)}
+.mx{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.mx-row{display:grid;grid-template-columns:64px 1fr 1fr 1fr;gap:4px}
+.mx-cell{font-size:10px;padding:5px 4px;border-radius:5px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:30px}
+.mx-head .mx-h{color:var(--mut);font-size:9px;text-transform:uppercase;letter-spacing:.03em}
+.mx-corner{background:transparent}
+.mx-b{color:var(--tx);font-weight:600;font-size:10px;justify-content:center;align-items:flex-start;text-align:left}
+.mx-v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;font-weight:800;font-size:12px;border:1px solid var(--bd)}
+.mx-v i{font-style:normal;font-size:8px;color:var(--mut);font-weight:600;margin-top:1px}
+.mx-v.hi{background:rgba(54,211,153,.13);color:var(--ok)}
+.mx-v.mid{background:rgba(251,189,35,.12);color:var(--warn)}
+.mx-v.lo{background:rgba(248,114,114,.12);color:var(--bad)}
+.mx-v.mx-low{opacity:.5}
+.mx-empty{color:var(--mut);opacity:.4}
 </style></head><body>
 <header class="aic-header">
   <a href="index.html" class="aic-logo">◈ VD <b>SecuriAnalyst</b></a>
@@ -166,7 +192,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       .sort((a,b)=>{ const a5=(a.total||0)>=5?1:0,b5=(b.total||0)>=5?1:0; if(a5!==b5)return b5-a5; return scoreOf(b)-scoreOf(a)||(b.total||0)-(a.total||0); })
       .slice(0,5);
   }
-  function consistencyPanel(title, sub, items, emptyMsg){
+  function consistencyPanel(title, sub, items, emptyMsg, extra){
     const top=rankItems(items);
     const body = top.length ? top.map((it,i)=>{
       const r=rateOf(it), n=it.total||0, cf=confOf(r,n);
@@ -176,8 +202,53 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
         <div class="erow-bot"><span class="en">${n} gözlem</span><span class="econf ${cf.c}">${cf.t}</span></div>
       </div>`;
     }).join('') : `<p class="collecting">${emptyMsg||'Henüz yeterli gözlem yok.'}</p>`;
-    return `<div class="epanel"><div class="epanel-h">${title}</div><div class="epanel-sub">${sub}</div>${body}
+    return `<div class="epanel"><div class="epanel-h">${title}</div><div class="epanel-sub">${sub}</div>${body}${extra||''}
       <div class="emicro">Geçmiş doğrulanmış kayıtlardan türetilmiş gözlem · yatırım tavsiyesi değildir.</div></div>`;
+  }
+
+  // Kompakt mini-panel (risk/güven gibi az satırlı koşullar için)
+  function miniRows(items){
+    const list=(items||[]).filter(it=>(it.total||0)>0).sort((a,b)=>scoreOf(b)-scoreOf(a));
+    if(!list.length) return `<p class="collecting">Veri birikiyor…</p>`;
+    return list.map(it=>{
+      const r=rateOf(it), n=it.total||0;
+      return `<div class="mrow"><span class="mlabel">${esc(it.key)}</span><span class="mpct ${pctCls(r)}">%${r}</span><div class="mbar"><i data-w="${r}"></i></div><span class="mn">${n} gözlem</span></div>`;
+    }).join('');
+  }
+  // Coin paneli boşken: düşük örneklemli (henüz <5) coinleri "izlemede" olarak soluk göster
+  function watchList(items){
+    const low=(items||[]).filter(it=>(it.total||0)>0 && (it.total||0)<5).sort((a,b)=>rateOf(b)-rateOf(a)||(b.total||0)-(a.total||0)).slice(0,6);
+    if(!low.length) return '';
+    return `<div class="watch"><div class="watch-h">İzlemede · düşük örneklem (henüz ≥5 gözlem değil)</div>`+
+      low.map(it=>`<span class="wchip">${esc(it.key)} <b>%${rateOf(it)}</b> · ${it.total}</span>`).join('')+`</div>`;
+  }
+  function conditionsGrid(d){
+    const real = (title, sub, items) => `<div class="card"><h2>${title}</h2><p class="csub">${sub}</p>${miniRows(items)}</div>`;
+    const soon = (title) => `<div class="card"><h2>${title}<span class="tag">PHASE 13.1+</span></h2><p class="collecting">Veri modeli hazırlanıyor — yakında.</p><div class="cstat">Status: <span class="s-collect">Hazırlanıyor</span></div></div>`;
+    const matrix = () => {
+      const rows = (d.opportunityMatrix||[]).filter(r => r.cells && r.cells.some(c=>c.total>0));
+      if(!rows.length) return soon('ELİTE OPPORTUNITY MATRIX');
+      const risks = ['Düşük Risk','Orta Risk','Yüksek Risk'];
+      const head = `<div class="mx-row mx-head"><span class="mx-cell mx-corner"></span>`+risks.map(r=>`<span class="mx-cell mx-h">${r.replace(' Risk','')}</span>`).join('')+`</div>`;
+      const body = rows.map(r=>{
+        const cells = r.cells.map(c=>{
+          if(!c.total) return `<span class="mx-cell mx-empty">–</span>`;
+          const rr=Math.round(c.rate), cls=rr>=75?'hi':rr>=60?'mid':'lo', lo=c.lowSample?' mx-low':'';
+          return `<span class="mx-cell mx-v ${cls}${lo}" title="${c.total} gözlem">%${rr}<i>${c.total}</i></span>`;
+        }).join('');
+        return `<div class="mx-row"><span class="mx-cell mx-b">${esc(r.label)}</span>${cells}</div>`;
+      }).join('');
+      return `<div class="card"><h2>ELİTE OPPORTUNITY MATRIX</h2><p class="csub">Yön × risk koşullarında gözlemlenen tutarlılık (%tutarlılık · gözlem). Düşük örneklem soluk gösterilir.</p><div class="mx">${head}${body}</div></div>`;
+    };
+    return `<div class="grid">`+
+      real('ELİTE MARKET CONDITIONS','AI güven seviyesine göre gözlemlenen tutarlılık (kalibrasyon).', d.byConfidence)+
+      real('ELİTE VOLATILITY INTELLIGENCE','Risk seviyesine göre gözlemlenen tutarlılık.', d.byRisk)+
+      soon('ELİTE REGIME INTELLIGENCE')+
+      matrix()+
+      `</div>`;
+  }
+  function aiReports(){
+    return `<div class="flagship"><h2>🔓 AI Intelligence Reports</h2><p class="fd">Coin ve yapı tutarlılığını birleştiren üst düzey araştırma katmanı.</p><span class="ftag">Elite'in en güçlü bölümü — yakında</span></div>`;
   }
   function eheadStrip(d){
     const o=d.overall||{}; const total=o.total||0; const rate=rateOf(o); const cnt=(o.success||0)+(o.partial||0);
@@ -204,7 +275,8 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       'GÖZLEMLENEN TUTARLILIK — COİN BAZLI',
       'AI\'nın geçmiş doğrulanmış analizlerinde bu coinlerde gözlemlenen tutarlılık (Learning Confidence). Coin tavsiyesi değildir.',
       coinItems,
-      'Coin bazlı için yeterli örneklem (≥5 gözlem) henüz birikmedi. Yapı tarafı hazır; veri arttıkça coinler de dolacak.');
+      'Coin bazlı için yeterli örneklem (≥5 gözlem) henüz birikmedi. Yapı tarafı hazır; veri arttıkça coinler de dolacak.',
+      watchList(d.byCoin));
     const struct = consistencyPanel(
       'GÖZLEMLENEN TUTARLILIK — YAPI BAZLI',
       'Hangi analiz yapılarının geçmişte daha tutarlı doğrulandığının gözlemi (Observed Consistency).',
@@ -214,9 +286,10 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       `<div class="grid">${progressBox(lvl, count)}</div>` +
       eheadStrip(d) +
       `<div class="epair">${coin}${struct}</div>` +
-      comingNext() +
+      conditionsGrid(d) +
+      aiReports() +
       `<p class="note">Elite Intelligence, incelenmiş geçmiş sonuçlardan türetilen istatistiksel gözlemlerdir; yatırım tavsiyesi değildir.</p>`;
-    requestAnimationFrame(()=>{ try{ document.querySelectorAll('.ebar>i[data-w]').forEach(i=>{ i.style.width=i.getAttribute('data-w')+'%'; }); }catch(e){} });
+    requestAnimationFrame(()=>{ try{ document.querySelectorAll('.ebar>i[data-w],.mbar>i[data-w]').forEach(i=>{ i.style.width=i.getAttribute('data-w')+'%'; }); }catch(e){} });
   }
 
   function boot(){
