@@ -46,6 +46,7 @@
   function relTime(ts) {
     if (!ts) return '—';
     const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+    if (s < 10) return 'az önce';
     if (s < 60) return s + ' sn önce';
     const m = Math.round(s / 60);
     if (m < 60) return m + ' dk önce';
@@ -211,6 +212,7 @@
     const flags = { vol: s.volFiring, sq: (s.squeeze || 0) >= 0.6, cp: (s.compress || 0) >= 0.6 };
 
     const row = { sym: item.sym, dir, s, value: rd.value, structBase: rd.structBase,
+                  price: num(item.price), chg: num(item.chg),
                   stage, stageSince, prevReadiness, lastEvent, pend, _flags: flags };
     ST.set(item.sym, row);
     return row;
@@ -257,140 +259,172 @@
     </div>`;
   }
 
-  function render(rows) {
-    const mount = document.getElementById('earlyRadar');
-    if (!mount) return;
-    rows = rows.filter(r => r.stage).sort((a, b) =>
-      (RANK[b.stage] - RANK[a.stage]) || (b.value - a.value)).slice(0, CFG.maxRows);
+  // ── Erişim yardımcıları ──
+  function canSeeRadar(){ try{ var A=window.VDAccess; return !!(A && ((A.isPremium&&A.isPremium())||(A.isElite&&A.isElite()))); }catch(e){return false;} }
+  function canSeeArchive(){ try{ return !!(window.VDAccess && window.VDAccess.isElite && window.VDAccess.isElite()); }catch(e){return false;} }
 
-    const stale = Date.now() - _lastScanAt > CFG.staleMs;
-    const head = `
-      <style>
-        @keyframes erArmedPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.35)}}
-        @keyframes erGoldShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-        /* 1. Kademe — Kırmızı (65-76) */
-        @keyframes erT1Glow{0%,100%{box-shadow:inset 3px 0 0 #f0506e}50%{box-shadow:inset 3px 0 0 rgba(240,80,110,.4)}}
-        tr.er-t1{background:rgba(240,80,110,.06);animation:erT1Glow 1.8s ease-in-out infinite}
-        tr.er-t1:hover{background:rgba(240,80,110,.12) !important}
-        .er-dot-t1{display:inline-block;width:7px;height:7px;border-radius:50%;background:#f0506e;margin-left:6px;animation:erArmedPulse 1.3s ease-in-out infinite;vertical-align:middle}
-        .er-tag-t1{display:inline-block;margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.05em;color:#f0506e;background:rgba(240,80,110,.13);border:1px solid rgba(240,80,110,.45);border-radius:6px;padding:1px 6px;vertical-align:middle}
-        /* 2. Kademe — Turuncu (77-87) */
-        @keyframes erT2Glow{0%,100%{box-shadow:inset 3px 0 0 #ff8a3d}50%{box-shadow:inset 3px 0 0 rgba(255,138,61,.4)}}
-        tr.er-t2{background:rgba(255,138,61,.07);animation:erT2Glow 1.5s ease-in-out infinite}
-        tr.er-t2:hover{background:rgba(255,138,61,.13) !important}
-        .er-dot-t2{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff8a3d;margin-left:6px;animation:erArmedPulse 1.1s ease-in-out infinite;vertical-align:middle}
-        .er-tag-t2{display:inline-block;margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.05em;color:#ff8a3d;background:rgba(255,138,61,.14);border:1px solid rgba(255,138,61,.45);border-radius:6px;padding:1px 6px;vertical-align:middle}
-        /* 3. Kademe — Altın şaşaalı (88+) */
-        @keyframes erT3Glow{0%,100%{box-shadow:inset 3px 0 0 #ffd24a, 0 0 14px rgba(255,210,74,.25)}50%{box-shadow:inset 3px 0 0 #fff1c0, 0 0 22px rgba(255,210,74,.5)}}
-        tr.er-t3{background:linear-gradient(90deg,rgba(255,210,74,.13),rgba(255,210,74,.04));animation:erT3Glow 1.4s ease-in-out infinite}
-        tr.er-t3:hover{background:linear-gradient(90deg,rgba(255,210,74,.2),rgba(255,210,74,.07)) !important}
-        .er-dot-t3{display:inline-block;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6d6,#ffd24a 60%,#e0a800);margin-left:6px;animation:erArmedPulse 0.9s ease-in-out infinite;vertical-align:middle;box-shadow:0 0 6px rgba(255,210,74,.8)}
-        .er-tag-t3{display:inline-block;margin-left:6px;font-size:9px;font-weight:900;letter-spacing:.06em;color:#3a2c00;border-radius:6px;padding:1px 7px;vertical-align:middle;background:linear-gradient(90deg,#ffe9a0,#ffd24a,#ffe9a0,#ffd24a);background-size:200% 100%;animation:erGoldShimmer 2.2s linear infinite;border:1px solid rgba(255,210,74,.7)}
-      </style>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:700;color:#e6edf6">⚡ Early Opportunity Radar</span>
-        <span style="font-size:10px;color:#8b98ac">${stale ? '· bayat veri' : '· canlı'}</span>
-      </div>
-      <div style="font-size:10.5px;color:#8b98ac;margin-bottom:8px">
-        İzleme katmanıdır; işlem önerisi değildir. Yön, olasılık veya hedef içermez — yalnız yapı olgunluğu.
-      </div>`;
-
-    if (!rows.length) {
-      mount.innerHTML = head + `<div style="font-size:12px;color:#8b98ac;padding:10px 0">Henüz erken fırsat yok — tarama biriktikçe burada görünecek.</div>`;
-      return;
-    }
-
-    const rowsHtml = rows.map(r => {
-      const rs = reasons(r.s, r.stage);
-      const dcol = r.dir === 'LONG' ? '#36d399' : '#f87272';
-      const dtxt = r.dir === 'LONG' ? '▲ LONG' : '▼ SHORT';
-      const ev = r.lastEvent ? `${esc(r.lastEvent.label)}<br><span style="color:#8b98ac">${relTime(r.lastEvent.at)}</span>` : '—';
-      const symSafe = esc(r.sym).replace(/'/g, '');
-      // ARMED gücü → 3 kademe (Readiness'e göre). Sıralama zaten value'ya göre, güçlü üstte.
-      let tier = 0, tCls = '', tDot = '', tTag = '';
-      if (r.stage === 'ARMED') {
-        const vr = r.s && r.s.volRatio != null ? r.s.volRatio : null;  // hacmin 1.30 teyidine yolculuğu
-        if (vr != null && vr >= 1.20)      { tier = 3; tCls = 'er-t3'; tDot = '<span class="er-dot-t3" title="Teyide çok yakın (hacim ≥1.20×)"></span>'; tTag = '<span class="er-tag-t3" title="Hacim teyide çok yaklaştı — birazdan CONFIRMED">★ GÜÇLÜ</span>'; }
-        else if (vr != null && vr >= 1.10) { tier = 2; tCls = 'er-t2'; tDot = '<span class="er-dot-t2" title="Hazırlanıyor (hacim 1.10–1.20×)"></span>'; tTag = '<span class="er-tag-t2" title="Hacim toplanıyor">⚡ HAZIR</span>'; }
-        else                                { tier = 1; tCls = 'er-t1'; tDot = '<span class="er-dot-t1" title="Yeni uyanıyor (hacim 1.00–1.10×)"></span>'; tTag = '<span class="er-tag-t1" title="Hacim yeni uyanıyor">○ ERKEN</span>'; }
-      }
-      return `<tr data-sym="${symSafe}" class="er-row${tCls ? ' ' + tCls : ''}" style="border-top:1px solid #1e2836;cursor:pointer" title="Grafik analizinde aç: ${esc(r.sym.replace('USDT',''))}">
-        <td style="padding:7px 6px;font-weight:700;color:#cbb6ff">${esc(r.sym.replace('USDT', ''))} <span style="color:#7c5cff;font-size:10px">↗</span>${tDot}</td>
-        <td style="padding:7px 6px;color:${dcol};font-weight:600">${dtxt}</td>
-        <td style="padding:7px 6px">${badge(r.stage)}${tTag}</td>
-        <td style="padding:7px 6px;text-align:center">${r.s.score != null ? r.s.score : '—'}</td>
-        <td style="padding:7px 6px;text-align:center">${r.s.risk != null ? r.s.risk : '—'}</td>
-        <td style="padding:7px 6px;text-align:center;font-weight:700">${r.value} ${arrow(r.value, r.prevReadiness)}</td>
-        <td style="padding:7px 6px;text-align:center;white-space:nowrap">${chip((r.s.squeeze || 0) >= 0.5, 'Squeeze')}${chip((r.s.compress || 0) >= 0.5, 'Compression')}${chip(r.s.volFiring, 'Volume Awakening')}</td>
-        <td style="padding:7px 6px">${confirmCell(r.s)}</td>
-        <td style="padding:7px 6px;font-size:11px"><span style="color:#9fe0c0">${esc(rs.why)}</span>${rs.miss !== '—' ? `<br><span style="color:#c79a6a">Eksik: ${esc(rs.miss)}</span>` : ''}</td>
-        <td style="padding:7px 6px;font-size:11px">${ev}</td>
-        <td style="padding:7px 6px;font-size:11px;color:#8b98ac">${relTime(r.stageSince)}</td>
-      </tr>`;
-    }).join('');
-
-    mount.innerHTML = head + `
-      <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;color:#e6edf6">
-        <thead><tr style="color:#8b98ac;font-size:10px;text-transform:uppercase;letter-spacing:.04em">
-          <th style="padding:6px;text-align:left">Coin</th><th style="padding:6px;text-align:left">Yön</th>
-          <th style="padding:6px;text-align:left">Aşama</th><th style="padding:6px">Conf</th><th style="padding:6px">Risk</th>
-          <th style="padding:6px">Readiness</th><th style="padding:6px">S·C·V</th>
-          <th style="padding:6px;text-align:left">Teyit Yolu</th>
-          <th style="padding:6px;text-align:left">Neden / Eksik</th><th style="padding:6px;text-align:left">Son Değişim</th>
-          <th style="padding:6px;text-align:left">Aşama Yaşı</th>
-        </tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table></div>`;
-
-    // Satıra tıkla → grafik analizör o coine geçsin + ana panele kay
+  // ── Arşiv verisi (yalnız elite/admin için çekilir, cache) ──
+  var _archMap = null, _archTried = false;
+  function archFor(sym){ if(!_archMap) return null; return _archMap[sym] || _archMap[String(sym).replace('USDT','')] || null; }
+  function loadArchive(then){
+    if (_archMap || _archTried){ then(); return; }
+    _archTried = true;
     try {
-      const rowsEls = mount.querySelectorAll('tr.er-row');
-      rowsEls.forEach(tr => {
-        tr.addEventListener('mouseenter', () => { tr.style.background = 'rgba(124,92,255,.08)'; });
-        tr.addEventListener('mouseleave', () => { tr.style.background = ''; });
-        tr.addEventListener('click', () => {
-          const sym = tr.getAttribute('data-sym');
-          if (!sym) return;
-          if (typeof window.openCoin === 'function') { window.openCoin(sym); return; }
-          // Yedek: openCoin yoksa loadCoin + kaydır
-          if (typeof window.loadCoin === 'function') {
-            window.SYM = sym;
-            const inp = document.getElementById('symInput'); if (inp) inp.value = sym;
-            try { window.loadCoin(sym, window.INTV || '15m'); } catch (e) {}
-            const el = document.getElementById('mainPanel');
-            if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 200);
-          }
+      fetch('/api/archive-stats').then(function(r){return r.json();}).then(function(d){
+        var m={}, arr=(d&&d.byCoin)||[]; arr.forEach(function(x){ if(x&&x.key) m[x.key]=x; });
+        _archMap=m; then();
+      }).catch(function(){ _archMap={}; then(); });
+    } catch(e){ _archMap={}; then(); }
+  }
+
+  // ── Biçim yardımcıları ──
+  function fmtPrice(p){ if(p==null) return ''; var n=+p; if(isNaN(n)) return ''; if(n>=1000) return '$'+n.toLocaleString('en-US',{maximumFractionDigits:2}); if(n>=1) return '$'+n.toFixed(3); return '$'+n.toPrecision(4); }
+  function chgHtml(c){ if(c==null||isNaN(+c)) return ''; var up=(+c)>=0; return '<span style="color:'+(up?'#36d399':'#f87272')+';font-weight:700;font-size:11px">'+(up?'▲':'▼')+' '+Math.abs(+c).toFixed(2)+'%</span>'; }
+  function stageWord(st){ return st==='CONFIRMED'?'Teyitli':st==='ARMED'?'Hazır':'İzleme'; }
+  function chipTag(t){ return '<span class="er-chip">'+esc(t)+'</span>'; }
+
+  function archiveBlock(sym, elite){
+    if (!elite){
+      return '<div style="border:1px dashed #2a3550;border-radius:9px;padding:9px;background:rgba(56,189,248,.04);margin-top:9px">'
+        + '<div style="font-size:8.5px;color:#b39dfa;font-weight:800;letter-spacing:.05em;margin-bottom:4px">🔒 ELİTE · ARŞİV TUTARLILIĞI</div>'
+        + '<div style="filter:blur(4px);user-select:none;font-size:10.5px;color:#cfe0f5">Bu coin geçmişte ●● gözlemde %●● tutarlılık</div>'
+        + '<a href="legal/premium.html" style="display:inline-block;margin-top:7px;font-size:9.5px;font-weight:800;color:#04101f;background:linear-gradient(90deg,#9d7dfa,#38bdf8);padding:4px 10px;border-radius:7px;text-decoration:none">Elite ile bu coinin geçmişini gör</a>'
+        + '</div>';
+    }
+    var a=archFor(sym), inner;
+    if (!a || !a.total){ inner='<span style="color:#8b98ac">Bu coin için arşiv kaydı henüz yok.</span>'; }
+    else if (a.total<5){ inner='<span style="color:#fbbd23">Henüz az örneklem · '+a.total+' gözlem</span>'; }
+    else { var rate=(a.weightedRate!=null?a.weightedRate:a.successRate)||0; var rc=rate>=75?'#36d399':rate>=60?'#fbbd23':'#f87272'; inner='<b style="color:'+rc+'">%'+Math.round(rate)+' tutarlılık</b> <span style="color:#8b98ac">· '+a.total+' doğrulanmış gözlem</span>'; }
+    return '<div style="border:1px solid #1f2c45;border-radius:9px;padding:9px;background:rgba(56,189,248,.04);margin-top:9px">'
+      + '<div style="font-size:8.5px;color:#9d7dfa;font-weight:800;letter-spacing:.05em;margin-bottom:4px">⬡ ARŞİV TUTARLILIĞI</div>'
+      + '<div style="font-size:10.5px;color:#cfe0f5">'+inner+'</div></div>';
+  }
+
+  function goldCard(r, elite){
+    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(1):'—');
+    var chips=''; if(r.s.okEma) chips+=chipTag('EMA hizalı'); if(r.s.okMacd) chips+=chipTag('MACD ▲'); if((r.s.conf||0)>=0.6) chips+=chipTag('Confidence güçlü');
+    var sw=(typeof score==='number')?score:0;
+    return '<div class="er-card er-gold" data-sym="'+esc(r.sym).replace(/\'/g,'')+'">'
+      + '<div class="er-c-top"><div class="er-logo">'+sym.slice(0,3)+'</div>'
+      + '<div style="flex:1;min-width:0"><div class="er-sym">'+sym+' '+chgHtml(r.chg)+'</div><div class="er-price">'+fmtPrice(r.price)+'</div></div>'
+      + '<span class="er-stage er-stage-g">'+stageWord(r.stage)+'</span></div>'
+      + '<div class="er-scrow"><span>Güven Skoru</span><b style="color:#e8b84b">'+score+'<span style="color:#8b98ac;font-size:9px">/100</span></b></div>'
+      + '<div class="er-bar"><i style="width:'+sw+'%;background:linear-gradient(90deg,#a9791f,#e8b84b)"></i></div>'
+      + '<div class="er-tech"><span>RSI <b>'+rsi+'</b></span><span>EMA <b style="color:'+(r.s.okEma?'#36d399':'#8b98ac')+'">'+(r.s.okEma?'▲▲▲':'—')+'</b></span><span>MACD <b style="color:'+(r.s.okMacd?'#36d399':'#8b98ac')+'">'+(r.s.okMacd?'▲':'—')+'</b></span><span>Readiness <b>'+r.value+'</b></span></div>'
+      + (chips?'<div class="er-chips">'+chips+'</div>':'')
+      + '<div class="er-foot"><span class="er-fresh">● '+relTime(r.stageSince)+' tarandı</span><span class="er-link">Grafikte İncele →</span></div>'
+      + archiveBlock(r.sym, elite)
+      + '<div class="er-micro">Yapı olgunluğu gözlemi — işlem/yön önerisi değildir.</div></div>';
+  }
+
+  function compactCard(r, tierCls){
+    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(0):'—');
+    var ac=(tierCls==='er-orange')?'#ff8a3d':'#9aa6b8';
+    return '<div class="er-card er-compact '+tierCls+'" data-sym="'+esc(r.sym).replace(/\'/g,'')+'">'
+      + '<div class="er-c-top"><div class="er-logo er-logo-sm">'+sym.slice(0,3)+'</div>'
+      + '<div style="flex:1;min-width:0"><div class="er-sym" style="font-size:13px">'+sym+' '+chgHtml(r.chg)+'</div><div class="er-price">'+fmtPrice(r.price)+'</div></div>'
+      + '<span class="er-stage" style="color:'+ac+';border:1px solid '+ac+'66;background:'+ac+'18">'+stageWord(r.stage)+'</span></div>'
+      + '<div class="er-cmprow"><span>Skor <b style="color:'+ac+'">'+score+'</b></span><span>RSI <b>'+rsi+'</b></span><span>Rdy <b>'+r.value+'</b></span></div>'
+      + '<div class="er-foot"><span class="er-fresh">● '+relTime(r.stageSince)+'</span><span class="er-link">İncele →</span></div></div>';
+  }
+
+  var STYLE='<style>'
+  + '#earlyRadar .er-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}'
+  + '#earlyRadar .er-title{font-size:14px;font-weight:800;color:#e6edf6}'
+  + '#earlyRadar .er-live{font-size:10px;color:#36d399}'
+  + '#earlyRadar .er-scan{margin-left:auto;font-size:10.5px;color:#8b98ac;font-variant-numeric:tabular-nums}'
+  + '#earlyRadar .er-note{font-size:10.5px;color:#8b98ac;line-height:1.5;margin-bottom:12px;border-left:2px solid #1e2836;padding-left:9px}'
+  + '#earlyRadar .er-tier{margin-bottom:14px}'
+  + '#earlyRadar .er-tier-h{font-size:11px;font-weight:800;letter-spacing:.05em;margin:0 0 8px}'
+  + '#earlyRadar .er-gold-h{color:#e8b84b}#earlyRadar .er-orange-h{color:#ff8a3d}#earlyRadar .er-gray-h{color:#9aa6b8}'
+  + '#earlyRadar .er-grid{display:grid;gap:11px}'
+  + '#earlyRadar .er-grid-g{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}'
+  + '#earlyRadar .er-grid-c{grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}'
+  + '#earlyRadar .er-card{background:#0e1626;border:1px solid #1e2836;border-radius:13px;padding:13px;cursor:pointer;transition:transform .15s ease,border-color .15s ease}'
+  + '#earlyRadar .er-card:hover{transform:translateY(-2px);border-color:#2b3a52}'
+  + '#earlyRadar .er-gold{border-top:2px solid #e8b84b;box-shadow:0 0 0 1px rgba(232,184,75,.12);padding:15px}'
+  + '#earlyRadar .er-orange{border-top:2px solid #ff8a3d}'
+  + '#earlyRadar .er-gray{border-top:2px solid #6b7686}'
+  + '#earlyRadar .er-c-top{display:flex;align-items:center;gap:9px;margin-bottom:9px}'
+  + '#earlyRadar .er-logo{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#e8b84b,#a9791f);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;color:#1a1305;flex-shrink:0}'
+  + '#earlyRadar .er-orange .er-logo{background:linear-gradient(135deg,#ff8a3d,#b85a1a);color:#1a0f05}'
+  + '#earlyRadar .er-gray .er-logo{background:linear-gradient(135deg,#9aa6b8,#5c6675);color:#10151d}'
+  + '#earlyRadar .er-logo-sm{width:26px;height:26px;font-size:9px}'
+  + '#earlyRadar .er-sym{font-weight:800;font-size:15px;color:#e6edf6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+  + '#earlyRadar .er-price{font-size:11px;color:#8b98ac}'
+  + '#earlyRadar .er-stage{font-size:8.5px;font-weight:800;letter-spacing:.04em;padding:3px 7px;border-radius:6px;white-space:nowrap}'
+  + '#earlyRadar .er-stage-g{color:#e8b84b;border:1px solid rgba(232,184,75,.5);background:rgba(232,184,75,.1)}'
+  + '#earlyRadar .er-scrow{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#8b98ac;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}'
+  + '#earlyRadar .er-scrow b{font-family:ui-monospace,Menlo,monospace;font-size:13px}'
+  + '#earlyRadar .er-bar{height:5px;background:#1a2330;border-radius:4px;overflow:hidden;margin-bottom:10px}#earlyRadar .er-bar>i{display:block;height:100%}'
+  + '#earlyRadar .er-tech{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:11px;color:#8b98ac;margin-bottom:9px}#earlyRadar .er-tech b{color:#e6edf6}'
+  + '#earlyRadar .er-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}'
+  + '#earlyRadar .er-chip{font-size:9.5px;color:#9fb4d6;background:rgba(255,255,255,.03);border:1px solid #1e2836;border-radius:5px;padding:2px 7px}'
+  + '#earlyRadar .er-cmprow{display:flex;gap:10px;font-size:11px;color:#8b98ac;margin-bottom:8px}#earlyRadar .er-cmprow b{color:#e6edf6}'
+  + '#earlyRadar .er-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1e2836;padding-top:8px}'
+  + '#earlyRadar .er-fresh{font-size:10px;color:#36d399;font-weight:700}'
+  + '#earlyRadar .er-link{font-size:10px;color:#3b9eff;font-weight:700}'
+  + '#earlyRadar .er-micro{font-size:9px;color:#8b98ac;font-style:italic;margin-top:8px}'
+  + '#earlyRadar .er-empty{font-size:11px;color:#8b98ac;padding:10px;border:1px dashed #1e2836;border-radius:10px}'
+  + '</style>';
+
+  function bindClicks(mount){
+    try {
+      mount.querySelectorAll('.er-card').forEach(function(c){
+        c.addEventListener('click', function(e){
+          if (e.target && e.target.closest && e.target.closest('a')) return;
+          var sym=c.getAttribute('data-sym'); if(!sym) return;
+          if (typeof window.openCoin==='function'){ window.openCoin(sym); return; }
+          if (typeof window.loadCoin==='function'){ window.SYM=sym; var inp=document.getElementById('symInput'); if(inp) inp.value=sym; try{ window.loadCoin(sym, window.INTV||'15m'); }catch(e){} var el=document.getElementById('mainPanel'); if(el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth'}); },200); }
         });
       });
-    } catch (e) { /* tıklama bağlanamazsa tablo yine de çalışır */ }
+    } catch(e){}
+  }
+
+  function render(rows) {
+    var mount=document.getElementById('earlyRadar'); if(!mount) return;
+    var elite=canSeeArchive();
+    var staged=rows.filter(function(r){return r.stage;}).sort(function(a,b){
+      return (RANK[b.stage]-RANK[a.stage]) || (b.value-a.value) || ((b.s.score||0)-(a.s.score||0));
+    });
+    var top=staged.slice(0,9), gold=top.slice(0,3), orange=top.slice(3,6), gray=top.slice(6,9);
+    var stale=Date.now()-_lastScanAt>CFG.staleMs;
+    var scanned=(window.VD_STATE&&window.VD_STATE.scanResults&&window.VD_STATE.scanResults.length)||rows.length||0;
+    var head=STYLE
+      + '<div class="er-head"><span class="er-title">⚡ AI Piyasa Radarı</span>'
+      + '<span class="er-live">'+(stale?'· bayat veri':'· canlı tarama')+'</span>'
+      + '<span class="er-scan">Son tarama: '+relTime(_lastScanAt)+' · '+scanned+' coin tarandı</span></div>'
+      + '<div class="er-note">AI tek coini değil tüm piyasayı tarar. İzleme → Hazır → Teyitli yapı olgunluğu — işlem/yön önerisi değildir; yatırım tavsiyesi değildir.</div>';
+    if (!top.length){ mount.innerHTML=head+'<div style="font-size:12px;color:#8b98ac;padding:10px 0">Bu taramada uygun yapı bulunmadı — sonraki taramada güncellenecek.</div>'; bindClicks(mount); return; }
+    function tier(title, cls, list, big){
+      var cards = list.length ? list.map(function(r){ return big?goldCard(r,elite):compactCard(r,cls); }).join('')
+                              : '<div class="er-empty">Bu taramada bu güç katmanında setup yok.</div>';
+      return '<div class="er-tier"><div class="er-tier-h '+cls+'-h">'+title+'</div><div class="er-grid '+(big?'er-grid-g':'er-grid-c')+'">'+cards+'</div></div>';
+    }
+    mount.innerHTML=head
+      + tier('🥇 EN GÜÇLÜ', 'er-gold', gold, true)
+      + tier('🟠 GELİŞEN', 'er-orange', orange, false)
+      + tier('⚪ OLUŞUM', 'er-gray', gray, false);
+    bindClicks(mount);
   }
 
   // ── Elite olmayanlar için: panel kaybolmaz, kilitli görünür (premium.html ELITE GATE stili) ──
   function renderLocked() {
-    const mount = document.getElementById('earlyRadar');
-    if (!mount) return;
-    mount.style.display = '';
-    mount.innerHTML = `
-      <div style="position:relative;border:1px solid rgba(157,125,250,.45);background:linear-gradient(180deg,rgba(157,125,250,.09),rgba(157,125,250,.02));border-radius:16px;padding:22px;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:13px;font-weight:700;color:#e6edf6">⚡ Early Opportunity Radar</span>
-          <span style="font-size:11px;color:#c9b6ff;border:1px solid rgba(157,125,250,.5);border-radius:20px;padding:2px 9px">🔒 ELITE</span>
-        </div>
-        <div style="color:#cdd6e4;font-size:13.5px;line-height:1.6;margin:0 0 14px">
-          Erken Fırsat Radarı, hacim henüz girmeden yapı olgunlaşırken coinleri
-          <b style="color:#c9b6ff">İzleme → Hazır → Teyitli</b> aşamalarında gösterir. Bu katman <b style="color:#c9b6ff">Elite</b> üyelere özeldir.
-        </div>
-        <ul style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none">
-          <li style="font-size:12px;color:#b9a7e8;background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);border-radius:20px;padding:5px 12px">Yapı Olgunluğu (Readiness)</li>
-          <li style="font-size:12px;color:#b9a7e8;background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);border-radius:20px;padding:5px 12px">Squeeze · Sıkışma · Hacim Uyanışı</li>
-          <li style="font-size:12px;color:#b9a7e8;background:rgba(157,125,250,.1);border:1px solid rgba(157,125,250,.3);border-radius:20px;padding:5px 12px">Aşama Geçiş Takibi</li>
-        </ul>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <a href="premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#c9b6ff;border:1px solid rgba(157,125,250,.5);background:transparent">Elite Hakkında</a>
-          <a href="https://t.me/volkanc3vik?text=Merhaba%2C%20Elite%20Pass%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." target="_blank" rel="noopener" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#04101f;background:linear-gradient(135deg,#b39dfa,#3b9eff)">Elite Pass Satın Al</a>
-        </div>
-      </div>`;
+    var mount=document.getElementById('earlyRadar'); if(!mount) return;
+    mount.style.display='';
+    mount.innerHTML =
+      '<div style="position:relative;border:1px solid rgba(56,189,248,.4);background:linear-gradient(180deg,rgba(56,189,248,.08),rgba(56,189,248,.02));border-radius:16px;padding:22px;overflow:hidden">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:13px;font-weight:700;color:#e6edf6">⚡ AI Piyasa Radarı</span>'
+      + '<span style="font-size:11px;color:#9fdfff;border:1px solid rgba(56,189,248,.5);border-radius:20px;padding:2px 9px">🔒 Premium</span></div>'
+      + '<div style="color:#cdd6e4;font-size:13.5px;line-height:1.6;margin:0 0 14px">AI Piyasa Radarı, hacim henüz girmeden yapı olgunlaşırken coinleri <b style="color:#9fdfff">İzleme → Hazır → Teyitli</b> güç katmanlarında gösterir. Bu katman <b style="color:#9fdfff">Premium ve Elite</b> üyelere açıktır.</div>'
+      + '<ul style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none">'
+      + '<li style="font-size:12px;color:#a9c7e8;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);border-radius:20px;padding:5px 12px">Yapı Olgunluğu (Readiness)</li>'
+      + '<li style="font-size:12px;color:#a9c7e8;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);border-radius:20px;padding:5px 12px">9 kart · 3 güç katmanı</li>'
+      + '<li style="font-size:12px;color:#a9c7e8;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);border-radius:20px;padding:5px 12px">Aşama Geçiş Takibi</li></ul>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+      + '<a href="legal/premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#9fdfff;border:1px solid rgba(56,189,248,.5);background:transparent">Detaylar</a>'
+      + '<a href="legal/premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#04101f;background:linear-gradient(135deg,#38bdf8,#3b9eff)">Erişim Al</a></div>'
+      + '</div>';
   }
 
   // ── Elite kapısı: radar yalnız Elite (veya admin) için açılır ──
@@ -401,19 +435,18 @@
 
   // ── Tarama tetikleyici ──
   function run() {
-    const mount = document.getElementById('earlyRadar');
-    if (!mount) return;
-    if (!isElite()) { renderLocked(); return; }  // free/premium → kilitli kart (kaybolmaz)
-    mount.style.display = '';
-    const results = (window.VD_STATE && window.VD_STATE.scanResults) || window._lastScanResults || [];
-    if (!Array.isArray(results) || !results.length) return;
-    _lastScanAt = Date.now();
-    const rows = [];
-    for (const item of results) {
-      try { if (item && item.sym) rows.push(process(item)); } catch (e) { /* bir coin hata verirse diğerleri devam */ }
-    }
-    render(rows);
+    var mount=document.getElementById('earlyRadar'); if(!mount) return;
+    if (!canSeeRadar()){ renderLocked(); return; }   // free/teaser → kilitli tanıtım
+    mount.style.display='';
+    var results=(window.VD_STATE&&window.VD_STATE.scanResults)||window._lastScanResults||[];
+    if (!Array.isArray(results)||!results.length) return;
+    _lastScanAt=Date.now();
+    var rows=[];
+    for (var i=0;i<results.length;i++){ var item=results[i]; try{ if(item&&item.sym) rows.push(process(item)); }catch(e){} }
+    if (canSeeArchive()) loadArchive(function(){ render(rows); });
+    else render(rows);
   }
+
   function schedule() { if (_t) return; _t = setTimeout(() => { _t = null; try { run(); } catch (e) {} }, 300); }
 
   window.addEventListener('vd:scan:complete', schedule);
