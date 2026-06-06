@@ -2527,48 +2527,29 @@ function startTimer() {
 <!-- AI CANLI TAKİP — DERECELİ SETUP PANELİ (build 109, salt-okunur, yalnız admin) -->
 <div id="setupTracker"></div>
 
-<!-- LONG FIRSATLAR -->
-<div class="section">
-  <div class="section-title">
-    <h2>◈ Yukarı Yönlü Görünüm</h2>
-    <span class="pill pill-green">▲ EN İYİ 3</span>
-  </div>
-  <div class="opp-grid" id="longGrid">
-    <div class="opp long loading"><div class="opp-dir long">▲ LONG</div><div class="opp-sym">—</div><div class="opp-price">Taranıyor...</div></div>
-    <div class="opp long loading"><div class="opp-dir long">▲ LONG</div><div class="opp-sym">—</div><div class="opp-price">Taranıyor...</div></div>
-    <div class="opp long loading"><div class="opp-dir long">▲ LONG</div><div class="opp-sym">—</div><div class="opp-price">Taranıyor...</div></div>
-  </div>
-</div>
-
-<!-- SHORT FIRSATLAR -->
-<div class="section">
-  <div class="section-title">
-    <h2>◈ Aşağı Yönlü Görünüm</h2>
-    <span class="pill pill-red">▼ EN İYİ 3</span>
-  </div>
-  <div class="opp-grid" id="shortGrid">
-    <div class="opp short loading"><div class="opp-dir short">▼ SHORT</div><div class="opp-sym">—</div><div class="opp-price">Taranıyor...</div></div>
-    <div class="opp short loading"><div class="opp-dir short">▼ SHORT</div><div class="opp-sym">—</div><div class="opp-price">Taranıyor...</div></div>
-    <div class="opp short loading"><div class="opp-dir short">▼ SHORT</div><div class="opp-sym">—</div><div class="opp-price">Taranıyor...</div></div>
-  </div>
-</div>
-
-<!-- JOKER -->
-<div class="joker-section">
-  <div class="joker-header">
-    <span style="font-size:24px;animation:pulse2 2s infinite">🃏</span>
-    <h2>Joker — Sürpriz Hareket</h2>
-    <span class="pill pill-orange">YÜKSEK VOLATİLİTE</span>
-  </div>
-  <div class="joker-warning">⚡ Bu coinler normal listede yer almayan, ani büyük hareket potansiyeli taşıyan teknik formasyonlardır. Yüksek ATR + kırılım momentumu tespit edilmiştir. <b>Yüksek risk içerir — bilgilendirme amaçlıdır.</b></div>
-  <div class="joker-grid" id="jokerGrid">
-    <div class="opp joker-long loading"><div class="opp-dir joker-l">🃏 JOKER LONG</div><div class="opp-sym">—</div></div>
-    <div class="opp joker-short loading"><div class="opp-dir joker-s">🃏 JOKER SHORT</div><div class="opp-sym">—</div></div>
-  </div>
+<!-- build 125: eski Long/Short/Joker görünür kartları kaldırıldı → AI Piyasa Radarı ana bölüm oldu.
+     Render JS (scanner UI) hata vermesin diye grid kimlikleri gizli korunur; kullanıcı görmez. -->
+<div style="display:none" aria-hidden="true">
+  <div class="opp-grid" id="longGrid"></div>
+  <div class="opp-grid" id="shortGrid"></div>
+  <div class="joker-grid" id="jokerGrid"></div>
 </div>
 
 <!-- ══ EARLY OPPORTUNITY RADAR (build 86) — salt-okunur erken-uyarı katmanı ══ -->
 <div id="earlyRadar" style="margin-top:16px;background:#111722;border:1px solid #1e2836;border-radius:14px;padding:14px"></div>
+
+<!-- build 125: gelecek katman iskeletleri — Veri Kaynağı Bekleniyor (sahte/örnek veri YOK) -->
+<div id="marketDrivers" style="margin-top:16px;background:#111722;border:1px solid #1e2836;border-radius:14px;padding:16px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:13px;font-weight:800;color:#e6edf6">◈ MARKET DRIVERS</span><span style="font-size:9px;font-weight:800;letter-spacing:.05em;color:#3b9eff;border:1px solid rgba(59,158,255,.4);border-radius:5px;padding:2px 7px">PHASE 13.1</span></div>
+  <div style="font-size:10.5px;color:#8b98ac;margin-bottom:12px">Piyasayı yönlendiren ana güçler — trend · momentum · risk (AI değerlendirmesi). Sinyal değil, bağlam.</div>
+  <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"><div style="background:#0e1626;border:1px solid #1e2836;border-radius:11px;padding:13px"><div style="font-weight:800;font-size:13px;color:#e6edf6;margin-bottom:9px">BTC</div><div style="display:flex;flex-direction:column;gap:7px;font-size:11px;color:#8b98ac"><div style="display:flex;justify-content:space-between">Trend <span style="color:#5b6677">— bekleniyor</span></div><div style="display:flex;justify-content:space-between">Momentum <span style="color:#5b6677">— bekleniyor</span></div><div style="display:flex;justify-content:space-between">Risk <span style="color:#5b6677">— bekleniyor</span></div></div><div style="margin-top:10px;border-top:1px dashed #2a3550;padding-top:8px;font-size:10px;color:#8b98ac">⏳ Veri Kaynağı Bekleniyor</div></div><div style="background:#0e1626;border:1px solid #1e2836;border-radius:11px;padding:13px"><div style="font-weight:800;font-size:13px;color:#e6edf6;margin-bottom:9px">ETH</div><div style="display:flex;flex-direction:column;gap:7px;font-size:11px;color:#8b98ac"><div style="display:flex;justify-content:space-between">Trend <span style="color:#5b6677">— bekleniyor</span></div><div style="display:flex;justify-content:space-between">Momentum <span style="color:#5b6677">— bekleniyor</span></div><div style="display:flex;justify-content:space-between">Risk <span style="color:#5b6677">— bekleniyor</span></div></div><div style="margin-top:10px;border-top:1px dashed #2a3550;padding-top:8px;font-size:10px;color:#8b98ac">⏳ Veri Kaynağı Bekleniyor</div></div><div style="background:#0e1626;border:1px solid #1e2836;border-radius:11px;padding:13px"><div style="font-weight:800;font-size:13px;color:#e6edf6;margin-bottom:9px">NASDAQ</div><div style="display:flex;flex-direction:column;gap:7px;font-size:11px;color:#8b98ac"><div style="display:flex;justify-content:space-between">Trend <span style="color:#5b6677">— bekleniyor</span></div><div style="display:flex;justify-content:space-between">Momentum <span style="color:#5b6677">— bekleniyor</span></div><div style="display:flex;justify-content:space-between">Risk <span style="color:#5b6677">— bekleniyor</span></div></div><div style="margin-top:10px;border-top:1px dashed #2a3550;padding-top:8px;font-size:10px;color:#8b98ac">⏳ Veri Kaynağı Bekleniyor</div></div></div>
+</div>
+
+<div id="newsImpact" style="margin-top:16px;background:#111722;border:1px solid #1e2836;border-radius:14px;padding:16px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:13px;font-weight:800;color:#e6edf6">◈ NEWS IMPACT</span><span style="font-size:9px;font-weight:800;letter-spacing:.05em;color:#3b9eff;border:1px solid rgba(59,158,255,.4);border-radius:5px;padding:2px 7px">PHASE 13.1</span></div>
+  <div style="font-size:10.5px;color:#8b98ac;margin-bottom:12px">Son 24 saatte piyasayı etkileyen olaylar — AI özetli etki (ETF · FED · SEC · CPI · NASDAQ). Research terminal görünümü.</div>
+  <div style="border:1px dashed #2a3550;border-radius:10px;padding:18px;text-align:center;color:#8b98ac;font-size:12px">⏳ Veri Kaynağı Bekleniyor<br><span style="font-size:10.5px;color:#5b6677">API bağlandığında bu panel gerçek olaylarla otomatik beslenecek — şimdilik sahte veri gösterilmez.</span></div>
+</div>
 
   <!-- AI KARAR MOTORU (taşındı: Early Radar ile Futures arası) -->
   <!-- AŞAMA 1: AI REASONING + ECE 2.0 + WS STATUS -->
