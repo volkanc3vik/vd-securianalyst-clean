@@ -90,6 +90,40 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 .mx-v.lo{background:rgba(248,114,114,.12);color:var(--bad)}
 .mx-v.mx-low{opacity:.5}
 .mx-empty{color:var(--mut);opacity:.4}
+
+/* ===== Build 122 — Bloomberg terminal reset (mor→cyan, glow azalt) ===== */
+:root{--cyan:#38bdf8}
+.bar>i,.ebar>i,.mbar>i{background:linear-gradient(90deg,var(--ac),var(--cyan))}
+.btn{background:linear-gradient(90deg,var(--ac),var(--cyan))}
+.reqbar .btn{background:linear-gradient(90deg,var(--warn),var(--ac))}
+.epanel-h::before{background:var(--ac);box-shadow:none}
+.erank{color:var(--ac)}
+.ehead{background:rgba(56,189,248,.05);border-left-color:var(--ac)}
+.cta{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.05)}
+.cta .ttl{color:var(--ac)}
+.flagship{border-color:rgba(56,189,248,.28);background:linear-gradient(180deg,rgba(56,189,248,.05),transparent)}
+.flagship h2{color:var(--tx)}
+.sell{border-left-color:var(--ac)}.sell b{color:var(--ac)}
+.lockcard .card{border-left-color:rgba(59,158,255,.45)}
+.coming h2 .tag,.card h2 .tag{color:var(--ac);border-color:rgba(59,158,255,.4)}
+.cstat .s-active{color:var(--ac)}
+.elead{font-size:14px;color:var(--tx);font-weight:600;margin:0 0 12px;line-height:1.5}
+.elead b{color:var(--cyan);font-variant-numeric:tabular-nums}
+.ethresh{font-size:11px;color:var(--mut);margin:-6px 0 18px;font-variant-numeric:tabular-nums;border-left:2px solid var(--bd);padding-left:10px}
+.ethresh b{color:var(--tx)}
+.ehead .hm-bd b{font-size:15px}
+.asof{display:flex;flex-direction:column;margin-left:auto;text-align:right;gap:2px}
+.asof span{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.asof b{font-size:12px;color:var(--tx);font-variant-numeric:tabular-nums}
+.erow-hd{display:flex;align-items:center;gap:9px;padding:0 0 8px;border-bottom:1px solid var(--bd);margin-bottom:2px}
+.erow-hd span{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.erow-hd .h-rank{min-width:20px}.erow-hd .h-lbl{flex:1}.erow-hd .h-pct{font-variant-numeric:tabular-nums}
+.flag-h{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.flag-h h2{margin:0;font-size:15px;color:var(--tx)}
+.flag-badge{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--elite);border:1px solid rgba(157,125,250,.5);background:rgba(157,125,250,.1);border-radius:5px;padding:2px 7px}
+.ai-obs{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.ai-obs li{font-size:12.5px;line-height:1.5;color:var(--tx);background:rgba(255,255,255,.02);border:1px solid var(--bd);border-left:2px solid var(--ac);border-radius:8px;padding:9px 12px}
+.ai-sum{color:var(--mut);font-size:12.5px;margin:0}
 </style></head><body>
 <header class="aic-header">
   <a href="index.html" class="aic-logo">◈ VD <b>SecuriAnalyst</b></a>
@@ -149,7 +183,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     return `<div class="flagship">
       <h2>${st.icon} AI Intelligence Reports</h2>
       <p class="fd">${st.msg}</p>
-      <span class="ftag">Elite'in en güçlü bölümü — yakında</span>
+      <span class="ftag">Elite'in en güçlü bölümü · Phase 13.1 hazırlanıyor</span>
       <div class="cstat" style="margin-top:14px">Status: <span class="${st.statCls}">${st.statTxt}</span></div>
     </div>`;
   }
@@ -194,6 +228,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
   }
   function consistencyPanel(title, sub, items, emptyMsg, extra){
     const top=rankItems(items);
+    const hdr = top.length ? `<div class="erow-hd"><span class="h-rank">#</span><span class="h-lbl">Parite / Yapı · Gözlemlenen Tutarlılık</span><span class="h-pct">%</span></div>` : '';
     const body = top.length ? top.map((it,i)=>{
       const r=rateOf(it), n=it.total||0, cf=confOf(r,n);
       return `<div class="erow">
@@ -202,7 +237,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
         <div class="erow-bot"><span class="en">${n} gözlem</span><span class="econf ${cf.c}">${cf.t}</span></div>
       </div>`;
     }).join('') : `<p class="collecting">${emptyMsg||'Henüz yeterli gözlem yok.'}</p>`;
-    return `<div class="epanel"><div class="epanel-h">${title}</div><div class="epanel-sub">${sub}</div>${body}${extra||''}
+    return `<div class="epanel"><div class="epanel-h">${title}</div><div class="epanel-sub">${sub}</div>${hdr}${body}${extra||''}
       <div class="emicro">Geçmiş doğrulanmış kayıtlardan türetilmiş gözlem · yatırım tavsiyesi değildir.</div></div>`;
   }
 
@@ -223,8 +258,9 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       low.map(it=>`<span class="wchip">${esc(it.key)} <b>%${rateOf(it)}</b> · ${it.total}</span>`).join('')+`</div>`;
   }
   function conditionsGrid(d){
-    const real = (title, sub, items) => `<div class="card"><h2>${title}</h2><p class="csub">${sub}</p>${miniRows(items)}</div>`;
-    const soon = (title) => `<div class="card"><h2>${title}<span class="tag">PHASE 13.1+</span></h2><p class="collecting">Veri modeli hazırlanıyor — yakında.</p><div class="cstat">Status: <span class="s-collect">Hazırlanıyor</span></div></div>`;
+    const dmicro = `<div class="emicro">Doğrulanmış verilerden türetilmiş gözlem; yatırım tavsiyesi değildir.</div>`;
+    const real = (title, sub, items) => `<div class="card"><h2>${title}</h2><p class="csub">${sub}</p>${miniRows(items)}${dmicro}</div>`;
+    const soon = (title) => `<div class="card"><h2>${title}<span class="tag">PHASE 13.1</span></h2><p class="collecting">Phase 13.1 hazırlanıyor — veri modeli birikiyor.</p><div class="cstat">Status: <span class="s-collect">Phase 13.1 hazırlanıyor</span></div></div>`;
     const matrix = () => {
       const rows = (d.opportunityMatrix||[]).filter(r => r.cells && r.cells.some(c=>c.total>0));
       if(!rows.length) return soon('ELİTE OPPORTUNITY MATRIX');
@@ -238,7 +274,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
         }).join('');
         return `<div class="mx-row"><span class="mx-cell mx-b">${esc(r.label)}</span>${cells}</div>`;
       }).join('');
-      return `<div class="card"><h2>ELİTE OPPORTUNITY MATRIX</h2><p class="csub">Yön × risk koşullarında gözlemlenen tutarlılık (%tutarlılık · gözlem). Düşük örneklem soluk gösterilir.</p><div class="mx">${head}${body}</div></div>`;
+      return `<div class="card"><h2>ELİTE OPPORTUNITY MATRIX</h2><p class="csub">Yön × risk koşullarında gözlemlenen tutarlılık (%tutarlılık · gözlem). Düşük örneklem soluk gösterilir.</p><div class="mx">${head}${body}</div>${dmicro}</div>`;
     };
     return `<div class="grid">`+
       real('ELİTE MARKET CONDITIONS','AI güven seviyesine göre gözlemlenen tutarlılık (kalibrasyon).', d.byConfidence)+
@@ -247,24 +283,38 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       matrix()+
       `</div>`;
   }
-  function aiReports(){
-    return `<div class="flagship"><h2>🔓 AI Intelligence Reports</h2><p class="fd">Coin ve yapı tutarlılığını birleştiren üst düzey araştırma katmanı.</p><span class="ftag">Elite'in en güçlü bölümü — yakında</span></div>`;
+  function aiReports(d){
+    const L=(d&&d.learning)||{}; const o=(d&&d.overall)||{}; const rate=rateOf(o); const cnt=(o.success||0)+(o.partial||0);
+    const obs=(L.observations||[]).slice(0,3);
+    const body = obs.length
+      ? `<ul class="ai-obs">${obs.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`
+      : `<p class="ai-sum">${esc(L.obsNote||'Gözlem özetleri, doğrulanmış analizler biriktikçe otomatik üretilecektir.')}</p>`;
+    return `<div class="flagship">
+      <div class="flag-h"><span class="flag-badge">ELITE</span><h2>AI Intelligence Reports</h2></div>
+      <p class="fd">${cnt} doğrulanmış sonuçtan türetilen otomatik öğrenme özeti · genel tutarlılık %${rate}.</p>
+      ${body}
+      <div class="emicro">Geçmiş doğrulanmış verilerden türetilmiş istatistiksel gözlem; yatırım tavsiyesi değildir.</div>
+    </div>`;
   }
   function eheadStrip(d){
     const o=d.overall||{}; const total=o.total||0; const rate=rateOf(o); const cnt=(o.success||0)+(o.partial||0);
+    const succ=o.success||0, part=o.partial||0, fail=o.fail||0;
     let asof=''; try{ asof=new Date(d.generated_at||Date.now()).toLocaleString('tr-TR'); }catch(e){}
-    return `<div class="ehead">
+    return `<p class="elead"><b>${cnt}</b> doğrulanmış sonuçtan türetildi · Genel tutarlılık <b>%${rate}</b> · Son güncelleme ${esc(asof)}</p>
+    <div class="ehead">
       <div class="hm"><b>${cnt}</b><span>Doğrulanmış sonuç</span></div>
       <div class="hm"><b>%${rate}</b><span>Genel tutarlılık</span></div>
       <div class="hm"><b>${total}</b><span>Toplam analiz</span></div>
-      <div class="asof">as of ${esc(asof)}</div>
-    </div>`;
+      <div class="hm hm-bd"><b>${succ}/${part}/${fail}</b><span>Doğru / Kısmi / Yanıltıcı</span></div>
+      <div class="asof"><span>Son güncelleme</span><b>${esc(asof)}</b></div>
+    </div>
+    <div class="ethresh">Öğrenme eşiği: <b>20 gözlem</b> · Sıralama eşiği: <b>5 gözlem</b> · Tutarlılık = doğrulanmış + ½ kısmi (ağırlıklı)</div>`;
   }
   function comingNext(){
     const mods=['Elite Market Conditions','Elite Volatility Intelligence','Elite Regime Intelligence','Elite Opportunity Matrix'];
-    const cards=mods.map(m=>`<div class="card"><h2>${m}<span class="tag">PHASE 13.1+</span></h2><p class="collecting">Veri modeli hazırlanıyor — yakında.</p><div class="cstat">Status: <span class="s-collect">Hazırlanıyor</span></div></div>`).join('');
+    const cards=mods.map(m=>`<div class="card"><h2>${m}<span class="tag">PHASE 13.1+</span></h2><p class="collecting">Phase 13.1 hazırlanıyor — veri modeli birikiyor.</p><div class="cstat">Status: <span class="s-collect">Hazırlanıyor</span></div></div>`).join('');
     return `<div class="grid coming">${cards}</div>
-      <div class="flagship"><h2>🔓 AI Intelligence Reports</h2><p class="fd">Coin ve yapı tutarlılığını birleştiren üst düzey araştırma katmanı.</p><span class="ftag">Elite'in en güçlü bölümü — yakında</span></div>`;
+      <div class="flagship"><h2>🔓 AI Intelligence Reports</h2><p class="fd">Coin ve yapı tutarlılığını birleştiren üst düzey araştırma katmanı.</p><span class="ftag">Elite'in en güçlü bölümü · Phase 13.1 hazırlanıyor</span></div>`;
   }
 
   function renderElite(lvl, d, count){
@@ -287,7 +337,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       eheadStrip(d) +
       `<div class="epair">${coin}${struct}</div>` +
       conditionsGrid(d) +
-      aiReports() +
+      aiReports(d) +
       `<p class="note">Elite Intelligence, incelenmiş geçmiş sonuçlardan türetilen istatistiksel gözlemlerdir; yatırım tavsiyesi değildir.</p>`;
     requestAnimationFrame(()=>{ try{ document.querySelectorAll('.ebar>i[data-w],.mbar>i[data-w]').forEach(i=>{ i.style.width=i.getAttribute('data-w')+'%'; }); }catch(e){} });
   }
