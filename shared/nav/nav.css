@@ -97,3 +97,10 @@
   .vdn-burger, .vdn-drawer, .vdn-drawer-overlay { display:none !important; }
   .vdn-bottomnav { display:none !important; }
 }
+
+/* Header marka (coin + isim) — index dışı sayfalarda nav başında */
+.vdn-brand{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:var(--v4-text,#EAF6FF);text-decoration:none;margin-right:16px;letter-spacing:.3px;flex-shrink:0;}
+.vdn-brand img{display:block;border-radius:50%;width:22px;height:22px;}
+.vdn-brand span{white-space:nowrap;}
+.vdn-brand:hover{color:var(--v4-cyan,#00D1FF);}
+@media (max-width:560px){ .vdn-brand span{display:none;} }

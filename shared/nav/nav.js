@@ -106,7 +106,9 @@
     const items = _visibleLayers().map(l =>
       `<a href="${l.page}${l.hash?'#'+l.hash:''}" data-key="${l.key}" class="${l.key===cur?'active':''}${l.premium?' vdn-premium':''}">${_esc(l.label)}</a>`
     ).join('');
-    return items;
+    const brand = _isIndex() ? '' :
+      `<a class="vdn-brand" href="index.html" aria-label="VD SecuriAnalyst"><img src="/assets/brand/coin-mark.png" alt="" width="22" height="22"><span>VD SecuriAnalyst</span></a>`;
+    return brand + items;
   }
   function _drawerHTML(cur) {
     return _visibleLayers().map(l =>
