@@ -213,6 +213,8 @@
 
     const row = { sym: item.sym, dir, s, value: rd.value, structBase: rd.structBase,
                   price: num(item.price), chg: num(item.chg),
+                  btcChg: (item.btcData && item.btcData.chg!=null) ? num(item.btcData.chg) : null,
+                  btcAlign: num(item.btcAlign),
                   stage, stageSince, prevReadiness, lastEvent, pend, _flags: flags };
     ST.set(item.sym, row);
     return row;
@@ -263,7 +265,7 @@
   function canSeeRadar(){ try{ var A=window.VDAccess; return !!(A && ((A.isPremium&&A.isPremium())||(A.isElite&&A.isElite()))); }catch(e){return false;} }
   function canSeeArchive(){ try{ return !!(window.VDAccess && window.VDAccess.isElite && window.VDAccess.isElite()); }catch(e){return false;} }
 
-  // ── Arşiv verisi (yalnız elite/admin için çekilir, cache) ──
+  // ── Arşiv verisi (premium+ için çekilir; premium oran+örnek görür, detay bulanık) ──
   var _archMap = null, _archTried = false;
   function archFor(sym){ if(!_archMap) return null; return _archMap[sym] || _archMap[String(sym).replace('USDT','')] || null; }
   function loadArchive(then){
@@ -277,55 +279,44 @@
     } catch(e){ _archMap={}; then(); }
   }
 
-  // ── Biçim yardımcıları ──
+  // ── Biçim + bağlam yardımcıları ──
   function fmtPrice(p){ if(p==null) return ''; var n=+p; if(isNaN(n)) return ''; if(n>=1000) return '$'+n.toLocaleString('en-US',{maximumFractionDigits:2}); if(n>=1) return '$'+n.toFixed(3); return '$'+n.toPrecision(4); }
   function chgHtml(c){ if(c==null||isNaN(+c)) return ''; var up=(+c)>=0; return '<span style="color:'+(up?'#36d399':'#f87272')+';font-weight:700;font-size:11px">'+(up?'▲':'▼')+' '+Math.abs(+c).toFixed(2)+'%</span>'; }
   function stageWord(st){ return st==='CONFIRMED'?'Teyitli':st==='ARMED'?'Hazır':'İzleme'; }
-  function chipTag(t){ return '<span class="er-chip">'+esc(t)+'</span>'; }
+  function ctxLabel(c){ if(c==null||isNaN(+c)) return {txt:'—',col:'#5b6677'}; c=+c; if(c>=1.5)return{txt:'Güçlü ▲',col:'#36d399'}; if(c>=0.3)return{txt:'Pozitif ▲',col:'#36d399'}; if(c<=-1.5)return{txt:'Zayıf ▼',col:'#f87272'}; if(c<=-0.3)return{txt:'Negatif ▼',col:'#f87272'}; return{txt:'Nötr',col:'#8b98ac'}; }
+  function ethCtx(){ try{ if(window._ethData&&window._ethData.chg!=null) return +window._ethData.chg; if(window.MarketRegime&&MarketRegime._ethData&&MarketRegime._ethData.chg!=null) return +MarketRegime._ethData.chg; var el=document.getElementById('ethChg'); if(el){ var v=parseFloat((el.textContent||'').replace('%','').replace(',','.')); if(!isNaN(v)) return v; } }catch(e){} return null; }
+  function reasonChips(s){ var w=[]; if(s.align>=2/3)w.push('EMA/yapı hizalı'); if(s.conf>=0.6)w.push('Confidence güçlü'); if(s.riskInv>=0.6)w.push('Risk düşük'); if(s.volFiring)w.push('Momentum artıyor'); if((s.squeeze||0)>=0.5)w.push('Sıkışma yüksek'); else if((s.compress||0)>=0.5)w.push('Range daralıyor'); return w.slice(0,4); }
 
+  function archBox(title, inner, color){ return '<div style="border:1px solid #1f2c45;border-radius:9px;padding:9px;background:rgba(56,189,248,.04);margin-top:9px"><div style="font-size:8.5px;color:'+color+';font-weight:800;letter-spacing:.05em;margin-bottom:4px">'+title+'</div><div style="font-size:10.5px;color:#cfe0f5">'+inner+'</div></div>'; }
   function archiveBlock(sym, elite){
-    if (!elite){
-      return '<div style="border:1px dashed #2a3550;border-radius:9px;padding:9px;background:rgba(56,189,248,.04);margin-top:9px">'
-        + '<div style="font-size:8.5px;color:#b39dfa;font-weight:800;letter-spacing:.05em;margin-bottom:4px">🔒 ELİTE · ARŞİV TUTARLILIĞI</div>'
-        + '<div style="filter:blur(4px);user-select:none;font-size:10.5px;color:#cfe0f5">Bu coin geçmişte ●● gözlemde %●● tutarlılık</div>'
-        + '<a href="legal/premium.html" style="display:inline-block;margin-top:7px;font-size:9.5px;font-weight:800;color:#04101f;background:linear-gradient(90deg,#9d7dfa,#38bdf8);padding:4px 10px;border-radius:7px;text-decoration:none">Elite ile bu coinin geçmişini gör</a>'
-        + '</div>';
-    }
-    var a=archFor(sym), inner;
-    if (!a || !a.total){ inner='<span style="color:#8b98ac">Bu coin için arşiv kaydı henüz yok.</span>'; }
-    else if (a.total<5){ inner='<span style="color:#fbbd23">Henüz az örneklem · '+a.total+' gözlem</span>'; }
-    else { var rate=(a.weightedRate!=null?a.weightedRate:a.successRate)||0; var rc=rate>=75?'#36d399':rate>=60?'#fbbd23':'#f87272'; inner='<b style="color:'+rc+'">%'+Math.round(rate)+' tutarlılık</b> <span style="color:#8b98ac">· '+a.total+' doğrulanmış gözlem</span>'; }
-    return '<div style="border:1px solid #1f2c45;border-radius:9px;padding:9px;background:rgba(56,189,248,.04);margin-top:9px">'
-      + '<div style="font-size:8.5px;color:#9d7dfa;font-weight:800;letter-spacing:.05em;margin-bottom:4px">⬡ ARŞİV TUTARLILIĞI</div>'
-      + '<div style="font-size:10.5px;color:#cfe0f5">'+inner+'</div></div>';
+    var a=archFor(sym);
+    if (!a || !a.total) return archBox('⬡ ARŞİV TUTARLILIĞI', '<span style="color:#8b98ac">Bu coin için arşiv kaydı henüz yok.</span>', '#9d7dfa');
+    if (a.total<5) return archBox('⬡ ARŞİV TUTARLILIĞI', '<span style="color:#fbbd23">Henüz az örneklem · '+a.total+' gözlem</span>', '#9d7dfa');
+    var rate=(a.weightedRate!=null?a.weightedRate:a.successRate)||0, rc=rate>=75?'#36d399':rate>=60?'#fbbd23':'#f87272';
+    var head='<b style="color:'+rc+'">%'+Math.round(rate)+' tutarlılık</b> <span style="color:#8b98ac">· '+a.total+' gözlem</span>';
+    var brk=(a.success||0)+' doğru · '+(a.partial||0)+' kısmi · '+(a.fail||0)+' yanıltıcı';
+    if (elite) return archBox('⬡ ARŞİV TUTARLILIĞI', head+'<div style="font-size:10px;color:#9fb4d6;margin-top:3px">'+brk+'</div>', '#9d7dfa');
+    return archBox('🔒 ELİTE · ARŞİV', head
+      +'<div style="filter:blur(4px);user-select:none;font-size:10px;color:#9fb4d6;margin-top:3px">'+brk+'</div>'
+      +'<a href="legal/premium.html" style="display:inline-block;margin-top:6px;font-size:9px;font-weight:800;color:#04101f;background:linear-gradient(90deg,#9d7dfa,#38bdf8);padding:3px 9px;border-radius:6px;text-decoration:none">Elite ile detay</a>', '#b39dfa');
   }
 
-  function goldCard(r, elite){
-    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(1):'—');
-    var chips=''; if(r.s.okEma) chips+=chipTag('EMA hizalı'); if(r.s.okMacd) chips+=chipTag('MACD ▲'); if((r.s.conf||0)>=0.6) chips+=chipTag('Confidence güçlü');
-    var sw=(typeof score==='number')?score:0;
-    return '<div class="er-card er-gold" data-sym="'+esc(r.sym).replace(/\'/g,'')+'">'
-      + '<div class="er-c-top"><div class="er-logo">'+sym.slice(0,3)+'</div>'
-      + '<div style="flex:1;min-width:0"><div class="er-sym">'+sym+' '+chgHtml(r.chg)+'</div><div class="er-price">'+fmtPrice(r.price)+'</div></div>'
-      + '<span class="er-stage er-stage-g">'+stageWord(r.stage)+'</span></div>'
-      + '<div class="er-scrow"><span>Güven Skoru</span><b style="color:#e8b84b">'+score+'<span style="color:#8b98ac;font-size:9px">/100</span></b></div>'
-      + '<div class="er-bar"><i style="width:'+sw+'%;background:linear-gradient(90deg,#a9791f,#e8b84b)"></i></div>'
+  function radarCard(r, tierCls, big, elite, ethC){
+    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(1):'—'), sw=(typeof score==='number'?score:0);
+    var btc=ctxLabel(r.btcChg), col=(tierCls==='er-gold')?'#e8b84b':(tierCls==='er-orange')?'#ff8a3d':'#9aa6b8';
+    var chips=reasonChips(r.s).map(function(t){return '<span class="er-chip">'+esc(t)+'</span>';}).join('');
+    return '<div class="er-card '+tierCls+(big?' er-big':'')+'" data-sym="'+esc(r.sym).replace(/\'/g,'')+'">'
+      + '<div class="er-c-top"><div class="er-logo'+(big?'':' er-logo-sm')+'">'+sym.slice(0,3)+'</div>'
+      + '<div style="flex:1;min-width:0"><div class="er-sym"'+(big?'':' style="font-size:13px"')+'>'+sym+' '+chgHtml(r.chg)+'</div><div class="er-price">'+fmtPrice(r.price)+'</div></div>'
+      + '<span class="er-stage" style="color:'+col+';border:1px solid '+col+'80;background:'+col+'1a">'+stageWord(r.stage)+'</span></div>'
+      + '<div class="er-scrow"><span>Güven Skoru</span><b style="color:'+col+'">'+score+'<span style="color:#8b98ac;font-size:9px">/100</span></b></div>'
+      + '<div class="er-bar"><i style="width:'+sw+'%;background:linear-gradient(90deg,'+col+'88,'+col+')"></i></div>'
       + '<div class="er-tech"><span>RSI <b>'+rsi+'</b></span><span>EMA <b style="color:'+(r.s.okEma?'#36d399':'#8b98ac')+'">'+(r.s.okEma?'▲▲▲':'—')+'</b></span><span>MACD <b style="color:'+(r.s.okMacd?'#36d399':'#8b98ac')+'">'+(r.s.okMacd?'▲':'—')+'</b></span><span>Readiness <b>'+r.value+'</b></span></div>'
-      + (chips?'<div class="er-chips">'+chips+'</div>':'')
-      + '<div class="er-foot"><span class="er-fresh">● '+relTime(r.stageSince)+' tarandı</span><span class="er-link">Grafikte İncele →</span></div>'
+      + '<div class="er-ctx"><span>BTC <b style="color:'+btc.col+'">'+btc.txt+'</b></span><span>ETH <b style="color:'+ethC.col+'">'+ethC.txt+'</b></span></div>'
+      + (chips?'<div class="er-why"><span class="er-why-h">Neden burada?</span><div class="er-chips">'+chips+'</div></div>':'')
+      + '<div class="er-foot"><span class="er-fresh">● '+relTime(r.stageSince)+'</span><span class="er-link">Grafikte İncele →</span></div>'
       + archiveBlock(r.sym, elite)
       + '<div class="er-micro">Yapı olgunluğu gözlemi — işlem/yön önerisi değildir.</div></div>';
-  }
-
-  function compactCard(r, tierCls){
-    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(0):'—');
-    var ac=(tierCls==='er-orange')?'#ff8a3d':'#9aa6b8';
-    return '<div class="er-card er-compact '+tierCls+'" data-sym="'+esc(r.sym).replace(/\'/g,'')+'">'
-      + '<div class="er-c-top"><div class="er-logo er-logo-sm">'+sym.slice(0,3)+'</div>'
-      + '<div style="flex:1;min-width:0"><div class="er-sym" style="font-size:13px">'+sym+' '+chgHtml(r.chg)+'</div><div class="er-price">'+fmtPrice(r.price)+'</div></div>'
-      + '<span class="er-stage" style="color:'+ac+';border:1px solid '+ac+'66;background:'+ac+'18">'+stageWord(r.stage)+'</span></div>'
-      + '<div class="er-cmprow"><span>Skor <b style="color:'+ac+'">'+score+'</b></span><span>RSI <b>'+rsi+'</b></span><span>Rdy <b>'+r.value+'</b></span></div>'
-      + '<div class="er-foot"><span class="er-fresh">● '+relTime(r.stageSince)+'</span><span class="er-link">İncele →</span></div></div>';
   }
 
   var STYLE='<style>'
@@ -338,11 +329,12 @@
   + '#earlyRadar .er-tier-h{font-size:11px;font-weight:800;letter-spacing:.05em;margin:0 0 8px}'
   + '#earlyRadar .er-gold-h{color:#e8b84b}#earlyRadar .er-orange-h{color:#ff8a3d}#earlyRadar .er-gray-h{color:#9aa6b8}'
   + '#earlyRadar .er-grid{display:grid;gap:11px}'
-  + '#earlyRadar .er-grid-g{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}'
-  + '#earlyRadar .er-grid-c{grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}'
-  + '#earlyRadar .er-card{background:#0e1626;border:1px solid #1e2836;border-radius:13px;padding:13px;cursor:pointer;transition:transform .15s ease,border-color .15s ease}'
+  + '#earlyRadar .er-grid-g{grid-template-columns:repeat(auto-fit,minmax(238px,1fr))}'
+  + '#earlyRadar .er-grid-c{grid-template-columns:repeat(auto-fit,minmax(196px,1fr))}'
+  + '#earlyRadar .er-card{background:#0e1626;border:1px solid #1e2836;border-radius:13px;padding:12px;cursor:pointer;transition:transform .15s ease,border-color .15s ease}'
   + '#earlyRadar .er-card:hover{transform:translateY(-2px);border-color:#2b3a52}'
-  + '#earlyRadar .er-gold{border-top:2px solid #e8b84b;box-shadow:0 0 0 1px rgba(232,184,75,.12);padding:15px}'
+  + '#earlyRadar .er-big{padding:15px}'
+  + '#earlyRadar .er-gold{border-top:2px solid #e8b84b;box-shadow:0 0 0 1px rgba(232,184,75,.12)}'
   + '#earlyRadar .er-orange{border-top:2px solid #ff8a3d}'
   + '#earlyRadar .er-gray{border-top:2px solid #6b7686}'
   + '#earlyRadar .er-c-top{display:flex;align-items:center;gap:9px;margin-bottom:9px}'
@@ -353,14 +345,14 @@
   + '#earlyRadar .er-sym{font-weight:800;font-size:15px;color:#e6edf6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
   + '#earlyRadar .er-price{font-size:11px;color:#8b98ac}'
   + '#earlyRadar .er-stage{font-size:8.5px;font-weight:800;letter-spacing:.04em;padding:3px 7px;border-radius:6px;white-space:nowrap}'
-  + '#earlyRadar .er-stage-g{color:#e8b84b;border:1px solid rgba(232,184,75,.5);background:rgba(232,184,75,.1)}'
   + '#earlyRadar .er-scrow{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#8b98ac;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}'
   + '#earlyRadar .er-scrow b{font-family:ui-monospace,Menlo,monospace;font-size:13px}'
   + '#earlyRadar .er-bar{height:5px;background:#1a2330;border-radius:4px;overflow:hidden;margin-bottom:10px}#earlyRadar .er-bar>i{display:block;height:100%}'
-  + '#earlyRadar .er-tech{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:11px;color:#8b98ac;margin-bottom:9px}#earlyRadar .er-tech b{color:#e6edf6}'
-  + '#earlyRadar .er-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}'
+  + '#earlyRadar .er-tech{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:11px;color:#8b98ac;margin-bottom:8px}#earlyRadar .er-tech b{color:#e6edf6}'
+  + '#earlyRadar .er-ctx{display:flex;justify-content:space-between;gap:10px;font-size:10.5px;color:#8b98ac;border-top:1px solid #18212f;border-bottom:1px solid #18212f;padding:6px 0;margin-bottom:8px}'
+  + '#earlyRadar .er-why{margin-bottom:8px}#earlyRadar .er-why-h{font-size:9px;color:#8b98ac;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px}'
+  + '#earlyRadar .er-chips{display:flex;gap:5px;flex-wrap:wrap}'
   + '#earlyRadar .er-chip{font-size:9.5px;color:#9fb4d6;background:rgba(255,255,255,.03);border:1px solid #1e2836;border-radius:5px;padding:2px 7px}'
-  + '#earlyRadar .er-cmprow{display:flex;gap:10px;font-size:11px;color:#8b98ac;margin-bottom:8px}#earlyRadar .er-cmprow b{color:#e6edf6}'
   + '#earlyRadar .er-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1e2836;padding-top:8px}'
   + '#earlyRadar .er-fresh{font-size:10px;color:#36d399;font-weight:700}'
   + '#earlyRadar .er-link{font-size:10px;color:#3b9eff;font-weight:700}'
@@ -383,28 +375,27 @@
 
   function render(rows) {
     var mount=document.getElementById('earlyRadar'); if(!mount) return;
-    var elite=canSeeArchive();
-    var staged=rows.filter(function(r){return r.stage;}).sort(function(a,b){
-      return (RANK[b.stage]-RANK[a.stage]) || (b.value-a.value) || ((b.s.score||0)-(a.s.score||0));
-    });
-    var top=staged.slice(0,9), gold=top.slice(0,3), orange=top.slice(3,6), gray=top.slice(6,9);
+    var elite=canSeeArchive(), ethC=ctxLabel(ethCtx());
+    var staged=rows.filter(function(r){return r.stage;});
+    function comp(r){ var a=archFor(r.sym); var ar=(a&&a.total>=5)?((a.weightedRate!=null?a.weightedRate:a.successRate)||0):0; var ageMin=Math.max(0,(Date.now()-(r.stageSince||Date.now()))/60000); var fresh=Math.max(0,1-ageMin/30)*8; return (r.s.score||0)+ar*0.5+fresh; }
+    function pick(stage){ return staged.filter(function(r){return r.stage===stage;}).sort(function(a,b){return comp(b)-comp(a);}).slice(0,3); }
+    var gold=pick('CONFIRMED'), orange=pick('ARMED'), gray=pick('WATCH');
     var stale=Date.now()-_lastScanAt>CFG.staleMs;
     var scanned=(window.VD_STATE&&window.VD_STATE.scanResults&&window.VD_STATE.scanResults.length)||rows.length||0;
     var head=STYLE
       + '<div class="er-head"><span class="er-title">⚡ AI Piyasa Radarı</span>'
       + '<span class="er-live">'+(stale?'· bayat veri':'· canlı tarama')+'</span>'
       + '<span class="er-scan">Son tarama: '+relTime(_lastScanAt)+' · '+scanned+' coin tarandı</span></div>'
-      + '<div class="er-note">AI tek coini değil tüm piyasayı tarar. İzleme → Hazır → Teyitli yapı olgunluğu — işlem/yön önerisi değildir; yatırım tavsiyesi değildir.</div>';
-    if (!top.length){ mount.innerHTML=head+'<div style="font-size:12px;color:#8b98ac;padding:10px 0">Bu taramada uygun yapı bulunmadı — sonraki taramada güncellenecek.</div>'; bindClicks(mount); return; }
+      + '<div class="er-note">Sıralama: yapı olgunluğu + güven skoru + arşiv tutarlılığı + tazelik (yön değil). İzleme → Hazır → Teyitli — işlem/yön önerisi değildir; yatırım tavsiyesi değildir.</div>';
+    if (!gold.length && !orange.length && !gray.length){ mount.innerHTML=head+'<div style="font-size:12px;color:#8b98ac;padding:10px 0">Bu taramada uygun yapı bulunmadı — sonraki taramada güncellenecek.</div>'; bindClicks(mount); return; }
     function tier(title, cls, list, big){
-      var cards = list.length ? list.map(function(r){ return big?goldCard(r,elite):compactCard(r,cls); }).join('')
-                              : '<div class="er-empty">Bu taramada bu güç katmanında setup yok.</div>';
+      var cards = list.length ? list.map(function(r){ return radarCard(r,cls,big,elite,ethC); }).join('') : '<div class="er-empty">Bu taramada bu aşamada setup yok.</div>';
       return '<div class="er-tier"><div class="er-tier-h '+cls+'-h">'+title+'</div><div class="er-grid '+(big?'er-grid-g':'er-grid-c')+'">'+cards+'</div></div>';
     }
     mount.innerHTML=head
-      + tier('🥇 EN GÜÇLÜ', 'er-gold', gold, true)
-      + tier('🟠 GELİŞEN', 'er-orange', orange, false)
-      + tier('⚪ OLUŞUM', 'er-gray', gray, false);
+      + tier('🥇 ALTIN · Confirmed', 'er-gold', gold, true)
+      + tier('🟠 TURUNCU · Armed', 'er-orange', orange, false)
+      + tier('⚪ GRİ · Watch', 'er-gray', gray, false);
     bindClicks(mount);
   }
 
@@ -443,8 +434,7 @@
     _lastScanAt=Date.now();
     var rows=[];
     for (var i=0;i<results.length;i++){ var item=results[i]; try{ if(item&&item.sym) rows.push(process(item)); }catch(e){} }
-    if (canSeeArchive()) loadArchive(function(){ render(rows); });
-    else render(rows);
+    loadArchive(function(){ render(rows); });
   }
 
   function schedule() { if (_t) return; _t = setTimeout(() => { _t = null; try { run(); } catch (e) {} }, 300); }
