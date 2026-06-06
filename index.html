@@ -2,6 +2,12 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png">
+  <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+  <meta name="theme-color" content="#0a0e17">
+  <meta property="og:image" content="https://vd-securianalyst.com/assets/brand/og-image.png">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>VD SecuriAnalyst</title>
 <link rel="stylesheet" href="shared/nav/nav.css">
@@ -52,7 +58,8 @@ body{
   box-sizing:border-box;
 }
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--green),var(--blue));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.logo-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+.logo-icon img{width:100%;height:100%;object-fit:contain;display:block;}
 .logo-text{font-size:15px;font-weight:800;letter-spacing:1px;background:linear-gradient(90deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .logo-sub{font-size:9px;color:var(--text3);letter-spacing:3px;font-weight:500;margin-top:-2px;}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
@@ -2289,7 +2296,7 @@ function startTimer() {
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">
-    <div class="logo-icon">◈</div>
+    <div class="logo-icon"><img src="/assets/brand/coin-mark.png" alt="VD SecuriAnalyst" width="32" height="32"></div>
     <div>
       <div class="logo-text">VD SECURIANALYST</div>
       <div class="logo-sub">vd-securianalyst.com</div>
