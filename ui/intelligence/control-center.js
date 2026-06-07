@@ -109,6 +109,29 @@
     + '#ccSplash{position:fixed;inset:0;background:#0a0e17;z-index:9500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}'
     + '#ccSplash .ring{width:42px;height:42px;border:3px solid #1e2836;border-top-color:#38bdf8;border-radius:50%;animation:ccspin 1s linear infinite}'
     + '#ccSplash .lbl{font-size:13px;font-weight:700;color:#8b98ac;letter-spacing:.04em}'
+    + '/* BUILD 151 — Premium Dashboard Redesign (workspace kartlari) */'
+    + '.cc-grid{grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:14px}'
+    + '.cc-card{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 9%,var(--v4-bg-panel,#07111F)),var(--v4-bg-panel,#07111F));border:1px solid var(--v4-border,rgba(255,255,255,.07));border-radius:18px;padding:0;gap:0;overflow:hidden;text-align:center;transition:transform .3s,border-color .3s,box-shadow .3s}'
+    + '.cc-card::before{height:3px;left:0;right:0;top:0;background:linear-gradient(90deg,transparent,var(--c),transparent)}'
+    + '.cc-card::after{content:"";position:absolute;top:0;left:-60%;width:50%;height:100%;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);transition:left .65s ease;pointer-events:none;z-index:1}'
+    + '.cc-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--c) 55%,var(--v4-border-hi,rgba(0,209,255,.22)));box-shadow:0 26px 60px -34px var(--c),0 0 42px -16px var(--c)}'
+    + '.cc-card:hover::after{left:135%}'
+    + '.cc-in{padding:22px 16px 18px;display:flex;flex-direction:column;align-items:center;position:relative;z-index:2}'
+    + '.cc-stage{position:relative;width:96px;height:80px;display:grid;place-items:center;margin-bottom:12px}'
+    + '.cc-stage::before{content:"";position:absolute;inset:6px 16px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 42%,transparent),transparent 66%);filter:blur(10px);transition:.3s}'
+    + '.cc-card:hover .cc-stage::before{inset:0 8px}'
+    + '.cc-ring{position:absolute;border:1px solid color-mix(in srgb,var(--c) 28%,transparent);border-radius:50%}'
+    + '.cc-ring.r1{width:76px;height:26px;bottom:6px}.cc-ring.r2{width:52px;height:18px;bottom:11px}'
+    + '.cc-ico3d{width:56px;height:56px;position:relative;z-index:2;filter:drop-shadow(0 8px 14px color-mix(in srgb,var(--c) 55%,transparent));transition:transform .35s}'
+    + '.cc-card:hover .cc-ico3d{transform:translateY(-3px) scale(1.05)}'
+    + '.cc-t{font-size:15.5px;font-weight:800;color:var(--v4-text,#EAF6FF)}'
+    + '.cc-d{font-size:11.5px;color:var(--v4-text-2,#7FA9C9);line-height:1.55;min-height:0;margin-top:7px}'
+    + '.cc-stat{align-self:center;margin-top:12px;font-size:10.5px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);border:1px solid color-mix(in srgb,var(--c) 24%,transparent);border-radius:30px;padding:4px 12px}'
+    + '.cc-lockstat{align-self:center;margin-top:12px;border-radius:30px;padding:4px 12px}'
+    + '.cc-btn{margin-top:14px;width:auto;align-self:center;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);border:1px solid color-mix(in srgb,var(--c) 35%,transparent);border-radius:30px;padding:9px 18px;cursor:pointer;transition:.25s}'
+    + '.cc-btn:hover{background:color-mix(in srgb,var(--c) 22%,transparent);filter:none}'
+    + '.cc-card.cc-locked{opacity:.95}'
+    + '.cc-card.cc-locked .cc-btn{background:#1b2433;color:#cbd5e6;border:1px solid #2b3a52}'
     + '@keyframes ccspin{to{transform:rotate(360deg)}}';
 
   function injectStyle() {
@@ -120,6 +143,15 @@
   // ---------- KARTLAR ----------
   function cardsHtml() {
     var elite = isElite();
+    // BUILD 151 — Premium Dashboard Redesign: zengin ikonlu workspace kartlari
+    var ICON = {
+      radar: '<svg class="cc-ico3d" viewBox="0 0 64 64"><defs><radialGradient id="cg-radar" cx="50%" cy="42%" r="62%"><stop offset="0" stop-color="#fff2cf"/><stop offset="42%" stop-color="#f5b301"/><stop offset="100%" stop-color="#7a4a10"/></radialGradient></defs><circle cx="32" cy="31" r="25" fill="url(#cg-radar)" opacity=".16"/><circle cx="32" cy="31" r="25" fill="none" stroke="#f5b301" stroke-width="2" opacity=".55"/><circle cx="32" cy="31" r="16.5" fill="none" stroke="#f5b301" stroke-width="1.4" opacity=".4"/><path d="M32 31 L54 18 A25 25 0 0 1 55 33 Z" fill="url(#cg-radar)" opacity=".55"/><circle cx="47" cy="21" r="3.2" fill="#fff3d0"/><circle cx="32" cy="31" r="2.6" fill="#ffe6a8"/></svg>',
+      ai: '<svg class="cc-ico3d" viewBox="0 0 64 64"><defs><linearGradient id="cg-ai" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cdeaff"/><stop offset=".5" stop-color="#3b9eff"/><stop offset="1" stop-color="#1b347e"/></linearGradient></defs><path d="M30 12c-7 0-12 4-13 10-5 1-8 5-8 10 0 4 2 7 5 9 0 5 4 9 11 9 1.5 2.5 3.5 3.5 5 3.5V12.5C29 12 29.5 12 30 12z" fill="url(#cg-ai)"/><path d="M34 12c7 0 12 4 13 10 5 1 8 5 8 10 0 4-2 7-5 9 0 5-4 9-11 9-1.5 2.5-3.5 3.5-5 3.5V12.5C35 12 34.5 12 34 12z" fill="url(#cg-ai)" opacity=".93"/><path d="M32 17v32" stroke="#e2f1ff" stroke-width="1.3" opacity=".5"/></svg>',
+      futures: '<svg class="cc-ico3d" viewBox="0 0 64 64"><defs><linearGradient id="cg-fut" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd6b0"/><stop offset=".5" stop-color="#ff8a3d"/><stop offset="1" stop-color="#a8350f"/></linearGradient></defs><line x1="20" y1="11" x2="20" y2="53" stroke="#ff8a3d" stroke-width="2" opacity=".55"/><rect x="14" y="22" width="12" height="22" rx="3" fill="url(#cg-fut)"/><line x1="44" y1="7" x2="44" y2="49" stroke="#ff8a3d" stroke-width="2" opacity=".55"/><rect x="38" y="15" width="12" height="18" rx="3" fill="url(#cg-fut)"/></svg>',
+      perf: '<svg class="cc-ico3d" viewBox="0 0 64 64"><defs><linearGradient id="cg-perf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b4ffe4"/><stop offset=".5" stop-color="#36d399"/><stop offset="1" stop-color="#0e6f4d"/></linearGradient></defs><rect x="12" y="36" width="11" height="16" rx="2.5" fill="url(#cg-perf)"/><rect x="26.5" y="26" width="11" height="26" rx="2.5" fill="url(#cg-perf)"/><rect x="41" y="16" width="11" height="36" rx="2.5" fill="url(#cg-perf)"/></svg>',
+      elite: '<svg class="cc-ico3d" viewBox="0 0 64 64"><defs><linearGradient id="cg-eliteA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e3d8ff"/><stop offset="1" stop-color="#b39dfa"/></linearGradient><linearGradient id="cg-eliteB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b39dfa"/><stop offset="1" stop-color="#46279f"/></linearGradient></defs><path d="M21 16h22l9 11-20 23L13 27z" fill="url(#cg-eliteB)"/><path d="M21 16h22l-11 11z" fill="url(#cg-eliteA)"/><path d="M13 27h39" stroke="#fff" stroke-width="1" opacity=".28"/></svg>',
+      archive: '<svg class="cc-ico3d" viewBox="0 0 64 64"><defs><radialGradient id="cg-arch" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#d2ddec"/><stop offset="100%" stop-color="#4a5a72"/></radialGradient></defs><rect x="12" y="12" width="40" height="40" rx="9" fill="#16202f" stroke="#8b98ac" stroke-width="2"/><circle cx="32" cy="32" r="13" fill="none" stroke="#9fb1c8" stroke-width="2"/><circle cx="32" cy="32" r="7" fill="none" stroke="#9fb1c8" stroke-width="1.4"/><circle cx="32" cy="32" r="2.6" fill="#e2eaf5"/></svg>'
+    };
     var defs = [
       { k: 'radar', c: '#f5b301', ic: '\u25c8', t: 'Opportunity Radar', d: 'Alt\u0131n \u00b7 Turuncu \u00b7 Gri katman \u2014 9 kart, 3 a\u015fama. En olgun yap\u0131lar.', stat: '3 katman \u00b7 9 kart', btn: 'Radar\u0131 A\u00e7 \u2192' },
       { k: 'ai', c: '#3b9eff', ic: '\u25c8', t: 'AI Intelligence', d: 'AI Reasoning \u00b7 A\u011f\u0131rl\u0131kl\u0131 Confirmation \u00b7 ECE 2.0 \u00b7 Narrative.', stat: 'Karar Motoru', btn: 'AI Workspace \u2192' },
@@ -129,18 +161,20 @@
       { k: 'archive', c: '#8b98ac', ic: '\u25c8', t: 'Archive', d: 'Ge\u00e7mi\u015f analiz ar\u015fivi \u00b7 sonu\u00e7 takibi \u00b7 tutarl\u0131l\u0131k kayd\u0131.', stat: 'Sonu\u00e7 ar\u015fivi', btn: 'Ar\u015fivi A\u00e7 \u2192' }
     ];
     return defs.map(function (x) {
+      var ic = ICON[x.k] || '';
+      var stage = '<div class="cc-stage"><span class="cc-ring r1"></span><span class="cc-ring r2"></span>' + ic + '</div>';
       var statEl, btn;
       if (x.k === 'elite' && x.locked) {
         statEl = '<div class="cc-lockstat">\ud83d\udd12 Kilitli \u2014 Elite Pass</div>';
         btn = '<button class="cc-btn" data-act="elite-locked">Elite Pass Al \u2192</button>';
-        return '<div class="cc-card cc-locked" style="--c:' + x.c + '"><div class="cc-top"><span class="cc-ic">' + x.ic + '</span><span class="cc-t">' + x.t + '</span></div><div class="cc-d">' + x.d + '</div>' + statEl + btn + '</div>';
+        return '<div class="cc-card cc-locked" style="--c:' + x.c + '"><div class="cc-in">' + stage + '<div class="cc-t">' + x.t + '</div><div class="cc-d">' + x.d + '</div>' + statEl + btn + '</div></div>';
       }
       var sid = x.statId ? ' id="' + x.statId + '"' : '';
       statEl = '<div class="cc-stat"' + sid + '>' + (x.stat || '') + '</div>';
       var label = x.btn || ('A\u00e7 \u2192');
       if (x.k === 'elite') label = 'Elite Intelligence \u2192';
       btn = '<button class="cc-btn" data-act="' + x.k + '">' + label + '</button>';
-      return '<div class="cc-card" style="--c:' + x.c + '"><div class="cc-top"><span class="cc-ic">' + x.ic + '</span><span class="cc-t">' + x.t + '</span></div><div class="cc-d">' + x.d + '</div>' + statEl + btn + '</div>';
+      return '<div class="cc-card" style="--c:' + x.c + '"><div class="cc-in">' + stage + '<div class="cc-t">' + x.t + '</div><div class="cc-d">' + x.d + '</div>' + statEl + btn + '</div></div>';
     }).join('');
   }
 
