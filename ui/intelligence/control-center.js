@@ -62,8 +62,18 @@
   // — Coin Detail: radar kartından gelince tam ekran coin workspace —
   var _fromRadar = false;
   function setFx(title, backLabel) { var t = byId('ccFxTitle'); if (t) t.textContent = title; var b = byId('ccFxBack'); if (b) b.textContent = backLabel; }
-  function openFuturesLab() { _fromRadar = false; enterFutures(); setFx('\u25c8 Futures Lab', '\u2190 Geri D\u00f6n'); }
-  function openCoinDetail(sym) { _fromRadar = true; enterFutures(); setFx('\u25c8 ' + ((sym || '').replace('USDT', '')) + ' \u2014 Coin Detail', '\u2190 Radara D\u00f6n'); }
+  function setFxDir(dir, score) {
+    var el = byId('ccFxDir'); if (!el) return;
+    var d = (dir || '').toUpperCase(), sc = parseInt(score, 10);
+    if (d !== 'LONG' && d !== 'SHORT') { el.textContent = ''; el.style.cssText = ''; return; }
+    var col = d === 'LONG' ? '#36d399' : '#f87272';
+    var emo = d === 'LONG' ? '\ud83d\udfe2' : '\ud83d\udd34';
+    var label = ((!isNaN(sc) && sc >= 80) ? 'G\u00dc\u00c7L\u00dc ' : '') + d + ' E\u011e\u0130L\u0130M\u0130';
+    el.textContent = emo + ' ' + label + (!isNaN(sc) ? ' \u00b7 skor ' + sc : '');
+    el.style.color = col; el.style.borderColor = col + '66'; el.style.background = col + '1a';
+  }
+  function openFuturesLab() { _fromRadar = false; enterFutures(); setFx('\u25c8 Futures Lab', '\u2190 Geri D\u00f6n'); setFxDir(''); }
+  function openCoinDetail(sym, dir, score) { _fromRadar = true; enterFutures(); setFx('\u25c8 ' + ((sym || '').replace('USDT', '')) + ' \u2014 Coin Detail', '\u2190 Radara D\u00f6n'); setFxDir(dir, score); }
   function fxBack() { var r = _fromRadar; _fromRadar = false; backToDashboard(); if (r && window.VDRadarWorkspace && VDRadarWorkspace.open) { setTimeout(function () { VDRadarWorkspace.open(); }, 60); } }
 
   // ---------- STİL ----------
@@ -87,6 +97,7 @@
     + '.cc-fxback:hover{border-color:#2b3a52}'
     + '.cc-fxtitle{font-size:14px;font-weight:800;color:#e6edf6}'
     + '.cc-fxnote{margin-left:auto;font-size:10px;color:#8b98ac}'
+    + '.cc-fxdir{font-size:12px;font-weight:900;letter-spacing:.04em;border:1px solid transparent;border-radius:8px;padding:4px 11px}'
     + 'body.cc-fx{padding-top:52px}'
     + '#ccSplash{position:fixed;inset:0;background:#0a0e17;z-index:9500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}'
     + '#ccSplash .ring{width:42px;height:42px;border:3px solid #1e2836;border-top-color:#38bdf8;border-radius:50%;animation:ccspin 1s linear infinite}'
@@ -168,7 +179,7 @@
     // Futures Lab geri-d\u00f6n bar\u0131
     if (!byId('ccFxBar')) {
       var bar = document.createElement('div'); bar.className = 'cc-fxbar'; bar.id = 'ccFxBar';
-      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Geri D\u00f6n</button><span class="cc-fxtitle" id="ccFxTitle">\u25c8 Futures Lab</span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
+      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Geri D\u00f6n</button><span class="cc-fxtitle" id="ccFxTitle">\u25c8 Futures Lab</span><span class="cc-fxdir" id="ccFxDir"></span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
       document.body.appendChild(bar);
       var bk = byId('ccFxBack'); if (bk) bk.addEventListener('click', fxBack);
     }
