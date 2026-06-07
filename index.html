@@ -10262,5 +10262,41 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 </script>
   <script src="ui/funnel/telegram-funnel.js"></script>
+
+<!-- ══ build 128: DASHBOARD REFOCUS — Tier-4 gürültü gizleme (yalnız non-admin) + hiyerarşi ayracı. Sadece UI; motor/scanner/chart'a dokunmaz. ══ -->
+<style>
+.vd-analysis-divider{margin:24px 12px 10px;display:flex;align-items:center;gap:12px}
+.vd-analysis-divider::before,.vd-analysis-divider::after{content:"";height:1px;background:#1e2836;flex:1}
+.vd-analysis-divider span{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#5b6677;text-transform:uppercase;white-space:nowrap}
+</style>
+<script>
+(function(){
+  function isAdmin(){
+    try{ if(window.VDAccess&&VDAccess.isAdmin&&VDAccess.isAdmin())return true; }catch(e){}
+    try{ if(document.body.classList.contains('admin-mode'))return true; }catch(e){}
+    return false;
+  }
+  function hideOwner(id){ try{ var el=document.getElementById(id); if(el){ var p=el.parentElement; if(p) p.style.display='none'; } }catch(e){} }
+  function apply(){
+    try{
+      if(!document.querySelector('.vd-analysis-divider')){
+        var anchor=document.getElementById('futuresPanelMount');
+        if(anchor&&anchor.parentNode){
+          var d=document.createElement('div'); d.className='vd-analysis-divider';
+          d.innerHTML='<span>\u25c8 Detayl\u0131 Analiz \u00b7 bir coin se\u00e7ti\u011finizde derinle\u015fir</span>';
+          anchor.parentNode.insertBefore(d, anchor);
+        }
+      }
+      if(isAdmin()) return; // admin her \u015feyi g\u00f6r\u00fcr
+      var bar=document.querySelector('.exec-mode-bar'); if(bar) bar.style.display='none'; // COMPACT/PRO/QUANT \u2192 admin only
+      hideOwner('wsHealthPanel'); // WebSocket Health Monitor (debug) \u2192 admin only
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(apply,300);});
+  else setTimeout(apply,300);
+  setTimeout(apply,1600);
+})();
+</script>
+
 </body>
 </html>
