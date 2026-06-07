@@ -39,6 +39,15 @@
     return 'dashboard'; // index.html veya kök
   }
   function _isIndex() { return _basename() === 'index.html'; }
+  // Dashboard'a dönüşte: bir önceki sayfa dashboard ise bellekten anında dön (reload/yeni tarama YOK)
+  function _refIsDashboard() {
+    try { if (!document.referrer) return false; var u = new URL(document.referrer); if (u.origin !== location.origin) return false; var p = u.pathname.split('/').pop(); return (p === '' || p === 'index.html'); } catch (e) { return false; }
+  }
+  function goDashboard() {
+    if (!_isIndex() && _refIsDashboard() && history.length > 1) { history.back(); }
+    else { location.href = 'index.html'; }
+  }
+  if (typeof window !== 'undefined') window.vdGoDashboard = goDashboard;
 
   function _esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -75,6 +84,7 @@
 
     const samePage = layer.page === _basename();
     if (!samePage) {
+      if (layer.page === 'index.html') { goDashboard(); return; }
       location.href = layer.page + (layer.hash ? '#' + layer.hash : '');
       return;
     }
@@ -107,7 +117,7 @@
       `<a href="${l.page}${l.hash?'#'+l.hash:''}" data-key="${l.key}" class="${l.key===cur?'active':''}${l.premium?' vdn-premium':''}">${_esc(l.label)}</a>`
     ).join('');
     const brand = _isIndex() ? '' :
-      `<a class="vdn-brand" href="index.html" aria-label="VD SecuriAnalyst"><img src="/assets/brand/coin-mark.png" alt="" width="22" height="22"><span>VD SecuriAnalyst</span></a>`;
+      `<a class="vdn-brand" data-key="dashboard" href="index.html" aria-label="VD SecuriAnalyst"><img src="/assets/brand/coin-mark.png" alt="" width="22" height="22"><span>VD SecuriAnalyst</span></a>`;
     return brand + items;
   }
   function _drawerHTML(cur) {
@@ -127,6 +137,7 @@
         const key = a.getAttribute('data-key');
         const layer = LAYERS.find(l=>l.key===key);
         if (layer && layer.page === _basename()) { e.preventDefault(); go(key); }
+        else if (key === 'dashboard' && !_isIndex()) { e.preventDefault(); closeDrawer(); goDashboard(); }
         else { closeDrawer(); /* normal link navigasyonu */ }
       });
     });
