@@ -265,7 +265,7 @@
   function canSeeRadar(){ try{ var A=window.VDAccess; return !!(A && ((A.isPremium&&A.isPremium())||(A.isElite&&A.isElite()))); }catch(e){return false;} }
   function canSeeArchive(){ try{ return !!(window.VDAccess && window.VDAccess.isElite && window.VDAccess.isElite()); }catch(e){return false;} }
 
-  var _lastRows=null, _wsOpen=false;
+  var _lastRows=null, _wsOpen=false, _stale=false;
 
   // ── Arşiv verisi (premium+ çeker; premium oran+örnek görür, detay bulanık) ──
   var _archMap = null, _archTried = false;
@@ -498,7 +498,7 @@
     var preview=t.gold.concat(t.orange,t.gray).slice(0,3);
     var total=t.gold.length+t.orange.length+t.gray.length;
     var head='<div class="er-head"><span class="er-title">⚡ AI Piyasa Radarı</span>'
-      + '<span class="er-live">'+(t.stale?'· bayat veri':'· canlı tarama')+'</span>'
+      + '<span class="er-live">'+(_stale?'· önceki tarama · yenileniyor…':(t.stale?'· bayat veri':'· canlı tarama'))+'</span>'
       + '<span class="er-scan">Son tarama: '+relTime(_lastScanAt)+' · '+t.scanned+' coin</span></div>'
       + '<div class="er-note">Dashboard özeti — en güçlü yapılar. Tam 9 kart için workspace. İşlem/yön önerisi değildir; yatırım tavsiyesi değildir.</div>'
       + '<div class="er-sum-counts"><span class="er-sum-count" style="color:#e8b84b">🥇 Teyitli '+t.gold.length+'</span><span class="er-sum-count" style="color:#ff8a3d">🟠 Hazır '+t.orange.length+'</span><span class="er-sum-count" style="color:#9aa6b8">⚪ İzleme '+t.gray.length+'</span></div>';
@@ -568,15 +568,31 @@
   }
 
   // ── Tarama tetikleyici ──
+  // ── Önceki tarama önbelleği (yenilemede ekran boş kalmasın) ──
+  var CACHE_KEY='vd_radar_cache_v1';
+  function _saveCache(rows){
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify({rows:rows, ts:Date.now()})); }catch(e){}
+  }
+  function _hydrateFromCache(){
+    if(_lastRows && _lastRows.length) return;            // zaten bir şey gösteriliyor
+    try{
+      var raw=localStorage.getItem(CACHE_KEY); if(!raw) return;
+      var d=JSON.parse(raw); if(!d||!Array.isArray(d.rows)||!d.rows.length) return;
+      _stale=true; _lastRows=d.rows;
+      loadArchive(function(){ renderSummary(d.rows); if(_wsOpen) renderWorkspace(d.rows); });
+    }catch(e){}
+  }
+
   function run() {
     var mount=document.getElementById('earlyRadar'); if(!mount) return;
     if (!canSeeRadar()){ renderLocked(); return; }   // free/teaser → kilitli tanıtım
     mount.style.display='';
     var results=(window.VD_STATE&&window.VD_STATE.scanResults)||window._lastScanResults||[];
-    if (!Array.isArray(results)||!results.length) return;
-    _lastScanAt=Date.now();
+    if (!Array.isArray(results)||!results.length) { _hydrateFromCache(); return; }  // taze yok → önceki taramayı göster
+    _lastScanAt=Date.now(); _stale=false;
     var rows=[];
     for (var i=0;i<results.length;i++){ var item=results[i]; try{ if(item&&item.sym) rows.push(process(item)); }catch(e){} }
+    _saveCache(rows);
     loadArchive(function(){ _lastRows=rows; renderSummary(rows); if(_wsOpen) renderWorkspace(rows); });
   }
 
