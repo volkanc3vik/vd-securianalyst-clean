@@ -606,5 +606,22 @@
   setTimeout(schedule, 1500);
   setTimeout(schedule, 4000);
 
-  window.VDEarlyRadar = { run, _state: ST, _cfg: CFG };
+  window.VDEarlyRadar = {
+    run: run, _state: ST, _cfg: CFG,
+    // BUILD 153 — SALT-OKUNUR özet (sağ rail için). Hesaplama YOK; yalnız
+    // halihazırda hesaplanmış sıralı fırsatları + bias'ı dışa verir.
+    summary: function () {
+      var rows = _lastRows || [];
+      var staged = rows.filter(function (r) { return r.stage; });
+      var t = computeTiers(rows);
+      return {
+        top: t.gold.concat(t.orange, t.gray),
+        counts: { gold: t.gold.length, orange: t.orange.length, gray: t.gray.length },
+        scanned: t.scanned,
+        bias: computeBias(staged),
+        lastScanAt: _lastScanAt,
+        canSee: (typeof canSeeRadar === 'function') ? canSeeRadar() : true
+      };
+    }
+  };
 })();
