@@ -59,6 +59,13 @@
   }
   function backToDashboard() { enterDashboard(); fireResize(); }
 
+  // — Coin Detail: radar kartından gelince tam ekran coin workspace —
+  var _fromRadar = false;
+  function setFx(title, backLabel) { var t = byId('ccFxTitle'); if (t) t.textContent = title; var b = byId('ccFxBack'); if (b) b.textContent = backLabel; }
+  function openFuturesLab() { _fromRadar = false; enterFutures(); setFx('\u25c8 Futures Lab', '\u2190 Geri D\u00f6n'); }
+  function openCoinDetail(sym) { _fromRadar = true; enterFutures(); setFx('\u25c8 ' + ((sym || '').replace('USDT', '')) + ' \u2014 Coin Detail', '\u2190 Radara D\u00f6n'); }
+  function fxBack() { var r = _fromRadar; _fromRadar = false; backToDashboard(); if (r && window.VDRadarWorkspace && VDRadarWorkspace.open) { setTimeout(function () { VDRadarWorkspace.open(); }, 60); } }
+
   // ---------- STİL ----------
   var STYLE = ''
     + '.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:16px 12px 0}'
@@ -123,7 +130,7 @@
     try {
       if (k === 'radar') { if (window.VDRadarWorkspace && VDRadarWorkspace.open) VDRadarWorkspace.open(); else { var b = byId('erOpenWs'); if (b) b.click(); } }
       else if (k === 'ai') { if (window.VDAiWorkspace && VDAiWorkspace.open) VDAiWorkspace.open(); }
-      else if (k === 'futures') { enterFutures(); }
+      else if (k === 'futures') { openFuturesLab(); }
       else if (k === 'perf') { if (window.VDPerfWorkspace && VDPerfWorkspace.open) VDPerfWorkspace.open(); }
       else if (k === 'elite') { location.href = 'intelligence-center.html'; }
       else if (k === 'elite-locked') { location.href = 'legal/premium.html'; }
@@ -161,11 +168,11 @@
     // Futures Lab geri-d\u00f6n bar\u0131
     if (!byId('ccFxBar')) {
       var bar = document.createElement('div'); bar.className = 'cc-fxbar'; bar.id = 'ccFxBar';
-      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Geri D\u00f6n</button><span class="cc-fxtitle">\u25c8 Futures Lab</span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
+      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Geri D\u00f6n</button><span class="cc-fxtitle" id="ccFxTitle">\u25c8 Futures Lab</span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
       document.body.appendChild(bar);
-      var bk = byId('ccFxBack'); if (bk) bk.addEventListener('click', backToDashboard);
+      var bk = byId('ccFxBack'); if (bk) bk.addEventListener('click', fxBack);
     }
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mode === 'futures') backToDashboard(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mode === 'futures') fxBack(); });
 
     setInterval(refreshStats, 4000); refreshStats();
 
@@ -184,5 +191,5 @@
   else setTimeout(init, 700);
   setTimeout(init, 1800);
 
-  window.VDControlCenter = { dashboard: backToDashboard, futures: enterFutures, _build: build };
+  window.VDControlCenter = { dashboard: backToDashboard, futures: openFuturesLab, coinDetail: openCoinDetail, _build: build };
 })();

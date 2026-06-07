@@ -322,6 +322,28 @@
       + '<div class="er-micro">Yapı olgunluğu gözlemi — işlem/yön önerisi değildir.</div></div>';
   }
 
+  // ── TEK DEV HERO KART: en olgun fırsat (göz buraya gider) ──
+  function heroCard(r, elite, ethC){
+    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), sw=(typeof score==='number'?score:0);
+    var col=(r.stage==='CONFIRMED')?'#e8b84b':(r.stage==='ARMED')?'#ff8a3d':'#9aa6b8';
+    var chips=reasonChips(r.s).map(function(t){return '<span class="er-hchip">✓ '+esc(t)+'</span>';}).join('');
+    var dir=(r.dir||'').toUpperCase();
+    var dirTxt=dir==='LONG'?'Yukarı eğilim':(dir==='SHORT'?'Aşağı eğilim':'—');
+    var dirCol=dir==='LONG'?'#36d399':(dir==='SHORT'?'#f87272':'#8b98ac');
+    return '<div class="er-card er-hero" data-sym="'+esc(r.sym).replace(/\'/g,'')+'">'
+      + '<div class="er-hero-tag" style="color:'+col+';border-color:'+col+'66;background:'+col+'14">🥇 En Olgun Fırsat</div>'
+      + '<div class="er-hero-top"><div class="er-hero-logo">'+sym.slice(0,4)+'</div>'
+      + '<div style="flex:1;min-width:0"><div class="er-hero-sym">'+sym+' '+chgHtml(r.chg)+'</div><div class="er-hero-price">'+fmtPrice(r.price)+'</div></div>'
+      + '<div class="er-hero-score"><div class="er-hero-num" style="color:'+col+'">'+score+'<span>/100</span></div><div class="er-hero-slbl">Analiz skoru</div></div></div>'
+      + '<div class="er-hero-bar"><i style="width:'+sw+'%;background:linear-gradient(90deg,'+col+'88,'+col+')"></i></div>'
+      + '<div class="er-hero-meta"><span class="er-hero-stage" style="color:'+col+';border-color:'+col+'80;background:'+col+'1a">'+stageWord(r.stage)+'</span>'
+      + '<span class="er-hero-dir" style="color:'+dirCol+'">Yön eğilimi: '+dirTxt+'</span>'
+      + '<span class="er-hero-ctx">BTC '+ctxLabel(r.btcChg).txt+' · ETH '+ethC.txt+'</span></div>'
+      + (chips?'<div class="er-hero-why"><span class="er-hero-whyh">Neden öne çıktı?</span><div class="er-hchips">'+chips+'</div></div>':'')
+      + '<button class="er-hero-cta">Grafiğe Git →</button>'
+      + '<div class="er-micro">Yapı olgunluğu gözlemi — işlem/yön önerisi değildir, yatırım tavsiyesi değildir.</div></div>';
+  }
+
   var STYLE_CSS=''
   + '.vd-radar .er-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}'
   + '.vd-radar .er-title{font-size:14px;font-weight:800;color:#e6edf6}'
@@ -365,6 +387,27 @@
   + '.vd-radar .er-sum-count{font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid #1e2836;background:#0e1626}'
   + '.vd-radar .er-openbtn{display:block;width:100%;margin-top:12px;text-align:center;font-size:13px;font-weight:800;color:#04101f;background:linear-gradient(90deg,#3b9eff,#38bdf8);border:none;border-radius:11px;padding:12px;cursor:pointer}'
   + '.vd-radar .er-openbtn:hover{filter:brightness(1.07)}'
+  + '.vd-radar .er-hero{background:linear-gradient(160deg,#121b2c,#0d1421);border:1px solid #243349;padding:18px;cursor:pointer}'
+  + '.vd-radar .er-hero:hover{transform:translateY(-2px);border-color:#33455f}'
+  + '.vd-radar .er-hero-tag{display:inline-block;font-size:11px;font-weight:800;border:1px solid;border-radius:8px;padding:4px 10px;margin-bottom:12px}'
+  + '.vd-radar .er-hero-top{display:flex;align-items:center;gap:13px;margin-bottom:12px}'
+  + '.vd-radar .er-hero-logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#e8b84b,#a9791f);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#1a1305;flex-shrink:0}'
+  + '.vd-radar .er-hero-sym{font-weight:800;font-size:22px;color:#e6edf6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+  + '.vd-radar .er-hero-price{font-size:12px;color:#8b98ac;margin-top:1px}'
+  + '.vd-radar .er-hero-score{text-align:right;flex-shrink:0}'
+  + '.vd-radar .er-hero-num{font-family:ui-monospace,Menlo,monospace;font-size:30px;font-weight:900;line-height:1}.vd-radar .er-hero-num span{font-size:12px;color:#8b98ac;font-weight:700}'
+  + '.vd-radar .er-hero-slbl{font-size:9px;color:#8b98ac;text-transform:uppercase;letter-spacing:.06em;margin-top:3px}'
+  + '.vd-radar .er-hero-bar{height:7px;background:#1a2330;border-radius:5px;overflow:hidden;margin-bottom:13px}.vd-radar .er-hero-bar>i{display:block;height:100%}'
+  + '.vd-radar .er-hero-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}'
+  + '.vd-radar .er-hero-stage{font-size:10px;font-weight:800;letter-spacing:.04em;padding:4px 9px;border-radius:7px;border:1px solid}'
+  + '.vd-radar .er-hero-dir{font-size:12px;font-weight:700}'
+  + '.vd-radar .er-hero-ctx{margin-left:auto;font-size:10.5px;color:#8b98ac}'
+  + '.vd-radar .er-hero-why{margin-bottom:14px}.vd-radar .er-hero-whyh{font-size:10px;color:#8b98ac;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:7px}'
+  + '.vd-radar .er-hchips{display:flex;gap:7px;flex-wrap:wrap}'
+  + '.vd-radar .er-hchip{font-size:11px;color:#9fe6c4;background:rgba(54,211,153,.1);border:1px solid rgba(54,211,153,.22);border-radius:7px;padding:4px 10px}'
+  + '.vd-radar .er-hero-cta{display:block;width:100%;font-size:14px;font-weight:800;color:#04101f;background:linear-gradient(90deg,#3b9eff,#38bdf8);border:none;border-radius:12px;padding:14px;cursor:pointer}'
+  + '.vd-radar .er-hero-cta:hover{filter:brightness(1.08)}'
+  + '.vd-radar .er-more{text-align:center;margin-top:11px}.vd-radar .er-more-link{font-size:12px;font-weight:700;color:#3b9eff;cursor:pointer}'
   + '.er-ws-overlay{position:fixed;inset:0;background:#0a0e17;z-index:9000;overflow-y:auto;display:none}'
   + '.er-ws-overlay.open{display:block}'
   + '.er-ws-bar{position:sticky;top:0;background:rgba(10,14,23,.96);border-bottom:1px solid #1e2836;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 16px;z-index:2}'
@@ -383,8 +426,9 @@
         c.addEventListener('click', function(e){
           if (e.target && e.target.closest && e.target.closest('a')) return;
           var sym=c.getAttribute('data-sym'); if(!sym) return;
-          if (typeof window.openCoin==='function'){ window.openCoin(sym); if(_wsOpen) closeWS(); return; }
-          if (typeof window.loadCoin==='function'){ window.SYM=sym; var inp=document.getElementById('symInput'); if(inp) inp.value=sym; try{ window.loadCoin(sym, window.INTV||'15m'); }catch(e){} if(_wsOpen) closeWS(); var el=document.getElementById('mainPanel'); if(el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth'}); },200); }
+          function _toDetail(){ if(window.VDControlCenter&&VDControlCenter.coinDetail){ setTimeout(function(){ try{ VDControlCenter.coinDetail(sym); }catch(e){} },120); } else { var el=document.getElementById('mainPanel'); if(el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth'}); },200); } }
+          if (typeof window.openCoin==='function'){ window.openCoin(sym); if(_wsOpen) closeWS(); _toDetail(); return; }
+          if (typeof window.loadCoin==='function'){ window.SYM=sym; var inp=document.getElementById('symInput'); if(inp) inp.value=sym; try{ window.loadCoin(sym, window.INTV||'15m'); }catch(e){} if(_wsOpen) closeWS(); _toDetail(); }
         });
       });
     } catch(e){}
@@ -417,12 +461,13 @@
       + '<div class="er-note">Dashboard özeti — en güçlü yapılar. Tam 9 kart için workspace. İşlem/yön önerisi değildir; yatırım tavsiyesi değildir.</div>'
       + '<div class="er-sum-counts"><span class="er-sum-count" style="color:#e8b84b">🥇 Teyitli '+t.gold.length+'</span><span class="er-sum-count" style="color:#ff8a3d">🟠 Hazır '+t.orange.length+'</span><span class="er-sum-count" style="color:#9aa6b8">⚪ İzleme '+t.gray.length+'</span></div>';
     var body = preview.length
-      ? '<div class="er-grid er-grid-g">'+preview.map(function(r){return radarCard(r, tierClsOf(r.stage), true, t.elite, t.ethC);}).join('')+'</div>'
+      ? heroCard(preview[0], t.elite, t.ethC) + (total>1 ? '<div class="er-more"><span class="er-more-link" id="erMoreLink">+ '+(total-1)+' fırsat daha · Tümünü Aç →</span></div>' : '')
       : '<div class="er-empty">Bu taramada uygun yapı bulunmadı — sonraki taramada güncellenecek.</div>';
     var btn = total ? '<button class="er-openbtn" id="erOpenWs">Tüm Radarı Aç · 9 kart →</button>' : '';
     mount.innerHTML=head+body+btn;
     bindClicks(mount);
     var ob=document.getElementById('erOpenWs'); if(ob) ob.addEventListener('click', function(e){ e.stopPropagation(); openWS(); });
+    var ml=document.getElementById('erMoreLink'); if(ml) ml.addEventListener('click', function(e){ e.stopPropagation(); openWS(); });
   }
 
   // ── WORKSPACE OVERLAY: tam 9 kart (Altın/Turuncu/Gri 3'er) ──
