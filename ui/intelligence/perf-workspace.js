@@ -32,7 +32,10 @@
     + '.pfws-title{font-size:14px;font-weight:800;color:#e6edf6}'
     + '.pfws-note{margin-left:auto;font-size:10px;color:#8b98ac}'
     + '.pfws-body{padding:16px;max-width:1100px;margin:0 auto}'
-    + '.pfws-seph{font-size:10px;font-weight:800;letter-spacing:.08em;color:#5b6677;text-transform:uppercase;margin:18px 4px 8px}';
+    + '.pfws-seph{font-size:10px;font-weight:800;letter-spacing:.08em;color:#5b6677;text-transform:uppercase;margin:18px 4px 8px}'
+    + '.pfws-collapse{width:100%;margin:18px 0 0;background:#0e1626;border:1px solid #1e2836;border-radius:11px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.04em;color:#cbd5e6;text-align:left}'
+    + '.pfws-collapse:hover{border-color:#2b3a52}'
+    + '.pfws-caret{color:#36d399;font-size:13px;flex-shrink:0}';
 
   function injectStyle() {
     if (document.getElementById('vd-pfws-style')) return;
@@ -79,7 +82,7 @@
     ov.id = 'vdPerfWS';
     ov.className = 'pfws-overlay';
     ov.innerHTML =
-      '<div class="pfws-bar"><button class="pfws-back" id="pfWsBack">\u2190 Geri D\u00f6n</button>'
+      '<div class="pfws-bar"><button class="pfws-back" id="pfWsBack">\u2190 Dashboard\u2019a D\u00f6n</button>'
       + '<span class="pfws-title">\u25c8 Performance &amp; Learning</span>'
       + '<span class="pfws-note">ge\u00e7mi\u015f do\u011frulanm\u0131\u015f g\u00f6zlem \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span></div>'
       + '<div class="pfws-body" id="pfWsBody"></div>';
@@ -96,6 +99,23 @@
       sep.textContent = 'AI LEARNING';
       body.appendChild(sep);
       body.appendChild(lp.parentElement);
+    }
+    // 3c) AI Performance / Öğrenme Motoru (#aiPanel) — katlanır, varsayılan KAPALI
+    var ai = document.getElementById('aiPanel');
+    if (ai && !document.getElementById('pfEngineToggle')) {
+      var tg = document.createElement('button');
+      tg.type = 'button';
+      tg.className = 'pfws-collapse';
+      tg.id = 'pfEngineToggle';
+      tg.innerHTML = '<span>\u25c8 \u00d6\u011eRENME MOTORU \u2014 Adaptif A\u011f\u0131rl\u0131klar \u00b7 Coin Performans\u0131 \u00b7 Oto Takip</span><span class="pfws-caret">\u25b8</span>';
+      body.appendChild(tg);
+      body.appendChild(ai);
+      ai.style.display = 'none';
+      tg.addEventListener('click', function () {
+        var openNow = ai.style.display === 'none';
+        ai.style.display = openNow ? '' : 'none';
+        var c = tg.querySelector('.pfws-caret'); if (c) c.textContent = openNow ? '\u25be' : '\u25b8';
+      });
     }
 
     // 4) Olaylar

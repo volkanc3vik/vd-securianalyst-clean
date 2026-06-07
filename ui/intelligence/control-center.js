@@ -72,7 +72,7 @@
     el.textContent = emo + ' ' + label + (!isNaN(sc) ? ' \u00b7 skor ' + sc : '');
     el.style.color = col; el.style.borderColor = col + '66'; el.style.background = col + '1a';
   }
-  function openFuturesLab() { _fromRadar = false; enterFutures(); setFx('\u25c8 Futures Lab', '\u2190 Geri D\u00f6n'); setFxDir(''); }
+  function openFuturesLab() { _fromRadar = false; enterFutures(); setFx('\u25c8 Futures Lab', '\u2190 Dashboard\u2019a D\u00f6n'); setFxDir(''); }
   function openCoinDetail(sym, dir, score) { _fromRadar = true; enterFutures(); setFx('\u25c8 ' + ((sym || '').replace('USDT', '')) + ' \u2014 Coin Detail', '\u2190 Radara D\u00f6n'); setFxDir(dir, score); }
   function fxBack() { var r = _fromRadar; _fromRadar = false; backToDashboard(); if (r && window.VDRadarWorkspace && VDRadarWorkspace.open) { setTimeout(function () { VDRadarWorkspace.open(); }, 60); } }
 
@@ -179,7 +179,7 @@
     // Futures Lab geri-d\u00f6n bar\u0131
     if (!byId('ccFxBar')) {
       var bar = document.createElement('div'); bar.className = 'cc-fxbar'; bar.id = 'ccFxBar';
-      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Geri D\u00f6n</button><span class="cc-fxtitle" id="ccFxTitle">\u25c8 Futures Lab</span><span class="cc-fxdir" id="ccFxDir"></span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
+      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Dashboard\u2019a D\u00f6n</button><span class="cc-fxtitle" id="ccFxTitle">\u25c8 Futures Lab</span><span class="cc-fxdir" id="ccFxDir"></span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
       document.body.appendChild(bar);
       var bk = byId('ccFxBack'); if (bk) bk.addEventListener('click', fxBack);
     }

@@ -75,7 +75,7 @@
     ov.id = 'vdAiWS';
     ov.className = 'aiws-overlay';
     ov.innerHTML =
-      '<div class="aiws-bar"><button class="aiws-back" id="aiWsBack">\u2190 Geri D\u00f6n</button>'
+      '<div class="aiws-bar"><button class="aiws-back" id="aiWsBack">\u2190 Dashboard\u2019a D\u00f6n</button>'
       + '<span class="aiws-title">\u25c8 AI Intelligence \u2014 Karar Motoru</span>'
       + '<span class="aiws-note">geçmiş verilerden türetilmiş gözlem \u00b7 yatırım tavsiyesi değildir</span></div>'
       + '<div class="aiws-body" id="aiWsBody"></div>';

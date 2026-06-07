@@ -520,7 +520,7 @@
     var ov=document.getElementById('vdRadarWS');
     if(ov) return { overlay:ov, body:ov.querySelector('.er-ws-body'), live:ov.querySelector('.er-ws-live'), scan:ov.querySelector('.er-ws-scan') };
     ov=document.createElement('div'); ov.id='vdRadarWS'; ov.className='er-ws-overlay vd-radar';
-    ov.innerHTML='<div class="er-ws-bar"><button class="er-ws-back" id="erWsBack">← Geri Dön</button><span class="er-ws-title">⚡ AI Piyasa Radarı — Tüm Görünüm</span><span class="er-ws-live"></span><span class="er-ws-scan"></span></div><div class="er-ws-body"></div>';
+    ov.innerHTML='<div class="er-ws-bar"><button class="er-ws-back" id="erWsBack">← Dashboard’a Dön</button><span class="er-ws-title">⚡ AI Piyasa Radarı — Tüm Görünüm</span><span class="er-ws-live"></span><span class="er-ws-scan"></span></div><div class="er-ws-body"></div>';
     document.body.appendChild(ov);
     var bk=ov.querySelector('#erWsBack'); if(bk) bk.addEventListener('click', closeWS);
     if(!window._vdRadarEsc){ window._vdRadarEsc=1; document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&_wsOpen) closeWS(); }); }
