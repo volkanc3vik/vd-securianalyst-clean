@@ -39,24 +39,24 @@
   function driversWrap() { var md = byId('marketDrivers'); return md ? md.parentElement : null; }
 
   // ---------- MODLAR ----------
+  // Analiz yığını (#mainPanel/.search-card/#futuresPanelMount) görünürlüğü artık
+  // body.cc-fx + statik CSS ile yönetiliyor (varsayılan ekran-dışı = dashboard temiz).
   function enterDashboard() {
-    STACK.forEach(function (s) { each(s, hide); });
+    document.body.classList.remove('cc-fx');
     ['#aiWsLauncher', '#fxWsLauncher', '.vd-analysis-divider'].forEach(function (s) { each(s, hide); });
     DASH_MID.forEach(function (s) { each(s, show); });
     show(moHeading()); show(driversWrap()); show(byId('ccGrid'));
     TOPCHROME.forEach(function (s) { each(s, show); });
     var bar = byId('ccFxBar'); if (bar) bar.style.display = 'none';
-    document.body.classList.remove('cc-fx');
     mode = 'dashboard';
   }
   function enterFutures() {
-    STACK.forEach(function (s) { each(s, show); });
+    document.body.classList.add('cc-fx');
     each('#fxWsLauncher', hide); each('.vd-analysis-divider', hide);
     DASH_MID.forEach(function (s) { each(s, hide); });
     hide(moHeading()); hide(driversWrap()); hide(byId('ccGrid'));
     TOPCHROME.forEach(function (s) { each(s, hide); });
     var bar = byId('ccFxBar'); if (bar) bar.style.display = 'flex';
-    document.body.classList.add('cc-fx');
     try { window.scrollTo(0, 0); } catch (e) {}
     fireResize();
     mode = 'futures';
@@ -167,13 +167,6 @@
     if (!radar || byId('ccGrid')) return;
     injectStyle();
 
-    // Splash (render-then-hide flash'\u0131n\u0131 maskeler)
-    if (!byId('ccSplash')) {
-      var sp = document.createElement('div'); sp.id = 'ccSplash';
-      sp.innerHTML = '<div class="ring"></div><div class="lbl">Kontrol Merkezi haz\u0131rlan\u0131yor\u2026</div>';
-      document.body.appendChild(sp);
-    }
-
     // 6 kart grid \u2014 radar \u00f6zetinin hemen alt\u0131na
     var grid = document.createElement('div');
     grid.className = 'cc-grid'; grid.id = 'ccGrid';
@@ -195,20 +188,22 @@
 
     setInterval(refreshStats, 4000); refreshStats();
 
-    // Render-then-hide: grafik \u00e7izilsin, sonra temiz dashboard'a ge\u00e7
-    setTimeout(function () {
-      enterDashboard();
-      var sp = byId('ccSplash');
-      if (sp) { sp.style.opacity = '0'; setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 450); }
-    }, 3500);
-    // Failsafe: splash hi\u00e7bir ko\u015fulda tak\u0131l\u0131 kalmas\u0131n
-    setTimeout(function () { var sp = byId('ccSplash'); if (sp && sp.parentNode) sp.parentNode.removeChild(sp); }, 6000);
+    // Dashboard temiz başlar (analiz yığını CSS ile zaten ekran-dışı). Splash YOK.
+    enterDashboard();
   }
 
-  function init() { try { build(); } catch (e) { var sp = byId('ccSplash'); if (sp && sp.parentNode) sp.parentNode.removeChild(sp); } }
+  function init() { try { build(); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 700); });
   else setTimeout(init, 700);
   setTimeout(init, 1800);
+
+  // bfcache'ten (history.back) geri gelince: dashboard'u TEMİZ duruma getir.
+  // Aksi halde tarayıcı, temizlenmeden önceki anlık görüntüyü (paneller görünür) geri yükleyebilir.
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    var sp = byId('ccSplash'); if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
+    if (mode !== 'futures' && byId('ccGrid')) { try { enterDashboard(); } catch (err) {} }
+  });
 
   window.VDControlCenter = { dashboard: backToDashboard, futures: openFuturesLab, coinDetail: openCoinDetail, _build: build };
 })();
