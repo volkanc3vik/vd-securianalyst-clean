@@ -352,6 +352,59 @@ body::after {
     0 26px 60px -34px rgba(0,0,0,0.7) !important;
 }
 
+/* ════════════════════════════════════════════════════════════
+   B158 — Terminal panelleri: içte buzlu-cam yüzey + KONUYA GÖRE renk.
+   Renk (--ti-c) panelin İÇİNDEKİ sınıftan :has ile seçilir (JS'e dokunmadan).
+   ════════════════════════════════════════════════════════════ */
+.ti-card:has(.ti-regime-badge.green)  { --ti-c: var(--v4-success, #00FFA3); }
+.ti-card:has(.ti-regime-badge.red)    { --ti-c: var(--v4-danger,  #FF3B6B); }
+.ti-card:has(.ti-regime-badge.yellow) { --ti-c: var(--v4-warn,    #FFC247); }
+.ti-card:has(.ti-mm-headline)         { --ti-c: #8b7bfa; }                   /* MARKET MAKER */
+.ti-card:has(.ti-warnings)            { --ti-c: var(--v4-warn,    #FFC247); } /* PİYASA BASKISI */
+.ti-card:has(.ti-major-vs)            { --ti-c: #3b9eff; }                   /* BTC / ETH */
+.ti-card:has(.ti-watch)               { --ti-c: #19d3c5; }                   /* İZLEME LİSTESİ */
+.ti-card:has(.ti-best-dir.long)       { --ti-c: var(--v4-success, #00FFA3); }
+.ti-card:has(.ti-best-dir.short)      { --ti-c: var(--v4-danger,  #FF3B6B); }
+
+/* Normal paneller: buzlu-cam yüzey + renkli çerçeve (setup'ın şeffaf sarmalayıcısı hariç) */
+.ti-card:not([style*="transparent"]) {
+  background: linear-gradient(160deg,
+              color-mix(in srgb, var(--ti-c, var(--v4-cyan, #00D1FF)) 12%, rgba(8,18,33,.5)),
+              rgba(7,16,28,.55)) !important;
+  border: 1px solid color-mix(in srgb, var(--ti-c, var(--v4-cyan, #00D1FF)) 28%, transparent) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ti-c, #00D1FF) 18%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 0 1px color-mix(in srgb, var(--ti-c, #00D1FF) 8%, transparent),
+    0 0 24px -14px color-mix(in srgb, var(--ti-c, #00D1FF) 42%, transparent),
+    0 10px 28px -20px rgba(0,0,0,0.7) !important;
+}
+.ti-card:not([style*="transparent"]):hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--ti-c, #00D1FF) 70%, transparent) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ti-c, #00D1FF) 50%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 0 34px -16px color-mix(in srgb, var(--ti-c, #00D1FF) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--ti-c, #00D1FF) 35%, transparent),
+    0 0 26px -2px color-mix(in srgb, var(--ti-c, #00D1FF) 50%, transparent),
+    0 0 60px -14px color-mix(in srgb, var(--ti-c, #00D1FF) 62%, transparent),
+    0 26px 60px -34px rgba(0,0,0,0.7) !important;
+}
+
+/* Setup hero kutusu (.ti-best): cam tint + yön rengi glow (--ti-c üst ti-card'dan miras alınır) */
+.ti-best {
+  background: linear-gradient(160deg,
+              color-mix(in srgb, var(--ti-c, var(--v4-cyan, #00D1FF)) 9%, rgba(0,0,0,.35)),
+              rgba(0,0,0,.4)) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ti-c, #00D1FF) 22%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 22px -14px color-mix(in srgb, var(--ti-c, #00D1FF) 42%, transparent),
+    0 10px 28px -20px rgba(0,0,0,0.65) !important;
+  transition: box-shadow var(--v4-dur) var(--v4-ease), border-color var(--v4-dur) var(--v4-ease) !important;
+}
+
 /* Stat kutucukları — Bloomberg yoğunluğu */
 .sc-stat, .mkt-stat, .entry-item {
   background:
@@ -875,6 +928,7 @@ table tbody tr:hover {
   .glass-card:hover::after { opacity: 0; } /* mobilde Tron köşeler kapalı */
   .founder-section-v2 > div { padding: 28px !important; }
   .pr-card:hover { transform: translateY(-3px); }
+  .ti-card:not([style*="transparent"]):hover { transform: none !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ti-c, #00D1FF) 18%, transparent), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 22px -14px color-mix(in srgb, var(--ti-c, #00D1FF) 40%, transparent), 0 10px 28px -20px rgba(0,0,0,0.7) !important; }
 }
 
 /* ════════════════════════════════════════════════════════════
