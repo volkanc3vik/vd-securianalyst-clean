@@ -33,6 +33,8 @@
   // — gizlenecek/geri gelecek kümeler —
   var STACK = ['#futuresPanelMount', '.search-card', '#mainPanel'];
   var DASH_MID = ['.market-overview', '#regimeBar', '.scan-card', '#setupTracker', '#earlyRadar'];
+  // Coin Detail / Futures Lab odak modunda gizlenecek üst kabuk (ticker + nav menü + topbar)
+  var TOPCHROME = ['.topbar', '.ticker-wrap', '.vdn-topnav', '.vdn-burger'];
   function moHeading() { var mo = document.querySelector('.market-overview'); if (mo) { var h = mo.previousElementSibling; if (h && /^H[1-3]$/.test(h.tagName)) return h; } return null; }
   function driversWrap() { var md = byId('marketDrivers'); return md ? md.parentElement : null; }
 
@@ -42,6 +44,7 @@
     ['#aiWsLauncher', '#fxWsLauncher', '.vd-analysis-divider'].forEach(function (s) { each(s, hide); });
     DASH_MID.forEach(function (s) { each(s, show); });
     show(moHeading()); show(driversWrap()); show(byId('ccGrid'));
+    TOPCHROME.forEach(function (s) { each(s, show); });
     var bar = byId('ccFxBar'); if (bar) bar.style.display = 'none';
     document.body.classList.remove('cc-fx');
     mode = 'dashboard';
@@ -51,6 +54,7 @@
     each('#fxWsLauncher', hide); each('.vd-analysis-divider', hide);
     DASH_MID.forEach(function (s) { each(s, hide); });
     hide(moHeading()); hide(driversWrap()); hide(byId('ccGrid'));
+    TOPCHROME.forEach(function (s) { each(s, hide); });
     var bar = byId('ccFxBar'); if (bar) bar.style.display = 'flex';
     document.body.classList.add('cc-fx');
     try { window.scrollTo(0, 0); } catch (e) {}
@@ -72,8 +76,10 @@
     el.textContent = emo + ' ' + label + (!isNaN(sc) ? ' \u00b7 skor ' + sc : '');
     el.style.color = col; el.style.borderColor = col + '66'; el.style.background = col + '1a';
   }
-  function openFuturesLab() { _fromRadar = false; enterFutures(); setFx('\u25c8 Futures Lab', '\u2190 Dashboard\u2019a D\u00f6n'); setFxDir(''); }
-  function openCoinDetail(sym, dir, score) { _fromRadar = true; enterFutures(); setFx('\u25c8 ' + ((sym || '').replace('USDT', '')) + ' \u2014 Coin Detail', '\u2190 Radara D\u00f6n'); setFxDir(dir, score); }
+  function fxDashBtn(on) { var b = byId('ccFxDash'); if (b) b.style.display = on ? 'inline-flex' : 'none'; }
+  function fxToDash() { _fromRadar = false; backToDashboard(); }
+  function openFuturesLab() { _fromRadar = false; enterFutures(); setFx('\u25c8 Futures Lab', '\u2190 Dashboard\u2019a D\u00f6n'); setFxDir(''); fxDashBtn(false); }
+  function openCoinDetail(sym, dir, score) { _fromRadar = true; enterFutures(); setFx('\u25c8 ' + ((sym || '').replace('USDT', '')) + ' \u2014 Coin Detail', '\u2190 Radara D\u00f6n'); setFxDir(dir, score); fxDashBtn(true); }
   function fxBack() { var r = _fromRadar; _fromRadar = false; backToDashboard(); if (r && window.VDRadarWorkspace && VDRadarWorkspace.open) { setTimeout(function () { VDRadarWorkspace.open(); }, 60); } }
 
   // ---------- STİL ----------
@@ -95,6 +101,7 @@
     + '.cc-fxbar{position:fixed;top:0;left:0;right:0;background:rgba(10,14,23,.97);border-bottom:1px solid #1e2836;display:none;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 16px;z-index:9100}'
     + '.cc-fxback{font-size:13px;font-weight:700;color:#e6edf6;background:#111722;border:1px solid #1e2836;border-radius:9px;padding:8px 14px;cursor:pointer}'
     + '.cc-fxback:hover{border-color:#2b3a52}'
+    + '.cc-fxdash{color:#04101f !important;background:linear-gradient(90deg,#3b9eff,#38bdf8) !important;border:none !important}'
     + '.cc-fxtitle{font-size:14px;font-weight:800;color:#e6edf6}'
     + '.cc-fxnote{margin-left:auto;font-size:10px;color:#8b98ac}'
     + '.cc-fxdir{font-size:12px;font-weight:900;letter-spacing:.04em;border:1px solid transparent;border-radius:8px;padding:4px 11px}'
@@ -179,9 +186,10 @@
     // Futures Lab geri-d\u00f6n bar\u0131
     if (!byId('ccFxBar')) {
       var bar = document.createElement('div'); bar.className = 'cc-fxbar'; bar.id = 'ccFxBar';
-      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Dashboard\u2019a D\u00f6n</button><span class="cc-fxtitle" id="ccFxTitle">\u25c8 Futures Lab</span><span class="cc-fxdir" id="ccFxDir"></span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
+      bar.innerHTML = '<button class="cc-fxback" id="ccFxBack">\u2190 Dashboard\u2019a D\u00f6n</button><button class="cc-fxback cc-fxdash" id="ccFxDash" style="display:none">Dashboard\u2019a D\u00f6n</button><span class="cc-fxtitle" id="ccFxTitle">\u25c8 Futures Lab</span><span class="cc-fxdir" id="ccFxDir"></span><span class="cc-fxnote">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
       document.body.appendChild(bar);
       var bk = byId('ccFxBack'); if (bk) bk.addEventListener('click', fxBack);
+      var bd = byId('ccFxDash'); if (bd) bd.addEventListener('click', fxToDash);
     }
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mode === 'futures') fxBack(); });
 
