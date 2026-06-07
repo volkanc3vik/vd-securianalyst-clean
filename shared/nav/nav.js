@@ -17,7 +17,7 @@
   // key, label, page, scroll(selector, sadece index içi), short(mobil alt nav), icon
   const LAYERS = [
     { key:'dashboard',    label:'Dashboard',           page:'index.html', scroll:'#marketSection,.market-overview', short:true,  shortLabel:'Dashboard', icon:'🏠' },
-    { key:'intelligence', label:'Intelligence Center', page:'intelligence-center.html', short:true,  shortLabel:'Intel',     icon:'📊', gate:'premium' },
+    { key:'intelligence', label:'Intelligence Center', page:'intelligence-center.html', short:true,  shortLabel:'Intel',     icon:'📊', gate:'premium', badge:'Elite' },
     { key:'archive',      label:'Analysis Archive',    page:'archive.html', short:true, shortLabel:'Archive',  icon:'◈' },
     { key:'translator',   label:'Market Translator',   page:'translator.html', icon:'🔤' },
     { key:'timeline',     label:'Market Timeline',     page:'timeline.html', short:true, shortLabel:'Timeline', icon:'📈' },
@@ -113,8 +113,9 @@
 
   // ── Markup üreticiler ─────────────────────────────────────────────
   function _topnavHTML(cur) {
+    // BUILD 151/152 — sidebar link: ikon + etiket + (varsa) Elite rozeti
     const items = _visibleLayers().map(l =>
-      `<a href="${l.page}${l.hash?'#'+l.hash:''}" data-key="${l.key}" class="${l.key===cur?'active':''}${l.premium?' vdn-premium':''}">${_esc(l.label)}</a>`
+      `<a href="${l.page}${l.hash?'#'+l.hash:''}" data-key="${l.key}" class="${l.key===cur?'active':''}${l.premium?' vdn-premium':''}"><span class="vdn-ic">${l.icon||''}</span><span class="vdn-lbl">${_esc(l.label)}</span>${l.badge?`<span class="vdn-badge">${_esc(l.badge)}</span>`:''}</a>`
     ).join('');
     const brand = _isIndex() ? '' :
       `<a class="vdn-brand" data-key="dashboard" href="index.html" aria-label="VD SecuriAnalyst"><img src="/assets/brand/coin-mark.png" alt="" width="22" height="22"><span>VD SecuriAnalyst</span></a>`;
