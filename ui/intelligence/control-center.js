@@ -84,7 +84,7 @@
 
   // ---------- STİL ----------
   var STYLE = ''
-    + '.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:16px 12px 0}'
+    + '.cc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:16px 12px 0}'
     + '.cc-card{position:relative;background:#111722;border:1px solid #1e2836;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden;transition:border-color .15s,transform .15s}'
     + '.cc-card:hover{border-color:color-mix(in srgb,var(--c) 55%,#1e2836);transform:translateY(-2px)}'
     + '.cc-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}'
@@ -110,7 +110,7 @@
     + '#ccSplash .ring{width:42px;height:42px;border:3px solid #1e2836;border-top-color:#38bdf8;border-radius:50%;animation:ccspin 1s linear infinite}'
     + '#ccSplash .lbl{font-size:13px;font-weight:700;color:#8b98ac;letter-spacing:.04em}'
     + '/* BUILD 151 — Premium Dashboard Redesign (workspace kartlari) */'
-    + '.cc-grid{grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:14px}'
+    + '.cc-grid{grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:14px}'
     + '.cc-card{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 9%,var(--v4-bg-panel,#07111F)),var(--v4-bg-panel,#07111F));border:1px solid var(--v4-border,rgba(255,255,255,.07));border-radius:18px;padding:0;gap:0;overflow:hidden;text-align:center;transition:transform .3s,border-color .3s,box-shadow .3s}'
     + '.cc-card::before{height:3px;left:0;right:0;top:0;background:linear-gradient(90deg,transparent,var(--c),transparent)}'
     + '.cc-card::after{content:"";position:absolute;top:0;left:-60%;width:50%;height:100%;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);transition:left .65s ease;pointer-events:none;z-index:1}'
