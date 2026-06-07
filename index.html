@@ -4728,7 +4728,7 @@ const AI = (() => {
     _sigs=[];_coins={};_pats={};_w={...DEF_W}; _save(); renderAI();
   }
 
-  return {record, resolve:_resolve, startTracking, stats, commentary, adjustConf, resetWeights, clearAll, load:_load, getW:()=>({..._w})};
+  return {record, resolve:_resolve, startTracking, stats, commentary, adjustConf, resetWeights, clearAll, load:function(f){ if(f) _ready=false; return _load(); }, getW:()=>({..._w})};
 })();
 
 // ════════════════════════════════════════════════════════════════════
@@ -10111,6 +10111,7 @@ const P10 = (() => {
 <script src="modules/teaser-access.js"></script>
 <script src="modules/chart-gate.js"></script>
 <script src="services/supabase-service.js"></script>
+<script src="ui/intelligence/cloud-sync.js"></script>
 <script src="ui/archive/archive-insights.js"></script>
 <script src="ui/intelligence/setup-tracker.js"></script>
 <script src="modules/premium-config.js"></script>
