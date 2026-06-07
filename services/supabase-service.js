@@ -157,6 +157,24 @@ const SupabaseDB = (() => {
     return Promise.allSettled(promises);
   }
 
+  // ── AI ENGINE STATE (tam öğrenme blob'u — tek satır id='global') ──
+  // localStorage 'ai_analyst_pro_v2' blob'unun bulut yansıması.
+  // {sigs, w, coins, pats, v} → kalıcı + cihazlar arası.
+  async function loadEngineState() {
+    const rows = await _select('ai_engine_state', 'id=eq.global', 1);
+    return (rows && rows.length) ? rows[0] : null; // {id,data,v,updated_at}
+  }
+  async function saveEngineState(blob) {
+    const v = (blob && blob.v) || Date.now();
+    const existing = await _select('ai_engine_state', 'id=eq.global', 1);
+    if (existing && existing.length) {
+      return _update('ai_engine_state',
+        { data: blob, v, updated_at: new Date().toISOString() },
+        'id=eq.global');
+    }
+    return _insert('ai_engine_state', { id: 'global', data: blob, v });
+  }
+
   // ── AUTH (mevcut) ────────────────────────────
   async function verifyCode(kod) {
     const r = await fetch(`${URL}/functions/v1/verify-code`, {
@@ -243,6 +261,7 @@ const SupabaseDB = (() => {
   return {
     saveSignal, closeSignal, getSignals, getOpenSignals, getStats,
     loadWeights, updateWeight, saveWeights,
+    loadEngineState, saveEngineState,
     verifyCode,
     // Analysis Archive (public read)
     listArchive, getArchiveById, getArchiveStats, getArchiveCoins,
