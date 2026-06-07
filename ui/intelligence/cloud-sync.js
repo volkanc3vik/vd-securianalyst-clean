@@ -62,7 +62,7 @@
     if (_started) return; _started = true;
     hydrate();
     setInterval(push, 8000);
-    window.addEventListener('beforeunload', function () { try { push(); } catch (e) {} });
+    window.addEventListener('pagehide', function () { try { push(); } catch (e) {} }); // bfcache uyumlu (beforeunload DEĞİL)
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(start, 800); });
