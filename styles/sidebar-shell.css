@@ -30,8 +30,21 @@
     overflow-y: auto;
     overflow-x: hidden;
     border-bottom: none !important;
-    border-right: 1px solid var(--v4-border, rgba(255,255,255,0.06)) !important;
+    border-right: 1px solid rgba(0,209,255,0.22) !important;
     background: linear-gradient(180deg, rgba(10,22,40,0.80), rgba(2,5,13,0.66)) !important;
+    box-shadow: 0 0 34px -10px rgba(0,209,255,0.32) !important;
+  }
+  /* BUILD 154 — sidebar dış çerçeve: renkli accent çizgi + glow (panellerle aynı dil) */
+  body.vdn-host:has(.ticker-wrap) .vdn-topnav::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 14px; right: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--v4-cyan, #00D1FF), transparent);
+    box-shadow: 0 0 10px rgba(0,209,255,0.55);
+    pointer-events: none;
+    z-index: 2;
   }
   body.vdn-host:has(.ticker-wrap) .vdn-topnav::-webkit-scrollbar { width: 6px; }
   body.vdn-host:has(.ticker-wrap) .vdn-topnav::-webkit-scrollbar-thumb {
@@ -97,12 +110,15 @@
   }
 
   /* ── İçeriği sidebar kadar sağa kaydır ───────────────────────────── */
-  body.vdn-host:has(.ticker-wrap) .main {
+  body.vdn-host:has(.ticker-wrap) .main,
+  body.vdn-host:has(.ticker-wrap) .founder-section-v2 {
     margin-left: 238px !important;
     margin-right: auto !important;
+    max-width: none !important;
   }
 
   /* ── Futures Lab odak modu: sidebar gizle, içerik tam genişlik ───── */
   body.cc-fx .vdn-topnav { display: none !important; }
-  body.cc-fx .main { margin-left: auto !important; }
+  body.cc-fx .main,
+  body.cc-fx .founder-section-v2 { margin-left: auto !important; }
 }

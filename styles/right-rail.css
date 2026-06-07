@@ -23,13 +23,15 @@
   .vd-rail::-webkit-scrollbar-thumb { background: rgba(0,209,255,0.18); border-radius: 6px; }
 
   /* içeriği rail kadar sola bırak (sidebar margin-left'i sidebar-shell.css'te) */
-  body:has(#vdRail) .main {
+  body:has(#vdRail) .main,
+  body:has(#vdRail) .founder-section-v2 {
     margin-right: 344px !important;
     max-width: none !important;
   }
   /* Futures odak modu: rail gizle, içerik tam genişlik */
   body.cc-fx .vd-rail { display: none !important; }
-  body.cc-fx .main { margin-right: auto !important; }
+  body.cc-fx .main,
+  body.cc-fx .founder-section-v2 { margin-right: auto !important; }
 }
 
 /* ── Kart ──────────────────────────────────────────────────────────── */
