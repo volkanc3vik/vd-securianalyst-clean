@@ -1,0 +1,129 @@
+/* ════════════════════════════════════════════════════════════════════
+   BUILD 153 — SAĞ RAIL (Faz 3a): AI Piyasa Bias + En İyi 3 Fırsat
+   - Element yalnız dashboard'a (ticker'lı sayfa) enjekte edilir (JS).
+   - Yalnız GENİŞ ekranda görünür (>=1280px); altında gizli, içerik tam genişlik.
+   - Sitenin --v4-* token'larını kullanır. Silinince site eski haline döner.
+   ════════════════════════════════════════════════════════════════════ */
+
+.vd-rail { display: none; }
+
+@media (min-width: 1280px) {
+  .vd-rail {
+    display: block;
+    position: fixed;
+    top: 86px; right: 0; bottom: 0;
+    width: 344px;
+    z-index: 40;                 /* overlay/modal altında */
+    overflow-y: auto; overflow-x: hidden;
+    padding: 20px 16px 24px;
+    border-left: 1px solid var(--v4-border, rgba(255,255,255,0.06));
+    background: linear-gradient(200deg, rgba(8,18,34,0.55), rgba(2,5,13,0.30));
+  }
+  .vd-rail::-webkit-scrollbar { width: 6px; }
+  .vd-rail::-webkit-scrollbar-thumb { background: rgba(0,209,255,0.18); border-radius: 6px; }
+
+  /* içeriği rail kadar sola bırak (sidebar margin-left'i sidebar-shell.css'te) */
+  body:has(#vdRail) .main {
+    margin-right: 344px !important;
+    max-width: none !important;
+  }
+  /* Futures odak modu: rail gizle, içerik tam genişlik */
+  body.cc-fx .vd-rail { display: none !important; }
+  body.cc-fx .main { margin-right: auto !important; }
+}
+
+/* ── Kart ──────────────────────────────────────────────────────────── */
+.rl-card {
+  position: relative;
+  background: linear-gradient(160deg, rgba(10,22,40,0.55), var(--v4-bg-panel, #07111F));
+  border: 1px solid var(--v4-border, rgba(255,255,255,0.06));
+  border-radius: 16px;
+  padding: 16px 15px;
+  margin-bottom: 16px;
+}
+.rl-h { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.rl-h-ic {
+  width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px;
+  display: grid; place-items: center; font-size: 13px;
+  background: rgba(0,209,255,0.10); color: var(--v4-cyan, #00D1FF);
+}
+.rl-h-t { font-size: 12.5px; font-weight: 800; letter-spacing: 0.06em; color: var(--v4-text, #EAF6FF); }
+.rl-link {
+  margin-left: auto; font-size: 10.5px; font-weight: 700; cursor: pointer;
+  color: var(--v4-cyan, #00D1FF); background: rgba(0,209,255,0.08);
+  border: 1px solid var(--v4-border-hi, rgba(0,209,255,0.22)); border-radius: 20px; padding: 4px 10px;
+}
+.rl-link:hover { background: rgba(0,209,255,0.16); }
+
+/* ── Bias gauge ────────────────────────────────────────────────────── */
+.rl-bias { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.rl-gauge { width: 144px; height: 144px; flex-shrink: 0; filter: drop-shadow(0 0 22px rgba(0,209,255,0.18)); }
+.rl-g-pct { font: 800 26px 'Inter', sans-serif; fill: var(--v4-cyan, #00D1FF); }
+.rl-g-dom { font: 700 10px 'Inter', sans-serif; fill: var(--v4-text-2, #7FA9C9); letter-spacing: 0.1em; }
+.rl-side { text-align: center; min-width: 58px; }
+.rl-side-t { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; }
+.rl-side-p { font-size: 27px; font-weight: 800; line-height: 1.1; }
+.rl-side-s { font-size: 9px; color: var(--v4-text-3, #4a6a85); margin-top: 2px; }
+.rl-long .rl-side-t, .rl-long .rl-side-p { color: var(--v4-success, #00FFA3); }
+.rl-short .rl-side-t, .rl-short .rl-side-p { color: var(--v4-danger, #FF3B6B); }
+
+.rl-conf {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--v4-border, rgba(255,255,255,0.06));
+  font-size: 11px; color: var(--v4-text-2, #7FA9C9);
+}
+.rl-conf b { color: var(--v4-warn, #FFC247); font-size: 13px; }
+.rl-btn {
+  font-size: 10.5px; font-weight: 800; cursor: pointer; white-space: nowrap;
+  color: var(--v4-cyan, #00D1FF); background: rgba(0,209,255,0.10);
+  border: 1px solid var(--v4-border-hi, rgba(0,209,255,0.22)); border-radius: 20px; padding: 7px 13px;
+  transition: background .2s;
+}
+.rl-btn:hover { background: rgba(0,209,255,0.2); }
+.rl-btn-g {
+  display: inline-block; text-decoration: none; margin-top: 6px;
+  color: #04101f; background: linear-gradient(135deg, var(--v4-cyan, #00D1FF), var(--v4-blue, #007BFF)); border: none;
+}
+.rl-micro { font-size: 9px; color: var(--v4-text-3, #4a6a85); margin-top: 9px; line-height: 1.5; }
+
+/* ── Fırsat satırı ─────────────────────────────────────────────────── */
+.rl-opp {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 11px; border-radius: 12px; cursor: pointer; margin-bottom: 8px;
+  background: rgba(255,255,255,0.015); border: 1px solid var(--v4-border, rgba(255,255,255,0.05));
+  transition: border-color .2s, background .2s;
+}
+.rl-opp:last-of-type { margin-bottom: 0; }
+.rl-opp:hover { border-color: var(--v4-border-hi, rgba(0,209,255,0.22)); background: rgba(0,209,255,0.04); }
+.rl-opp-l { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.rl-logo {
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%;
+  display: grid; place-items: center; font-size: 11px; font-weight: 800;
+  color: var(--v4-text, #EAF6FF); background: var(--v4-bg-deep, #02050D);
+}
+.rl-opp-sym { font-size: 13px; font-weight: 800; color: var(--v4-text, #EAF6FF); display: flex; align-items: center; gap: 6px; }
+.rl-opp-q { color: var(--v4-text-3, #4a6a85); font-weight: 600; font-size: 11px; }
+.rl-dir { font-size: 9px; font-weight: 800; padding: 1px 7px; border-radius: 5px; border: 1px solid; letter-spacing: .03em; }
+.rl-opp-px { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--v4-text-2, #7FA9C9); margin-top: 3px; }
+.rl-chg { font-size: 10px; font-weight: 600; }
+.rl-chg.up { color: var(--v4-success, #00FFA3); }
+.rl-chg.dn { color: var(--v4-danger, #FF3B6B); }
+.rl-opp-tags { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.rl-tag { font-size: 9px; font-weight: 700; color: var(--v4-warn, #FFC247); background: rgba(255,194,71,0.1); border-radius: 5px; padding: 2px 7px; }
+.rl-yon { font-size: 9px; color: var(--v4-text-3, #4a6a85); }
+.rl-opp-r { text-align: right; flex-shrink: 0; }
+.rl-skor-l { font-size: 9px; color: var(--v4-text-3, #4a6a85); }
+.rl-skor { font-size: 13px; font-weight: 600; }
+.rl-skor b { font-size: 19px; font-weight: 800; }
+.rl-skor span { color: var(--v4-text-3, #4a6a85); font-size: 11px; }
+
+.rl-more {
+  text-align: center; margin-top: 12px; font-size: 10.5px; font-weight: 600; cursor: pointer;
+  color: var(--v4-text-2, #7FA9C9);
+}
+.rl-more:hover { color: var(--v4-cyan, #00D1FF); }
+.rl-empty { font-size: 11px; color: var(--v4-text-3, #4a6a85); text-align: center; padding: 10px 0; }
+
+/* ── Kilitli (free/teaser) ─────────────────────────────────────────── */
+.rl-locked .rl-lk-tx { font-size: 12px; color: var(--v4-text-2, #7FA9C9); line-height: 1.6; margin: 4px 0 12px; }
+.rl-locked .rl-h-ic { background: rgba(0,209,255,0.06); }
