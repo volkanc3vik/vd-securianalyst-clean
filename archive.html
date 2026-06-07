@@ -26,11 +26,10 @@
 
   <!-- HEADER -->
   <header class="aic-header">
-    <a href="index.html" class="aic-logo">◈ VD <b>SecuriAnalyst</b></a>
+    <a href="index.html" onclick="if(window.vdGoDashboard){vdGoDashboard();return false}" class="aic-logo">◈ VD <b>SecuriAnalyst</b></a>
     <nav class="aic-nav">
-      <a href="index.html">Ana Sayfa</a>
+      <a href="index.html" onclick="if(window.vdGoDashboard){vdGoDashboard();return false}" class="aic-home-btn">← Dashboard'a Dön</a>
       <a href="legal/contact.html">İletişim</a>
-      <a href="index.html" class="aic-home-btn">Ana Panele Dön</a>
     </nav>
   </header>
 
@@ -81,7 +80,7 @@
   <!-- FOOTER (kendi cinematic footer'ı — footer.js YÜKLENMEZ, çift footer olmasın) -->
   <footer class="aic-footer" role="contentinfo">
     <div class="aic-footer-links">
-      <a href="index.html">Ana Sayfa</a>
+      <a href="index.html" onclick="if(window.vdGoDashboard){vdGoDashboard();return false}">Ana Sayfa</a>
       <a href="archive.html">Analiz Arşivi</a>
       <a href="legal/about.html">Hakkımızda</a>
       <a href="legal/disclaimer.html">Yatırım Tavsiyesi Değildir</a>
