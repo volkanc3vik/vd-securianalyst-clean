@@ -7,6 +7,7 @@
 
   const NS = window.TelegramUI || (window.TelegramUI = {});
   const ENDPOINT = '/api/admin-codes';
+  const ONLINE_ENDPOINT = '/api/online-count';
   const OVERLAY_ID = 'vd-admin-codes-overlay';
   let _state = {
     rows: [],
@@ -82,6 +83,7 @@
     document.body.appendChild(root);
     _bindEvents(root);
     _loadList();
+    _startOnline();
     // ESC ile kapat
     _escHandler = (e) => { if (e.key === 'Escape') _close(); };
     document.addEventListener('keydown', _escHandler);
@@ -89,10 +91,28 @@
   let _escHandler = null;
 
   function _close() {
+    _stopOnline();
     const el = document.getElementById(OVERLAY_ID);
     if (el) el.remove();
     if (_escHandler) document.removeEventListener('keydown', _escHandler);
     _escHandler = null;
+  }
+
+  // ── Online sayaç (admin-only; /api/online-count'tan poll) ──────────
+  let _onlineTimer = null;
+  async function _fetchOnline() {
+    try {
+      const r = await window.TelegramDispatcher.adminFetch(ONLINE_ENDPOINT, {}, { method: 'POST' });
+      const el = document.querySelector('[data-acp-online-n]');
+      if (el && r && r.ok) el.textContent = r.count;
+    } catch (e) { /* sessiz */ }
+  }
+  function _startOnline() {
+    _fetchOnline();
+    _onlineTimer = setInterval(_fetchOnline, 20000);
+  }
+  function _stopOnline() {
+    if (_onlineTimer) { clearInterval(_onlineTimer); _onlineTimer = null; }
   }
 
   function _shellHTML() {
@@ -158,6 +178,7 @@
               <button class="acp-tab" data-status="sales">Manuel/Satış</button>
             </div>
             <div class="acp-filter-right">
+              <span data-acp-online style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:#00e5a014;border:1px solid #00e5a040;color:#00e5a0;font-weight:700;font-size:13px">🟢 Online: <b data-acp-online-n>…</b></span>
               <select data-acp-plan-filter>
                 <option value="all">Tüm planlar</option>
                 <option value="daily">Daily</option>
@@ -192,16 +213,21 @@
       list = list.filter(r => r.plan_id === _state.filterPlan);
     }
 
-    // Özet sayaç (TÜM kodlardan — filtreden bağımsız)
-    const counts = { total: rows.length, active: 0, unused: 0, expired: 0, revoked: 0 };
-    rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    // Özet sayaç — admin kodları HARİÇ (gerçek kullanıcı kodları); admin ayrı gösterilir
+    const counts = { total: 0, active: 0, unused: 0, expired: 0, revoked: 0, admin: 0 };
+    rows.forEach(r => {
+      if (r.is_admin) { counts.admin++; return; }
+      counts.total++;
+      if (counts[r.status] !== undefined) counts[r.status]++;
+    });
     const summaryHTML = `
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;font-size:12px;font-weight:600">
-        <span style="padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.06);color:#cfe3f2">Toplam <b style="color:#fff">${counts.total}</b></span>
+        <span style="padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.06);color:#cfe3f2">Kullanıcı kodu <b style="color:#fff">${counts.total}</b></span>
         <span style="padding:4px 10px;border-radius:8px;background:#00e5a014;border:1px solid #00e5a040;color:#00e5a0">Aktif <b>${counts.active}</b></span>
         <span style="padding:4px 10px;border-radius:8px;background:#7aaac814;border:1px solid #7aaac840;color:#7aaac8">Kullanılabilir <b>${counts.unused}</b></span>
         <span style="padding:4px 10px;border-radius:8px;background:#ff9b4d14;border:1px solid #ff9b4d40;color:#ff9b4d">Süresi Dolan <b>${counts.expired}</b></span>
         <span style="padding:4px 10px;border-radius:8px;background:#ff3d6b14;border:1px solid #ff3d6b40;color:#ff3d6b">İptal <b>${counts.revoked}</b></span>
+        <span style="padding:4px 10px;border-radius:8px;background:rgba(157,125,250,.10);border:1px solid rgba(157,125,250,.30);color:#9d7dfa">Admin <b>${counts.admin}</b></span>
       </div>`;
 
     if (list.length === 0) {
