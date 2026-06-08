@@ -29,12 +29,22 @@
     return s;
   }
 
+  // Oturumun erişim seviyesi: 'admin'|'elite'|'premium'|'teaser'|'free'
+  function currentTier() {
+    try {
+      if (window.VDAccess && typeof window.VDAccess.level === 'function') {
+        return window.VDAccess.level();
+      }
+    } catch (e) {}
+    return 'free';
+  }
+
   function ping() {
     try {
       fetch('/api/admin-codes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ping', sid: getSid() }),
+        body: JSON.stringify({ action: 'ping', sid: getSid(), tier: currentTier() }),
         keepalive: true,
       }).catch(function () {});
     } catch (e) {}
