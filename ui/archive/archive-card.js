@@ -73,6 +73,7 @@
           <span class="aic-card-sym">${esc(rec.sym)}</span>
           ${tf}
           <span class="aic-badge" style="--status-color:${m.color}"><span class="dot"></span>${esc(m.label)}</span>
+          ${rec.excluded_from_learning ? `<span class="aic-badge" style="--status-color:#9aa4b2" title="Bu kayıt öğrenme ve istatistik dışıdır (eski outcome)"><span class="dot"></span>🏷️ Legacy</span>` : ''}
           <span class="aic-card-date">${esc(fmtDate(rec.created_at))}</span>
         </div>
         <p class="aic-card-summary">${esc(rec.analysis_summary || rec.analysis_text || '—')}</p>

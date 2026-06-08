@@ -27,7 +27,7 @@
     return false;
   }
   const _num = (v) => { const n = Number(v); return isNaN(n) ? null : n; };
-  const _isReviewed = (r) => r && r.review_status && WEIGHT[r.review_status] != null;
+  const _isReviewed = (r) => r && r.review_status && WEIGHT[r.review_status] != null && !r.excluded_from_learning;
   function _rate(list) {
     if (!list.length) return 0;
     return Math.round(list.reduce((a, r) => a + (WEIGHT[r.review_status] || 0), 0) / list.length * 100);
@@ -131,7 +131,8 @@
     // Paylaşılan VDInsights cache'ini kullan; yoksa doğrudan SupabaseDB
     try {
       if (window.VDInsights && typeof window.VDInsights.load === 'function') {
-        return await window.VDInsights.load();
+        const _cached = await window.VDInsights.load();
+        return Array.isArray(_cached) ? _cached.filter(_isReviewed) : _cached;
       }
     } catch (e) { console.warn(TAG, 'VDInsights.load hata, fallback:', e); }
     try {
