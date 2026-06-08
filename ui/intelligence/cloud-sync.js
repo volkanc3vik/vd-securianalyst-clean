@@ -42,20 +42,35 @@
         _lastPushed = JSON.stringify(row.data);
         refreshEngine();
       } else if (local && lv > cv) {
-        // Local daha güncel → bulutu tohumla
+        // Local daha güncel → bulutu tohumla (sunucu üzerinden, admin anahtarıyla)
         _lastPushed = JSON.stringify(local);
-        return SupabaseDB.saveEngineState(local);
+        return cloudSave(local);
       }
     }).catch(function () {});
   }
 
-  function push() {
-    if (!hasDB()) return;
-    var local = readLocal(); if (!local) return;
-    var s; try { s = JSON.stringify(local); } catch (e) { return; }
-    if (s === _lastPushed) return;             // değişmediyse atla
+  // Buluta YAZMA artık SUNUCU üzerinden (service-role) + admin anahtarıyla yapılır.
+  // Anon yazma kapalı. Admin oturumda değilse (anahtar yok) → sessizce atlar (yalnızca okuma).
+  function cloudSave(blob) {
+    var d = window.TelegramDispatcher;
+    if (!d || typeof d.adminFetch !== 'function' || !(d.hasAdminKey && d.hasAdminKey())) {
+      return Promise.resolve(null); // admin değil → yazma yok (normal ziyaretçi sadece okur)
+    }
+    var v = (blob && blob.v) || Date.now();
+    return Promise.resolve(d.adminFetch('/api/ai-state', { data: blob, v: v }, { method: 'POST' }))
+      .then(function (resp) {
+        if (!resp || resp.ok === false) throw new Error((resp && resp.error) || 'save_failed');
+        return resp;
+      });
+  }
+
+  function push(force) {
+    if (!hasDB()) return Promise.resolve(null);
+    var local = readLocal(); if (!local) return Promise.resolve(null);
+    var s; try { s = JSON.stringify(local); } catch (e) { return Promise.resolve(null); }
+    if (!force && s === _lastPushed) return Promise.resolve(null);   // değişmediyse atla
     _lastPushed = s;
-    Promise.resolve(SupabaseDB.saveEngineState(local)).catch(function () { _lastPushed = ''; });
+    return Promise.resolve(cloudSave(local)).catch(function () { _lastPushed = ''; });
   }
 
   function start() {
