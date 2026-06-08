@@ -7,7 +7,6 @@
 
   const NS = window.TelegramUI || (window.TelegramUI = {});
   const ENDPOINT = '/api/admin-codes';
-  const ONLINE_ENDPOINT = '/api/online-count';
   const OVERLAY_ID = 'vd-admin-codes-overlay';
   let _state = {
     rows: [],
@@ -98,11 +97,11 @@
     _escHandler = null;
   }
 
-  // ── Online sayaç (admin-only; /api/online-count'tan poll) ──────────
+  // ── Online sayaç (admin-only; admin-codes action: online_count) ────
   let _onlineTimer = null;
   async function _fetchOnline() {
     try {
-      const r = await window.TelegramDispatcher.adminFetch(ONLINE_ENDPOINT, {}, { method: 'POST' });
+      const r = await window.TelegramDispatcher.adminFetch(ENDPOINT, { action: 'online_count' }, { method: 'POST' });
       const el = document.querySelector('[data-acp-online-n]');
       if (el && r && r.ok) el.textContent = r.count;
     } catch (e) { /* sessiz */ }
