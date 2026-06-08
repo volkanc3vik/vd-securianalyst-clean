@@ -131,11 +131,14 @@ module.exports = async function handler(req, res) {
       if (typeof sid !== 'string' || sid.length < 8 || sid.length > 64 || !/^[A-Za-z0-9_-]+$/.test(sid)) {
         return res.status(400).json({ ok: false, error: 'invalid_sid' });
       }
+      let tier = pbody.tier;
+      const ALLOWED_TIERS = ['admin', 'elite', 'premium', 'teaser', 'free'];
+      if (typeof tier !== 'string' || !ALLOWED_TIERS.includes(tier)) tier = 'free';
       try {
         await sbFetch('/online_sessions?on_conflict=session_id', {
           method: 'POST',
           headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify({ session_id: sid, last_seen: new Date().toISOString() }),
+          body: JSON.stringify({ session_id: sid, last_seen: new Date().toISOString(), tier }),
         });
         return res.status(200).json({ ok: true });
       } catch (e) {
@@ -346,18 +349,24 @@ module.exports = async function handler(req, res) {
     if (action === 'online_count') {
       const WINDOW_S = 90;
       const sinceIso = new Date(Date.now() - WINDOW_S * 1000).toISOString();
-      const cUrl = `${SB_URL.replace(/\/$/, '')}/rest/v1/online_sessions?select=session_id&last_seen=gte.${encodeURIComponent(sinceIso)}`;
-      const cRes = await fetch(cUrl, {
-        method: 'GET',
-        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' },
-      });
-      const cr = cRes.headers.get('content-range') || '';
-      const count = parseInt((cr.split('/')[1] || '0'), 10) || 0;
+      const base = `${SB_URL.replace(/\/$/, '')}/rest/v1/online_sessions?select=session_id`;
+      async function countWhere(extra) {
+        const r = await fetch(`${base}&${extra}`, {
+          method: 'GET',
+          headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' },
+        });
+        const cr = r.headers.get('content-range') || '';
+        return parseInt((cr.split('/')[1] || '0'), 10) || 0;
+      }
+      const sinceFilter = `last_seen=gte.${encodeURIComponent(sinceIso)}`;
+      const total = await countWhere(sinceFilter);
+      const members = await countWhere(`${sinceFilter}&tier=in.(premium,elite,admin)`);
+      const visitors = Math.max(0, total - members);
       if (Math.random() < 0.1) {
         const oldIso = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
         try { await sbFetch(`/online_sessions?last_seen=lt.${encodeURIComponent(oldIso)}`, { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } }); } catch (e) {}
       }
-      return res.status(200).json({ ok: true, count, window_s: WINDOW_S });
+      return res.status(200).json({ ok: true, count: total, members, visitors, window_s: WINDOW_S });
     }
 
     // ──────────────────────────────────────────────────────────────
