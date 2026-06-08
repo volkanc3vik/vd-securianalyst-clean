@@ -32,6 +32,8 @@ const LIMITS = {
   reset_devices: { max: 10, windowMs: 60_000 },
   extend:        { max: 10, windowMs: 60_000 },
   delete:        { max: 20, windowMs: 60_000 },
+  ping:          { max: 40, windowMs: 60_000 },
+  online_count:  { max: 120, windowMs: 60_000 },
 };
 
 function rateLimit(action, ip, keyHash) {
@@ -114,6 +116,33 @@ function makePreview(code) {
 module.exports = async function handler(req, res) {
   setCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // ── ANON: ping (online heartbeat) — admin-key GEREKMEZ, guard'dan ÖNCE ──
+  {
+    let pbody = req.body;
+    if (typeof pbody === 'string') { try { pbody = JSON.parse(pbody); } catch { pbody = {}; } }
+    pbody = pbody || {};
+    if (req.method === 'POST' && pbody.action === 'ping') {
+      if (!SB_URL || !SB_KEY) return res.status(500).json({ ok: false, error: 'supabase_env_missing' });
+      const ipP = getClientIp(req);
+      const rlP = rateLimit('ping', ipP, 'anon');
+      if (!rlP.ok) return res.status(429).json({ ok: false, error: 'rate_limited' });
+      const sid = pbody.sid;
+      if (typeof sid !== 'string' || sid.length < 8 || sid.length > 64 || !/^[A-Za-z0-9_-]+$/.test(sid)) {
+        return res.status(400).json({ ok: false, error: 'invalid_sid' });
+      }
+      try {
+        await sbFetch('/online_sessions?on_conflict=session_id', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({ session_id: sid, last_seen: new Date().toISOString() }),
+        });
+        return res.status(200).json({ ok: true });
+      } catch (e) {
+        return res.status(500).json({ ok: false, error: 'ping_failed' });
+      }
+    }
+  }
 
   // Guard 1: ENV
   const adminKey1 = process.env.ADMIN_KEY_1;
@@ -309,6 +338,26 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify(updates),
       });
       return res.status(200).json({ ok: true, new_expires_at: newExp.toISOString() });
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // ONLINE_COUNT — son ~90sn'de aktif oturum sayısı (admin-only)
+    // ──────────────────────────────────────────────────────────────
+    if (action === 'online_count') {
+      const WINDOW_S = 90;
+      const sinceIso = new Date(Date.now() - WINDOW_S * 1000).toISOString();
+      const cUrl = `${SB_URL.replace(/\/$/, '')}/rest/v1/online_sessions?select=session_id&last_seen=gte.${encodeURIComponent(sinceIso)}`;
+      const cRes = await fetch(cUrl, {
+        method: 'GET',
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' },
+      });
+      const cr = cRes.headers.get('content-range') || '';
+      const count = parseInt((cr.split('/')[1] || '0'), 10) || 0;
+      if (Math.random() < 0.1) {
+        const oldIso = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        try { await sbFetch(`/online_sessions?last_seen=lt.${encodeURIComponent(oldIso)}`, { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } }); } catch (e) {}
+      }
+      return res.status(200).json({ ok: true, count, window_s: WINDOW_S });
     }
 
     // ──────────────────────────────────────────────────────────────
