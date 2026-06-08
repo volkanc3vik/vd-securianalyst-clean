@@ -31,6 +31,7 @@ const LIMITS = {
   revoke:        { max: 10, windowMs: 60_000 },
   reset_devices: { max: 10, windowMs: 60_000 },
   extend:        { max: 10, windowMs: 60_000 },
+  delete:        { max: 20, windowMs: 60_000 },
 };
 
 function rateLimit(action, ip, keyHash) {
@@ -308,6 +309,20 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify(updates),
       });
       return res.status(200).json({ ok: true, new_expires_at: newExp.toISOString() });
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // DELETE — kodu listeden tamamen kaldır (admin kodları korunur)
+    // ──────────────────────────────────────────────────────────────
+    if (action === 'delete') {
+      const id = String(params.id || '').trim();
+      if (!id) return res.status(400).json({ ok: false, error: 'missing_id' });
+      // Güvenlik: admin kodlarının yanlışlıkla silinmesini engelle
+      const cur = await sbFetch(`/access_codes?id=eq.${encodeURIComponent(id)}&select=is_admin`, { method: 'GET' });
+      if (!cur || !cur[0]) return res.status(404).json({ ok: false, error: 'not_found' });
+      if (cur[0].is_admin === true) return res.status(403).json({ ok: false, error: 'admin_code_protected' });
+      await sbFetch(`/access_codes?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+      return res.status(200).json({ ok: true, deleted: true });
     }
 
     return res.status(400).json({ ok: false, error: 'unhandled_action' });
