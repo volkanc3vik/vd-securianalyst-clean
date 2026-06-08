@@ -11,6 +11,8 @@
 // Service role key / token ASLA client'a gitmez (yalnızca env).
 // ═══════════════════════════════════════════════════════════════════
 
+import { profileFor, OUTCOME_ENGINE_VERSION } from '../engines/outcome/outcome-config.js';
+
 // ── CORS ────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   'https://vd-securianalyst.com',
@@ -242,7 +244,8 @@ export default async function handler(req, res) {
 
       const mc = (body.market_context && typeof body.market_context === 'object') ? body.market_context : {};
       // Outcome Tracking Faz 1: inceleme penceresi + due zamanı (hesaplama YOK, sadece zamanlama)
-      const winHours = reviewWindowHours(timeframe);
+      const _prof = profileFor(timeframe);
+      const winHours = _prof.window;
       const dueIso = new Date(Date.now() + winHours * 3600 * 1000).toISOString();
       const row = {
         sym, timeframe, direction_bias,
@@ -255,6 +258,11 @@ export default async function handler(req, res) {
         review_status: 'pending',
         review_window_hours: winHours,
         review_due_at: dueIso,
+        // ── Build 163B: first-hit outcome damgası (yeni kayıtlar) ──
+        outcome_engine_version: OUTCOME_ENGINE_VERSION,
+        outcome_status: 'pending',
+        confirm_threshold_pct: _prof.confirm,
+        invalid_threshold_pct: _prof.invalid,
         telegram_msg_id: msgId,
       };
       const rows = await sbFetch(`/analysis_archive?select=${RETURN_COLS}`, {

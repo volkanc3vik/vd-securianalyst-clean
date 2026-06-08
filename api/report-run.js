@@ -14,6 +14,7 @@
 // DOKUNMAZ: scanner, risk/confidence, premium, referral, telegram-analiz gönderimi, archive doğrulama.
 // ════════════════════════════════════════════════════════════════════
 import { runReport, SUPPORTED_TYPES } from '../engines/report/report-engine.js';
+import { runBatch } from '../engines/outcome/outcome-runner.js';
 
 const ADMIN_KEYS  = [process.env.ADMIN_KEY_1, process.env.ADMIN_KEY_2].filter(Boolean);
 const CRON_SECRET = process.env.CRON_SECRET || process.env.TELEGRAM_CRON_SECRET;
@@ -53,6 +54,17 @@ export default async function handler(req, res) {
     let dry;
     if (dryParam != null) dry = !(dryParam === '0' || dryParam === 'false');
     else dry = cron ? false : true;   // cron → gönder; manuel admin → önizle (zorunlu)
+
+    // Build 163B: gerçek (cron) çalışmada rapordan ÖNCE first-hit outcome'larını çöz.
+    // dry/önizleme yazma yapmaz. Hata raporu BOZMAZ (yutulur).
+    if (!dry) {
+      try {
+        const oc = await runBatch({ limit: 50 });
+        console.log('[report-run] outcome runBatch:', JSON.stringify(oc));
+      } catch (e) {
+        console.error('[report-run] outcome runBatch hata:', e && e.message);
+      }
+    }
 
     const out = await runReport(type, { dry });
     return res.status(200).json({ ok: true, caller: cron ? 'cron' : 'admin', ...out });
