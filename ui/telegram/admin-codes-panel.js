@@ -102,8 +102,11 @@
   async function _fetchOnline() {
     try {
       const r = await window.TelegramDispatcher.adminFetch(ENDPOINT, { action: 'online_count' }, { method: 'POST' });
-      const el = document.querySelector('[data-acp-online-n]');
-      if (el && r && r.ok) el.textContent = r.count;
+      if (!r || !r.ok) return;
+      const set = (sel, val) => { const el = document.querySelector(sel); if (el) el.textContent = (val != null ? val : 0); };
+      set('[data-acp-online-n]', r.count);
+      set('[data-acp-online-m]', r.members);
+      set('[data-acp-online-v]', r.visitors);
     } catch (e) { /* sessiz */ }
   }
   function _startOnline() {
@@ -177,7 +180,7 @@
               <button class="acp-tab" data-status="sales">Manuel/Satış</button>
             </div>
             <div class="acp-filter-right">
-              <span data-acp-online style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:#00e5a014;border:1px solid #00e5a040;color:#00e5a0;font-weight:700;font-size:13px">🟢 Online: <b data-acp-online-n>…</b></span>
+              <span data-acp-online style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:#00e5a014;border:1px solid #00e5a040;color:#00e5a0;font-weight:700;font-size:13px">🟢 Online: <b data-acp-online-n>…</b> <span style="opacity:.85;font-weight:600">(<b data-acp-online-m>…</b> üye · <b data-acp-online-v>…</b> ziyaretçi)</span></span>
               <select data-acp-plan-filter>
                 <option value="all">Tüm planlar</option>
                 <option value="daily">Daily</option>
