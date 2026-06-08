@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // VD SecuriAnalyst — Presence heartbeat (build 161)
-// Her ~45sn'de /api/ping'e dokunur (admin paneldeki online sayacı için).
+// Her ~45sn'de /api/admin-codes (action: ping) endpoint'ine dokunur.
 // Anonim: session_id sessionStorage'da tutulur (sekme oturumuna özel),
 // kişisel veri yok. Sessizce çalışır, hata olsa bile siteyi etkilemez.
 // ═══════════════════════════════════════════════════════════════════
@@ -31,10 +31,10 @@
 
   function ping() {
     try {
-      fetch('/api/ping', {
+      fetch('/api/admin-codes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sid: getSid() }),
+        body: JSON.stringify({ action: 'ping', sid: getSid() }),
         keepalive: true,
       }).catch(function () {});
     } catch (e) {}
