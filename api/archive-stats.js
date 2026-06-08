@@ -78,6 +78,7 @@ export default async function handler(req, res) {
     // değerlendirilmiş (pending hariç) kayıtlar
     const cols = 'sym,direction_bias,analysis_score,review_status,result_percent,direction_realized,tg_exp_pct,tg_exp_hi,market_context,created_at';
     const rows = await sb(`analysis_archive?review_status=in.(validated,partially_validated,not_validated)` +
+      `&excluded_from_learning=eq.false` +
       `&select=${cols}&order=created_at.desc&limit=2000`);
 
     const reviewed = rows || [];

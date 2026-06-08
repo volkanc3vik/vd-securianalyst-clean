@@ -195,7 +195,7 @@ export default async function handler(req, res) {
   try {
     const cols = 'id,sym,direction_bias,price_at_analysis,review_window_hours,review_due_at,created_at';
     const rows = await sbFetch(
-      `/analysis_archive?review_status=eq.pending&admin_archived=eq.false&review_due_at=lte.${encodeURIComponent(nowIso)}` +
+      `/analysis_archive?review_status=eq.pending&admin_archived=eq.false&excluded_from_learning=eq.false&review_due_at=lte.${encodeURIComponent(nowIso)}` +
       `&order=review_due_at.asc.nullslast&limit=${limit}&select=${cols}`,
       { method: 'GET' }
     );
