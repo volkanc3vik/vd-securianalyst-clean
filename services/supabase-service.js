@@ -207,7 +207,7 @@ const SupabaseDB = (() => {
     'price_at_review','max_price_window','min_price_window',
     'max_move_pct','min_move_pct','end_move_pct','result_percent',
     'direction_realized','validation_score','review_source',
-    'ai_learned','admin_archived',
+    'ai_learned','admin_archived','excluded_from_learning',
     'shared_to_telegram','telegram_msg_id','shared_at'
   ].join(',');
 
