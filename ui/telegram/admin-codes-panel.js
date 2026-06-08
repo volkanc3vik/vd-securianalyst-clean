@@ -192,8 +192,20 @@
       list = list.filter(r => r.plan_id === _state.filterPlan);
     }
 
+    // Özet sayaç (TÜM kodlardan — filtreden bağımsız)
+    const counts = { total: rows.length, active: 0, unused: 0, expired: 0, revoked: 0 };
+    rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    const summaryHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;font-size:12px;font-weight:600">
+        <span style="padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.06);color:#cfe3f2">Toplam <b style="color:#fff">${counts.total}</b></span>
+        <span style="padding:4px 10px;border-radius:8px;background:#00e5a014;border:1px solid #00e5a040;color:#00e5a0">Aktif <b>${counts.active}</b></span>
+        <span style="padding:4px 10px;border-radius:8px;background:#7aaac814;border:1px solid #7aaac840;color:#7aaac8">Kullanılabilir <b>${counts.unused}</b></span>
+        <span style="padding:4px 10px;border-radius:8px;background:#ff9b4d14;border:1px solid #ff9b4d40;color:#ff9b4d">Süresi Dolan <b>${counts.expired}</b></span>
+        <span style="padding:4px 10px;border-radius:8px;background:#ff3d6b14;border:1px solid #ff3d6b40;color:#ff3d6b">İptal <b>${counts.revoked}</b></span>
+      </div>`;
+
     if (list.length === 0) {
-      wrap.innerHTML = `<div class="acp-empty">Bu filtreyle eşleşen kod yok.</div>`;
+      wrap.innerHTML = summaryHTML + `<div class="acp-empty">Bu filtreyle eşleşen kod yok.</div>`;
       return;
     }
 
@@ -214,11 +226,12 @@
             ? `<button class="acp-mini acp-mini-danger" data-acp-act="revoke" data-id="${_esc(r.id)}" title="İptal Et">⊘</button>` : ''}
           <button class="acp-mini" data-acp-act="reset_devices" data-id="${_esc(r.id)}" title="Cihazları Sıfırla">⟲</button>
           <button class="acp-mini" data-acp-act="extend" data-id="${_esc(r.id)}" title="Süre Uzat">+gün</button>
+          ${!r.is_admin ? `<button class="acp-mini acp-mini-danger" data-acp-act="delete" data-id="${_esc(r.id)}" title="Listeden Sil">🗑</button>` : ''}
         </td>
       </tr>
     `).join('');
 
-    wrap.innerHTML = `
+    wrap.innerHTML = summaryHTML + `
       <table class="acp-table">
         <thead>
           <tr>
@@ -259,6 +272,7 @@
       if (act === 'revoke') return _doRevoke(t.getAttribute('data-id'));
       if (act === 'reset_devices') return _doResetDevices(t.getAttribute('data-id'));
       if (act === 'extend') return _doExtend(t.getAttribute('data-id'));
+      if (act === 'delete') return _doDelete(t.getAttribute('data-id'));
     });
 
     const planSel = root.querySelector('[data-acp-plan-filter]');
@@ -365,6 +379,22 @@
       const r = await _apiCall({ action: 'extend', id, days });
       if (!r.ok) throw new Error(r.error || 'extend_failed');
       NS.Toast?.success?.(`+${days} gün eklendi`);
+      _loadList();
+    } catch (e) {
+      NS.Toast?.error?.('Hata: ' + (e.message || e));
+    }
+  }
+
+  async function _doDelete(id) {
+    if (!id) return;
+    if (!confirm('Bu kod listeden KALICI olarak silinecek. Geri alınamaz. Devam edilsin mi?')) return;
+    try {
+      const r = await _apiCall({ action: 'delete', id });
+      if (!r || !r.ok) {
+        if (r && r.error === 'admin_code_protected') { NS.Toast?.error?.('Admin kodu silinemez (koruma)'); return; }
+        throw new Error((r && r.error) || 'delete_failed');
+      }
+      NS.Toast?.success?.('Kod listeden silindi');
       _loadList();
     } catch (e) {
       NS.Toast?.error?.('Hata: ' + (e.message || e));
