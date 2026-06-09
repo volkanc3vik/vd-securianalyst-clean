@@ -15,6 +15,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   if (window.VDTeaser) return;
   const TAG = '[Teaser]';
   const KEY = 'teaser_access_v1';
@@ -94,7 +95,7 @@
     if (document.getElementById(BADGE_ID)) { _updateBadge(); return; }
     const el = document.createElement('div');
     el.id = BADGE_ID; el.className = 'vd-teaser-badge';
-    el.innerHTML = `<span class="vd-teaser-badge-dot"></span><span class="vd-teaser-badge-txt">Önizleme · <b data-teaser-cd>5:00</b></span>`;
+    el.innerHTML = `<span class="vd-teaser-badge-dot"></span><span class="vd-teaser-badge-txt">${_t('prm.preview', null, 'Önizleme')} · <b data-teaser-cd>5:00</b></span>`;
     document.body.appendChild(el);
     _updateBadge();
   }
@@ -113,10 +114,10 @@
     gate.innerHTML = `
       <div class="vd-teaser-gate-card" role="dialog" aria-modal="true">
         <div class="vd-teaser-gate-icon">🔒</div>
-        <div class="vd-teaser-gate-title">Önizleme süresi doldu</div>
-        <div class="vd-teaser-gate-msg">Ücretsiz önizleme süreniz doldu. Analizin tamamına ve tüm platform verilerine erişmek için Premium erişim kodu gereklidir.</div>
-        <button class="vd-teaser-gate-btn" data-teaser-premium type="button">Premium Erişim Kodu Gir</button>
-        <a class="vd-teaser-gate-home" href="index.html">Ana sayfaya dön</a>
+        <div class="vd-teaser-gate-title">${_t('prm.previewExpired', null, 'Önizleme süresi doldu')}</div>
+        <div class="vd-teaser-gate-msg">${_t('prm.previewExpiredMsg', null, 'Ücretsiz önizleme süreniz doldu. Analizin tamamına ve tüm platform verilerine erişmek için Premium erişim kodu gereklidir.')}</div>
+        <button class="vd-teaser-gate-btn" data-teaser-premium type="button">${_t('arc.enterCode', null, 'Premium Erişim Kodu Gir')}</button>
+        <a class="vd-teaser-gate-home" href="index.html">${_t('prm.backHome', null, 'Ana sayfaya dön')}</a>
       </div>`;
     document.body.appendChild(gate);
     requestAnimationFrame(() => gate.classList.add('vd-teaser-gate-show'));
@@ -156,7 +157,7 @@
 
   window.VDTeaser = { isActive, isExpired, symbol, remainingMs, init,
     coinOf: (s) => (s ? String(s).toUpperCase().replace(/USDT$|USDC$|BUSD$|PERP$/g, '') : ''),
-    SCOPE_MSG: 'Bu analiz yalnızca Premium üyeler için kullanılabilir.',
+    SCOPE_MSG: _t('arc.premOnly', null, 'Bu analiz yalnızca Premium üyeler için kullanılabilir.'),
     // test/debug
     _state: () => _state, _params, _normSym };
 

@@ -10,6 +10,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   if (window.VDPremiumFunnel) return;
   const TAG = '[PremiumFunnel]';
   const SCREEN_ID = 'loginScreen';
@@ -65,7 +66,7 @@
         <div class="vdf-plan-ic">${esc(x.icon)}</div>
         <div class="vdf-plan-name">${esc(x.name)}</div>
         <div class="vdf-plan-price">${esc(x.price)}<small>${esc(x.period || '')}</small></div>
-        <button class="vdf-plan-btn" data-vdf-plan="${esc(x.name)}" type="button">Planı Seç</button>
+        <button class="vdf-plan-btn" data-vdf-plan="${esc(x.name)}" type="button">${_t('prm.selectPlan', null, 'Planı Seç')}</button>
       </div>`).join('');
   }
 
@@ -73,7 +74,7 @@
     const c = CFG();
     const hero = c.hero || {};
     const banner = _teaserExpired()
-      ? `<div class="vdf-teaser-banner">⏳ <b>Ücretsiz önizleme süreniz sona erdi.</b><br>İncelediğiniz analizin tamamına ve tüm premium araçlara erişmek için premium üyelik gereklidir.</div>`
+      ? `<div class="vdf-teaser-banner">⏳ <b>${_t('prm.previewEnded', null, 'Ücretsiz önizleme süreniz sona erdi.')}</b><br>${_t('prm.previewEndedDesc', null, 'İncelediğiniz analizin tamamına ve tüm premium araçlara erişmek için premium üyelik gereklidir.')}</div>`
       : '';
     return `
       <div class="vdf-grid-bg"></div>
@@ -88,22 +89,22 @@
 
         <div class="vdf-social" id="vdf-social" hidden></div>
 
-        <div class="vdf-section-ttl">Premium Modüller</div>
+        <div class="vdf-section-ttl">${_t('prm.secModules', null, 'Premium Modüller')}</div>
         <div class="vdf-mods">${_modulesHTML()}</div>
 
-        <div class="vdf-section-ttl">Premium ile Neler Kazanırsın</div>
+        <div class="vdf-section-ttl">${_t('prm.secBenefits', null, 'Premium ile Neler Kazanırsın')}</div>
         ${_benefitsHTML()}
 
-        <div class="vdf-section-ttl">Erişim Planları</div>
+        <div class="vdf-section-ttl">${_t('prm.secPlans', null, 'Erişim Planları')}</div>
         <div class="vdf-plans">${_plansHTML()}</div>
 
-        <button class="vdf-cta" data-vdf-primary type="button">🚀 Premium Erişim İçin Telegram'dan Yaz</button>
+        <button class="vdf-cta" data-vdf-primary type="button">🚀 ${_t('prm.ctaTelegram', null, "Premium Erişim İçin Telegram'dan Yaz")}</button>
 
         <div class="vdf-trust">${esc(c.trustNote || '')}</div>
 
         <div class="vdf-codeline">
-          <span>${esc(c.codeNote || 'Premium kodun varsa buradan giriş yapabilirsin.')}</span>
-          <button class="vdf-codebtn" data-vdf-code type="button">🔑 Premium Kodunu Gir</button>
+          <span>${esc(c.codeNote || _t('prm.haveCode', null, 'Premium kodun varsa buradan giriş yapabilirsin.'))}</span>
+          <button class="vdf-codebtn" data-vdf-code type="button">🔑 ${_t('prm.enterPremiumCode', null, 'Premium Kodunu Gir')}</button>
         </div>
       </div>`;
   }
@@ -122,18 +123,18 @@
     if (reviewed < minR) return;   // az veri → tüm blok gizli
 
     const tiles = [];
-    tiles.push({ ic: '📊', v: reviewed, l: 'İncelenen Analiz' });
-    if (s.validated_pct != null) tiles.push({ ic: '📈', v: s.validated_pct + '%', l: 'Ort. Doğrulama Oranı' });
-    if (s.validated != null) tiles.push({ ic: '🎯', v: s.validated, l: 'Doğrulanan Analiz' });
+    tiles.push({ ic: '📊', v: reviewed, l: _t('prm.statReviewed', null, 'İncelenen Analiz') });
+    if (s.validated_pct != null) tiles.push({ ic: '📈', v: s.validated_pct + '%', l: _t('prm.statAvgRate', null, 'Ort. Doğrulama Oranı') });
+    if (s.validated != null) tiles.push({ ic: '🎯', v: s.validated, l: _t('prm.statValidated', null, 'Doğrulanan Analiz') });
     try {
       if (window.VDInsights && window.VDInsights.load && window.VDInsights.computeInsights) {
         const recs = await window.VDInsights.load();
         const setups = (window.VDInsights.computeInsights(recs).combos || []).length;
-        if (setups > 0) tiles.push({ ic: '🧠', v: setups, l: 'Öğrenilen Setup' });
+        if (setups > 0) tiles.push({ ic: '🧠', v: setups, l: _t('prm.statLearnedSetup', null, 'Öğrenilen Setup') });
       }
     } catch (e) {}
     if (!tiles.length) return;
-    tiles.push({ ic: '📡', v: 'Aktif', l: 'Outcome Tracking' });
+    tiles.push({ ic: '📡', v: _t('prm.active', null, 'Aktif'), l: 'Outcome Tracking' });
     host.innerHTML = tiles.map(t => `<div class="vdf-stat"><div class="vdf-stat-v">${t.ic} ${esc(t.v)}</div><div class="vdf-stat-l">${esc(t.l)}</div></div>`).join('');
     host.hidden = false;
   }
@@ -155,7 +156,7 @@
     const card = screen.querySelector('.login-card');
     if (!card || card.querySelector('.vdf-back')) return;
     const back = document.createElement('button');
-    back.type = 'button'; back.className = 'vdf-back'; back.textContent = '← Premium planlara dön';
+    back.type = 'button'; back.className = 'vdf-back'; back.textContent = _t('prm.backToPlans', null, '← Premium planlara dön');
     back.addEventListener('click', () => screen.classList.remove('vd-code-mode'));
     card.insertBefore(back, card.firstChild);
   }
