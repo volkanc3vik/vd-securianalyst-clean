@@ -9,11 +9,12 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   if (window.VDClaudeCopyLock) return;
 
-  const LOCK_LABEL = '🔒 Premium — Claude.ai Analizi';
+  const LOCK_LABEL = _t('prm.claudeLockLabel', null, '🔒 Premium — Claude.ai Analizi');
   const NOTE_CLASS = 'vd-claude-locknote';
-  const NOTE_HTML = '🔒 Detaylı Claude.ai analiz prompt\'u <b>Premium</b> üyeler içindir. <span class="vd-claude-cta">Premium\'a geç →</span>';
+  const NOTE_HTML = _t('prm.claudeCopyNote');
   let _mounted = false, _raf = false;
 
   function _isPremium() {
@@ -55,7 +56,7 @@
   function _unlock() {
     const btn = _btn();
     if (btn && btn.hasAttribute('data-vd-claudelock')) {
-      btn.innerHTML = btn.getAttribute('data-vd-lbl') || '📋 Kopyala → Claude.ai';
+      btn.innerHTML = btn.getAttribute('data-vd-lbl') || _t('prm.copyToClaude', null, '📋 Kopyala → Claude.ai');
       btn.removeAttribute('data-vd-claudelock'); btn.removeAttribute('data-vd-lbl');
       btn.classList.remove('vd-claude-locked');
     }

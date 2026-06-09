@@ -24,6 +24,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const LOCKED_MARKER = 'data-vd-locked';
   const PROCESSED_MARKER = 'data-vd-lock-processed';
@@ -81,7 +82,7 @@
 
     const text = document.createElement('div');
     text.className = 'vd-lock-overlay-text';
-    text.textContent = "Premium'a Geç";
+    text.textContent = _t('prm.goPremium', null, "Premium'a Geç");
 
     inner.appendChild(icon);
     inner.appendChild(text);
@@ -135,8 +136,8 @@
 
     if (shouldLock && !isLocked) {
       el.setAttribute(LOCKED_MARKER, 'true');
-      el.setAttribute('title', 'Premium kullanıcılar erişebilir');
-      el.setAttribute('aria-label', 'Premium kilitli');
+      el.setAttribute('title', _t('prm.premiumCanAccess', null, 'Premium kullanıcılar erişebilir'));
+      el.setAttribute('aria-label', _t('prm.premiumLocked', null, 'Premium kilitli'));
       // B.2'deki data-clickable işaretini kaldır (artık tıklanmasın)
       el.removeAttribute('data-clickable');
       // Lock ikonu inline ekle (önüne)

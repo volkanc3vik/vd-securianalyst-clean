@@ -17,6 +17,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const OVERLAY_ID = 'vd-premium-modal-overlay';
   let _escHandler = null;
@@ -44,7 +45,7 @@
     // ── Close button ──
     const closeBtn = document.createElement('button');
     closeBtn.className = 'vd-premium-modal-close';
-    closeBtn.setAttribute('aria-label', 'Kapat');
+    closeBtn.setAttribute('aria-label', _t('prm.close', null, 'Kapat'));
     closeBtn.type = 'button';
     closeBtn.textContent = '✕';
     closeBtn.addEventListener('click', hide);
@@ -63,16 +64,16 @@
     modal.appendChild(title);
 
     // ── Intro ──
-    _addText(modal, 'Premium üyelikle açılan özellikler:', 'p', 'vd-premium-modal-intro');
+    _addText(modal, _t('prm.featuresUnlocked', null, 'Premium üyelikle açılan özellikler:'), 'p', 'vd-premium-modal-intro');
 
     // ── Features list ──
     const features = document.createElement('ul');
     features.className = 'vd-premium-modal-features';
     const items = [
-      'Tüm coinlere erişim',
-      'AI analizlerinin tamamı',
-      'Giriş / hedef / risk seviyeleri',
-      'Gelişmiş veri katmanları',
+      _t('prm.accessAllCoins', null, 'Tüm coinlere erişim'),
+      _t('prm.allAiAnalyses', null, 'AI analizlerinin tamamı'),
+      _t('prm.entryTargetRisk', null, 'Giriş / hedef / risk seviyeleri'),
+      _t('prm.advDataLayers', null, 'Gelişmiş veri katmanları'),
     ];
     items.forEach(itemText => {
       const li = document.createElement('li');
@@ -93,7 +94,7 @@
     const warnIcon = document.createElement('span');
     warnIcon.textContent = '⚠️ ';
     const warnText = document.createElement('span');
-    warnText.textContent = 'Eksik veri ile değerlendirme yapmak risklidir';
+    warnText.textContent = _t('prm.partialDataRisk', null, 'Eksik veri ile değerlendirme yapmak risklidir');
     warning.appendChild(warnIcon);
     warning.appendChild(warnText);
     modal.appendChild(warning);
@@ -102,7 +103,7 @@
     const cta = document.createElement('button');
     cta.className = 'vd-premium-modal-cta';
     cta.type = 'button';
-    cta.textContent = "Premium'a Geç";
+    cta.textContent = _t('prm.goPremium', null, "Premium'a Geç");
     cta.addEventListener('click', _onCtaClick);
     modal.appendChild(cta);
 
@@ -110,13 +111,13 @@
     const codeLink = document.createElement('button');
     codeLink.className = 'vd-premium-modal-code-link';
     codeLink.type = 'button';
-    codeLink.textContent = '🔑 Zaten kodum var → Premium Kod Gir';
+    codeLink.textContent = _t('prm.alreadyHaveCode', null, '🔑 Zaten kodum var → Premium Kod Gir');
     codeLink.addEventListener('click', _onCodeLinkClick);
     modal.appendChild(codeLink);
 
     // ── Footer note ──
     _addText(modal,
-      'Premium erişim manuel olarak aktive edilir. Kodun varsa buradan giriş yapabilirsin.',
+      _t('prm.manualActivate', null, 'Premium erişim manuel olarak aktive edilir. Kodun varsa buradan giriş yapabilirsin.'),
       'p', 'vd-premium-modal-footer');
 
     overlay.appendChild(modal);

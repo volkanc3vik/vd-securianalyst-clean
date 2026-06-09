@@ -15,6 +15,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const TOAST_ID = 'vd-premium-toast';
   const DURATION = 2500;
@@ -35,7 +36,7 @@
 
     const text = document.createElement('span');
     text.className = 'vd-premium-toast-text';
-    text.textContent = 'Bu coin analizi premium kullanıcılar için erişilebilir';
+    text.textContent = _t('prm.coinForPremium', null, 'Bu coin analizi premium kullanıcılar için erişilebilir');
 
     wrap.appendChild(icon);
     wrap.appendChild(text);

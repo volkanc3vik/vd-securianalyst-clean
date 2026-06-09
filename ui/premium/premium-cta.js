@@ -22,6 +22,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const BAND_ID = 'vd-premium-cta-band';
 
@@ -36,7 +37,7 @@
     band.id = BAND_ID;
     band.className = 'vd-premium-cta-band';
     band.setAttribute('role', 'region');
-    band.setAttribute('aria-label', 'Premium tanıtım');
+    band.setAttribute('aria-label', _t('prm.promoLabel', null, 'Premium tanıtım'));
 
     const inner = document.createElement('div');
     inner.className = 'vd-premium-cta-inner';
@@ -50,13 +51,13 @@
     const titleIcon = document.createElement('span');
     titleIcon.textContent = '🚀 ';
     const titleMain = document.createElement('span');
-    titleMain.textContent = 'Tüm coinleri aç + AI analizinin tamamını gör';
+    titleMain.textContent = _t('prm.unlockAllCoins', null, 'Tüm coinleri aç + AI analizinin tamamını gör');
     title.appendChild(titleIcon);
     title.appendChild(titleMain);
 
     const subtitle = document.createElement('div');
     subtitle.className = 'vd-premium-cta-subtitle';
-    subtitle.textContent = 'Şu anda sadece sınırlı veriyi görüyorsunuz';
+    subtitle.textContent = _t('prm.limitedData', null, 'Şu anda sadece sınırlı veriyi görüyorsunuz');
 
     textWrap.appendChild(title);
     textWrap.appendChild(subtitle);
@@ -65,7 +66,7 @@
     const btn = document.createElement('button');
     btn.className = 'vd-premium-cta-btn';
     btn.type = 'button';
-    btn.textContent = "Premium'a Geç";
+    btn.textContent = _t('prm.goPremium', null, "Premium'a Geç");
     btn.addEventListener('click', _onCtaClick);
 
     inner.appendChild(textWrap);

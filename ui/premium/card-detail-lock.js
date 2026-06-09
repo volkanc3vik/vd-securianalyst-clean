@@ -16,6 +16,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   if (window.VDCardDetailLock) return;
 
   const CARD_SEL = '.signal-card';
@@ -23,7 +24,7 @@
   const HIDE_ATTR = 'data-vd-hidden';
   const SYM_ATTR  = 'data-vd-symorig';
   const NOTE_CLASS = 'vd-card-locknote';
-  const NOTE_TEXT = '🔒 Bu analizin detayları Premium üyeler için açıktır.';
+  const NOTE_TEXT = _t('prm.cardLockText', null, '🔒 Bu analizin detayları Premium üyeler için açıktır.');
   const KEEP_LABELS = /^(Güven|Risk)$/;          // metrik kutularında korunacaklar
   const PRICE_LABELS = /Giriş|Stop|TP\s*\d/i;     // fiyat bloğu tespiti
   const HIDE_SELECTORS = ['.sc-conf-bar', '.sc-conf-grid', '.sc-missing', '.sc-timing', '.sc-tags'];
@@ -97,7 +98,7 @@
     if (!card.querySelector('.' + NOTE_CLASS)) {
       const note = document.createElement('div');
       note.className = NOTE_CLASS;
-      note.innerHTML = '🔒 Bu analizin detayları Premium üyeler için açıktır. <span class="vd-locknote-cta">Görmek için dokun →</span>';
+      note.innerHTML = ''+_t('prm.cardLockText', null, '🔒 Bu analizin detayları Premium üyeler için açıktır.')+' <span class="vd-locknote-cta">'+_t('prm.cardLockTap', null, 'Görmek için dokun →')+'</span>';
       note.style.cssText = 'margin:10px 0 4px;padding:11px 14px;border-radius:11px;font-size:12.5px;font-weight:600;text-align:center;color:#00D1FF;background:rgba(0,209,255,.07);border:1px solid rgba(0,209,255,.28);cursor:pointer';
       const ai = card.querySelector('.sc-ai-comment');
       if (ai) card.insertBefore(note, ai); else card.appendChild(note);

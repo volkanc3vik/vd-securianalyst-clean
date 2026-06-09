@@ -24,6 +24,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const LOCKED_MARKER = 'data-vd-ai-locked';
   const ORIGINAL_TEXT_ATTR = 'data-vd-ai-original';
@@ -94,7 +95,7 @@
     icon1.className = 'vd-ai-lock-icon';
     icon1.textContent = '🔒';
     const text1 = document.createElement('span');
-    text1.textContent = ' Bu analiz AI tarafından çok katmanlı olarak üretilmiştir';
+    text1.textContent = ' '+_t('prm.aiMultiLayer', null, 'Bu analiz AI tarafından çok katmanlı olarak üretilmiştir')+'';
     line1.appendChild(icon1);
     line1.appendChild(text1);
 
@@ -104,14 +105,14 @@
     icon2.className = 'vd-ai-lock-icon';
     icon2.textContent = '🔒';
     const text2 = document.createElement('span');
-    text2.textContent = ' Tam analiz premium kullanıcılar içindir';
+    text2.textContent = ' '+_t('prm.fullForPremium', null, 'Tam analiz premium kullanıcılar içindir')+'';
     line2.appendChild(icon2);
     line2.appendChild(text2);
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'vd-ai-lock-cta';
-    btn.textContent = "Premium'a Geç";
+    btn.textContent = _t('prm.goPremium', null, "Premium'a Geç");
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       e.preventDefault();

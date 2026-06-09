@@ -25,6 +25,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const LOCK_ATTR = 'data-vd-detail-locked';
   const WRAP_CLASS = 'vd-detail-lock-wrap';
@@ -64,12 +65,12 @@
 
     const text = document.createElement('div');
     text.className = 'vd-detail-lock-text';
-    text.textContent = 'Detaylı fiyat haritası premium kullanıcılar içindir';
+    text.textContent = _t('prm.priceMapPremium', null, 'Detaylı fiyat haritası premium kullanıcılar içindir');
 
     const cta = document.createElement('button');
     cta.type = 'button';
     cta.className = 'vd-detail-lock-cta';
-    cta.textContent = '🚀 Premium\'a Geç';
+    cta.textContent = '🚀 '+_t('prm.goPremium', null, "Premium\'a Geç")+'';
     cta.addEventListener('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
