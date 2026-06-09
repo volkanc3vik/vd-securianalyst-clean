@@ -1833,8 +1833,8 @@ body{overscroll-behavior-y:none;}
     <div class="login-err" id="loginErr"></div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Premium'u Aktive Et</button>
     <div class="login-footer">
-      Premium kodun yoksa sitede free olarak kullanmaya devam edebilirsin.<br>
-      Kod almak için iletişime geç.
+      <span data-i18n="login.noCodeFooter">Premium kodun yoksa sitede free olarak kullanmaya devam edebilirsin.</span><br>
+      <span data-i18n="login.contactForCode">Kod almak için iletişime geç.</span>
     </div>
   </div>
 </div>
@@ -1863,6 +1863,23 @@ function getDeviceId() {
   } catch (e) { return 'dev_nostore'; }
 }
 
+// ── 170.B-2.2: Korumalı i18n yardımcısı (login + sayaç dinamik metinleri) ──
+// VDI18n yüklü değilse Türkçe fallback'e düşer. Auth mantığına ASLA dokunmaz —
+// sadece görünen metin literallerini çevirir.
+function _loginT(key, vars, fallback){
+  try{
+    if(window.VDI18n && VDI18n.t){
+      return vars ? VDI18n.t(key, vars) : VDI18n.t(key);
+    }
+  }catch(e){}
+  if(fallback != null && vars){
+    return String(fallback).replace(/\{(\w+)\}/g, function(m, k){
+      return (vars[k] != null) ? vars[k] : m;
+    });
+  }
+  return (fallback != null) ? fallback : key;
+}
+
 // ════════════════════════════════════════════════════
 // PHASE 1 — SECURE SUPABASE CLIENT
 // ════════════════════════════════════════════════════
@@ -1883,7 +1900,7 @@ const RateLimit = (() => {
     // Blok kontrolü
     if(d.blockedUntil && now < d.blockedUntil){
       const left = Math.ceil((d.blockedUntil - now)/60);
-      throw new Error(`Çok fazla deneme. ${left} dakika sonra tekrar deneyin.`);
+      throw new Error(_loginT('login.tooManyTry', {n: left}, `Çok fazla deneme. ${left} dakika sonra tekrar deneyin.`));
     }
     // Window sıfırla
     if(d.windowStart && now - d.windowStart > WINDOW){
@@ -1894,7 +1911,7 @@ const RateLimit = (() => {
     if(d.count >= MAX){
       const blockedUntil = now + BLOCK;
       _set({...d, blockedUntil});
-      throw new Error('Çok fazla hatalı deneme. 15 dakika bekleyin.');
+      throw new Error(_loginT('login.tooManyFail', null, 'Çok fazla hatalı deneme. 15 dakika bekleyin.'));
     }
   }
 
@@ -2000,20 +2017,20 @@ function _verifySession(){
   if(rem > 0){
     const err = document.getElementById('loginErr');
     if(err){
-      err.textContent = `🔒 Hesap ${Math.ceil(rem/60)} dakika kilitli. Lütfen bekleyin.`;
+      err.textContent = _loginT('login.lockedWait', {n: Math.ceil(rem/60)}, `🔒 Hesap ${Math.ceil(rem/60)} dakika kilitli. Lütfen bekleyin.`);
       err.classList.add('show');
     }
     const btn = document.getElementById('loginBtn');
-    if(btn){ btn.disabled=true; btn.textContent='Kilitli...'; }
+    if(btn){ btn.disabled=true; btn.textContent=_loginT('login.lockedBtn', null, 'Kilitli...'); }
     // Geri sayım
     const intv = setInterval(()=>{
       const r2 = RateLimit.getRemainingTime();
       if(r2<=0){
         clearInterval(intv);
         if(err) err.classList.remove('show');
-        if(btn){ btn.disabled=false; btn.textContent='Giriş Yap'; }
+        if(btn){ btn.disabled=false; btn.textContent=_loginT('login.signIn', null, 'Giriş Yap'); }
       } else {
-        if(err) err.textContent=`🔒 Hesap ${Math.ceil(r2/60)} dakika kilitli.`;
+        if(err) err.textContent=_loginT('login.locked', {n: Math.ceil(r2/60)}, `🔒 Hesap ${Math.ceil(r2/60)} dakika kilitli.`);
       }
     }, 1000);
   }
@@ -2048,7 +2065,7 @@ async function doLogin() {
   const err = document.getElementById('loginErr');
   const kod = sanitizeCode(inp.value);
 
-  if(!kod) { showLoginErr('⚠ Lütfen erişim kodunuzu girin.'); return; }
+  if(!kod) { showLoginErr(_loginT('login.enterCode', null, '⚠ Lütfen erişim kodunuzu girin.')); return; }
 
   // Rate limit kontrolü
   try{ RateLimit.check(); }
@@ -2056,7 +2073,7 @@ async function doLogin() {
 
   err.classList.remove('show');
   btn.disabled = true;
-  btn.innerHTML = '<span class="login-spinner"></span>Doğrulanıyor...';
+  btn.innerHTML = '<span class="login-spinner"></span>' + _loginT('login.verifying', null, 'Doğrulanıyor...');
 
   try {
     // Edge Function üzerinden güvenli doğrulama
@@ -2072,19 +2089,19 @@ async function doLogin() {
     if(!result.success) {
       // Cihaz limiti özel mesajı
       if(result.error === 'device_limit') {
-        showLoginErr('🔒 Bu premium kodu izin verilen cihaz sayısına ulaşmıştır. Destek için support@vd-securianalyst.com');
+        showLoginErr(_loginT('login.deviceLimit', null, '🔒 Bu premium kodu izin verilen cihaz sayısına ulaşmıştır. Destek için support@vd-securianalyst.com'));
         btn.disabled = false;
-        btn.innerHTML = 'Premium\u2019u Aktive Et';
+        btn.innerHTML = _loginT('login.activate', null, 'Premium\u2019u Aktive Et');
         return;
       }
       RateLimit.fail();
       const rem = RateLimit.getRemainingTime();
-      const errMsg = result.error || 'Geçersiz erişim kodu';
+      const errMsg = result.error || _loginT('login.invalidCode', null, 'Geçersiz erişim kodu');
       showLoginErr(rem > 60
-        ? `🔒 ${errMsg}. Hesap ${Math.ceil(rem/60)} dakika kilitlendi.`
-        : '❌ ' + errMsg + '. Lütfen tekrar deneyin.');
+        ? _loginT('login.lockedAfter', {msg: errMsg, n: Math.ceil(rem/60)}, `🔒 ${errMsg}. Hesap ${Math.ceil(rem/60)} dakika kilitlendi.`)
+        : '❌ ' + errMsg + _loginT('login.tryAgainSuffix', null, '. Lütfen tekrar deneyin.'));
       btn.disabled = false;
-      btn.innerHTML = 'Premium\u2019u Aktive Et';
+      btn.innerHTML = _loginT('login.activate', null, 'Premium\u2019u Aktive Et');
       return;
     }
 
@@ -2138,12 +2155,12 @@ async function doLogin() {
     grantAccess(false);
 
   } catch(e) {
-    showLoginErr('⚠ Bağlantı hatası: ' + e.message);
+    showLoginErr(_loginT('login.connError', {msg: e.message}, '⚠ Bağlantı hatası: ' + e.message));
     console.error('Login hata:', e);
   }
 
   btn.disabled = false;
-  btn.innerHTML = 'Giriş Yap';
+  btn.innerHTML = _loginT('login.signIn', null, 'Giriş Yap');
 }
 
 // ── Erişim ver ── (B.5: Premium aktivasyon — app zaten çalışıyor)
@@ -2265,7 +2282,7 @@ function startTimer() {
   const data = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
   if(data.isAdmin) {
     if(adminBadge) adminBadge.style.display = 'inline-flex';
-    txt.innerHTML = 'Yönetici erişimi — <b style="color:#00e5a0">Sınırsız</b>';
+    txt.innerHTML = _loginT('timer.adminAccess', null, 'Yönetici erişimi') + ' — <b style="color:#00e5a0">' + _loginT('timer.unlimited', null, 'Sınırsız') + '</b>';
     return;
   }
 
@@ -2281,14 +2298,18 @@ function startTimer() {
     const dk   = Math.floor((kalan % 3600000) / 60000);
     const sn   = Math.floor((kalan % 60000) / 1000);
 
+    var _uD = _loginT('timer.unitDay', null, 'g');
+    var _uH = _loginT('timer.unitHour', null, 's');
+    var _uM = _loginT('timer.unitMin', null, 'dk');
+    var _uS = _loginT('timer.unitSec', null, 'sn');
     let kalanStr = '';
-    if(gun > 0)       kalanStr = `${gun}g ${saat}s`;
-    else if(saat > 0) kalanStr = `${saat}s ${dk}dk`;
-    else              kalanStr = `${dk}dk ${sn}sn`;
+    if(gun > 0)       kalanStr = `${gun}${_uD} ${saat}${_uH}`;
+    else if(saat > 0) kalanStr = `${saat}${_uH} ${dk}${_uM}`;
+    else              kalanStr = `${dk}${_uM} ${sn}${_uS}`;
 
     const warn = gun===0&&saat<2;
     const crit = gun===0&&saat===0&&dk<30;
-    txt.innerHTML = `Kalan: <b style="color:${crit?'#ff3d6b':warn?'#ff7a00':'#00e5a0'}">${kalanStr}</b>`;
+    txt.innerHTML = `${_loginT('timer.remaining', null, 'Kalan:')} <b style="color:${crit?'#ff3d6b':warn?'#ff7a00':'#00e5a0'}">${kalanStr}</b>`;
   }
   update();
   _timerInterval = setInterval(update, 1000);
