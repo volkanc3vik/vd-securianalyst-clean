@@ -4,6 +4,50 @@
 window.TIMajorsCard = (() => {
   'use strict';
 
+  // i18n: korumalı çeviri (i18n.js yüklü değilse Türkçe yedeğe düşer)
+  function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
+
+  // Narrator motoru Türkçe üretir; çizim anında anahtara çevrilir (motora dokunulmaz).
+  var _STRUCTKEY = {
+    'Yükseliş yapısı güçlü devam ediyor': 'nstruct.upStrong',
+    'Yükseliş yapısı sağlam': 'nstruct.upHealthy',
+    'Yükseliş yapısı yorgunluk gösteriyor': 'nstruct.upWeak',
+    'Yükseliş yapısı aşırı uzamış': 'nstruct.upExh',
+    'Yükseliş yapısı oluşuyor': 'nstruct.upForm',
+    'Düşüş yapısı güçlü devam ediyor': 'nstruct.downStrong',
+    'Düşüş yapısı sağlam': 'nstruct.downHealthy',
+    'Düşüş yapısı momentum kaybediyor': 'nstruct.downWeak',
+    'Düşüş yapısı aşırı uzamış': 'nstruct.downExh',
+    'Düşüş yapısı oluşuyor': 'nstruct.downForm',
+    'Net yönlü yapı yok': 'nstruct.flat'
+  };
+  var _SUMKEY = {
+    'Uzama riski yüksek — yukarı yönlü görünümde temkin.': 'nsum.upExh',
+    'Geri çekilme riski artıyor — kârı koru.': 'nsum.upWeak',
+    'Trend devamı destekleniyor.': 'nsum.upStrong',
+    'Devamlılık için yapıcı koşullar.': 'nsum.upHealthy',
+    'Erken aşama hareket — onay bekle.': 'nsum.upEarly',
+    'Ortalama dönüş riski — geç aşağı yönlü görünüm zayıf.': 'nsum.downExh',
+    'Aşağı yön momentum kaybediyor — sıçrama mümkün.': 'nsum.downWeak',
+    'Aşağı yön devamı destekleniyor.': 'nsum.downStrong',
+    'Düşüş yönlü bias korunuyor.': 'nsum.downHealthy',
+    'Erken aşama düşüş — onay bekle.': 'nsum.downEarly',
+    'Yüksek volatiliteyle range — fakeout meyilli.': 'nsum.rangeHigh',
+    'Yön konvansiyonu yok — sabır gerekli.': 'nsum.noConv'
+  };
+  var _VSKEY = {
+    "ETH momentum BTC'den daha sağlam.": 'nvs.ethStronger',
+    'BTC önde — ETH yönsel olarak geride.': 'nvs.btcAhead',
+    'BTC ve ETH uyumlu.': 'nvs.aligned',
+    'ETH, BTC gücüne karşı zayıf ayrışıyor.': 'nvs.ethWeakDiv',
+    "ETH, BTC'ye göre göreceli güç gösteriyor.": 'nvs.ethRelStrength',
+    'ETH önde, BTC sıkışıyor.': 'nvs.ethAhead',
+    'ETH, BTC yönüne göre geride.': 'nvs.ethBehind'
+  };
+  function _trStruct(tr) { if (!tr) return ''; var k = _STRUCTKEY[tr]; return k ? _t(k, null, tr) : tr; }
+  function _trSum(tr)    { if (!tr) return ''; var k = _SUMKEY[tr];    return k ? _t(k, null, tr) : tr; }
+  function _trVs(tr)     { if (!tr) return ''; var k = _VSKEY[tr];     return k ? _t(k, null, tr) : tr; }
+
   function _esc(s) {
     if (s == null) return '';
     return String(s)
@@ -18,9 +62,9 @@ window.TIMajorsCard = (() => {
   }
 
   function _dirIcon(d) {
-    if (d === 'UP')   return '▲ Yükseliş trendi';
-    if (d === 'DOWN') return '▼ Düşüş trendi';
-    return '◇ Yatay';
+    if (d === 'UP')   return _t('dir.up', null, '▲ Yükseliş trendi');
+    if (d === 'DOWN') return _t('dir.down', null, '▼ Düşüş trendi');
+    return _t('dir.flat', null, '◇ Yatay');
   }
 
   function _renderCoin(sym, analysis) {
@@ -28,7 +72,7 @@ window.TIMajorsCard = (() => {
       return `
         <div class="ti-card">
           <div class="ti-card-label"><span class="ti-card-label-dot"></span>${_esc(sym)}</div>
-          <div class="ti-empty">Veri yok.</div>
+          <div class="ti-empty">${_t('ti.majorEmpty', null, 'Veri yok.')}</div>
         </div>
       `;
     }
@@ -39,7 +83,7 @@ window.TIMajorsCard = (() => {
     const dirTxt    = _dirIcon(analysis.dir);
 
     const vsLine = analysis.vsBTC
-      ? `<div class="ti-major-vs">${_esc(analysis.vsBTC)}</div>`
+      ? `<div class="ti-major-vs">${_esc(_trVs(analysis.vsBTC))}</div>`
       : '';
 
     return `
@@ -53,8 +97,8 @@ window.TIMajorsCard = (() => {
             <span class="ti-major-sym">${_esc(sym)}</span>
             <span class="ti-major-dir ${dirCls}">${_esc(dirTxt)}</span>
           </div>
-          <div class="ti-major-structure">${_esc(analysis.structure || '')}</div>
-          <div class="ti-major-summary">${_esc(analysis.summary || '')}</div>
+          <div class="ti-major-structure">${_esc(_trStruct(analysis.structure || ''))}</div>
+          <div class="ti-major-summary">${_esc(_trSum(analysis.summary || ''))}</div>
           <div class="ti-major-stats">
             <span class="ti-major-stat">Momentum: <b class="${momClass}">${_esc(_momentumTR(analysis.momentum))}</b></span>
             <span class="ti-major-stat">Risk: <b class="${riskClass}">${_esc(_riskTR(analysis.risk))}</b></span>
@@ -65,26 +109,9 @@ window.TIMajorsCard = (() => {
     `;
   }
 
-  function _momentumTR(m) {
-    switch (m) {
-      case 'Strong':     return 'Güçlü';
-      case 'Healthy':    return 'Sağlıklı';
-      case 'Weakening':  return 'Zayıflıyor';
-      case 'Exhausted':  return 'Tükenmiş';
-      case 'Building':   return 'Gelişiyor';
-      case 'Weak':       return 'Zayıf';
-      default:           return m || '—';
-    }
-  }
+  function _momentumTR(m) { return m ? _t('mom.' + m, null, m) : '—'; }
 
-  function _riskTR(r) {
-    switch (r) {
-      case 'Low':       return 'Düşük';
-      case 'Moderate':  return 'Orta';
-      case 'High':      return 'Yüksek';
-      default:          return r || '—';
-    }
-  }
+  function _riskTR(r) { return r ? _t('risk.' + r, null, r) : '—'; }
 
   function render(btcAnalysis, ethAnalysis) {
     return `
