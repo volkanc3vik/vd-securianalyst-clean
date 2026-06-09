@@ -27,56 +27,56 @@ const API='/api/archive-stats';
 const rate=(g)=>g.insufficient?'<span class="warn">Yetersiz Veri</span>':((g.successRate==null?'—':g.successRate+'%'));
 const cls=(x)=>x==null?'':x>=70?'ok':x>=50?'warn':'bad';
 function rows(arr,medal){return (arr&&arr.length)?arr.map(g=>`<div class="row"><span class="k">${medal||''}${g.key} ${g.insufficient?'<span class="ins">(n='+g.total+')</span>':'<span class="k" style="font-weight:400">('+g.success+'/'+g.total+')</span>'}</span><span class="v ${g.insufficient?'':cls(g.successRate)}">${rate(g)}</span></div>`).join(''):'<p class="note">Veri yok.</p>';}
-// Phase 10: enrichment kırılımları — alan hiç yoksa "Veri Toplanıyor"
-const rowsC=(arr)=>(arr&&arr.length)?rows(arr):'<p class="note">Veri Toplanıyor — bu alan yalnızca v76 sonrası kayıtlarda mevcut; yeterli veri birikince otomatik dolar.</p>';
+// Phase 10: enrichment kırılımları — alan hiç yoksa "Collecting Data"
+const rowsC=(arr)=>(arr&&arr.length)?rows(arr):'<p class="note">Collecting Data — this field exists only in records after v76; it fills automatically once enough data accumulates.</p>';
 const rep=(o)=>o?`${o.key} <span class="k" style="font-weight:400">(%${o.rate==null?'—':o.rate}, n=${o.n})</span>`:'—';
 fetch(API).then(r=>r.json()).then(d=>{
  if(!d.ok){document.getElementById('app').innerHTML='<p class="bad">Hata: '+(d.error||'?')+'</p>';return;}
  document.getElementById('gen').textContent='· '+new Date(d.generated_at).toLocaleString('tr-TR');
  const L=d.learning;
- const obs=L.observations.length?L.observations.map(o=>`<div class="obs">🧠 <b>AI Gözlemi</b><br>${o}</div>`).join(''):`<p class="note">${L.obsNote||''}</p>`;
+ const obs=L.observations.length?L.observations.map(o=>`<div class="obs">🧠 <b>AI Observation</b><br>${o}</div>`).join(''):`<p class="note">${L.obsNote||''}</p>`;
  const lr=L.learningReport;
  document.getElementById('app').innerHTML=`
- <div class="card full"><h2>🧠 AI Gözlemleri</h2>${obs}</div>
+ <div class="card full"><h2>🧠 AI Observations</h2>${obs}</div>
  <div class="grid">
-  <div class="card"><h2>Yapı Öğrenmesi</h2>${rows(L.byStructure)}<p class="note">${d.gaps.structure_note}</p></div>
-  <div class="card"><h2>Confidence Öğrenmesi</h2>${rows(L.byConfidence)}</div>
-  <div class="card"><h2>Risk Öğrenmesi</h2>${rows(L.byRisk)}</div>
+  <div class="card"><h2>Structure Learning</h2>${rows(L.byStructure)}<p class="note">${d.gaps.structure_note}</p></div>
+  <div class="card"><h2>Confidence Learning</h2>${rows(L.byConfidence)}</div>
+  <div class="card"><h2>Risk Learning</h2>${rows(L.byRisk)}</div>
  </div>
  <div class="grid">
-  <div class="card"><h2>🏆 En Başarılı Coinler</h2>${rows(L.topCoins)}</div>
-  <div class="card"><h2>⚠️ En Zayıf Coinler</h2>${rows(L.weakCoins)}</div>
-  <div class="card"><h2>Market Koşulu (RSI)</h2>${rows(L.byRsi)}<p class="note">${L.marketConditions.note}</p></div>
+  <div class="card"><h2>🏆 Most Successful Coins</h2>${rows(L.topCoins)}</div>
+  <div class="card"><h2>⚠️ Weakest Coins</h2>${rows(L.weakCoins)}</div>
+  <div class="card"><h2>Market Condition (RSI)</h2>${rows(L.byRsi)}<p class="note">${L.marketConditions.note}</p></div>
  </div>
  <div class="grid">
-  <div class="card"><h2>Funding Bazlı Başarı</h2>${rowsC(L.byFunding)}</div>
-  <div class="card"><h2>Long / Short Bazlı Başarı</h2>${rowsC(L.byLongShort)}</div>
-  <div class="card"><h2>Volatilite Bazlı Başarı</h2>${rowsC(L.byVolatility)}</div>
+  <div class="card"><h2>Success by Funding</h2>${rowsC(L.byFunding)}</div>
+  <div class="card"><h2>Success by Long / Short</h2>${rowsC(L.byLongShort)}</div>
+  <div class="card"><h2>Success by Volatility</h2>${rowsC(L.byVolatility)}</div>
  </div>
  <div class="grid">
-  <div class="card"><h2>Market Regime Bazlı Başarı</h2>${rowsC(L.byRegime)}</div>
+  <div class="card"><h2>Success by Market Regime</h2>${rowsC(L.byRegime)}</div>
   <div class="card"><h2>Open Interest Verisi</h2>
-   <div class="row"><span class="k">Veri olan kayıt</span><span class="v">${L.oiPresence.withData}</span></div>
+   <div class="row"><span class="k">Records with data</span><span class="v">${L.oiPresence.withData}</span></div>
    <div class="row"><span class="k">Veri olmayan</span><span class="v">${L.oiPresence.withoutData}</span></div>
    <p class="note">${L.oiPresence.note}</p>
   </div>
  </div>
  <div class="grid">
-  <div class="card"><h2>Düşük Risk + 90+ Confidence</h2>
-   <div class="row"><span class="k">Örnek</span><span class="v">${L.combo.total}</span></div>
-   <div class="row"><span class="k">Başarı</span><span class="v ${L.combo.insufficient?'':cls(L.combo.rate)}">${L.combo.insufficient?'<span class="warn">Yetersiz Veri</span>':(L.combo.rate==null?'—':L.combo.rate+'%')}</span></div>
+  <div class="card"><h2>Low Risk + 90+ Confidence</h2>
+   <div class="row"><span class="k">Sample</span><span class="v">${L.combo.total}</span></div>
+   <div class="row"><span class="k">Success</span><span class="v ${L.combo.insufficient?'':cls(L.combo.rate)}">${L.combo.insufficient?'<span class="warn">Yetersiz Veri</span>':(L.combo.rate==null?'—':L.combo.rate+'%')}</span></div>
   </div>
-  <div class="card"><h2>📊 AI Learning Report (Telegram için hazır)</h2>
-   <div class="row"><span class="k">En iyi yapı</span><span class="v">${rep(lr.enIyiYapi)}</span></div>
+  <div class="card"><h2>📊 AI Learning Report (ready for Telegram)</h2>
+   <div class="row"><span class="k">Best structure</span><span class="v">${rep(lr.enIyiYapi)}</span></div>
    <div class="row"><span class="k">En iyi volatilite</span><span class="v">${rep(lr.enIyiVolatilite)}</span></div>
    <div class="row"><span class="k">En iyi rejim</span><span class="v">${rep(lr.enIyiRejim)}</span></div>
    <div class="row"><span class="k">En iyi funding</span><span class="v">${rep(lr.enIyiFunding)}</span></div>
    <div class="row"><span class="k">En iyi long/short</span><span class="v">${rep(lr.enIyiLongShort)}</span></div>
    <div class="row"><span class="k">En iyi coin</span><span class="v">${rep(lr.enIyiCoin)}</span></div>
-   <p class="note">${lr.ready?'Rapor verisi hazır (Telegram gönderimi sonraki faz).':'Yeterli veri birikince hazır olacak.'}</p>
+   <p class="note">${lr.ready?'Report data ready (Telegram send is a later phase).':'Will be ready once enough data accumulates.'}</p>
   </div>
   <div class="card"><h2>Timeline Entegrasyonu</h2><p class="note">${d.timeline.note}</p></div>
  </div>`;
-}).catch(e=>{document.getElementById('app').innerHTML='<p class="bad">Bağlantı hatası: '+e.message+'</p>';});
+}).catch(e=>{document.getElementById('app').innerHTML='<p class="bad">Connection error: '+e.message+'</p>';});
 </script>
 <script src="../shared/i18n/i18n.js"></script><script src="../shared/nav/nav.js"></script></body></html>

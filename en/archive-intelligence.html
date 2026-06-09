@@ -36,39 +36,39 @@ fetch(API).then(r=>r.json()).then(d=>{
  const H=`
  <div class="grid">
   <div class="card"><h2>Genel Performans</h2><div class="big ${cls(o.successRate)}">${rate(o.successRate)}</div>
-   <div class="note">Başarı oranı (validated)</div>
+   <div class="note">Success rate (validated)</div>
    <div class="row"><span class="k">Toplam Analiz</span><span class="v">${o.total}</span></div>
-   <div class="row"><span class="k">Başarılı</span><span class="v ok">${o.success}</span></div>
-   <div class="row"><span class="k">Kısmi</span><span class="v warn">${o.partial}</span></div>
-   <div class="row"><span class="k">Başarısız</span><span class="v bad">${o.fail}</span></div>
-   <div class="row"><span class="k">Ağırlıklı oran</span><span class="v">${rate(o.weightedRate)}</span></div>
+   <div class="row"><span class="k">Successful</span><span class="v ok">${o.success}</span></div>
+   <div class="row"><span class="k">Partial</span><span class="v warn">${o.partial}</span></div>
+   <div class="row"><span class="k">Failed</span><span class="v bad">${o.fail}</span></div>
+   <div class="row"><span class="k">Weighted rate</span><span class="v">${rate(o.weightedRate)}</span></div>
   </div>
-  <div class="card"><h2>AI Beklenti Performansı</h2>
-   <div class="big ${cls(d.expectation.uyumOrani)}">${rate(d.expectation.uyumOrani)}</div><div class="note">Beklenti uyum oranı</div>
+  <div class="card"><h2>AI Expectation Performance</h2>
+   <div class="big ${cls(d.expectation.uyumOrani)}">${rate(d.expectation.uyumOrani)}</div><div class="note">Expectation match rate</div>
    <div class="row"><span class="k">Uyumlu</span><span class="v ok">${d.expectation.uyumlu}</span></div>
-   <div class="row"><span class="k">Beklentiyi aştı</span><span class="v ok">${d.expectation.asti}</span></div>
+   <div class="row"><span class="k">Exceeded expectation</span><span class="v ok">${d.expectation.asti}</span></div>
    <div class="row"><span class="k">Uyumsuz</span><span class="v bad">${d.expectation.uyumsuz}</span></div>
    ${d.expectation.note?'<p class="note">'+d.expectation.note+'</p>':''}
   </div>
-  <div class="card"><h2>Haftalık Özet (7g)</h2>
-   <div class="big ${cls(d.weekly.successRate)}">${rate(d.weekly.successRate)}</div><div class="note">Bu haftanın başarısı</div>
+  <div class="card"><h2>Weekly Summary (7d)</h2>
+   <div class="big ${cls(d.weekly.successRate)}">${rate(d.weekly.successRate)}</div><div class="note">Success this week</div>
    <div class="row"><span class="k">Analiz</span><span class="v">${d.weekly.total}</span></div>
    <div class="row"><span class="k">En iyi coin</span><span class="v">${d.weekly.topCoin||'—'}</span></div>
-   <div class="row"><span class="k">En iyi yapı</span><span class="v">${d.weekly.topStructure||'—'}</span></div>
+   <div class="row"><span class="k">Best structure</span><span class="v">${d.weekly.topStructure||'—'}</span></div>
    <div class="row"><span class="k">En iyi risk</span><span class="v">${d.weekly.topRisk||'—'}</span></div>
   </div>
  </div>
  <div class="grid">
-  <div class="card"><h2>Confidence Doğrulama</h2>${rateRows(d.byConfidence)}</div>
-  <div class="card"><h2>Risk Doğrulama</h2>${rateRows(d.byRisk)}</div>
-  <div class="card"><h2>Coin Bazlı (Top)</h2>${rateRows(d.byCoin.slice(0,8))}</div>
+  <div class="card"><h2>Confidence Validation</h2>${rateRows(d.byConfidence)}</div>
+  <div class="card"><h2>Risk Validation</h2>${rateRows(d.byRisk)}</div>
+  <div class="card"><h2>By Coin (Top)</h2>${rateRows(d.byCoin.slice(0,8))}</div>
  </div>
  <div class="grid">
-  <div class="card full"><h2>Yapı Bazlı Performans (Academy)</h2>${rateRows(d.byStructure)}
+  <div class="card full"><h2>Performance by Structure (Academy)</h2>${rateRows(d.byStructure)}
    <p class="note">${d.gaps.structure_note}</p></div>
   <div class="card full"><h2>Timeline Entegrasyonu</h2><p class="note">${d.timeline.note}</p></div>
  </div>`;
  document.getElementById('app').innerHTML=H;
-}).catch(e=>{document.getElementById('app').innerHTML='<p class="bad">Bağlantı hatası: '+e.message+'</p>';});
+}).catch(e=>{document.getElementById('app').innerHTML='<p class="bad">Connection error: '+e.message+'</p>';});
 </script>
 <script src="../shared/i18n/i18n.js"></script><script src="../shared/nav/nav.js"></script></body></html>

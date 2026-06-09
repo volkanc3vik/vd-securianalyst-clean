@@ -166,11 +166,11 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
   const FEATURES = ['Elite Coin Ranking','Elite Structure Ranking','Elite Market Conditions','Elite Volatility Intelligence','Elite Regime Intelligence','Elite Opportunity Matrix'];
 
   // ── Kart durumu: erişim + veri eşiğine göre ikon/metin (otomatik açılır) ──
-  //   premium (erişim yok)      → 🔒  + "Elite Pass ile açılır"
+  //   premium (erişim yok)      → 🔒  + "Unlocks with Elite Pass"
   //   elite/admin + veri<50     → 🟢  + "Collecting Data"
   //   elite/admin + veri>=50    → 🔓  + "Active"  (eşik aşılınca KENDİLİĞİNDEN)
   function cardState(hasAccess, dataReady){
-    if (!hasAccess) return { icon:'🔒', cls:'lockcard', msg:'Elite Pass ile açılır.', statTxt:'Locked', statCls:'s-lock' };
+    if (!hasAccess) return { icon:'🔒', cls:'lockcard', msg:'Unlocks with Elite Pass.', statTxt:'Locked', statCls:'s-lock' };
     if (!dataReady) return { icon:'🟢', cls:'lockcard', msg:'Market Intelligence data is being collected. Elite metrics will activate after sufficient validated outcomes.', statTxt:'Collecting Data', statCls:'s-collect' };
     return { icon:'🔓', cls:'openable', msg:'Activated — Elite metrics ready.', statTxt:'Active', statCls:'s-active' };
   }
@@ -183,7 +183,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     return `<div class="flagship">
       <h2>${st.icon} AI Intelligence Reports</h2>
       <p class="fd">${st.msg}</p>
-      <span class="ftag">Elite'in en güçlü bölümü · Phase 13.1 hazırlanıyor</span>
+      <span class="ftag">Strongest part of Elite · Phase 13.1 in preparation</span>
       <div class="cstat" style="margin-top:14px">Status: <span class="${st.statCls}">${st.statTxt}</span></div>
     </div>`;
   }
@@ -192,8 +192,8 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     app.innerHTML = `
       <div class="cta">
         <div style="font-size:30px">🔒</div>
-        <div class="ttl">Elite Erişim Gerekli</div>
-        <div class="tx">Elite Intelligence Center, Elite üyelere açıktır.</div>
+        <div class="ttl">Elite Access Required</div>
+        <div class="tx">The Elite Intelligence Center is available to Elite members.</div>
         <a class="btn" href="legal/premium.html">Elite Pass Al →</a>
       </div>`;
   }
@@ -205,9 +205,9 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
       `<div class="reqbar"><span class="badge badge-req badge-lg">🔒 Elite Access Required</span><a class="btn btn-sm" href="legal/premium.html">Elite Pass Al →</a></div>` +
       `<div class="grid">${progressBox('premium', count)}</div>` +
       `<div class="sell">
-        <b>Elite Intelligence Layer</b>, AI Learning ve Archive sonuçları yeterli veri seviyesine ulaştığında aktifleşen üst düzey analiz katmanıdır.
-        <br><br><b>Elite Pass</b> ile şunlar açılır:
-        <ul><li>Coin bazlı gözlemlenen tutarlılık</li><li>Yapı bazlı gözlemlenen tutarlılık</li><li>Market koşulu istihbaratı</li><li>Opportunity Matrix</li><li>Elite AI Reports</li></ul>
+        <b>Elite Intelligence Layer</b>, a high-level analysis layer that activates when AI Learning and Archive results reach sufficient data levels.
+        <br><br><b>Elite Pass</b> unlocks the following:
+        <ul><li>Coin-based observed consistency</li><li>Structure-based observed consistency</li><li>Market condition intelligence</li><li>Opportunity Matrix</li><li>Elite AI Reports</li></ul>
       </div>` +
       featureCards(st) + flagshipReports(st) +
       `<p class="note">Elite Intelligence Engine is currently learning from validated outcomes.</p>`;
@@ -218,7 +218,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
   // gözlemlenen tutarlılığı. Veri: /api/archive-stats (byCoin / byStructure).
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function rateOf(it){ const t=it.total||((it.success||0)+(it.partial||0)+(it.fail||0)); return t?Math.round(((it.success||0)+(it.partial||0)*0.5)/t*100):0; }
-  function confOf(rate,n){ if(n>=10&&rate>=75)return{c:'h',t:'Yüksek Güven'}; if(n>=5)return{c:'m',t:'Orta Güven'}; return{c:'l',t:'Düşük Örneklem'}; }
+  function confOf(rate,n){ if(n>=10&&rate>=75)return{c:'h',t:'High Confidence'}; if(n>=5)return{c:'m',t:'Medium Confidence'}; return{c:'l',t:'Low Sample'}; }
   function pctCls(r){ return r>=75?'hi':r>=60?'mid':'lo'; }
   function scoreOf(it){ const r=rateOf(it), n=it.total||0; return r*Math.min(1,n/10); } // örneklem-ağırlıklı (fluke üste çıkmasın)
   function rankItems(items){
@@ -228,17 +228,17 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
   }
   function consistencyPanel(title, sub, items, emptyMsg, extra){
     const top=rankItems(items);
-    const hdr = top.length ? `<div class="erow-hd"><span class="h-rank">#</span><span class="h-lbl">Parite / Yapı · Gözlemlenen Tutarlılık</span><span class="h-pct">%</span></div>` : '';
+    const hdr = top.length ? `<div class="erow-hd"><span class="h-rank">#</span><span class="h-lbl">Pair / Structure · Observed Consistency</span><span class="h-pct">%</span></div>` : '';
     const body = top.length ? top.map((it,i)=>{
       const r=rateOf(it), n=it.total||0, cf=confOf(r,n);
       return `<div class="erow">
         <div class="erow-top"><span class="erank">#${i+1}</span><span class="elabel">${esc(it.key)}</span><span class="epct ${pctCls(r)}">%${r}</span></div>
         <div class="ebar"><i data-w="${r}"></i></div>
-        <div class="erow-bot"><span class="en">${n} gözlem</span><span class="econf ${cf.c}">${cf.t}</span></div>
+        <div class="erow-bot"><span class="en">${n} observations</span><span class="econf ${cf.c}">${cf.t}</span></div>
       </div>`;
-    }).join('') : `<p class="collecting">${emptyMsg||'Henüz yeterli gözlem yok.'}</p>`;
+    }).join('') : `<p class="collecting">${emptyMsg||'Not enough observations yet.'}</p>`;
     return `<div class="epanel"><div class="epanel-h">${title}</div><div class="epanel-sub">${sub}</div>${hdr}${body}${extra||''}
-      <div class="emicro">Geçmiş doğrulanmış kayıtlardan türetilmiş gözlem · yatırım tavsiyesi değildir.</div></div>`;
+      <div class="emicro">Observation derived from past validated records · not investment advice.</div></div>`;
   }
 
   // Kompakt mini-panel (risk/güven gibi az satırlı koşullar için)
@@ -247,39 +247,39 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     if(!list.length) return `<p class="collecting">Veri birikiyor…</p>`;
     return list.map(it=>{
       const r=rateOf(it), n=it.total||0;
-      return `<div class="mrow"><span class="mlabel">${esc(it.key)}</span><span class="mpct ${pctCls(r)}">%${r}</span><div class="mbar"><i data-w="${r}"></i></div><span class="mn">${n} gözlem</span></div>`;
+      return `<div class="mrow"><span class="mlabel">${esc(it.key)}</span><span class="mpct ${pctCls(r)}">%${r}</span><div class="mbar"><i data-w="${r}"></i></div><span class="mn">${n} observations</span></div>`;
     }).join('');
   }
   // Coin paneli boşken: düşük örneklemli (henüz <5) coinleri "izlemede" olarak soluk göster
   function watchList(items){
     const low=(items||[]).filter(it=>(it.total||0)>0 && (it.total||0)<5).sort((a,b)=>rateOf(b)-rateOf(a)||(b.total||0)-(a.total||0)).slice(0,6);
     if(!low.length) return '';
-    return `<div class="watch"><div class="watch-h">İzlemede · düşük örneklem (henüz ≥5 gözlem değil)</div>`+
+    return `<div class="watch"><div class="watch-h">Watching · low sample (not ≥5 observations yet)</div>`+
       low.map(it=>`<span class="wchip">${esc(it.key)} <b>%${rateOf(it)}</b> · ${it.total}</span>`).join('')+`</div>`;
   }
   function conditionsGrid(d){
-    const dmicro = `<div class="emicro">Doğrulanmış verilerden türetilmiş gözlem; yatırım tavsiyesi değildir.</div>`;
+    const dmicro = `<div class="emicro">Observation derived from validated data; not investment advice.</div>`;
     const real = (title, sub, items) => `<div class="card"><h2>${title}</h2><p class="csub">${sub}</p>${miniRows(items)}${dmicro}</div>`;
-    const soon = (title) => `<div class="card"><h2>${title}<span class="tag">PHASE 13.1</span></h2><p class="collecting">Phase 13.1 hazırlanıyor — veri modeli birikiyor.</p><div class="cstat">Status: <span class="s-collect">Phase 13.1 hazırlanıyor</span></div></div>`;
+    const soon = (title) => `<div class="card"><h2>${title}<span class="tag">PHASE 13.1</span></h2><p class="collecting">Phase 13.1 in preparation — the data model is accumulating.</p><div class="cstat">Status: <span class="s-collect">Phase 13.1 in preparation</span></div></div>`;
     const matrix = () => {
       const rows = (d.opportunityMatrix||[]).filter(r => r.cells && r.cells.some(c=>c.total>0));
-      if(!rows.length) return soon('ELİTE OPPORTUNITY MATRIX');
-      const risks = ['Düşük Risk','Orta Risk','Yüksek Risk'];
+      if(!rows.length) return soon('ELITE OPPORTUNITY MATRIX');
+      const risks = ['Low Risk','Orta Risk','High Risk'];
       const head = `<div class="mx-row mx-head"><span class="mx-cell mx-corner"></span>`+risks.map(r=>`<span class="mx-cell mx-h">${r.replace(' Risk','')}</span>`).join('')+`</div>`;
       const body = rows.map(r=>{
         const cells = r.cells.map(c=>{
           if(!c.total) return `<span class="mx-cell mx-empty">–</span>`;
           const rr=Math.round(c.rate), cls=rr>=75?'hi':rr>=60?'mid':'lo', lo=c.lowSample?' mx-low':'';
-          return `<span class="mx-cell mx-v ${cls}${lo}" title="${c.total} gözlem">%${rr}<i>${c.total}</i></span>`;
+          return `<span class="mx-cell mx-v ${cls}${lo}" title="${c.total} observations">%${rr}<i>${c.total}</i></span>`;
         }).join('');
         return `<div class="mx-row"><span class="mx-cell mx-b">${esc(r.label)}</span>${cells}</div>`;
       }).join('');
-      return `<div class="card"><h2>ELİTE OPPORTUNITY MATRIX</h2><p class="csub">Yön × risk koşullarında gözlemlenen tutarlılık (%tutarlılık · gözlem). Düşük örneklem soluk gösterilir.</p><div class="mx">${head}${body}</div>${dmicro}</div>`;
+      return `<div class="card"><h2>ELITE OPPORTUNITY MATRIX</h2><p class="csub">Consistency observed under direction × risk conditions (%consistency · observations). Low sample is shown faded.</p><div class="mx">${head}${body}</div>${dmicro}</div>`;
     };
     return `<div class="grid">`+
-      real('ELİTE MARKET CONDITIONS','AI güven seviyesine göre gözlemlenen tutarlılık (kalibrasyon).', d.byConfidence)+
-      real('ELİTE VOLATILITY INTELLIGENCE','Risk seviyesine göre gözlemlenen tutarlılık.', d.byRisk)+
-      soon('ELİTE REGIME INTELLIGENCE')+
+      real('ELITE MARKET CONDITIONS','Consistency observed by AI confidence level (calibration).', d.byConfidence)+
+      real('ELITE VOLATILITY INTELLIGENCE','Consistency observed by risk level.', d.byRisk)+
+      soon('ELITE REGIME INTELLIGENCE')+
       matrix()+
       `</div>`;
   }
@@ -288,33 +288,33 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     const obs=(L.observations||[]).slice(0,3);
     const body = obs.length
       ? `<ul class="ai-obs">${obs.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`
-      : `<p class="ai-sum">${esc(L.obsNote||'Gözlem özetleri, doğrulanmış analizler biriktikçe otomatik üretilecektir.')}</p>`;
+      : `<p class="ai-sum">${esc(L.obsNote||'Observation summaries will be generated automatically as validated analyses accumulate.')}</p>`;
     return `<div class="flagship">
       <div class="flag-h"><span class="flag-badge">ELITE</span><h2>AI Intelligence Reports</h2></div>
-      <p class="fd">${cnt} doğrulanmış sonuçtan türetilen otomatik öğrenme özeti · genel tutarlılık %${rate}.</p>
+      <p class="fd">${cnt} automated learning summary derived from validated results · overall consistency %${rate}.</p>
       ${body}
-      <div class="emicro">Geçmiş doğrulanmış verilerden türetilmiş istatistiksel gözlem; yatırım tavsiyesi değildir.</div>
+      <div class="emicro">Statistical observation derived from past validated data; not investment advice.</div>
     </div>`;
   }
   function eheadStrip(d){
     const o=d.overall||{}; const total=o.total||0; const rate=rateOf(o); const cnt=(o.success||0)+(o.partial||0);
     const succ=o.success||0, part=o.partial||0, fail=o.fail||0;
     let asof=''; try{ asof=new Date(d.generated_at||Date.now()).toLocaleString('tr-TR'); }catch(e){}
-    return `<p class="elead"><b>${cnt}</b> doğrulanmış sonuçtan türetildi · Genel tutarlılık <b>%${rate}</b> · Son güncelleme ${esc(asof)}</p>
+    return `<p class="elead"><b>${cnt}</b> derived from validated results · Overall consistency <b>%${rate}</b> · Last update ${esc(asof)}</p>
     <div class="ehead">
-      <div class="hm"><b>${cnt}</b><span>Doğrulanmış sonuç</span></div>
-      <div class="hm"><b>%${rate}</b><span>Genel tutarlılık</span></div>
+      <div class="hm"><b>${cnt}</b><span>Validated result</span></div>
+      <div class="hm"><b>%${rate}</b><span>Overall consistency</span></div>
       <div class="hm"><b>${total}</b><span>Toplam analiz</span></div>
-      <div class="hm hm-bd"><b>${succ}/${part}/${fail}</b><span>Doğru / Kısmi / Yanıltıcı</span></div>
-      <div class="asof"><span>Son güncelleme</span><b>${esc(asof)}</b></div>
+      <div class="hm hm-bd"><b>${succ}/${part}/${fail}</b><span>Correct / Partial / Misleading</span></div>
+      <div class="asof"><span>Last update</span><b>${esc(asof)}</b></div>
     </div>
-    <div class="ethresh">Öğrenme eşiği: <b>20 gözlem</b> · Sıralama eşiği: <b>5 gözlem</b> · Tutarlılık = doğrulanmış + ½ kısmi (ağırlıklı)</div>`;
+    <div class="ethresh">Learning threshold: <b>20 observations</b> · Ranking threshold: <b>5 observations</b> · Consistency = validated + ½ partial (weighted)</div>`;
   }
   function comingNext(){
     const mods=['Elite Market Conditions','Elite Volatility Intelligence','Elite Regime Intelligence','Elite Opportunity Matrix'];
-    const cards=mods.map(m=>`<div class="card"><h2>${m}<span class="tag">PHASE 13.1+</span></h2><p class="collecting">Phase 13.1 hazırlanıyor — veri modeli birikiyor.</p><div class="cstat">Status: <span class="s-collect">Hazırlanıyor</span></div></div>`).join('');
+    const cards=mods.map(m=>`<div class="card"><h2>${m}<span class="tag">PHASE 13.1+</span></h2><p class="collecting">Phase 13.1 in preparation — the data model is accumulating.</p><div class="cstat">Status: <span class="s-collect">In preparation</span></div></div>`).join('');
     return `<div class="grid coming">${cards}</div>
-      <div class="flagship"><h2>🔓 AI Intelligence Reports</h2><p class="fd">Coin ve yapı tutarlılığını birleştiren üst düzey araştırma katmanı.</p><span class="ftag">Elite'in en güçlü bölümü · Phase 13.1 hazırlanıyor</span></div>`;
+      <div class="flagship"><h2>🔓 AI Intelligence Reports</h2><p class="fd">A high-level research layer combining coin and structure consistency.</p><span class="ftag">Strongest part of Elite · Phase 13.1 in preparation</span></div>`;
   }
 
   function renderElite(lvl, d, count){
@@ -322,23 +322,23 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     const coinItems   = (d.byCoinStrong && d.byCoinStrong.length)      ? d.byCoinStrong      : (d.byCoin||[]).filter(x=>(x.total||0)>=5);
     const structItems = (d.byStructureStrong && d.byStructureStrong.length) ? d.byStructureStrong : (d.byStructure||[]).filter(x=>(x.total||0)>=5);
     const coin = consistencyPanel(
-      'GÖZLEMLENEN TUTARLILIK — COİN BAZLI',
-      'AI\'nın geçmiş doğrulanmış analizlerinde bu coinlerde gözlemlenen tutarlılık (Learning Confidence). Coin tavsiyesi değildir.',
+      'OBSERVED CONSISTENCY — COIN-BASED',
+      'Observed consistency in these coins across AI past validated analyses (Learning Confidence). Not a coin recommendation.',
       coinItems,
-      'Coin bazlı için yeterli örneklem (≥5 gözlem) henüz birikmedi. Yapı tarafı hazır; veri arttıkça coinler de dolacak.',
+      'Not enough sample (≥5 observations) has accumulated for the coin-based view yet. The structure side is ready; coins will fill in as data grows.',
       watchList(d.byCoin));
     const struct = consistencyPanel(
-      'GÖZLEMLENEN TUTARLILIK — YAPI BAZLI',
-      'Hangi analiz yapılarının geçmişte daha tutarlı doğrulandığının gözlemi (Observed Consistency).',
+      'OBSERVED CONSISTENCY — STRUCTURE-BASED',
+      'An observation of which analysis structures were validated more consistently in the past (Observed Consistency).',
       structItems,
-      'Yapı bazlı için yeterli örneklem (≥5 gözlem) henüz birikmedi.');
+      'Not enough sample (≥5 observations) has accumulated for the structure-based view yet.');
     app.innerHTML =
       `<div class="grid">${progressBox(lvl, count)}</div>` +
       eheadStrip(d) +
       `<div class="epair">${coin}${struct}</div>` +
       conditionsGrid(d) +
       aiReports(d) +
-      `<p class="note">Elite Intelligence, incelenmiş geçmiş sonuçlardan türetilen istatistiksel gözlemlerdir; yatırım tavsiyesi değildir.</p>`;
+      `<p class="note">Elite Intelligence consists of statistical observations derived from reviewed past results; not investment advice.</p>`;
     requestAnimationFrame(()=>{ try{ document.querySelectorAll('.ebar>i[data-w],.mbar>i[data-w]').forEach(i=>{ i.style.width=i.getAttribute('data-w')+'%'; }); }catch(e){} });
   }
 
