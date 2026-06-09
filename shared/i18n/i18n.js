@@ -120,8 +120,9 @@
   function _injectStyle() {
     if (document.getElementById('vdn-i18n-style')) return;
     var css =
-      '.vdn-i18n-switch{display:inline-flex;align-items:center;gap:2px;margin-left:auto;' +
+      '.vdn-i18n-switch{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto;' +
         'border:1px solid var(--v4-border,rgba(255,255,255,0.10));border-radius:8px;padding:2px}' +
+      '.vdn-i18n-switch--push{margin-left:auto}' +
       '.vdn-i18n-btn{font:inherit;cursor:pointer;background:transparent;border:none;' +
         'color:var(--v4-text-2,#7FA9C9);font-size:12px;font-weight:700;letter-spacing:.02em;' +
         'padding:4px 9px;border-radius:6px;line-height:1;transition:color .15s,background .15s}' +
@@ -135,18 +136,38 @@
   }
 
   var _topDone = false, _drawerDone = false;
+  // Switcher'ın yerleşeceği "yuva": önce sağ küme (snug), yoksa sayfa header'ı (sağa it).
+  //   index.html → .topbar-right · aic-header sayfaları → .aic-nav · diğerleri → .vd-page-header
+  function _findSlot() {
+    var cluster = document.querySelector('.topbar-right')
+               || document.querySelector('.aic-header .aic-nav');
+    if (cluster) return { el: cluster, push: false };
+    var header = document.querySelector('.vd-page-header')
+              || document.querySelector('.aic-header')
+              || document.querySelector('.topbar');
+    if (header) return { el: header, push: true };
+    return null;
+  }
+
   function _injectSwitches() {
+    // 1) Üst-sağ (masaüstü; index'te mobilde de görünür)
     if (!_topDone) {
-      var top = document.querySelector('.vdn-topnav');
-      if (top && !top.querySelector('.vdn-i18n-switch')) { top.appendChild(_makeSwitch()); _topDone = true; }
+      var slot = _findSlot();
+      if (slot && slot.el && !slot.el.querySelector('.vdn-i18n-switch')) {
+        var sw = _makeSwitch();
+        if (slot.push) sw.classList.add('vdn-i18n-switch--push');
+        slot.el.appendChild(sw);
+        _topDone = true;
+      }
     }
+    // 2) Mobil drawer (header sağ kümesi mobilde gizlenirse erişim buradan)
     if (!_drawerDone) {
       var dr = document.querySelector('.vdn-drawer');
       if (dr && !dr.querySelector('.vdn-i18n-switch')) {
-        var sw = _makeSwitch();
-        sw.classList.add('vdn-i18n-switch--drawer');
+        var sw2 = _makeSwitch();
+        sw2.classList.add('vdn-i18n-switch--drawer');
         var hdr = dr.querySelector('.vdn-drawer-hdr');
-        if (hdr) hdr.insertAdjacentElement('afterend', sw); else dr.appendChild(sw);
+        if (hdr) hdr.insertAdjacentElement('afterend', sw2); else dr.appendChild(sw2);
         _drawerDone = true;
       }
     }
