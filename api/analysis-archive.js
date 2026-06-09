@@ -38,6 +38,7 @@ const LIMITS = {
   set_outcome:   { max: 30, windowMs: 60_000 },
   update_review: { max: 30, windowMs: 60_000 },
   mark_shared:   { max: 20, windowMs: 60_000 },
+  list_research: { max: 60, windowMs: 60_000 },
 };
 function rateLimit(action, ip) {
   const cfg = LIMITS[action];
@@ -297,7 +298,43 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, rows: rows || [], count: (rows || []).length });
     }
 
-    // ── id gerektiren işlemler ──
+    // ── LIST_RESEARCH: admin-only "Araştırma Katmanı" görünümü (SALT-OKUNUR) ──
+    // Yalnız sample_type='research'. Public feed / stats / RLS DEĞİŞMEZ; bu yalnızca
+    // okur. Anon ASLA erişemez (x-admin-key guard). İki sorgu: (1) tüm research için
+    // kademe×sonuç özeti, (2) en yeni N kayıt (liste). Hiçbir şey yazmaz/değiştirmez.
+    if (action === 'list_research') {
+      const limit = Math.min(Math.max(parseInt(body.limit, 10) || 120, 1), 300);
+      // Özet için yalnız 2 küçük kolon (tüm research kayıtları)
+      const all = await sbFetch(
+        `/analysis_archive?sample_type=eq.research&select=radar_tier_at_open,outcome_status&limit=2000`,
+        { method: 'GET' }
+      );
+      const RSCH_COLS = 'id,sym,direction_bias,analysis_score,radar_tier_at_open,outcome_status,review_status,review_due_at,created_at,max_favorable_move_pct,max_adverse_move_pct,market_context';
+      const recent = await sbFetch(
+        `/analysis_archive?sample_type=eq.research&order=created_at.desc&limit=${limit}&select=${RSCH_COLS}`,
+        { method: 'GET' }
+      );
+      const TIERS = ['WATCH', 'ARMED', 'CONFIRMED'];
+      const blank = () => ({ total: 0, pending: 0, confirmed: 0, invalidated: 0, partial: 0, other: 0 });
+      const byTier = { WATCH: blank(), ARMED: blank(), CONFIRMED: blank(), UNKNOWN: blank() };
+      const overall = blank();
+      (all || []).forEach((r) => {
+        const tier = TIERS.indexOf(r.radar_tier_at_open) >= 0 ? r.radar_tier_at_open : 'UNKNOWN';
+        const os = r.outcome_status || 'pending';
+        const key = (os === 'confirmed') ? 'confirmed'
+                  : (os === 'invalidated') ? 'invalidated'
+                  : (os === 'partial') ? 'partial'
+                  : (os === 'pending') ? 'pending' : 'other';
+        byTier[tier].total++; byTier[tier][key]++;
+        overall.total++; overall[key]++;
+      });
+      return res.status(200).json({
+        ok: true,
+        summary: { byTier, overall, capped: !!(all && all.length >= 2000) },
+        recent: recent || [],
+        shown: (recent || []).length
+      });
+    }
     const id = body.id;
     if (!id || !UUID_RE.test(String(id))) return res.status(400).json({ ok: false, error: 'invalid_id' });
     const idFilter = `?id=eq.${encodeURIComponent(id)}`;
