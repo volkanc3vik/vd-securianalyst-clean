@@ -1816,15 +1816,16 @@ body{overscroll-behavior-y:none;}
     <div class="login-logo">
       <div class="login-logo-icon">🔑</div>
       <div>
-        <span class="login-logo-title">PREMIUM AKTİVASYON</span>
+        <span class="login-logo-title" data-i18n="login.premiumActivation">PREMIUM AKTİVASYON</span>
         <span class="login-logo-sub">VD SecuriAnalyst</span>
       </div>
     </div>
-    <div class="login-h">Premium Kodu</div>
-    <div class="login-p">Premium üyelik kodunuzu girin. Tüm coinler ve detaylı analizler açılacak.</div>
+    <div class="login-h" data-i18n="login.premiumCode">Premium Kodu</div>
+    <div class="login-p" data-i18n="login.premiumDesc">Premium üyelik kodunuzu girin. Tüm coinler ve detaylı analizler açılacak.</div>
     <div class="login-inp-wrap">
       <input type="password" class="login-inp" id="loginInput"
         placeholder="Premium kodunuzu girin..."
+        data-i18n-attr="placeholder:login.codePlaceholder"
         onkeydown="if(event.key==='Enter')doLogin()"
         autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
       <button class="login-eye" id="loginEye" onclick="toggleLoginEye()">👁</button>
@@ -2017,6 +2018,18 @@ function _verifySession(){
     }, 1000);
   }
 })();
+
+// ── 170.B-2: login butonu metnini i18n'e bağla — SADECE boştaki butonu çevirir.
+// Kilitli/Doğrulanıyor durumlarına ve auth mantığına DOKUNMAZ (disabled ise atlar).
+function _applyLoginI18n(){
+  try{
+    if(!window.VDI18n || !VDI18n.t) return;
+    var b = document.getElementById('loginBtn');
+    if(b && !b.disabled){ b.textContent = VDI18n.t('login.activate'); }
+  }catch(e){}
+}
+window.addEventListener('DOMContentLoaded', _applyLoginI18n);
+window.addEventListener('vd:lang:change', _applyLoginI18n);
 
 // ── Hata göster ──
 function showLoginErr(msg) {
@@ -3352,7 +3365,7 @@ function startTimer() {
     </div>
   </div>
 
-<div class="footer">⚠ Bu sistem yatırım tavsiyesi değildir. Kripto para yatırımları yüksek risk içerir. Kendi araştırmanızı yapın.</div>
+<div class="footer" data-i18n="footer.disclaimer">⚠ Bu sistem yatırım tavsiyesi değildir. Kripto para yatırımları yüksek risk içerir. Kendi araştırmanızı yapın.</div>
 </div>
 
 <script>
