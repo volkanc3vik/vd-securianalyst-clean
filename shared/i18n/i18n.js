@@ -19,8 +19,63 @@
   var LANGS   = ['tr', 'en'];
   var DEFAULT = 'tr';
 
-  // ── SÖZLÜKLER — 170.B-1'de BİLEREK BOŞ (henüz çeviri yok). B-2+ doldurulacak.
-  var DICT = { tr: {}, en: {} };
+  // ── SÖZLÜKLER — 170.B-2: ortak metinler (nav, footer, toast, login). Onaylı çeviriler.
+  var DICT = {
+    tr: {
+      'nav.performans': 'Performans',
+      'footer.disclaimer': '⚠ Bu sistem yatırım tavsiyesi değildir. Kripto para yatırımları yüksek risk içerir. Kendi araştırmanızı yapın.',
+      'toast.welcome': 'Hoş geldiniz',
+      'toast.welcomeSource': '{src} hoş geldiniz',
+      'toast.analysisLoaded': '{sym} analizi yüklendi · İncelemeye başlayın',
+      'toast.platformLoaded': 'Analiz platformu yüklendi',
+      'login.premiumActivation': 'PREMIUM AKTİVASYON',
+      'login.premiumDesc': 'Premium üyelik kodunuzu girin. Tüm coinler ve detaylı analizler açılacak.',
+      'login.premiumCode': 'Premium Kodu',
+      'login.codePlaceholder': 'Premium kodunuzu girin...',
+      'login.activate': 'Premium’u Aktive Et',
+      'login.signIn': 'Giriş Yap',
+      'login.verifying': 'Doğrulanıyor...',
+      'login.enterCode': '⚠ Lütfen erişim kodunuzu girin.',
+      'login.invalidCode': 'Geçersiz erişim kodu',
+      'login.tooManyTry': 'Çok fazla deneme. {n} dakika sonra tekrar deneyin.',
+      'login.tooManyFail': 'Çok fazla hatalı deneme. 15 dakika bekleyin.',
+      'login.lockedWait': '🔒 Hesap {n} dakika kilitli. Lütfen bekleyin.',
+      'login.locked': '🔒 Hesap {n} dakika kilitli.',
+      'login.lockedAfter': '🔒 {msg}. Hesap {n} dakika kilitlendi.',
+      'login.tryAgainSuffix': '. Lütfen tekrar deneyin.',
+      'login.deviceLimit': '🔒 Bu premium kodu izin verilen cihaz sayısına ulaşmıştır. Destek için support@vd-securianalyst.com',
+      'access.unlimited': 'Sınırsız Erişim',
+      'access.day1': '1 Gün',
+      'access.days': '{n} Gün'
+    },
+    en: {
+      'nav.performans': 'Performance',
+      'footer.disclaimer': '⚠ This platform does not provide financial advice. Crypto assets involve high risk. Always do your own research.',
+      'toast.welcome': 'Welcome',
+      'toast.welcomeSource': 'Welcome — {src}',
+      'toast.analysisLoaded': '{sym} analysis loaded · Start reviewing',
+      'toast.platformLoaded': 'Analysis platform loaded',
+      'login.premiumActivation': 'PREMIUM ACTIVATION',
+      'login.premiumDesc': 'Enter your premium code. All coins and detailed analysis will unlock.',
+      'login.premiumCode': 'Premium Code',
+      'login.codePlaceholder': 'Enter your premium code...',
+      'login.activate': 'Activate Premium',
+      'login.signIn': 'Sign in',
+      'login.verifying': 'Verifying...',
+      'login.enterCode': '⚠ Please enter your access code.',
+      'login.invalidCode': 'Invalid access code',
+      'login.tooManyTry': 'Too many attempts. Try again in {n} minutes.',
+      'login.tooManyFail': 'Too many failed attempts. Wait 15 minutes.',
+      'login.lockedWait': '🔒 Account locked for {n} minutes. Please wait.',
+      'login.locked': '🔒 Account locked for {n} minutes.',
+      'login.lockedAfter': '🔒 {msg}. Account locked for {n} minutes.',
+      'login.tryAgainSuffix': '. Please try again.',
+      'login.deviceLimit': '🔒 This premium code has reached its device limit. Contact support@vd-securianalyst.com',
+      'access.unlimited': 'Unlimited access',
+      'access.day1': '1 day',
+      'access.days': '{n} days'
+    }
+  };
 
   function _norm(l) {
     l = String(l || '').toLowerCase().slice(0, 2);
@@ -43,20 +98,34 @@
     try { localStorage.setItem(LS_KEY, _lang); } catch (e) {}
     _applyHtmlLang();
     _syncSwitches();
-    applyStatic(document);   // statik [data-i18n] düğümleri (şimdilik yok → no-op)
+    applyStatic(document);     // statik [data-i18n] düğümlerini yeni dile çevir
+    _translateNav(document);   // nav "Performans" etiketini yeni dile çevir
     try { window.dispatchEvent(new CustomEvent('vd:lang:change', { detail: { lang: _lang } })); } catch (e) {}
     return _lang;
   }
   function toggle() { return setLang(_lang === 'tr' ? 'en' : 'tr'); }
 
-  // Sözlük araması: önce aktif dil, yedek verildiyse yedek, yoksa TR, en son anahtar.
-  function t(key, fallback) {
+  function _interp(s, vars) {
+    if (!vars) return s;
+    return String(s).replace(/\{(\w+)\}/g, function (m, k) {
+      return (vars[k] != null) ? vars[k] : m;
+    });
+  }
+  function _lookup(key, fallback) {
     var d = DICT[_lang] || {};
     if (Object.prototype.hasOwnProperty.call(d, key)) return d[key];
     if (fallback != null) return fallback;
     var dtr = DICT.tr || {};
     if (Object.prototype.hasOwnProperty.call(dtr, key)) return dtr[key];
     return key;
+  }
+  // t(anahtar)                → çeviri
+  // t(anahtar, "yedek")       → sözlükte yoksa yedek metin (applyStatic kullanır)
+  // t(anahtar, { n: 5 })      → {n} gibi yer tutucuları doldurur
+  function t(key, opt) {
+    var isVars = (opt && typeof opt === 'object');
+    var str = _lookup(key, isVars ? null : opt);
+    return isVars ? _interp(str, opt) : str;
   }
 
   // Statik HTML çevirisi: [data-i18n="anahtar"] → textContent; [data-i18n-attr="placeholder:anahtar;title:anahtar2"] → öznitelik.
@@ -174,16 +243,38 @@
     return _topDone && _drawerDone;
   }
 
+  // Nav'da YALNIZ çevrilen etiketi (Performans) günceller — nav.js'e dokunmadan, data-key ile.
+  function _translateNav(root) {
+    try {
+      root = root || document;
+      if (!root.querySelectorAll) return;
+      var anchors = root.querySelectorAll('[data-key="performans"]');
+      var label = t('nav.performans');
+      for (var i = 0; i < anchors.length; i++) {
+        var a = anchors[i];
+        var lbl = a.querySelector('.vdn-lbl');
+        if (lbl) { lbl.textContent = label; continue; }
+        for (var n = 0; n < a.childNodes.length; n++) {
+          var node = a.childNodes[n];
+          if (node.nodeType === 3 && node.textContent && node.textContent.trim()) { node.textContent = label; break; }
+        }
+      }
+    } catch (e) {}
+  }
+
   function _boot() {
     _applyHtmlLang();
     _injectStyle();
+    applyStatic(document);     // statik [data-i18n] (footer vb.) — açılışta aktif dile çevir
     // nav.js DOMContentLoaded'da mount oluyor; yükleme sırası garanti değil → kısa retry ile bekle.
     var tries = 0;
     var iv = setInterval(function () {
       tries++;
+      _translateNav(document);
       if (_injectSwitches() || tries > 30) { _syncSwitches(); clearInterval(iv); }
     }, 120);
     _injectSwitches();
+    _translateNav(document);
     _syncSwitches();
   }
 
