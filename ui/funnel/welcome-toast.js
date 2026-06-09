@@ -45,7 +45,9 @@
     const titleIcon = document.createElement('span');
     titleIcon.textContent = '📊';
     const titleText = document.createElement('span');
-    titleText.textContent = sourceLabel ? `${sourceLabel} hoş geldiniz` : 'Hoş geldiniz';
+    titleText.textContent = (window.VDI18n && VDI18n.t)
+      ? (sourceLabel ? VDI18n.t('toast.welcomeSource', { src: sourceLabel }) : VDI18n.t('toast.welcome'))
+      : (sourceLabel ? `${sourceLabel} hoş geldiniz` : 'Hoş geldiniz');
     titleEl.appendChild(titleIcon);
     titleEl.appendChild(titleText);
 
@@ -53,9 +55,13 @@
     const bodyEl = document.createElement('div');
     bodyEl.className = 'vd-welcome-toast-body';
     if (symBase) {
-      bodyEl.textContent = `${symBase} analizi yüklendi · İncelemeye başlayın`;
+      bodyEl.textContent = (window.VDI18n && VDI18n.t)
+        ? VDI18n.t('toast.analysisLoaded', { sym: symBase })
+        : `${symBase} analizi yüklendi · İncelemeye başlayın`;
     } else {
-      bodyEl.textContent = 'Analiz platformu yüklendi';
+      bodyEl.textContent = (window.VDI18n && VDI18n.t)
+        ? VDI18n.t('toast.platformLoaded')
+        : 'Analiz platformu yüklendi';
     }
 
     // ── Close button ──
