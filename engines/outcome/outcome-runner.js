@@ -6,7 +6,7 @@
 // (confirm / invalid) önce geldiğini bulur → outcome_status'u yazar.
 //
 // ÖNEMLİ:
-//  • Sadece outcome_status='pending' & excluded_from_learning=false & due.
+//  • outcome_status='pending' & due & (excluded_from_learning=false VEYA sample_type='research'). [Aşama 2]
 //    → Legacy ve eski-motor kayıtlarına ASLA dokunmaz, yeniden hesaplamaz.
 //  • Veri yetmezse/fiyat çekilemezse kayıt PENDING kalır (uydurma yok).
 //  • outcome_status → review_status köprüsü (Volkan onayı): mevcut
@@ -215,7 +215,7 @@ export async function runBatch({ limit = 25, dry = false } = {}) {
   let rows;
   try {
     rows = await sbFetch(
-      `/analysis_archive?outcome_status=eq.pending&excluded_from_learning=eq.false&review_due_at=lte.${encodeURIComponent(nowIso)}` +
+      `/analysis_archive?outcome_status=eq.pending&or=(excluded_from_learning.eq.false,sample_type.eq.research)&review_due_at=lte.${encodeURIComponent(nowIso)}` +
       `&order=review_due_at.asc.nullslast&limit=${lim}&select=${cols}`,
       { method: 'GET' }
     );
