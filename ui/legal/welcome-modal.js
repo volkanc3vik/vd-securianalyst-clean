@@ -41,6 +41,42 @@
     } catch (e) { /* yut */ }
   }
 
+  // ── i18n: korumalı çeviri (i18n.js yüklü değilse Türkçe yedeğe düşer) ──
+  function _t(key, vars, fallback) {
+    return (window.VDt) ? window.VDt(key, vars, fallback) : (fallback != null ? fallback : key);
+  }
+
+  function _html() {
+    var linkTerms = '<a href="legal/terms.html" target="_blank" rel="noopener">' + _t('welcome.linkTerms', null, 'Kullanım Koşulları') + '</a>';
+    var linkRisk  = '<a href="legal/risk.html" target="_blank" rel="noopener">' + _t('welcome.linkRisk', null, 'Risk Bildirimi') + '</a>';
+    var linkKvkk  = '<a href="legal/kvkk.html" target="_blank" rel="noopener">' + _t('welcome.linkKvkk', null, 'KVKK Aydınlatma Metni') + '</a>';
+    var termsText = _t('welcome.termsHtml', { t: linkTerms, r: linkRisk, k: linkKvkk },
+      'Devam ederek ' + linkTerms + ', ' + linkRisk + ' ve ' + linkKvkk + '\u2019ni okumayı ve kabul etmeyi onaylamış sayılırsınız.');
+
+    return `
+      <div class="vd-welcome-modal">
+        <button class="vd-welcome-close" data-action="close" aria-label="${_t('welcome.close', null, 'Kapat')}">✕</button>
+
+        <h2 class="vd-welcome-title" id="vd-welcome-title">${_t('welcome.title', null, 'VD SecuriAnalyst\u2019e Hoş geldiniz')}</h2>
+
+        <p class="vd-welcome-subtitle">${_t('welcome.subtitle', null, 'AI destekli kripto teknik analiz platformu. Algoritmik analizler ve teknik formasyonlar bilgilendirme amaçlıdır.')}</p>
+
+        <div class="vd-welcome-warnings">
+          <p><strong>⚠</strong> ${_t('welcome.warn1', null, 'Bu platform <strong>yatırım tavsiyesi vermez</strong>.')}</p>
+          <p><strong>⚠</strong> ${_t('welcome.warn2', null, 'İçerikler eğitim ve bilgilendirme amaçlıdır.')}</p>
+          <p><strong>⚠</strong> ${_t('welcome.warn3', null, 'Yatırım kararları kullanıcı sorumluluğundadır.')}</p>
+        </div>
+
+        <p class="vd-welcome-terms-text">${termsText}</p>
+
+        <div class="vd-welcome-buttons">
+          <button class="vd-welcome-btn vd-welcome-btn-secondary" data-action="terms">${_t('welcome.btnTerms', null, 'Kullanım Koşullarını Oku')}</button>
+          <button class="vd-welcome-btn vd-welcome-btn-primary" data-action="accept">${_t('welcome.btnAccept', null, 'Anladım, Devam Et')}</button>
+        </div>
+      </div>
+    `;
+  }
+
   function _build() {
     const overlay = document.createElement('div');
     overlay.id = OVERLAY_ID;
@@ -48,46 +84,16 @@
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'vd-welcome-title');
-
-    overlay.innerHTML = `
-      <div class="vd-welcome-modal">
-        <button class="vd-welcome-close" data-action="close" aria-label="Kapat">✕</button>
-
-        <h2 class="vd-welcome-title" id="vd-welcome-title">VD SecuriAnalyst'e Hoş geldiniz</h2>
-
-        <p class="vd-welcome-subtitle">
-          AI destekli kripto teknik analiz platformu. Algoritmik analizler ve
-          teknik formasyonlar bilgilendirme amaçlıdır.
-        </p>
-
-        <div class="vd-welcome-warnings">
-          <p><strong>⚠</strong> Bu platform <strong>yatırım tavsiyesi vermez</strong>.</p>
-          <p><strong>⚠</strong> İçerikler eğitim ve bilgilendirme amaçlıdır.</p>
-          <p><strong>⚠</strong> Yatırım kararları kullanıcı sorumluluğundadır.</p>
-        </div>
-
-        <p class="vd-welcome-terms-text">
-          Devam ederek
-          <a href="legal/terms.html" target="_blank" rel="noopener">Kullanım Koşulları</a>,
-          <a href="legal/risk.html" target="_blank" rel="noopener">Risk Bildirimi</a> ve
-          <a href="legal/kvkk.html" target="_blank" rel="noopener">KVKK Aydınlatma Metni</a>'ni
-          okumayı ve kabul etmeyi onaylamış sayılırsınız.
-        </p>
-
-        <div class="vd-welcome-buttons">
-          <button class="vd-welcome-btn vd-welcome-btn-secondary" data-action="terms">
-            Kullanım Koşullarını Oku
-          </button>
-          <button class="vd-welcome-btn vd-welcome-btn-primary" data-action="accept">
-            Anladım, Devam Et
-          </button>
-        </div>
-      </div>
-    `;
-
+    overlay.innerHTML = _html();
     overlay.addEventListener('click', _onClick);
     return overlay;
   }
+
+  // Dil değişince, modal açıksa içeriği yeniden çiz (click listener overlay'de kalır)
+  window.addEventListener('vd:lang:change', function () {
+    var overlay = document.getElementById(OVERLAY_ID);
+    if (overlay) overlay.innerHTML = _html();
+  });
 
   function _onClick(e) {
     const overlay = document.getElementById(OVERLAY_ID);
