@@ -57,7 +57,19 @@
       'timer.unlimited': 'Sınırsız',
       'access.unlimited': 'Sınırsız Erişim',
       'access.day1': '1 Gün',
-      'access.days': '{n} Gün'
+      'access.days': '{n} Gün',
+      'welcome.close': 'Kapat',
+      'welcome.title': 'VD SecuriAnalyst\u2019e Hoş geldiniz',
+      'welcome.subtitle': 'AI destekli kripto teknik analiz platformu. Algoritmik analizler ve teknik formasyonlar bilgilendirme amaçlıdır.',
+      'welcome.warn1': 'Bu platform <strong>yatırım tavsiyesi vermez</strong>.',
+      'welcome.warn2': 'İçerikler eğitim ve bilgilendirme amaçlıdır.',
+      'welcome.warn3': 'Yatırım kararları kullanıcı sorumluluğundadır.',
+      'welcome.linkTerms': 'Kullanım Koşulları',
+      'welcome.linkRisk': 'Risk Bildirimi',
+      'welcome.linkKvkk': 'KVKK Aydınlatma Metni',
+      'welcome.termsHtml': 'Devam ederek {t}, {r} ve {k}\u2019ni okumayı ve kabul etmeyi onaylamış sayılırsınız.',
+      'welcome.btnTerms': 'Kullanım Koşullarını Oku',
+      'welcome.btnAccept': 'Anladım, Devam Et'
     },
     en: {
       'nav.performans': 'Performance',
@@ -95,7 +107,19 @@
       'timer.unlimited': 'Unlimited',
       'access.unlimited': 'Unlimited access',
       'access.day1': '1 day',
-      'access.days': '{n} days'
+      'access.days': '{n} days',
+      'welcome.close': 'Close',
+      'welcome.title': 'Welcome to VD SecuriAnalyst',
+      'welcome.subtitle': 'AI-powered crypto technical analysis platform. Algorithmic analysis and technical patterns are for informational purposes only.',
+      'welcome.warn1': 'This platform <strong>does not provide investment advice</strong>.',
+      'welcome.warn2': 'Content is for educational and informational purposes.',
+      'welcome.warn3': "Investment decisions are the user's responsibility.",
+      'welcome.linkTerms': 'Terms of Use',
+      'welcome.linkRisk': 'Risk Disclosure',
+      'welcome.linkKvkk': 'Privacy Notice (KVKK)',
+      'welcome.termsHtml': 'By continuing, you confirm that you have read and accept the {t}, {r} and {k}.',
+      'welcome.btnTerms': 'Read Terms of Use',
+      'welcome.btnAccept': 'I Understand, Continue'
     }
   };
 
@@ -314,5 +338,21 @@
     t: t,
     applyStatic: applyStatic,
     LANGS: LANGS.slice()
+  };
+
+  // ── Global çeviri yardımcısı (B-3+ JS bileşenleri için) ──────────────
+  // Kullanım:
+  //   VDt('key')                       → çeviri (yoksa anahtarın kendisi)
+  //   VDt('key', { n: 5 })             → {n} gibi yer tutucuları doldurur
+  //   VDt('key', null, 'Türkçe yedek') → sözlükte yoksa yedek metin
+  // Çağıran dosyalar i18n.js yüklenmeden önce çalışabileceğinden,
+  // her zaman (window.VDt ? VDt(...) : yedek) kalıbıyla çağrılmalıdır.
+  window.VDt = function (key, vars, fallback) {
+    try {
+      var opt = (vars && typeof vars === 'object') ? vars : fallback;
+      return t(key, opt);
+    } catch (e) {
+      return (fallback != null) ? fallback : key;
+    }
   };
 })();
