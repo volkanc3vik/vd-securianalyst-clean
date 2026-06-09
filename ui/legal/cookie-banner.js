@@ -16,6 +16,9 @@
 (function() {
   'use strict';
 
+  // i18n: korumalı çeviri (route diline göre TR/EN)
+  function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
+
   const BANNER_ID = 'vd-cookie-banner';
   const STORAGE_KEY = 'vd_cookie_consent';
   const STORAGE_EXPIRES_KEY = 'vd_cookie_consent_until';
@@ -56,19 +59,17 @@
     banner.id = BANNER_ID;
     banner.className = 'vd-cookie-banner';
     banner.setAttribute('role', 'region');
-    banner.setAttribute('aria-label', 'Çerez tercihi');
+    banner.setAttribute('aria-label', _t('cookie.aria', null, 'Çerez tercihi'));
 
     banner.innerHTML = `
       <div class="vd-cookie-banner-inner">
         <div class="vd-cookie-text">
-          🍪 <strong>Çerez kullanımı:</strong>
-          Platform analytics ve oturum yönetimi için çerez kullanır.
-          Tercihinizi değiştirmek için "Detaylar"a bakın.
+          ${_t('cookie.text', null, '🍪 <strong>Çerez kullanımı:</strong> Platform analytics ve oturum yönetimi için çerez kullanır. Tercihinizi değiştirmek için "Detaylar"a bakın.')}
         </div>
         <div class="vd-cookie-buttons">
-          <button class="vd-cookie-btn" data-action="necessary">Sadece Gerekli</button>
-          <button class="vd-cookie-btn vd-cookie-btn-primary" data-action="all">Tümünü Kabul Et</button>
-          <button class="vd-cookie-btn" data-action="details">Detaylar →</button>
+          <button class="vd-cookie-btn" data-action="necessary">${_t('cookie.necessary', null, 'Sadece Gerekli')}</button>
+          <button class="vd-cookie-btn vd-cookie-btn-primary" data-action="all">${_t('cookie.acceptAll', null, 'Tümünü Kabul Et')}</button>
+          <button class="vd-cookie-btn" data-action="details">${_t('cookie.details', null, 'Detaylar →')}</button>
         </div>
       </div>
     `;
@@ -87,7 +88,7 @@
       hide();
     } else if (action === 'details') {
       // Hukuki sayfaya yönlendir — banner kaybolmasın
-      const path = /\/legal\//.test(window.location.pathname) ? 'cookies.html' : 'legal/cookies.html';
+      var path = /\/legal\//.test(window.location.pathname) ? 'cookies.html' : '/legal/cookies.html';
       window.location.href = path;
     }
   }
