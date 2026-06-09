@@ -608,6 +608,11 @@
 
   window.VDEarlyRadar = {
     run: run, _state: ST, _cfg: CFG,
+    // Aşama 2b — SALT-OKUNUR: son taramanın TÜM sınıflanmış (stage'li) satırları (top-N DEĞİL).
+    // Araştırma örnekleyici buradan TEMSİLİ örnek seçer; render/CSS/scoring DEĞİŞMEZ.
+    classified: function () {
+      return (_lastRows || []).filter(function (r) { return r && r.sym && r.stage; });
+    },
     // BUILD 153 — SALT-OKUNUR özet (sağ rail için). Hesaplama YOK; yalnız
     // halihazırda hesaplanmış sıralı fırsatları + bias'ı dışa verir.
     summary: function () {
