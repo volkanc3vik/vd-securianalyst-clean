@@ -47,6 +47,21 @@
     if (hr < 24) return hr + ' saat önce';
     return Math.floor(hr / 24) + ' gün önce';
   }
+  // "3 saat sonra" / "17 dakika sonra" — sonuç penceresine kalan süre
+  function _relFuture(iso) {
+    if (!iso) return '—';
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return '—';
+    const diff = t - Date.now();
+    if (diff <= 0) return 'şimdi';
+    const min = Math.floor(diff / 60000);
+    if (min < 60) return min + ' dakika sonra';
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return hr + ' saat sonra';
+    const day = Math.floor(hr / 24);
+    const remHr = hr % 24;
+    return day + ' gün' + (remHr ? ' ' + remHr + ' saat' : '') + ' sonra';
+  }
   function _statusPill(os) {
     switch (os) {
       case 'confirmed':   return '<span class="aic-pend-pill aic-rsch-ok">🟢 Doğrulandı</span>';
@@ -86,6 +101,8 @@
       '#aic-research .aic-rsch-move{font-size:12px;color:var(--v4-text-2,#7FA9C9)}' +
       '#aic-research .aic-rsch-move .fav{color:#3fb950;font-weight:600}' +
       '#aic-research .aic-rsch-move .adv{color:#f85149;font-weight:600}' +
+      '#aic-research .aic-rsch-due{font-size:11.5px;color:var(--v4-text-2,#7FA9C9)}' +
+      '#aic-research .aic-rsch-due.ready{color:#E3B341;font-weight:600}' +
       '#aic-research .aic-rsch-ctx{font-size:11px;color:var(--v4-text-3,#4a6a85);font-family:var(--mono,monospace)}';
     const tag = document.createElement('style');
     tag.id = 'aic-rsch-style';
@@ -143,6 +160,14 @@
     const moveLine = resolved
       ? '<span class="aic-rsch-move">Lehte <span class="fav">' + _pct(rec.max_favorable_move_pct) + '</span> · Aleyhte <span class="adv">' + _pct(rec.max_adverse_move_pct) + '</span></span>'
       : '';
+    // Bekleyen kayıtlar: sonuç penceresine kalan süre (production paneliyle aynı alan: review_due_at)
+    const due = rec.review_due_at ? new Date(rec.review_due_at).getTime() : null;
+    let dueLine = '';
+    if (!resolved && due != null && !isNaN(due)) {
+      dueLine = (due <= Date.now())
+        ? '<span class="aic-rsch-due ready">📊 5 saat doldu — sıradaki otomatik turda çözülecek</span>'
+        : '<span class="aic-rsch-due">⏳ Sonuç: ' + _esc(_relFuture(rec.review_due_at)) + '</span>';
+    }
     return '' +
       '<div class="aic-pend-card">' +
         '<span class="aic-pend-toprow">' +
@@ -151,6 +176,7 @@
         '</span>' +
         '<span class="aic-pend-meta">' + _tierBadge(rec.radar_tier_at_open) + ' · ' + _esc(_dirLabel(rec.direction_bias)) + ' · Skor: ' + _esc(score) + '</span>' +
         moveLine +
+        dueLine +
         '<span class="aic-rsch-ctx">açılışta yaş: ' + ageStr + ' · rejim: ' + regime + ' · ' + _esc(_relTime(rec.created_at)) + '</span>' +
       '</div>';
   }
