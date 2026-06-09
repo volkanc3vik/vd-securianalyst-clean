@@ -243,6 +243,11 @@ export default async function handler(req, res) {
       }
 
       const mc = (body.market_context && typeof body.market_context === 'object') ? body.market_context : {};
+      // ── Aşama 2 (araştırma katmanı): sample_type + radar tier damgası ──
+      // research ⇒ excluded_from_learning=true SUNUCU TARAFINDA zorlanır → public feed/istatistik/öğrenme DIŞI kalır.
+      const sampleType = (body.sample_type === 'research') ? 'research' : 'production';
+      const _tierUp = String(body.radar_tier_at_open || '').toUpperCase();
+      const radarTier = ['WATCH', 'ARMED', 'CONFIRMED'].includes(_tierUp) ? _tierUp : null;
       // Outcome Tracking Faz 1: inceleme penceresi + due zamanı (hesaplama YOK, sadece zamanlama)
       const _prof = profileFor(timeframe);
       const winHours = _prof.window;
@@ -263,6 +268,10 @@ export default async function handler(req, res) {
         outcome_status: 'pending',
         confirm_threshold_pct: _prof.confirm,
         invalid_threshold_pct: _prof.invalid,
+        // ── Aşama 2: araştırma katmanı damgası (production VARSAYILAN → görünür akış DEĞİŞMEZ) ──
+        sample_type: sampleType,
+        radar_tier_at_open: radarTier,
+        excluded_from_learning: (sampleType === 'research'),
         telegram_msg_id: msgId,
       };
       const rows = await sbFetch(`/analysis_archive?select=${RETURN_COLS}`, {
