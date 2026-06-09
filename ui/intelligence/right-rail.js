@@ -8,6 +8,8 @@
   'use strict';
   if (window.VDRightRail) return;
 
+  function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
+
   function byId(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function lvl() { try { if (window.VDAccess && VDAccess.level) return VDAccess.level(); } catch (e) {} return 'free'; }
@@ -27,11 +29,11 @@
   }
   function dirMeta(d) {
     d = (d || '').toUpperCase();
-    if (d === 'LONG') return { txt: 'LONG', yon: 'Yükseliş', col: '#00FFA3' };
-    if (d === 'SHORT') return { txt: 'SHORT', yon: 'Düşüş', col: '#FF3B6B' };
-    return { txt: 'İZLE', yon: 'Nötr', col: '#7FA9C9' };
+    if (d === 'LONG') return { txt: 'LONG', yon: _t('rr.yonUp', null, 'Yükseliş'), col: '#00FFA3' };
+    if (d === 'SHORT') return { txt: 'SHORT', yon: _t('rr.yonDown', null, 'Düşüş'), col: '#FF3B6B' };
+    return { txt: _t('rr.watch', null, 'İZLE'), yon: _t('rr.yonNeutral', null, 'Nötr'), col: '#7FA9C9' };
   }
-  function stageWord(s) { return s === 'CONFIRMED' ? 'Teyitli' : (s === 'ARMED' ? 'Hazır' : 'İzleme'); }
+  function stageWord(s) { return s === 'CONFIRMED' ? _t('rr.stageConfirmed', null, 'Teyitli') : (s === 'ARMED' ? _t('rr.stageArmed', null, 'Hazır') : _t('rr.stageWatch', null, 'İzleme')); }
 
   // ── AI Piyasa Bias göstergesi (SVG) ──
   function gaugeSVG(lp, sp) {
@@ -61,14 +63,14 @@
     }
     return ''
       + '<div class="rl-card">'
-      + '<div class="rl-h"><span class="rl-h-ic">◈</span><span class="rl-h-t">AI PİYASA BIAS</span></div>'
+      + '<div class="rl-h"><span class="rl-h-ic">◈</span><span class="rl-h-t">' + _t('rr.biasTitle', null, 'AI PİYASA BIAS') + '</span></div>'
       + '<div class="rl-bias">'
-      + '<div class="rl-side rl-long"><div class="rl-side-t">LONG</div><div class="rl-side-p">' + b.lp + '%</div><div class="rl-side-s">Yükseliş Eğilimi</div></div>'
+      + '<div class="rl-side rl-long"><div class="rl-side-t">LONG</div><div class="rl-side-p">' + b.lp + '%</div><div class="rl-side-s">' + _t('rr.longTrend', null, 'Yükseliş Eğilimi') + '</div></div>'
       + gaugeSVG(b.lp, b.sp)
-      + '<div class="rl-side rl-short"><div class="rl-side-t">SHORT</div><div class="rl-side-p">' + b.sp + '%</div><div class="rl-side-s">Düşüş Eğilimi</div></div>'
+      + '<div class="rl-side rl-short"><div class="rl-side-t">SHORT</div><div class="rl-side-p">' + b.sp + '%</div><div class="rl-side-s">' + _t('rr.shortTrend', null, 'Düşüş Eğilimi') + '</div></div>'
       + '</div>'
-      + '<div class="rl-conf"><span>◈ AI Güven Skoru: <b>' + conf + '</b>/100</span><button class="rl-btn" data-rl="bias">Bias Analizini Aç →</button></div>'
-      + '<div class="rl-micro">Yön dağılımı gözlemi (LONG/SHORT setup sayımı) · yatırım tavsiyesi değildir.</div>'
+      + '<div class="rl-conf"><span>◈ ' + _t('rr.confScore', null, 'AI Güven Skoru:') + ' <b>' + conf + '</b>/100</span><button class="rl-btn" data-rl="bias">' + _t('rr.biasOpen', null, 'Bias Analizini Aç →') + '</button></div>'
+      + '<div class="rl-micro">' + _t('rr.biasMicro', null, 'Yön dağılımı gözlemi (LONG/SHORT setup sayımı) · yatırım tavsiyesi değildir.') + '</div>'
       + '</div>';
   }
 
@@ -82,9 +84,9 @@
       + '<div class="rl-opp-l"><div class="rl-logo" style="box-shadow:0 0 0 1.5px ' + dm.col + '55">' + sym.slice(0, 3) + '</div>'
       + '<div><div class="rl-opp-sym">' + sym + '<span class="rl-opp-q">/USDT</span> <span class="rl-dir" style="color:' + dm.col + ';background:' + dm.col + '1a;border-color:' + dm.col + '55">' + dm.txt + '</span></div>'
       + '<div class="rl-opp-px">' + fmtPrice(r.price) + ' ' + chgHtml(r.chg) + '</div>'
-      + '<div class="rl-opp-tags"><span class="rl-tag">◆ ' + stageWord(r.stage) + ' Fırsat</span><span class="rl-yon">Yön: ' + dm.yon + '</span></div>'
+      + '<div class="rl-opp-tags"><span class="rl-tag">◆ ' + stageWord(r.stage) + ' ' + _t('rr.oppWord', null, 'Fırsat') + '</span><span class="rl-yon">' + _t('rr.dirLabel', null, 'Yön: ') + dm.yon + '</span></div>'
       + '</div></div>'
-      + '<div class="rl-opp-r"><div class="rl-skor-l">Skor</div><div class="rl-skor"><b style="color:' + scoreCol + '">' + score + '</b><span>/100</span></div></div>'
+      + '<div class="rl-opp-r"><div class="rl-skor-l">' + _t('rr.skor', null, 'Skor') + '</div><div class="rl-skor"><b style="color:' + scoreCol + '">' + score + '</b><span>/100</span></div></div>'
       + '</div>';
   }
 
@@ -92,21 +94,21 @@
     var top = (s.top || []).slice(0, 3);
     var totalAll = s.counts ? (s.counts.gold + s.counts.orange + s.counts.gray) : top.length;
     var more = Math.max(0, totalAll - top.length);
-    var body = top.length ? top.map(oppRow).join('') : '<div class="rl-empty">Bu taramada uygun yapı yok — sonraki taramada güncellenecek.</div>';
+    var body = top.length ? top.map(oppRow).join('') : '<div class="rl-empty">' + _t('rr.empty', null, 'Bu taramada uygun yapı yok — sonraki taramada güncellenecek.') + '</div>';
     return ''
       + '<div class="rl-card">'
-      + '<div class="rl-h"><span class="rl-h-ic">⚡</span><span class="rl-h-t">EN İYİ 3 FIRSAT</span><button class="rl-link" data-rl="radar">Tüm Radarı Aç →</button></div>'
+      + '<div class="rl-h"><span class="rl-h-ic">⚡</span><span class="rl-h-t">' + _t('rr.oppTitle', null, 'EN İYİ 3 FIRSAT') + '</span><button class="rl-link" data-rl="radar">' + _t('rr.radarOpen', null, 'Tüm Radarı Aç →') + '</button></div>'
       + body
-      + (more > 0 ? '<div class="rl-more" data-rl="radar">+ ' + more + ' fırsat daha mevcut →</div>' : '')
+      + (more > 0 ? '<div class="rl-more" data-rl="radar">' + _t('rr.moreOpp', { n: more }, '+ ' + more + ' fırsat daha mevcut →') + '</div>' : '')
       + '</div>';
   }
 
   function lockedCard() {
     return ''
       + '<div class="rl-card rl-locked">'
-      + '<div class="rl-h"><span class="rl-h-ic">🔒</span><span class="rl-h-t">AI PİYASA BIAS · FIRSATLAR</span></div>'
-      + '<p class="rl-lk-tx">Yön dağılımı ve en olgun fırsatlar <b>Premium ve Elite</b> üyelere açıktır.</p>'
-      + '<a class="rl-btn rl-btn-g" href="/legal/premium.html">Erişim Al →</a>'
+      + '<div class="rl-h"><span class="rl-h-ic">🔒</span><span class="rl-h-t">' + _t('rr.lockedTitle', null, 'AI PİYASA BIAS · FIRSATLAR') + '</span></div>'
+      + '<p class="rl-lk-tx">' + _t('rr.lockedText', null, 'Yön dağılımı ve en olgun fırsatlar <b>Premium ve Elite</b> üyelere açıktır.') + '</p>'
+      + '<a class="rl-btn rl-btn-g" href="/legal/premium.html">' + _t('rr.getAccess', null, 'Erişim Al →') + '</a>'
       + '</div>';
   }
 
@@ -137,7 +139,7 @@
     if (!document.querySelector('.ticker-wrap')) return; // yalnız dashboard
     var rail = document.createElement('aside');
     rail.id = 'vdRail'; rail.className = 'vd-rail';
-    rail.setAttribute('aria-label', 'Piyasa bias ve fırsatlar');
+    rail.setAttribute('aria-label', _t('rr.ariaLabel', null, 'Piyasa bias ve fırsatlar'));
     document.body.appendChild(rail);
   }
 
