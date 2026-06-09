@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const NS = (window.VDArchive = window.VDArchive || {});
   const U = NS.util;
 
@@ -12,13 +13,13 @@
     { key: '7',   label: '7g'   },
     { key: '30',  label: '30g'  },
     { key: '90',  label: '90g'  },
-    { key: 'all', label: 'Tümü' },
+    { key: 'all', label: _t('arc.all', null, 'Tümü') },
   ];
   const STATUS_OPTS = [
-    { v: '',                    t: 'Tüm Durumlar'      },
-    { v: 'validated',           t: 'Doğrulandı'        },
-    { v: 'partially_validated', t: 'Kısmen Doğrulandı' },
-    { v: 'not_validated',       t: 'Doğrulanmadı'      },
+    { v: '',                    t: _t('arc.allStatuses', null, 'Tüm Durumlar')      },
+    { v: 'validated',           t: _t('arc.validated', null, 'Doğrulandı')        },
+    { v: 'partially_validated', t: _t('arc.partlyValidated', null, 'Kısmen Doğrulandı') },
+    { v: 'not_validated',       t: _t('arc.notValidated', null, 'Doğrulanmadı')      },
   ];
 
   const state = { sym: '', status: '', range: 'all' };
@@ -40,7 +41,7 @@
   async function _buildCoinOptions() {
     let coins = [];
     try { coins = window.SupabaseDB ? await window.SupabaseDB.getArchiveCoins() : []; } catch (e) { coins = []; }
-    const opts = ['<option value="">Tüm Coinler</option>'];
+    const opts = ['<option value="">'+_t('arc.allCoins', null, 'Tüm Coinler')+'</option>'];
     (coins || []).forEach(c => {
       opts.push(`<option value="${U.esc(c.sym)}">${U.esc(c.sym)} (${c.cnt})</option>`);
     });
@@ -69,7 +70,7 @@
       </div>
       <div class="aic-filter-field">
         <span>Zaman (analiz tarihi)</span>
-        <div class="aic-range" role="group" aria-label="Zaman aralığı">${rangeBtns}</div>
+        <div class="aic-range" role="group" aria-label="${_t('arc.timeRange', null, 'Zaman aralığı')}">${rangeBtns}</div>
       </div>
       <div class="aic-filter-spacer"></div>
       <div class="aic-result-count" data-aic-count></div>`;

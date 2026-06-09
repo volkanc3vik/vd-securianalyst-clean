@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const NS = (window.VDArchive = window.VDArchive || {});
   const U = NS.util;
   const PAGE_SIZE = 12;
@@ -28,8 +29,8 @@
       <div class="aic-teaser-cta" role="button" tabindex="0" data-teaser-cta>
         <div class="aic-teaser-cta-ic">🔒</div>
         <div class="aic-teaser-cta-tx">
-          <b>Premium erişim ile diğer coin analizlerini görüntüleyin</b>
-          <span>Önizleme yalnızca bu coin içindir. Tüm arşiv, Outcome ve AI içgörüleri Premium'da.</span>
+          <b>${_t('arc.viewWithPremium', null, 'Premium erişim ile diğer coin analizlerini görüntüleyin')}</b>
+          <span>${_t('arc.previewOnly', null, "Önizleme yalnızca bu coin içindir. Tüm arşiv, Outcome ve AI içgörüleri Premium'da.")}</span>
         </div>
         <span class="aic-teaser-cta-btn">Premium</span>
       </div>`;
@@ -54,7 +55,7 @@
       el.innerHTML = `
         <div class="aic-empty">
           <div class="icon">◎</div>
-          <div>Bu filtrelerle eşleşen analiz bulunamadı.</div>
+          <div>${_t('arc.noMatch', null, 'Bu filtrelerle eşleşen analiz bulunamadı.')}</div>
         </div>${_teaserSym() ? _teaserCtaHTML() : ''}`;
       _wireTeaserCta(el);
       _renderPagination();
@@ -86,7 +87,7 @@
     const pg = document.getElementById('aic-pagination');
     if (!pg) return;
     if (_hasMore) {
-      pg.innerHTML = `<button class="aic-loadmore" id="aic-loadmore" type="button">Daha Fazla Yükle</button>`;
+      pg.innerHTML = `<button class="aic-loadmore" id="aic-loadmore" type="button">${_t('arc.loadMore', null, 'Daha Fazla Yükle')}</button>`;
       const b = document.getElementById('aic-loadmore');
       b.addEventListener('click', () => loadMore());
     } else {
@@ -97,7 +98,7 @@
   function _updateCount() {
     const n = _items.length;
     const suffix = _hasMore ? '+' : '';
-    NS.Filters && NS.Filters.setCount(`${n}${suffix} analiz gösteriliyor`);
+    NS.Filters && NS.Filters.setCount(`${n}${suffix} ${_t('arc.showing', null, 'analiz gösteriliyor')}`);
   }
 
   async function _fetchPage(reset) {

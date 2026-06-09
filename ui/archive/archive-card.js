@@ -4,19 +4,20 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const NS = (window.VDArchive = window.VDArchive || {});
 
   // ── Shared util ───────────────────────────────────────────────────
   const STATUS = {
-    validated:            { label: 'Doğrulandı',         color: 'var(--v4-success)', en: 'Validated', desc: 'Analiz yönü ve sonuçları büyük ölçüde doğrulandı.' },
-    partially_validated:  { label: 'Kısmen Doğrulandı',  color: 'var(--v4-warn)',    en: 'Partial',   desc: 'Analiz kısmen doğru çıktı ancak bazı koşullar beklenen performansı göstermedi.' },
-    not_validated:        { label: 'Doğrulanmadı',       color: 'var(--v4-danger)',  en: 'Rejected',  desc: 'Analiz beklenen yönde doğrulanmadı.' },
-    pending:              { label: 'Beklemede',          color: 'var(--v4-text-2)',  en: 'Pending',   desc: 'Bu analiz henüz sonuç açısından değerlendirilmedi.' },
+    validated:            { label: _t('arc.validated', null, 'Doğrulandı'),         color: 'var(--v4-success)', en: 'Validated', desc: _t('arc.cardValidated', null, 'Analiz yönü ve sonuçları büyük ölçüde doğrulandı.') },
+    partially_validated:  { label: _t('arc.partlyValidated', null, 'Kısmen Doğrulandı'),  color: 'var(--v4-warn)',    en: 'Partial',   desc: _t('arc.cardPartial', null, 'Analiz kısmen doğru çıktı ancak bazı koşullar beklenen performansı göstermedi.') },
+    not_validated:        { label: _t('arc.notValidated', null, 'Doğrulanmadı'),       color: 'var(--v4-danger)',  en: 'Rejected',  desc: _t('arc.cardNotValidated', null, 'Analiz beklenen yönde doğrulanmadı.') },
+    pending:              { label: 'Beklemede',          color: 'var(--v4-text-2)',  en: 'Pending',   desc: _t('arc.cardPending', null, 'Bu analiz henüz sonuç açısından değerlendirilmedi.') },
   };
   const DIRECTION = {
-    bullish: 'Yükseliş (Bullish)',
-    bearish: 'Düşüş (Bearish)',
-    neutral: 'Nötr (Neutral)',
+    bullish: _t('arc.bullish', null, 'Yükseliş (Bullish)'),
+    bearish: _t('arc.bearish', null, 'Düşüş (Bearish)'),
+    neutral: _t('arc.neutral', null, 'Nötr (Neutral)'),
   };
 
   function esc(s) {
@@ -64,22 +65,22 @@
     const tf = rec.timeframe ? `<span class="aic-tf-pill">${esc(rec.timeframe)}</span>` : '';
     const moveVal = rec.end_move_pct;
     const moveHtml = (moveVal != null && !isNaN(+moveVal))
-      ? `<span class="aic-card-move">Gerçekleşen hareket: <b>${esc(fmtPct(moveVal))}</b></span>`
+      ? `<span class="aic-card-move">${_t('arc.actualMove', null, 'Gerçekleşen hareket:')} <b>${esc(fmtPct(moveVal))}</b></span>`
       : `<span class="aic-card-move"></span>`;
 
     return `
-      <article class="aic-card" style="--status-color:${m.color}" data-id="${esc(rec.id)}" role="button" tabindex="0" aria-label="${esc(rec.sym)} analiz detayı">
+      <article class="aic-card" style="--status-color:${m.color}" data-id="${esc(rec.id)}" role="button" tabindex="0" aria-label="${esc(rec.sym)} ${_t('arc.analysisDetail', null, 'analiz detayı')}">
         <div class="aic-card-top">
           <span class="aic-card-sym">${esc(rec.sym)}</span>
           ${tf}
           <span class="aic-badge" style="--status-color:${m.color}"><span class="dot"></span>${esc(m.label)}</span>
-          ${rec.excluded_from_learning ? `<span class="aic-badge" style="--status-color:#9aa4b2" title="Bu kayıt öğrenme ve istatistik dışıdır (eski outcome)"><span class="dot"></span>🏷️ Legacy</span>` : ''}
+          ${rec.excluded_from_learning ? `<span class="aic-badge" style="--status-color:#9aa4b2" title="${_t('arc.cardLegacy', null, 'Bu kayıt öğrenme ve istatistik dışıdır (eski outcome)')}"><span class="dot"></span>🏷️ Legacy</span>` : ''}
           <span class="aic-card-date">${esc(fmtDate(rec.created_at))}</span>
         </div>
         <p class="aic-card-summary">${esc(rec.analysis_summary || rec.analysis_text || '—')}</p>
         <div class="aic-card-bottom">
           ${moveHtml}
-          <button class="aic-detail-btn" data-id="${esc(rec.id)}" type="button">Detayı Gör →</button>
+          <button class="aic-detail-btn" data-id="${esc(rec.id)}" type="button">${_t('arc.viewDetail', null, 'Detayı Gör →')}</button>
         </div>
       </article>`;
   }

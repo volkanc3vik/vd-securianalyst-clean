@@ -6,6 +6,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const TAG = '[Perf]';
   const NS = (window.VDArchive = window.VDArchive || {});
   const U = () => NS.util || {};
@@ -68,13 +69,13 @@
         const ins = window.VDInsights.computeInsights(rev);
         bestCombo = (ins.combos && ins.combos[0]) || (ins.rows && ins.rows[0]) || null;
       }
-    } catch (e) { console.warn(TAG, 'combo hesabı atlandı:', e); }
+    } catch (e) { console.warn(TAG, _t('arc.comboSkip', null, 'combo hesabı atlandı:'), e); }
     return { total, validated, partial, rejected, overall, avgScore, coin, tf, bestCombo };
   }
 
   // ── Render parçaları ──
   function _card(inner) {
-    return `<div class="aic-perf-card"><div class="aic-perf-hdr">📈 Performans Özeti <span class="aic-perf-tag">premium</span></div>${inner}</div>`;
+    return `<div class="aic-perf-card"><div class="aic-perf-hdr">${_t('arc.perfSummary', null, '📈 Performans Özeti')} <span class="aic-perf-tag">premium</span></div>${inner}</div>`;
   }
   const _empty = (t) => `<div class="aic-perf-empty">${esc(t)}</div>`;
   function _tile(label, value, cls) {
@@ -89,7 +90,7 @@
 
   function _render(host, s) {
     if (s.total < MIN_TOTAL) {
-      host.innerHTML = _card(_empty(`Yeterli veri yok. Performans özeti için en az ${MIN_TOTAL} incelenmiş analiz gerekli (şu an ${s.total}).`));
+      host.innerHTML = _card(_empty(`${_t('arc.notEnoughData', null, 'Yeterli veri yok. Performans özeti için en az')} ${MIN_TOTAL} ${_t('arc.reviewedReq', null, 'incelenmiş analiz gerekli (şu an')} ${s.total}).`));
       return;
     }
     const coinBest = s.coin.best ? `${_coin(s.coin.best.k)} · %${s.coin.best.rate}` : '—';
@@ -99,19 +100,19 @@
     const tfBest = s.tf.best ? `${s.tf.best.k} · %${s.tf.best.rate}` : '—';
     const tfBestSub = s.tf.best ? `${s.tf.best.n} analiz` : '';
     const combo = s.bestCombo ? `${s.bestCombo.label} · %${s.bestCombo.rate}` : '—';
-    const comboSub = s.bestCombo ? `${s.bestCombo.n} örnek` : 'yeterli örnekli kombinasyon yok';
+    const comboSub = s.bestCombo ? `${s.bestCombo.n} ${_t('arc.samples', null, 'örnek')}` : _t('arc.notEnoughCombo2', null, 'yeterli örnekli kombinasyon yok');
 
     host.innerHTML = _card(`
       <div class="aic-perf-tiles">
-        ${_tile('Toplam İncelenen', s.total, 'tot')}
-        ${_tile('Doğrulandı', s.validated, 'ok')}
-        ${_tile('Kısmi', s.partial, 'mid')}
-        ${_tile('Doğrulanmadı', s.rejected, 'no')}
+        ${_tile(_t('arc.totalReviewed', null, 'Toplam İncelenen'), s.total, 'tot')}
+        ${_tile(_t('arc.validated', null, 'Doğrulandı'), s.validated, 'ok')}
+        ${_tile(_t('arc.partial', null, 'Kısmi'), s.partial, 'mid')}
+        ${_tile(_t('arc.notValidated', null, 'Doğrulanmadı'), s.rejected, 'no')}
       </div>
       <div class="aic-perf-big">
         <div class="aic-perf-bigitem">
           <div class="aic-perf-bigval aic-perf-${_rateClass(s.overall)}">%${s.overall}</div>
-          <div class="aic-perf-biglbl">Genel doğrulama oranı</div>
+          <div class="aic-perf-biglbl">${_t('arc.overallRate', null, 'Genel doğrulama oranı')}</div>
         </div>
         <div class="aic-perf-bigitem">
           <div class="aic-perf-bigval">${s.avgScore != null ? s.avgScore + '<small>/100</small>' : '—'}</div>
@@ -119,12 +120,12 @@
         </div>
       </div>
       <div class="aic-perf-rows">
-        ${_kv('En başarılı coin', coinBest, coinBestSub, s.coin.best ? 'aic-perf-' + _rateClass(s.coin.best.rate) : '')}
-        ${_kv('En zayıf coin', coinWorst, coinWorstSub, s.coin.worst ? 'aic-perf-' + _rateClass(s.coin.worst.rate) : '')}
-        ${_kv('En başarılı timeframe', tfBest, tfBestSub, s.tf.best ? 'aic-perf-' + _rateClass(s.tf.best.rate) : '')}
-        ${_kv('En başarılı setup', combo, comboSub, s.bestCombo ? 'aic-perf-' + _rateClass(s.bestCombo.rate) : '')}
+        ${_kv(_t('arc.bestCoin', null, 'En başarılı coin'), coinBest, coinBestSub, s.coin.best ? 'aic-perf-' + _rateClass(s.coin.best.rate) : '')}
+        ${_kv(_t('arc.weakestCoin', null, 'En zayıf coin'), coinWorst, coinWorstSub, s.coin.worst ? 'aic-perf-' + _rateClass(s.coin.worst.rate) : '')}
+        ${_kv(_t('arc.bestTf', null, 'En başarılı timeframe'), tfBest, tfBestSub, s.tf.best ? 'aic-perf-' + _rateClass(s.tf.best.rate) : '')}
+        ${_kv(_t('arc.bestSetup', null, 'En başarılı setup'), combo, comboSub, s.bestCombo ? 'aic-perf-' + _rateClass(s.bestCombo.rate) : '')}
       </div>
-      <div class="aic-perf-note">⚠ Retrospektif performans özeti; geçmiş analizlerin tutarlılığını gösterir, gelecek getiri/başarı garantisi değildir. Doğrulama oranı = (doğrulandı + ½·kısmi) ÷ toplam.</div>`);
+      <div class="aic-perf-note">${_t('arc.retroPerf', null, '⚠ Retrospektif performans özeti; geçmiş analizlerin tutarlılığını gösterir, gelecek getiri/başarı garantisi değildir. Doğrulama oranı = (doğrulandı + ½·kısmi) ÷ toplam.')}</div>`);
   }
 
   async function _loadRecords() {
@@ -141,7 +142,7 @@
         const rows = await db.listArchive({ limit: 100 });
         return Array.isArray(rows) ? rows.filter(_isReviewed) : [];
       }
-    } catch (e) { console.error(TAG, 'Arşiv verisi alınamadı:', e); }
+    } catch (e) { console.error(TAG, _t('arc.dataFail', null, 'Arşiv verisi alınamadı:'), e); }
     return null; // veri kaynağı yok
   }
 
@@ -150,13 +151,13 @@
     if (!host) return;
     if (!_canView()) { host.hidden = true; return; }
     host.hidden = false;
-    host.innerHTML = _card(_empty('Yükleniyor…'));
+    host.innerHTML = _card(_empty(_t('arc.loading', null, 'Yükleniyor…')));
     let recs = null;
     try { recs = await _loadRecords(); }
-    catch (e) { console.error(TAG, 'yükleme hatası:', e); }
-    if (recs == null) { host.innerHTML = _card(_empty('Arşiv verisi şu an alınamadı. Sayfayı yenileyebilirsiniz.')); return; }
+    catch (e) { console.error(TAG, _t('arc.loadErr', null, 'yükleme hatası:'), e); }
+    if (recs == null) { host.innerHTML = _card(_empty(_t('arc.dataRetry2', null, 'Arşiv verisi şu an alınamadı. Sayfayı yenileyebilirsiniz.'))); return; }
     try { _render(host, _summary(recs)); }
-    catch (e) { console.error(TAG, 'render hatası:', e); host.innerHTML = _card(_empty('Performans özeti gösterilemedi (konsola bakın).')); }
+    catch (e) { console.error(TAG, _t('arc.renderErr', null, 'render hatası:'), e); host.innerHTML = _card(_empty(_t('arc.perfFail', null, 'Performans özeti gösterilemedi (konsola bakın).'))); }
   }
   function refresh() { return mount(); }
 

@@ -4,6 +4,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const NS = (window.VDArchive = window.VDArchive || {});
   const U = NS.util;
   const MIN_SAMPLE = 5; // bu altında oran gösterme (yanıltıcı %100 önleme)
@@ -31,7 +32,7 @@
     let s = null;
     try { s = window.SupabaseDB ? await window.SupabaseDB.getArchiveStats() : null; } catch (e) { s = null; }
     if (!s) {
-      el.innerHTML = `<div class="aic-stat" style="grid-column:1/-1"><div class="aic-stat-label">İstatistik</div><div class="aic-stat-value sm">Yüklenemedi</div></div>`;
+      el.innerHTML = `<div class="aic-stat" style="grid-column:1/-1"><div class="aic-stat-label">${_t('arc.statistics', null, 'İstatistik')}</div><div class="aic-stat-value sm">${_t('arc.loadFail', null, 'Yüklenemedi')}</div></div>`;
       return;
     }
 
@@ -44,12 +45,12 @@
       : 'Yeterli veri yok';
 
     el.innerHTML = [
-      _card('Toplam Analiz', (s.total_all != null ? s.total_all : '—'), 'Tüm kayıtlar', 'var(--v4-cyan)'),
-      _card('Doğrulanan',     vPct, sampleSub, 'var(--v4-success)'),
-      _card('Kısmen Doğr.',   pPct, `${s.partial || 0} analiz`, 'var(--v4-warn)'),
-      _card('Bekleyen',       (s.pending != null ? s.pending : '—'), 'İncelemede', 'var(--v4-text-2)'),
-      _card('En Çok Analiz',  (s.top_sym ? U.esc(s.top_sym) : '—'), 'coin', 'var(--v4-text)', true),
-      _card('Son Doğrulanan', _fmtShortDate(s.last_validated_at), 'tarih', 'var(--v4-text-2)', true),
+      _card('Toplam Analiz', (s.total_all != null ? s.total_all : '—'), _t('arc.allRecords', null, 'Tüm kayıtlar'), 'var(--v4-cyan)'),
+      _card(_t('arc.validatedWord', null, 'Doğrulanan'),     vPct, sampleSub, 'var(--v4-success)'),
+      _card(_t('arc.partlyValidShort', null, 'Kısmen Doğr.'),   pPct, `${s.partial || 0} analiz`, 'var(--v4-warn)'),
+      _card('Bekleyen',       (s.pending != null ? s.pending : '—'), _t('arc.underReview', null, 'İncelemede'), 'var(--v4-text-2)'),
+      _card(_t('arc.mostAnalyzed', null, 'En Çok Analiz'),  (s.top_sym ? U.esc(s.top_sym) : '—'), 'coin', 'var(--v4-text)', true),
+      _card(_t('arc.recentValidated', null, 'Son Doğrulanan'), _fmtShortDate(s.last_validated_at), 'tarih', 'var(--v4-text-2)', true),
     ].join('');
   }
 

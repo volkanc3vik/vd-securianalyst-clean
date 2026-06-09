@@ -8,6 +8,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const TAG = '[Insights]';
 
   // ─────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@
     function _label(tok) {
       const [k, v] = String(tok).split(':');
       switch (k) {
-        case 'bias': return v === 'bullish' ? 'Bullish' : v === 'bearish' ? 'Bearish' : 'Nötr';
+        case 'bias': return v === 'bullish' ? 'Bullish' : v === 'bearish' ? 'Bearish' : _t('arc.neutralShort', null, 'Nötr');
         case 'conf': return 'Confidence ' + v;
         case 'tf': return v;
         case 'risk': return 'Risk ' + (v === 'high' ? 'High' : v === 'med' ? 'Orta' : 'Low');
@@ -116,7 +117,7 @@
         let labelParts = [_label('bias:' + bias)]; if (band) labelParts.push(_label(band));
         if (similar.length < NOTE_MIN_SAMPLE) { similar = rev.filter(r => r.direction_bias === bias); labelParts = [_label('bias:' + bias)]; }
         if (similar.length < NOTE_MIN_SAMPLE) return null;
-        return `Bu setup (${labelParts.join(' + ')}) son ${similar.length} benzer analizde %${_rate(similar)} doğrulama oranı göstermiştir.`;
+        return `Bu setup (${labelParts.join(' + ')}) son ${similar.length} benzer analizde %${_rate(similar)} ${_t('arc.shownRate', null, 'doğrulama oranı göstermiştir.')}`;
       } catch (e) { console.warn(TAG, 'noteForSync hata:', e); return null; }
     }
     async function load(force) {
@@ -129,7 +130,7 @@
           if (!db || typeof db.listArchive !== 'function') { _error = 'no_db'; console.warn(TAG, 'SupabaseDB.listArchive yok'); _cache = []; return _cache; }
           const rows = await db.listArchive({ limit: 100 });
           _cache = Array.isArray(rows) ? rows.filter(_isReviewed) : [];
-        } catch (e) { _error = 'fetch'; console.error(TAG, 'Arşiv verisi alınamadı:', e); _cache = []; }
+        } catch (e) { _error = 'fetch'; console.error(TAG, _t('arc.dataFail', null, 'Arşiv verisi alınamadı:'), e); _cache = []; }
         _loading = null;
         return _cache;
       })();
@@ -172,7 +173,7 @@
           <span class="aic-ins-rate aic-ins-${_rateClass(r.rate)}">%${r.rate}</span>
         </div>
         <div class="aic-ins-bar"><span class="aic-ins-fill aic-ins-${_rateClass(r.rate)}" style="width:${Math.max(3, r.rate)}%"></span></div>
-        <div class="aic-ins-meta">${r.n} örnek · ✓${r.validated} doğrulandı · ~${r.partial} kısmi · ✗${r.rejected} doğrulanmadı</div>
+        <div class="aic-ins-meta">${r.n} ${_t('arc.samplesCheck', null, 'örnek · ✓')}${r.validated} ${_t('arc.validatedTilde', null, 'doğrulandı · ~')}${r.partial} ${_t('arc.partialCross', null, 'kısmi · ✗')}${r.rejected} ${_t('arc.notValidatedLc', null, 'doğrulanmadı')}</div>
       </div>`;
   }
   function _card(inner) {
@@ -182,20 +183,20 @@
 
   function _render(host, data, loadError) {
     const MIN = (ENGINE && ENGINE.MIN_SAMPLE) || 5;
-    if (loadError === 'fetch') { host.innerHTML = _card(_msg('Arşiv verisi şu an alınamadı. Bağlantı düzelince otomatik denenecek; sayfayı yenileyebilirsiniz.')); return; }
-    if (loadError === 'no_db') { host.innerHTML = _card(_msg('Veri kaynağı yüklenmedi. Sayfayı yenileyin.')); return; }
+    if (loadError === 'fetch') { host.innerHTML = _card(_msg(_t('arc.dataRetry', null, 'Arşiv verisi şu an alınamadı. Bağlantı düzelince otomatik denenecek; sayfayı yenileyebilirsiniz.'))); return; }
+    if (loadError === 'no_db') { host.innerHTML = _card(_msg(_t('arc.srcNotLoaded', null, 'Veri kaynağı yüklenmedi. Sayfayı yenileyin.'))); return; }
     const total = (data && data.total) || 0;
-    if (total < MIN) { host.innerHTML = _card(_msg(`Öğrenme için en az ${MIN} incelenmiş kayıt gerekli (şu an ${total}). Sonuç hesapladıkça öğrenme başlayacak.`)); return; }
+    if (total < MIN) { host.innerHTML = _card(_msg(`${_t('arc.forLearnMin', null, 'Öğrenme için en az')} ${MIN} ${_t('arc.recordsReq', null, 'incelenmiş kayıt gerekli (şu an')} ${total}${_t('arc.learnBegin', null, '). Sonuç hesapladıkça öğrenme başlayacak.')}`)); return; }
     const pool = (data.combos && data.combos.length >= 3) ? data.combos : data.rows;
-    if (!pool.length) { host.innerHTML = _card(`<div class="aic-ins-sub">Son ${total} incelenmiş analiz</div>${_msg('Henüz yeterli örnekli kombinasyon yok (her örüntü için en az ' + MIN + ' örnek gerekir). Daha fazla sonuç hesaplandıkça görünecek.')}`); return; }
+    if (!pool.length) { host.innerHTML = _card(`<div class="aic-ins-sub">Son ${total} ${_t('arc.reviewedAnalyses', null, 'incelenmiş analiz')}</div>${_msg(_t('arc.notEnoughCombo', null, 'Henüz yeterli örnekli kombinasyon yok (her örüntü için en az ') + MIN + _t('arc.samplesNeeded', null, ' örnek gerekir). Daha fazla sonuç hesaplandıkça görünecek.'))}`); return; }
     const strong = pool.slice(0, 6);
     const weak = pool.slice().sort((a, b) => a.rate - b.rate).filter(r => !strong.slice(0, 4).some(s => s.key === r.key)).slice(0, 2);
     host.innerHTML = _card(`
-      <div class="aic-ins-sub">Son ${total} incelenmiş analiz · doğrulama oranı = (doğrulandı + ½·kısmi) ÷ toplam</div>
-      <div class="aic-ins-secttl">En güçlü setup'lar</div>
+      <div class="aic-ins-sub">Son ${total} ${_t('arc.reviewedRate', null, 'incelenmiş analiz · doğrulama oranı = (doğrulandı + ½·kısmi) ÷ toplam')}</div>
+      <div class="aic-ins-secttl">${_t('arc.strongestSetups', null, "En güçlü setup'lar")}</div>
       ${strong.map(_rowHTML).join('')}
       ${weak.length ? `<div class="aic-ins-secttl">Dikkat edilecek (düşük oran)</div>${weak.map(_rowHTML).join('')}` : ''}
-      <div class="aic-ins-note">⚠ Retrospektif istatistiktir; geçmiş analizlerin tutarlılığını gösterir, gelecek getiri/başarı garantisi değildir.</div>`);
+      <div class="aic-ins-note">${_t('arc.retroStat', null, '⚠ Retrospektif istatistiktir; geçmiş analizlerin tutarlılığını gösterir, gelecek getiri/başarı garantisi değildir.')}</div>`);
   }
 
   async function mount() {
@@ -204,19 +205,19 @@
     if (!_canView()) { host.hidden = true; return; }
     host.hidden = false;
     if (!ENGINE || typeof ENGINE.load !== 'function') {
-      console.error(TAG, 'Öğrenme motoru (VDInsights) bulunamadı — kart devre dışı.');
-      host.innerHTML = _card(_msg('Öğrenme modülü yüklenemedi. Sayfayı yenileyin; sorun sürerse dağıtımı kontrol edin.'));
+      console.error(TAG, _t('arc.engineNotFound', null, 'Öğrenme motoru (VDInsights) bulunamadı — kart devre dışı.'));
+      host.innerHTML = _card(_msg(_t('arc.learnModFail', null, 'Öğrenme modülü yüklenemedi. Sayfayı yenileyin; sorun sürerse dağıtımı kontrol edin.')));
       return;
     }
-    host.innerHTML = _card(_msg('Yükleniyor…'));
+    host.innerHTML = _card(_msg(_t('arc.loading', null, 'Yükleniyor…')));
     let recs = [];
     try { recs = await ENGINE.load(); }
     catch (e) { console.error(TAG, 'load() beklenmeyen hata:', e); }
     let data = { total: 0, rows: [], combos: [] };
     try { data = ENGINE.computeInsights(recs); }
-    catch (e) { console.error(TAG, 'computeInsights hata:', e); host.innerHTML = _card(_msg('İçgörüler hesaplanırken sorun oluştu (konsola bakın).')); return; }
+    catch (e) { console.error(TAG, 'computeInsights hata:', e); host.innerHTML = _card(_msg(_t('arc.insightErr', null, 'İçgörüler hesaplanırken sorun oluştu (konsola bakın).'))); return; }
     try { _render(host, data, ENGINE.getError && ENGINE.getError()); }
-    catch (e) { console.error(TAG, 'render hata:', e); host.innerHTML = _card(_msg('İçgörüler gösterilemedi (konsola bakın).')); }
+    catch (e) { console.error(TAG, 'render hata:', e); host.innerHTML = _card(_msg(_t('arc.insightFail', null, 'İçgörüler gösterilemedi (konsola bakın).'))); }
   }
   function refresh() { return mount(); }
 

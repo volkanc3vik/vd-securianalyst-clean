@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const NS = (window.VDArchive = window.VDArchive || {});
   const U = NS.util;
   const OVERLAY_ID = 'aic-modal-overlay';
@@ -43,8 +44,8 @@
     const row = (icon, label, iso) =>
       `<div class="aic-time-row"><span class="ic">${icon}</span><span class="k">${label}</span><span class="v">${U.esc(_fmtDT(iso))}</span></div>`;
     let rows = row('📅', 'Analiz Tarihi', rec.created_at);
-    if (rec.reviewed_at) rows += row('📊', 'İnceleme Tarihi', rec.reviewed_at);
-    if (rec.shared_at)   rows += row('📤', 'Telegram Paylaşım Tarihi', rec.shared_at);
+    if (rec.reviewed_at) rows += row('📊', _t('arc.reviewDate', null, 'İnceleme Tarihi'), rec.reviewed_at);
+    if (rec.shared_at)   rows += row('📤', _t('arc.tgDate', null, 'Telegram Paylaşım Tarihi'), rec.shared_at);
     return `<div class="aic-times" data-aic-times>${rows}</div>`;
   }
 
@@ -64,14 +65,14 @@
 
     const kvCells = [
       _kv('Timeframe', rec.timeframe || '—'),
-      _kv('Yön Eğilimi (Bias)', U.directionLabel(rec.direction_bias)),
-      _kv('Gerçekleşen Yön', rec.direction_realized ? U.directionLabel(rec.direction_realized) : 'Beklemede'),
-      _kv('Analiz Anı Fiyatı', U.fmtPrice(rec.price_at_analysis)),
-      _kv('İnceleme Fiyatı', U.fmtPrice(rec.price_at_review)),
+      _kv(_t('arc.biasLabel', null, 'Yön Eğilimi (Bias)'), U.directionLabel(rec.direction_bias)),
+      _kv(_t('arc.actualDir', null, 'Gerçekleşen Yön'), rec.direction_realized ? U.directionLabel(rec.direction_realized) : 'Beklemede'),
+      _kv(_t('arc.priceAt', null, 'Analiz Anı Fiyatı'), U.fmtPrice(rec.price_at_analysis)),
+      _kv(_t('arc.reviewPrice', null, 'İnceleme Fiyatı'), U.fmtPrice(rec.price_at_review)),
       _kv('Max Hareket', U.fmtPct(rec.max_move_pct), U.pctClass(rec.max_move_pct)),
       _kv('Min Hareket', U.fmtPct(rec.min_move_pct), U.pctClass(rec.min_move_pct)),
       _kv('Pencere Sonu Hareket', U.fmtPct(rec.end_move_pct), U.pctClass(rec.end_move_pct)),
-      _kv('Tutarlılık Skoru', rec.validation_score != null ? `${rec.validation_score}/100` : '—'),
+      _kv(_t('arc.consistScore', null, 'Tutarlılık Skoru'), rec.validation_score != null ? `${rec.validation_score}/100` : '—'),
     ].join('');
 
     const aiLearned = rec.ai_learned
@@ -79,14 +80,14 @@
       : '';
 
     const sharedBadge = rec.shared_to_telegram
-      ? `<div class="aic-shared-badge">✔ Telegram'da paylaşıldı</div>`
+      ? `<div class="aic-shared-badge">${_t('arc.sharedTg', null, "✔ Telegram'da paylaşıldı")}</div>`
       : '';
 
     return `
-      <div class="aic-modal" role="dialog" aria-modal="true" aria-label="${U.esc(rec.sym)} analiz detayı">
+      <div class="aic-modal" role="dialog" aria-modal="true" aria-label="${U.esc(rec.sym)} ${_t('arc.analysisDetail', null, 'analiz detayı')}">
         <div class="aic-modal-header">
           <span class="aic-modal-sym">${U.esc(rec.sym)}</span>
-          <span class="aic-badge" style="--status-color:${m.color}"><span class="dot"></span>${U.esc(m.label)}</span>${m.desc ? `<span class="aic-tip-wrap"><button class="aic-tip-btn" type="button" data-tip-toggle aria-label="Durum açıklaması">ⓘ</button><span class="aic-tip" role="tooltip"><b>${U.esc(m.en || m.label)}</b><br>${U.esc(m.desc)}</span></span>` : ''}
+          <span class="aic-badge" style="--status-color:${m.color}"><span class="dot"></span>${U.esc(m.label)}</span>${m.desc ? `<span class="aic-tip-wrap"><button class="aic-tip-btn" type="button" data-tip-toggle aria-label="${_t('arc.statusDesc', null, 'Durum açıklaması')}">ⓘ</button><span class="aic-tip" role="tooltip"><b>${U.esc(m.en || m.label)}</b><br>${U.esc(m.desc)}</span></span>` : ''}
           <button class="aic-modal-close" data-aic="close" aria-label="Kapat" type="button">✕</button>
         </div>
         <div class="aic-modal-body">
@@ -99,8 +100,8 @@
           ${sharedBadge}
           ${(NS.Admin && NS.Admin.isAdmin()) ? NS.Admin.sectionHTML(rec) : ''}
           <div class="aic-modal-legal">
-            Bu içerik yatırım tavsiyesi değildir. Geçmiş analizlerin retrospektif
-            değerlendirmesidir; gelecekteki sonuçların göstergesi sayılamaz.
+            ${_t('arc.disc1', null, 'Bu içerik yatırım tavsiyesi değildir. Geçmiş analizlerin retrospektif')}
+            ${_t('arc.disc2', null, 'değerlendirmesidir; gelecekteki sonuçların göstergesi sayılamaz.')}
           </div>
         </div>
       </div>`;
@@ -114,7 +115,7 @@
     const root = document.createElement('div');
     root.id = OVERLAY_ID;
     root.className = 'aic-modal-overlay';
-    root.innerHTML = `<div class="aic-modal"><div class="aic-modal-body"><div class="aic-loading">Yükleniyor…</div></div></div>`;
+    root.innerHTML = `<div class="aic-modal"><div class="aic-modal-body"><div class="aic-loading">${_t('arc.loading', null, 'Yükleniyor…')}</div></div></div>`;
     document.body.appendChild(root);
     document.body.style.overflow = 'hidden';
 
@@ -135,15 +136,15 @@
     }
 
     if (!rec) {
-      root.innerHTML = `<div class="aic-modal"><div class="aic-modal-header"><span class="aic-modal-sym">—</span><button class="aic-modal-close" data-aic="close" type="button">✕</button></div><div class="aic-modal-body"><div class="aic-empty"><div class="icon">⚠</div>Kayıt bulunamadı veya görüntülenemiyor.</div></div></div>`;
+      root.innerHTML = `<div class="aic-modal"><div class="aic-modal-header"><span class="aic-modal-sym">—</span><button class="aic-modal-close" data-aic="close" type="button">✕</button></div><div class="aic-modal-body"><div class="aic-empty"><div class="icon">⚠</div>${_t('arc.notFound', null, 'Kayıt bulunamadı veya görüntülenemiyor.')}</div></div></div>`;
     } else if (_teaserBlocked(rec)) {
       // PHASE 3: teaser oturumunda linkteki coin dışındaki analiz açılamaz
-      const msg = (window.VDTeaser && window.VDTeaser.SCOPE_MSG) || 'Bu analiz yalnızca Premium üyeler için kullanılabilir.';
+      const msg = (window.VDTeaser && window.VDTeaser.SCOPE_MSG) || _t('arc.premOnly', null, 'Bu analiz yalnızca Premium üyeler için kullanılabilir.');
       root.innerHTML = `<div class="aic-modal"><div class="aic-modal-header"><span class="aic-modal-sym">🔒 ${U.esc(rec.sym || '')}</span><button class="aic-modal-close" data-aic="close" type="button">✕</button></div>
         <div class="aic-modal-body"><div class="aic-teaser-block">
           <div class="aic-teaser-block-ic">🔒</div>
           <div class="aic-teaser-block-msg">${U.esc(msg)}</div>
-          <button class="aic-teaser-block-btn" data-teaser-premium type="button">Premium Erişim Kodu Gir</button>
+          <button class="aic-teaser-block-btn" data-teaser-premium type="button">${_t('arc.enterCode', null, 'Premium Erişim Kodu Gir')}</button>
         </div></div></div>`;
       const pb = root.querySelector('[data-teaser-premium]');
       if (pb) pb.addEventListener('click', () => { _close(); if (typeof window.openPremiumLogin === 'function') window.openPremiumLogin(); else window.location.href = 'index.html#premium'; });
