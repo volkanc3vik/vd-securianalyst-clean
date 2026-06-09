@@ -2443,8 +2443,8 @@ function startTimer() {
 <!-- MARKET OVERVIEW -->
 <div class="section">
   <div class="section-title">
-    <h2>◈ Piyasa Durumu</h2>
-    <span class="pill pill-cyan">CANLI</span>
+    <h2>◈ Market Status</h2>
+    <span class="pill pill-cyan">LIVE</span>
   </div>
   <div class="market-overview">
 
@@ -2501,7 +2501,7 @@ function startTimer() {
         <div class="mkt-icon btcd">Ð</div>
         <div>
           <div class="mkt-name">BTC DOMINANCE</div>
-          <div class="mkt-sub">Piyasa Hâkimiyeti</div>
+          <div class="mkt-sub">Market Dominance</div>
         </div>
         <div class="mkt-badge" id="btcdBadge" style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--cyan)">—</div>
       </div>
@@ -2579,7 +2579,7 @@ function startTimer() {
 <div class="scan-card">
   <div class="scan-dot" id="scanDot"></div>
   <span class="scan-txt" id="scanTxt">Preparing Binance Futures...</span>
-  <button class="gbtn gbtn-sm" onclick="clearTimeout(scanTimer);startScanLoop()">⟳ Yeniden Tara</button>
+  <button class="gbtn gbtn-sm" onclick="clearTimeout(scanTimer);startScanLoop()">⟳ Re-scan</button>
   <div class="prog-wrap" id="progWrap"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
 </div>
 
@@ -3447,7 +3447,7 @@ function sendNotif(sym,type,price){
   // Browser Notification (ekran kapalıyken bile çalışır)
   if(notifPerm&&Notification.permission==='granted'){
     const n=new Notification(`${type==='buy'?'▲ Yukarı Eğilim':'▼ Aşağı Eğilim'} — ${sym}`,{
-      body:`Fiyat: $${price}\nEMA + MACD çaprazması tespit edildi\nVD SecuriAnalyst`,
+      body:`Fiyat: $${price}\nEMA + MACD crossover detected\nVD SecuriAnalyst`,
       icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="%2300e896"/><text x="16" y="22" text-anchor="middle" font-size="18" fill="white">◈</text></svg>',
       tag:'crypto-signal',
       requireInteraction:true,
@@ -3505,7 +3505,7 @@ function showPopup(sym,type,price){
     <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:${type==='buy'?'var(--green)':'var(--red)'};margin-bottom:5px">${type==='buy'?'▲ YUKARI YÖN EĞİLİMİ':'▼ AŞAĞI YÖN EĞİLİMİ'}</div>
     <div style="font-size:18px;font-weight:800;margin-bottom:3px">${sym}</div>
     <div style="font-size:13px;color:var(--text2);font-weight:500">$${price}</div>
-    <div style="font-size:10px;color:var(--text3);margin-top:6px;font-weight:400">EMA + MACD çaprazması tespit edildi</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px;font-weight:400">EMA + MACD crossover detected</div>
     <div style="margin-top:10px;font-size:11px;cursor:pointer;color:var(--text3);font-weight:500" onclick="this.parentElement.remove()">✕ Kapat</div>`;
   document.body.appendChild(d);
   setTimeout(()=>{if(d.parentElement)d.remove();},10000);
@@ -3622,9 +3622,9 @@ async function updateMarketOverview(){
       const bdg=document.getElementById(cfg.badge);if(bdg)bdg.textContent=isUp?'+'+chg.toFixed(2)+'%':chg.toFixed(2)+'%';
       const sig=document.getElementById(cfg.sigId);
       if(sig){
-        if(isLong){sig.className='mkt-signal bull';sig.innerHTML='▲ Yukarı yön eğilimi';}
-        else if(isShort){sig.className='mkt-signal bear';sig.innerHTML='▼ Aşağı yön eğilimi';}
-        else{sig.className='mkt-signal neut';sig.innerHTML='◆ Nötr bölge';}
+        if(isLong){sig.className='mkt-signal bull';sig.innerHTML='▲ Upward bias';}
+        else if(isShort){sig.className='mkt-signal bear';sig.innerHTML='▼ Downward bias';}
+        else{sig.className='mkt-signal neut';sig.innerHTML='◆ Neutral zone';}
       }
       drawSpark(cfg.spark,closes.slice(-30));
     }catch(e){}
@@ -3647,17 +3647,17 @@ async function updateMarketOverview(){
     const sig=document.getElementById('btcdSignal');
     const adv=document.getElementById('btcdAdvice');
     if(isHighDom){
-      if(desc)desc.textContent='BTC hâkimiyeti yüksek — altcoin piyasası baskı altında';
-      if(sig){sig.className='mkt-signal bull';sig.innerHTML='▲ BTC güçlü — Altcoin zayıf';}
-      if(adv)adv.textContent='💡 Dominans yüksek iken altcoin long pozisyonları risklidir. BTC ağırlıklı strateji önerilir.';
+      if(desc)desc.textContent='BTC dominance high — altcoin market under pressure';
+      if(sig){sig.className='mkt-signal bull';sig.innerHTML='▲ BTC strong — Altcoin weak';}
+      if(adv)adv.textContent='💡 While dominance is high, altcoin long positions are risky. A BTC-weighted approach is suggested.';
     }else if(isLowDom){
-      if(desc)desc.textContent='BTC hâkimiyeti düşük — altcoin sezonu olabilir';
-      if(sig){sig.className='mkt-signal neut';sig.innerHTML='◆ Altcoin Sezonu İşareti';}
-      if(adv)adv.textContent='💡 Dominans düşük iken seçici altcoin yukarı yönlü görünümleri izlenebilir.';
+      if(desc)desc.textContent='BTC dominance low — altcoin season possible';
+      if(sig){sig.className='mkt-signal neut';sig.innerHTML='◆ Altcoin Season Indicator';}
+      if(adv)adv.textContent='💡 While dominance is low, selective altcoin upward outlooks can be observed.';
     }else{
       if(desc)desc.textContent='BTC hâkimiyeti nötr seviyede';
       if(sig){sig.className='mkt-signal neut';sig.innerHTML='◆ Dengeli Piyasa';}
-      if(adv)adv.textContent='💡 Karma strateji — hem BTC hem seçici altcoin pozisyonları uygun.';
+      if(adv)adv.textContent='💡 Mixed approach — both BTC and selective altcoin positions are suitable.';
     }
     const chgEl=document.getElementById('btcdChg');
     if(chgEl){chgEl.textContent=domStr+' hâkimiyet';chgEl.className='mkt-chg';}
@@ -3789,27 +3789,27 @@ function detectPatterns(candles,e9a,e21a,mr){
   const closes=sl.map(c=>c.c),highs=sl.map(c=>c.h),lows=sl.map(c=>c.l);
   const lC=sl[sl.length-1],pC=sl[sl.length-2];
   const body=Math.abs(lC.c-lC.o),ls2=Math.min(lC.c,lC.o)-lC.l,us=lC.h-Math.max(lC.c,lC.o),tot=lC.h-lC.l;
-  if(pC.c<pC.o&&lC.c>lC.o&&lC.c>pC.o&&lC.o<pC.c)pats.push({icon:'🟢',name:'Bullish Engulfing',desc:'Önceki kırmızı mumu yutan yeşil mum. Yukarı yönlü teknik işaret.',signal:'LONG',col:'var(--green)'});
-  if(pC.c>pC.o&&lC.c<lC.o&&lC.c<pC.o&&lC.o>pC.c)pats.push({icon:'🔴',name:'Bearish Engulfing',desc:'Önceki yeşil mumu yutan kırmızı mum. Aşağı yönlü teknik işaret.',signal:'SHORT',col:'var(--red)'});
-  if(ls2>body*2&&us<body*0.5&&body>0)pats.push({icon:'🔨',name:'Çekiç (Hammer)',desc:'Uzun alt gölge, küçük gövde. Dipten dönüş işareti.',signal:'LONG',col:'var(--green)'});
-  if(us>body*2&&ls2<body*0.5&&body>0)pats.push({icon:'⭐',name:'Kayan Yıldız (Shooting Star)',desc:'Uzun üst gölge, küçük gövde. Tepeden dönüş işareti.',signal:'SHORT',col:'var(--red)'});
-  if(tot>0&&body<tot*0.1)pats.push({icon:'➕',name:'Doji',desc:'Açılış=kapanış. Kararsızlık ve dönüş potansiyeli.',signal:'BEKLE',col:'var(--yellow)'});
+  if(pC.c<pC.o&&lC.c>lC.o&&lC.c>pC.o&&lC.o<pC.c)pats.push({icon:'🟢',name:'Bullish Engulfing',desc:'A green candle engulfing the prior red one. Upward technical signal.',signal:'LONG',col:'var(--green)'});
+  if(pC.c>pC.o&&lC.c<lC.o&&lC.c<pC.o&&lC.o>pC.c)pats.push({icon:'🔴',name:'Bearish Engulfing',desc:'A red candle engulfing the prior green one. Downward technical signal.',signal:'SHORT',col:'var(--red)'});
+  if(ls2>body*2&&us<body*0.5&&body>0)pats.push({icon:'🔨',name:'Çekiç (Hammer)',desc:'Long lower shadow, small body. Bottom-reversal signal.',signal:'LONG',col:'var(--green)'});
+  if(us>body*2&&ls2<body*0.5&&body>0)pats.push({icon:'⭐',name:'Kayan Yıldız (Shooting Star)',desc:'Long upper shadow, small body. Top-reversal signal.',signal:'SHORT',col:'var(--red)'});
+  if(tot>0&&body<tot*0.1)pats.push({icon:'➕',name:'Doji',desc:'Open=close. Indecision and reversal potential.',signal:'BEKLE',col:'var(--yellow)'});
   if(e9a.length>1&&e21a.length>1){
     const e9p=e9a[e9a.length-2],e9c=e9a[e9a.length-1],e21p=e21a[e21a.length-2],e21c=e21a[e21a.length-1];
-    if(e9p<=e21p&&e9c>e21c)pats.push({icon:'📈',name:'EMA Golden Cross 9/21',desc:'EMA9 EMA21\'i yukarı kesti. Yükseliş trendinin başlangıcı.',signal:'LONG',col:'var(--green)'});
-    if(e9p>=e21p&&e9c<e21c)pats.push({icon:'📉',name:'EMA Death Cross 9/21',desc:'EMA9 EMA21\'i aşağı kesti. Düşüş trendinin başlangıcı.',signal:'SHORT',col:'var(--red)'});
+    if(e9p<=e21p&&e9c>e21c)pats.push({icon:'📈',name:'EMA Golden Cross 9/21',desc:'EMA9 crossed above EMA21. Start of an uptrend.',signal:'LONG',col:'var(--green)'});
+    if(e9p>=e21p&&e9c<e21c)pats.push({icon:'📉',name:'EMA Death Cross 9/21',desc:'EMA9 crossed below EMA21. Start of a downtrend.',signal:'SHORT',col:'var(--red)'});
   }
   if(mr.hArr.length>1){
     const hc=mr.hArr[mr.hArr.length-1],hp=mr.hArr[mr.hArr.length-2];
-    if(hp<=0&&hc>0)pats.push({icon:'⚡',name:'MACD Boğa Kesişimi',desc:'Histogram negatiften pozitife döndü. Momentum yükseliyor.',signal:'LONG',col:'var(--green)'});
-    if(hp>=0&&hc<0)pats.push({icon:'⚡',name:'MACD Ayı Kesişimi',desc:'Histogram pozitiften negatife döndü. Momentum düşüyor.',signal:'SHORT',col:'var(--red)'});
+    if(hp<=0&&hc>0)pats.push({icon:'⚡',name:'MACD Boğa Kesişimi',desc:'Histogram turned from negative to positive. Momentum rising.',signal:'LONG',col:'var(--green)'});
+    if(hp>=0&&hc<0)pats.push({icon:'⚡',name:'MACD Ayı Kesişimi',desc:'Histogram turned from positive to negative. Momentum falling.',signal:'SHORT',col:'var(--red)'});
   }
   const minL=Math.min(...lows.slice(-20));
   if(lows.slice(-20).filter(l=>Math.abs(l-minL)/minL<0.005).length>=2&&closes[closes.length-1]>minL*1.01)
-    pats.push({icon:'🔁',name:'Çift Dip (Double Bottom)',desc:'W formasyonu. İki kez test edilen destek. Yükseliş potansiyeli.',signal:'LONG',col:'var(--green)'});
+    pats.push({icon:'🔁',name:'Çift Dip (Double Bottom)',desc:'W formation. Support tested twice. Upside potential.',signal:'LONG',col:'var(--green)'});
   const maxH=Math.max(...highs.slice(-20));
   if(highs.slice(-20).filter(h=>Math.abs(h-maxH)/maxH<0.005).length>=2&&closes[closes.length-1]<maxH*0.99)
-    pats.push({icon:'🔄',name:'Çift Tepe (Double Top)',desc:'M formasyonu. İki kez reddedilen direnç. Düşüş potansiyeli.',signal:'SHORT',col:'var(--red)'});
+    pats.push({icon:'🔄',name:'Çift Tepe (Double Top)',desc:'M formation. Resistance rejected twice. Downside potential.',signal:'SHORT',col:'var(--red)'});
   return pats;
 }
 
@@ -3946,7 +3946,7 @@ function updateUI(tk,candles,fund,ls){
     vd.innerHTML=`<b style="color:var(--red)">▼ SHORT — Aşağı Yön Eğilimi</b><br>Referans: <b>$${fmtP(ent.entry)}</b> → Risk Seviyesi: <b>$${fmtP(ent.stop)}</b> → Hedef 1: <b>$${fmtP(ent.tp1)}</b> → Hedef 2: <b>$${fmtP(ent.tp2)}</b><br>R/R <b>1:${ent.rr}</b> · Değerlendirme <b>${conf}/100</b> · Risk: <b>${risk.label}</b> · Risk seviyesini değerlendirin.`;
   }else{
     vd.className='verdict wait-v';
-    vd.innerHTML=`<b style="color:var(--yellow)">◆ NÖTR — Net Yön Eğilimi Yok</b><br>RSI: <b>${rv}</b> · MACD: <b>${mr.hist>0?'Pozitif':'Negatif'}</b> · EMA: <b>${e9v>e21v?'Yükseliş':'Düşüş'}</b> · Risk: <b>${risk.label}</b><br>Teknik görünüm belirginleşene kadar gözlem önerilir.`;
+    vd.innerHTML=`<b style="color:var(--yellow)">◆ NÖTR — Net Yön Eğilimi Yok</b><br>RSI: <b>${rv}</b> · MACD: <b>${mr.hist>0?'Pozitif':'Negatif'}</b> · EMA: <b>${e9v>e21v?'Yükseliş':'Düşüş'}</b> · Risk: <b>${risk.label}</b><br>Observation advised until the setup becomes clear.`;
   }
 
   // S/R
@@ -3960,9 +3960,9 @@ function updateUI(tk,candles,fund,ls){
   };
   const rl=document.getElementById('resistList'),sl2=document.getElementById('supportList');
   rl.innerHTML='';sl2.innerHTML='';
-  if(!sr.res.length)rl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:6px 0">Direnç bulunamadı</div>';
+  if(!sr.res.length)rl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:6px 0">No resistance found</div>';
   else sr.res.forEach(r=>rl.appendChild(mkSR(r.avg,r.count,'resist')));
-  if(!sr.sup.length)sl2.innerHTML='<div style="font-size:11px;color:var(--text3);padding:6px 0">Destek bulunamadı</div>';
+  if(!sr.sup.length)sl2.innerHTML='<div style="font-size:11px;color:var(--text3);padding:6px 0">No support found</div>';
   else sr.sup.forEach(s=>sl2.appendChild(mkSR(s.avg,s.count,'support')));
 
   // Patterns
@@ -3990,7 +3990,7 @@ function updateUI(tk,candles,fund,ls){
   if(ll){ll.style.width=lp.toFixed(1)+'%';ll.textContent=lp.toFixed(1)+'%';}
   if(ls3){ls3.style.width=sp.toFixed(1)+'%';ls3.textContent=sp.toFixed(1)+'%';}
   setEl('lsRatio','RSI bazlı tahmin');
-  setEl('lsNote',lp>sp?'🟢 Long pozisyonlar baskın — yükseliş beklentisi':'🔴 Short pozisyonlar baskın — düşüş beklentisi');
+  setEl('lsNote',lp>sp?'🟢 Long positions dominant — upward expectation':'🔴 Short positions dominant — downward expectation');
 
   // Indicators
   const rEl=document.getElementById('iRsi');
@@ -4146,7 +4146,7 @@ function renderCard(item,dir,container,isJoker=false){
 // ══════════════════════════════════════════
 async function startScan(){
   if(!FUTURES_SYMS.length){
-    setEl('scanTxt','Futures coin listesi alınıyor...');
+    setEl('scanTxt','Loading futures coin list...');
     FUTURES_SYMS=await getFuturesSymbols();
   }
   await scanMarket();
@@ -4180,7 +4180,7 @@ async function scanMarket(){
   for(let i=0;i<symsToScan.length;i++){
     const sym=symsToScan[i];
     const pct=Math.round((i+1)/symsToScan.length*100);
-    setEl('scanTxt',`Taranıyor ${i+1}/${symsToScan.length} — ${sym} (${pct}%)`);
+    setEl('scanTxt',`Scanning ${i+1}/${symsToScan.length} — ${sym} (${pct}%)`);
     if(pf)pf.style.width=pct+'%';
     try{
       const[kl,tk]=await Promise.all([
@@ -4237,10 +4237,10 @@ async function scanMarket(){
   const lg=document.getElementById('longGrid'),sg=document.getElementById('shortGrid'),jg=document.getElementById('jokerGrid');
   lg.innerHTML='';sg.innerHTML='';jg.innerHTML='';
   if(top3L.length)top3L.forEach(it=>renderCard(it,'long',lg));
-  else lg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Yukarı yönlü görünüm bulunamadı.</div>';
+  else lg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">No upward outlook found.</div>';
   if(top3S.length)top3S.forEach(it=>renderCard(it,'short',sg));
-  else sg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">Aşağı yönlü görünüm bulunamadı.</div>';
-  if(jokerL){jokerL.lScore=jokerL.jlScore;jokerL.lDesc='Ani kırılım potansiyeli · ATR: '+(jokerL.atr/jokerL.price*100).toFixed(2)+'% · '+oppDesc({score:jokerL.lScore,rsi:jokerL.rsi,mh:jokerL.mh,ema:jokerL.lEma},'long');renderCard(jokerL,'long',jg,true);}
+  else sg.innerHTML='<div style="font-size:13px;color:var(--text3);padding:14px">No downward outlook found.</div>';
+  if(jokerL){jokerL.lScore=jokerL.jlScore;jokerL.lDesc='Sudden breakout potential · ATR: '+(jokerL.atr/jokerL.price*100).toFixed(2)+'% · '+oppDesc({score:jokerL.lScore,rsi:jokerL.rsi,mh:jokerL.mh,ema:jokerL.lEma},'long');renderCard(jokerL,'long',jg,true);}
   if(jokerS){jokerS.sScore=jokerS.jsScore;jokerS.sDesc='Ani düşüş potansiyeli · ATR: '+(jokerS.atr/jokerS.price*100).toFixed(2)+'% · '+oppDesc({score:jokerS.sScore,rsi:jokerS.rsi,mh:jokerS.mh,ema:jokerS.sEma},'short');renderCard(jokerS,'short',jg,true);}
 
   // ── PHASE 10: Priority Engine scan hook ──
@@ -4729,10 +4729,10 @@ const AI = (() => {
     if(ema<0.7)        lines.push(`EMA göstergeleri güvenilirliğini yitirdi (<b>${ema.toFixed(2)}x</b>).`);
     if(macd>1.3)       lines.push(`MACD cross güvenilir — ağırlık artırıldı (<b>${macd.toFixed(2)}x</b>).`);
     if(macd<0.7)       lines.push(`MACD tutarsız — ağırlık azaltıldı (<b>${macd.toFixed(2)}x</b>).`);
-    if(rsi<0.7)        lines.push(`RSI uç değerlerde başarısızlık yüksek — filtre sıkılaştı.`);
+    if(rsi<0.7)        lines.push(`Failures are high at RSI extremes — the filter tightened.`);
     if(volatility<0.7) lines.push(`Yüksek volatilite analizleri başarısız — ceza uygulandı.`);
     if(funding<0.7)    lines.push(`Aşırı funding durumlarından kaçınılıyor.`);
-    if(volume>1.3)     lines.push(`Yüksek hacim konfirmasyonu başarıyı artırıyor.`);
+    if(volume>1.3)     lines.push(`High-volume confirmation improves success.`);
     if(st.best)        lines.push(`En başarılı: <b>${st.best.sym.replace('USDT','')}</b> (%${(st.best.wr*100).toFixed(0)} WR, ${st.best.total} analiz).`);
     if(st.worst&&st.worst.sym!==st.best?.sym&&st.worst.wr<0.4)
       lines.push(`Sorunlu coin: <b>${st.worst.sym.replace('USDT','')}</b> — bu coinde güven düşürüldü.`);
@@ -4831,7 +4831,7 @@ function renderAI(){
   const cl = $('aiCoinList');
   if(cl){
     if(!st.coinList.length){
-      cl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">Henüz coin verisi yok.</div>';
+      cl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">No coin data yet.</div>';
     } else {
       cl.innerHTML='';
       st.coinList.forEach(c=>{
@@ -4852,7 +4852,7 @@ function renderAI(){
   const hl = $('aiHistList');
   if(hl){
     if(!st.recent.length){
-      hl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">Henüz kayıtlı analiz yok.</div>';
+      hl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">No saved analysis yet.</div>';
     } else {
       hl.innerHTML='';
       st.recent.forEach(sig=>{
@@ -5016,13 +5016,13 @@ const MarketRegime = {
   update(mode){
     this._mode = mode;
     const cfg = {
-      TREND      :{label:'📈 TREND',     col:'var(--green)',  dot:'#00e5a0', desc:'Trend marketi — EMA göstergeleri güçlü, trend yönü belirgin.'},
-      SIDEWAYS   :{label:'◈ SIDEWAYS',  col:'var(--yellow)', dot:'#ffc107', desc:'Yatay piyasa — RSI/Bollinger önemli, range trade dikkati.'},
-      VOLATILE   :{label:'⚡ VOLATİL',  col:'var(--orange)', dot:'#ff7a00', desc:'Yüksek volatilite — pozisyon boyutunu küçük tut.'},
-      SQUEEZE    :{label:'🔮 SQUEEZE',  col:'var(--purple)', dot:'#9d7dfa', desc:'Bollinger sıkışması — büyük hareket yakın olabilir, yön belirsiz.'},
+      TREND      :{label:'📈 TREND',     col:'var(--green)',  dot:'#00e5a0', desc:'Trending market — EMA indicators strong, trend direction clear.'},
+      SIDEWAYS   :{label:'◈ SIDEWAYS',  col:'var(--yellow)', dot:'#ffc107', desc:'Sideways market — RSI/Bollinger matter, watch range trades.'},
+      VOLATILE   :{label:'⚡ VOLATİL',  col:'var(--orange)', dot:'#ff7a00', desc:'High volatility — keep your position size small.'},
+      SQUEEZE    :{label:'🔮 SQUEEZE',  col:'var(--purple)', dot:'#9d7dfa', desc:'Bollinger squeeze — a big move may be near, direction unclear.'},
       PANIC      :{label:'🔴 PANIC',    col:'var(--red)',    dot:'#ff3d6b', desc:'Panik satisi — long acmaktan kacin, stoplari sikistir.'},
-      ACCUMULATE :{label:'🌊 BİRİKİM',  col:'var(--cyan)',   dot:'#00d4ff', desc:'Birikim fazı — büyük oyuncular alıyor olabilir, dikkatli long.'},
-      DISTRIBUTE :{label:'📤 DAĞITIM', col:'var(--orange)', dot:'#ff7a00', desc:'Dağıtım fazı — büyük oyuncular satıyor olabilir, dikkatli short.'},
+      ACCUMULATE :{label:'🌊 BİRİKİM',  col:'var(--cyan)',   dot:'#00d4ff', desc:'Accumulation phase — large players may be buying, long carefully.'},
+      DISTRIBUTE :{label:'📤 DAĞITIM', col:'var(--orange)', dot:'#ff7a00', desc:'Distribution phase — large players may be selling, short carefully.'},
     };
     const c = cfg[mode]||cfg.SIDEWAYS;
     const badge=document.getElementById('regimeBadge');
@@ -5133,10 +5133,10 @@ function calcBTCInfluence(btcData, coinChg, coinRsi){
 
   score=Math.max(0,Math.min(100,score));
   const color=score>=65?'var(--green)':score>=40?'var(--yellow)':'var(--red)';
-  const desc=score>=70?'BTC destekliyor — altcoin pozisyonları için uygun ortam.'
-    :score>=50?'BTC nötr — dikkatli pozisyon boyutu önerilir.'
-    :score>=35?'BTC baskı altında — altcoin longa dikkat.'
-    :'BTC olumsuz — altcoin long riskli, wait veya short düşün.';
+  const desc=score>=70?'BTC supportive — favorable environment for altcoin positions.'
+    :score>=50?'BTC neutral — cautious position sizing advised.'
+    :score>=35?'BTC under pressure — watch altcoin longs.'
+    :'BTC negative — altcoin longs risky, consider waiting or shorting.';
 
   // UI güncelle
   const valEl=document.getElementById('btcInfVal');
@@ -5348,7 +5348,7 @@ function renderTradeManagement(ent, price, btcData, oiData, atrPct){
     suggestions.push({icon:'🛑',text:'<b>Stop\'a çok yakın</b> — Pozisyonu gözden geçir, risk/ödül bozulmuş olabilir.',badge:'tm-crit',badgeText:'UYARI'});
 
   if(!suggestions.length)
-    suggestions.push({icon:'✓',text:'Pozisyon yönetimi normal — Planı takip et, stop seviyeni koru.',badge:'tm-act',badgeText:'NORMAL'});
+    suggestions.push({icon:'✓',text:'Position management normal — follow the plan, keep your stop level.',badge:'tm-act',badgeText:'NORMAL'});
 
   list.innerHTML='';
   suggestions.forEach(s=>{
@@ -5371,7 +5371,7 @@ function detectSqueeze(closes, candles){
   const el=document.getElementById('squeezeBadge');
   if(el){
     el.className='squeeze-badge '+(isSqueeze?'sq-active':'sq-inactive');
-    el.textContent=isSqueeze?'🔮 SQUEEZE ALGILANDI':'◈ SQUEEZE: YOK';
+    el.textContent=isSqueeze?'🔮 SQUEEZE DETECTED':'◈ SQUEEZE: NONE';
   }
   return isSqueeze;
 }
@@ -5974,9 +5974,9 @@ const ECE = (() => {
         `${sym} için ${dir} yönlü teknik görünüm güçleniyor. ${emaStr} hizalaması var.`
       );
     } else {
-      _setStage(0,'active','Teknik koşullar henüz tam oluşmadı...');
+      _setStage(0,'active','Technical conditions not fully formed yet...');
       _setComment(`<span class="warn">Henüz net bir ${dirTr} yönlü teknik görünüm tespit edilemedi.</span> EMA hizalaması ve MACD yönü bekleniyor.`);
-      _setTA('Teknik görünüm bekleniyor — acele değerlendirme önerilmez.','var(--orange)');
+      _setTA('Awaiting the setup — hasty evaluation not advised.','var(--orange)');
       return;
     }
 
@@ -5988,10 +5988,10 @@ const ECE = (() => {
         `${sym} kırılım hareketi gösteriyor. Kapanış teyidi bekleniyor.`
       );
     } else {
-      _setStage(1,'active','Kırılım henüz oluşmadı — mum kapanışı bekleniyor...');
+      _setStage(1,'active','Breakout not formed yet — awaiting candle close...');
       _setStage(2,'pending','—');
       _setComment(`Teknik görünüm tespit edildi ama <span class="warn">kırılım henüz oluşmadı.</span> Mum kapanışı beklenmeli.`);
-      _setTA('Mum kapanışı bekleniyor. Şu an kovalamak riskli.','var(--yellow)');
+      _setTA('Awaiting candle close. Chasing now is risky.','var(--yellow)');
       return;
     }
 
@@ -6004,8 +6004,8 @@ const ECE = (() => {
     } else {
       _setStage(2,'active',`Hacim ${volRatio}x — onay için 1.3x gerekiyor`);
       _setStage(3,'pending','—');
-      _setComment(`Kırılım oluştu ama <span class="warn">hacim onayı henüz gelmedi.</span> Hacimsiz kırılım fake breakout riski taşıyor.`);
-      _setTA('Hacim onayı eksik. Beklemek daha güvenli.','var(--orange)');
+      _setComment(`Kırılım oluştu ama <span class="warn">hacim onayı henüz gelmedi.</span> A low-volume breakout carries fake breakout risk.`);
+      _setTA('Volume confirmation missing. Waiting is safer.','var(--orange)');
       NC.add({sym,dir:isLong?'warn':'warn',level:'medium',
         msg:`${sym} kırılım yaptı ama hacim onayı henüz gelmedi. Hacimsiz ${dirTr} hareketleri aldatıcı olabilir.`});
       return;
@@ -6015,13 +6015,13 @@ const ECE = (() => {
     if(fakeBreakout){
       _setStage(3,'failed','Fake breakout riski tespit edildi!');
       _setStage(4,'pending','—');_setStage(5,'pending','—');
-      _setComment(`<span class="bad">⚠ FAKE BREAKOUT RİSKİ!</span> Hacimsiz kırılım veya BTC uyumsuzluğu tespit edildi. Bu harekete güvenilmesi risklidir.`);
-      _setTA('Fake breakout riski yüksek. Pozisyon açmak tavsiye edilmez.','var(--red)');
+      _setComment(`<span class="bad">⚠ FAKE BREAKOUT RİSKİ!</span> A low-volume breakout or BTC divergence was detected. Trusting this move is risky.`);
+      _setTA('Fake breakout risk high. Opening a position is not advised.','var(--red)');
       NC.add({sym,dir:'fake',level:'critical',
-        msg:`${sym} hareketinde fake breakout riski tespit edildi. Market maker stop avı yapıyor olabilir.`});
+        msg:`${sym} a fake breakout risk was detected in the move. The market maker may be hunting stops.`});
       return;
     } else {
-      _setStage(3,'done','Fake breakout filtresi geçildi — hareket gerçek görünüyor');
+      _setStage(3,'done','Fake breakout filter passed — the move looks real');
     }
 
     // ── Stage 5: Momentum ──
@@ -6032,7 +6032,7 @@ const ECE = (() => {
       _setStage(4,'active',`Momentum zayıf · ${momStr} — daha güçlü hareket bekleniyor`);
       _setStage(5,'pending','—');
       _setComment(`Teknik görünüm güçlü ama <span class="warn">momentum henüz yeterli değil.</span> ${momStr} hareket ile değerlendirme erken olabilir.`);
-      _setTA('Momentum güçlenmesini bekle. Kâr potansiyeli henüz düşük.','var(--yellow)');
+      _setTA('Wait for momentum to build. Profit potential still low.','var(--yellow)');
       return;
     }
 
@@ -6050,7 +6050,7 @@ const ECE = (() => {
       sym, dir:isLong?'entry':'entry', level:'high', conf:confCapped,
       risk: atrPct>4?'YÜKSEK':atrPct>2.5?'ORTA':'DÜŞÜK',
       regime: regimeMode||'—',
-      msg: `${dir} yönlü teknik görünüm tamamlandı. Referans: $${(+tk.lastPrice).toLocaleString('en',{maximumFractionDigits:4})} · Stop: $${entry?.stop?.toFixed?entry.stop.toFixed(4):entry?.stop||'—'} · R/R 1:${entry?.rr||'—'}. ${isLong?'EMA hizalama ve hacim konfirmasyonu sağlandı.':'Ayı trendi ve hacim baskısı onaylandı.'}`
+      msg: `${dir} yönlü teknik görünüm tamamlandı. Referans: $${(+tk.lastPrice).toLocaleString('en',{maximumFractionDigits:4})} · Stop: $${entry?.stop?.toFixed?entry.stop.toFixed(4):entry?.stop||'—'} · R/R 1:${entry?.rr||'—'}. ${isLong?'EMA alignment and volume confirmation achieved.':'Bearish trend and volume pressure confirmed.'}`
     });
 
     // Yorum
@@ -6076,7 +6076,7 @@ const ECE = (() => {
     // Wick trap — büyük wick, küçük gövde
     if(wickRatio < 0.25 && total > 0){
       NC.add({sym, dir:'warn', level:'high',
-        msg:`${sym} mumunda büyük wick tespit edildi. Market maker stop avı yapıyor olabilir. Ani wick hareketlerine dikkat edin.`});
+        msg:`${sym} a large wick was detected on the candle. The market maker may be hunting stops. Watch for sudden wick moves.`});
     }
 
     // BTC uyumsuzluk
@@ -6092,11 +6092,11 @@ const ECE = (() => {
     if(oiData && oiData.lsRatio){
       if(isLong && oiData.lsRatio < 0.7){
         NC.add({sym, dir:'warn', level:'medium',
-          msg:`${sym} short kalabalık. Likidite toplama (short squeeze) ihtimali artıyor. Ani yukarı hareket beklenebilir.`});
+          msg:`${sym} shorts are crowded. The chance of liquidity grabs (short squeeze) is rising. A sudden upward move may follow.`});
       }
       if(!isLong && oiData.lsRatio > 1.8){
         NC.add({sym, dir:'warn', level:'medium',
-          msg:`${sym} long kalabalık. Long squeeze riski yükseldi. Yüksek kaldıraç önerilmez.`});
+          msg:`${sym} longs are crowded. Long squeeze risk has risen. High leverage is not advised.`});
       }
     }
   }
@@ -6117,7 +6117,7 @@ if(_origScanNotif){
       conf: sig.conf,
       msg: `${sym.replace('USDT','')} için ${isBuy?'LONG':'SHORT'} analiz çıktısı tespit edildi. ` +
            `Giriş: $${sig.price} · R/R 1:${sig.rr} · TP1: $${sig.tp1}. ` +
-           `${isBuy?'EMA hizalama ve hacim onayı mevcut.':'Ayı baskısı ve hacim konfirmasyonu sağlandı.'}`,
+           `${isBuy?'EMA alignment and volume confirmation present.':'Bearish pressure and volume confirmation achieved.'}`,
     });
   };
 }
@@ -6189,11 +6189,11 @@ const SMC = (() => {
 
       // Yukarı sweep: wick yukarı gitti, geri kapandı
       if(c.h > maxH && c.c < maxH && wickRatio < 0.4 && total>0){
-        sweeps.push({type:'bearish_sweep', price:c.h, idx:i, msg:'Yukarı wick ile buy-side likidite toplandı'});
+        sweeps.push({type:'bearish_sweep', price:c.h, idx:i, msg:'Buy-side liquidity was collected via an upper wick'});
       }
       // Aşağı sweep
       if(c.l < minL && c.c > minL && wickRatio < 0.4 && total>0){
-        sweeps.push({type:'bullish_sweep', price:c.l, idx:i, msg:'Aşağı wick ile sell-side likidite toplandı'});
+        sweeps.push({type:'bullish_sweep', price:c.l, idx:i, msg:'Sell-side liquidity was collected via a lower wick'});
       }
     }
     return sweeps.slice(-5); // son 5
@@ -6212,12 +6212,12 @@ const SMC = (() => {
       // Bullish OB: ayı mumu + sonraki güçlü boğa mumu
       if(c.c < c.o && next.c > next.o && body > avgBody*1.5 && next.c > c.h){
         obs.push({type:'bullish', high:c.o, low:c.l, idx:i,
-          desc:'Kurumsal alım bölgesi — fiyat bu bölgeyi test edebilir'});
+          desc:'Institutional buy zone — price may test this area'});
       }
       // Bearish OB: boğa mumu + sonraki güçlü ayı mumu
       if(c.c > c.o && next.c < next.o && body > avgBody*1.5 && next.c < c.l){
         obs.push({type:'bearish', high:c.h, low:c.o, idx:i,
-          desc:'Kurumsal satış bölgesi — direnç olarak çalışabilir'});
+          desc:'Institutional sell zone — may act as resistance'});
       }
     }
     return obs.slice(-4); // son 4
@@ -6310,9 +6310,9 @@ const SMC = (() => {
   // ── 7. Session Intelligence ───────────────────────────────────────
   function getSession(){
     const h = new Date().getUTCHours();
-    if(h>=0&&h<7)   return{name:'Asya Seansı',   cls:'sess-asia',  emoji:'🌏', desc:'Hacim düşük, yatay hareket beklenir'};
-    if(h>=7&&h<12)  return{name:'London Open',    cls:'sess-london',emoji:'🇬🇧', desc:'Yüksek volatilite, trend oluşumu'};
-    if(h>=12&&h<17) return{name:'NY Overlap',     cls:'sess-ny',    emoji:'🌎', desc:'En yüksek hacim dönemi, güçlü hareketler'};
+    if(h>=0&&h<7)   return{name:'Asya Seansı',   cls:'sess-asia',  emoji:'🌏', desc:'Volume low, sideways move expected'};
+    if(h>=7&&h<12)  return{name:'London Open',    cls:'sess-london',emoji:'🇬🇧', desc:'High volatility, trend formation'};
+    if(h>=12&&h<17) return{name:'NY Overlap',     cls:'sess-ny',    emoji:'🌎', desc:'Peak volume period, strong moves'};
     if(h>=17&&h<21) return{name:'New York Seansı',cls:'sess-ny',    emoji:'🇺🇸', desc:'Momentum devam edebilir'};
     return{name:'Seans Dışı', cls:'sess-off', emoji:'🌙', desc:'Düşük hacim, dikkatli olun'};
   }
@@ -6524,12 +6524,12 @@ const SMC = (() => {
     const parts=[];
     const sn=sym.replace('USDT','');
     // Market Structure
-    if(ms.trend==='bullish') parts.push(`<b>${sn}</b> yükseliş yapısını koruyor — Higher High ve Higher Low serisinde.`);
-    else if(ms.trend==='bearish') parts.push(`<b>${sn}</b> düşüş yapısında — Lower High ve Lower Low baskısı devam ediyor.`);
+    if(ms.trend==='bullish') parts.push(`<b>${sn}</b> maintaining an uptrend structure — in a series of Higher Highs and Higher Lows.`);
+    else if(ms.trend==='bearish') parts.push(`<b>${sn}</b> in a downtrend structure — Lower High and Lower Low pressure continues.`);
     // Events
     if(ms.events.length){
       const e=ms.events[0];
-      if(e.type==='CHOCH') parts.push(`<span class="${e.dir==='bullish'?'bull':'bear'}">${e.dir==='bullish'?'Yükseliş':'Düşüş'} CHoCH oluştu</span> — trend değişimi ihtimali güçleniyor.`);
+      if(e.type==='CHOCH') parts.push(`<span class="${e.dir==='bullish'?'bull':'bear'}">${e.dir==='bullish'?'Yükseliş':'Düşüş'} CHoCH oluştu</span> — the chance of a trend change is strengthening.`);
       if(e.type==='BOS')   parts.push(`<span class="${e.dir==='bullish'?'bull':'bear'}">${e.dir==='bullish'?'Yükseliş':'Düşüş'} BOS</span> ile yapı teyit edildi.`);
     }
     // Sweep
@@ -6540,10 +6540,10 @@ const SMC = (() => {
     // Order Block
     if(obs.length){
       const ob=obs[obs.length-1];
-      parts.push(`${ob.type==='bullish'?'<span class="bull">Kurumsal alım bölgesi</span>':'<span class="bear">Kurumsal satış bölgesi</span>'} yakınında fiyat hareketi gözlemleniyor.`);
+      parts.push(`${ob.type==='bullish'?'<span class="bull">Institutional buy zone</span>':'<span class="bear">Institutional sell zone</span>'} yakınında fiyat hareketi gözlemleniyor.`);
     }
     // FVG
-    if(fvgs.length) parts.push(`${fvgs.length} adet açık Fair Value Gap imbalance tespit edildi — fiyat bu bölgelere çekilebilir.`);
+    if(fvgs.length) parts.push(`${fvgs.length} open Fair Value Gap imbalances were detected — price may be drawn to these zones.`);
     // Displacement
     if(displacement.length) parts.push(`<span class="${displacement[0].type==='bullish'?'bull':'bear'}">Displacement hareketi</span> algılandı — kurumsal giriş işareti olabilir.`);
     // Equal Levels
@@ -6554,7 +6554,7 @@ const SMC = (() => {
     else if(quality.score<40) parts.push(`<span class="warn">Teknik görünüm kalitesi düşük (%${quality.score}/100)</span> — daha fazla teyit beklenmeli.`);
     // Session
     parts.push(`<span class="info">${sess.emoji} ${sess.name}:</span> ${sess.desc}.`);
-    return parts.join(' ') || 'Smart Money analizi tamamlandı.';
+    return parts.join(' ') || 'Smart Money analysis complete.';
   }
 
   // ── NC Bildirimleri gönder ────────────────────────────────────────
@@ -6571,12 +6571,12 @@ const SMC = (() => {
     const choch=ms.events.find(e=>e.type==='CHOCH');
     if(choch){
       NC.add({sym,dir:choch.dir==='bullish'?'long':'short',level:'high',
-        msg:`${sn} CHoCH oluştu — ${choch.dir==='bullish'?'yükseliş':'düşüş'} trend değişimi ihtimali güçleniyor.`});
+        msg:`${sn} CHoCH oluştu — ${choch.dir==='bullish'?'yükseliş':'düşüş'} the chance of a trend change is strengthening.`});
     }
     // Equal Highs uyarısı
     if(eqLevels.equalHighs.length>=1){
       NC.add({sym,dir:'warn',level:'medium',
-        msg:`${sn} üst bölgesinde Equal Highs tespit edildi. Buy-side likidite hedef alınabilir — trap riski var.`});
+        msg:`${sn} Equal Highs were detected in the upper zone. Buy-side liquidity may be targeted — trap risk present.`});
     }
     // Düşük kalite uyarısı
     if(quality.score<35&&entry){
@@ -6587,7 +6587,7 @@ const SMC = (() => {
     if(displacement.length){
       const d=displacement[0];
       NC.add({sym,dir:d.type==='bullish'?'long':'short',level:'medium',
-        msg:`${sn} displacement hareketi algılandı. ${d.type==='bullish'?'Kurumsal alım':'Kurumsal satış'} baskısı görünüyor.`});
+        msg:`${sn} a displacement move was detected. ${d.type==='bullish'?'Kurumsal alım':'Kurumsal satış'} baskısı görünüyor.`});
     }
   }
 
@@ -6605,10 +6605,10 @@ const SCE = (() => {
   // ── Trade Modları ─────────────────────────────────────────────────
   const MODES = {
     SAFE:       {min:75, label:'SAFE',       tip:'Güvenli görünüm — yüksek konfirmasyon gerekir', minRarity:2},
-    BALANCED:   {min:60, label:'BALANCED',   tip:'Dengeli yaklaşım — iyi fırsat/risk oranı',    minRarity:1},
-    AGGRESSIVE: {min:45, label:'AGGRESSIVE', tip:'Agresif giriş — yüksek risk, yüksek potansiyel', minRarity:0},
-    SCALP:      {min:55, label:'SCALP',      tip:'Hızlı scalp — düşük hedef, sıkı stop',       minRarity:1},
-    SNIPER:     {min:82, label:'SNIPER',     tip:'Sadece A+ teknik görünüm — çok nadir, yüksek kalite',  minRarity:4},
+    BALANCED:   {min:60, label:'BALANCED',   tip:'Balanced approach — good opportunity/risk ratio',    minRarity:1},
+    AGGRESSIVE: {min:45, label:'AGGRESSIVE', tip:'Aggressive entry — high risk, high potential', minRarity:0},
+    SCALP:      {min:55, label:'SCALP',      tip:'Quick scalp — low target, tight stop',       minRarity:1},
+    SNIPER:     {min:82, label:'SNIPER',     tip:'Only A+ technical setups — very rare, high quality',  minRarity:4},
   };
 
   // ── Rarity Seviyeleri ─────────────────────────────────────────────
@@ -6724,16 +6724,16 @@ const SCE = (() => {
 
     // Timing tavsiyesi
     let timing = 'Mum kapanışı bekleniyor.';
-    if(score>=80)        timing = 'Giriş bölgesi oluştu. Teyit için son mumu izle.';
-    else if(score>=65)   timing = 'Şartlar güçleniyor. Retest veya kapanış onayı bekleniyor.';
+    if(score>=80)        timing = 'Entry zone formed. Watch the last candle for confirmation.';
+    else if(score>=65)   timing = 'Conditions strengthening. Awaiting retest or close confirmation.';
     else if(score>=50)   timing = 'Erken aşama. Hacim ve momentum artışı bekleniyor.';
-    else if(volRatio<1.3)timing = 'Hacim onayı eksik. Beklemek daha güvenli.';
-    else if(fakeBreakout)timing = 'Fake breakout riski var. Bu harekete güvenilmesi riskli.';
+    else if(volRatio<1.3)timing = 'Volume confirmation missing. Waiting is safer.';
+    else if(fakeBreakout)timing = 'Fake breakout risk present. Trusting this move is risky.';
 
     // Agresif mod için timing güncellemesi
-    if(_mode==='AGGRESSIVE'&&score>=45) timing = 'Agresif yön eğilimi — risk seviyesi sıkı izlenmeli.';
-    if(_mode==='SCALP')                 timing = 'Kısa vadeli teknik görünüm — hızlı hareket, küçük hedef.';
-    if(_mode==='SNIPER'&&score<90)      timing = 'Sniper modu — teknik görünüm henüz A+ değil. Gözlem önerilir.';
+    if(_mode==='AGGRESSIVE'&&score>=45) timing = 'Aggressive directional bias — risk level must be monitored closely.';
+    if(_mode==='SCALP')                 timing = 'Short-term setup — fast move, small target.';
+    if(_mode==='SNIPER'&&score<90)      timing = 'Sniper mode — setup not A+ yet. Observation advised.';
 
     return{score, rarity, factors, warnings, timing, btcAlign, volRatio};
   }
@@ -6749,8 +6749,8 @@ const SCE = (() => {
     // Temel yorum
     if(score>=80){
       parts.push(isLong
-        ? `<b>${sn}</b> güçlü bir yukarı yönlü teknik görünüm oluşturdu.`
-        : `<b>${sn}</b> güçlü bir aşağı yönlü teknik görünüm oluşturdu.`);
+        ? `<b>${sn}</b> formed a strong upward technical setup.`
+        : `<b>${sn}</b> formed a strong downward technical setup.`);
     } else if(score>=60){
       parts.push(`<b>${sn}</b> için ${isLong?'yükseliş':'düşüş'} şartları güçleniyor.`);
     } else {
@@ -6759,31 +6759,31 @@ const SCE = (() => {
 
     // SMC yorumları
     if(smcData){
-      if(smcData.sweeps) parts.push('Likidite süpürmesi sonrası fiyat tepki verdi.');
-      if(smcData.ob)     parts.push(isLong ? 'Kurumsal alım bölgesi destek oluşturuyor.' : 'Kurumsal satış bölgesinde baskı var.');
-      if(smcData.choch)  parts.push(`CHoCH oluştu — trend değişimi ihtimali ${isLong?'güçlendi':'zayıfladı'}.`);
-      if(smcData.eqHighs&&isLong) parts.push('Üstte equal highs var — likidite tuzağına dikkat.');
+      if(smcData.sweeps) parts.push('Price reacted after the liquidity sweep.');
+      if(smcData.ob)     parts.push(isLong ? 'Institutional buy zone is forming support.' : 'There is pressure in the institutional sell zone.');
+      if(smcData.choch)  parts.push(`CHoCH occurred — possible trend change ${isLong?'güçlendi':'zayıfladı'}.`);
+      if(smcData.eqHighs&&isLong) parts.push('Equal highs above — watch for a liquidity trap.');
     }
 
     // BTC yorumu
     if(btcData){
-      if(btcData.chg>2&&isLong)    parts.push('BTC güçlü yükseliş desteği sağlıyor.');
-      if(btcData.chg<-2&&isLong)   parts.push('BTC baskı altında — altcoin long için dikkatli olun.');
-      if(btcData.chg<-2&&!isLong)  parts.push('BTC zayıflığı düşüş baskısını destekliyor.');
+      if(btcData.chg>2&&isLong)    parts.push('BTC provides strong upward support.');
+      if(btcData.chg<-2&&isLong)   parts.push('BTC under pressure — be careful with altcoin longs.');
+      if(btcData.chg<-2&&!isLong)  parts.push('BTC weakness supports the downward pressure.');
     }
 
     // Regime yorumu
-    if(regimeMode==='TREND')    parts.push('Trend marketi — momentum göstergeleri daha güvenilir.');
-    if(regimeMode==='VOLATILE') parts.push('Volatil market — pozisyon boyutunu küçük tut.');
-    if(regimeMode==='SQUEEZE')  parts.push('Bollinger sıkışması var — büyük hareket yakın olabilir.');
-    if(regimeMode==='PANIC')    parts.push('Panik modu aktif — agresif long açmak riskli.');
+    if(regimeMode==='TREND')    parts.push('Trending market — momentum indicators more reliable.');
+    if(regimeMode==='VOLATILE') parts.push('Volatile market — keep your position size small.');
+    if(regimeMode==='SQUEEZE')  parts.push('Bollinger squeeze present — a big move may be near.');
+    if(regimeMode==='PANIC')    parts.push('Panic mode active — opening aggressive longs is risky.');
 
     // Fake breakout uyarısı
-    if(fakeBreakout) parts.push('Fake breakout riski tespit edildi — bu harekete güvenilmesi önerilmez.');
+    if(fakeBreakout) parts.push('Fake breakout risk detected — trusting this move is not advised.');
 
     // R/R yorumu
-    if(entry&&entry.rr>=2.5) parts.push(`R/R 1:${entry.rr} ile güçlü bir risk/ödül oranı mevcut.`);
-    if(entry&&entry.rr<1.5)  parts.push('R/R oranı zayıf — pozisyon büyüklüğüne dikkat et.');
+    if(entry&&entry.rr>=2.5) parts.push(`R/R 1:${entry.rr} offers a strong risk/reward ratio.`);
+    if(entry&&entry.rr<1.5)  parts.push('R/R ratio weak — watch your position size.');
 
     // Uyarılar
     if(warnings.length) parts.push(`Dikkat: ${warnings.slice(0,2).join(', ')}.`);
@@ -6826,7 +6826,7 @@ const SCE = (() => {
 
     // AI reasoning özet
     let aiLine='';
-    if(confirmed>=9)      aiLine='Tüm 9 onay tamamlandı. Kurumsal kalite setup.';
+    if(confirmed>=9)      aiLine='All 9 confirmations complete. Institutional-quality setup.';
     else if(confirmed>=7) aiLine=`${confirmed}/9 onay. Güçlü setup — giriş değerlendirilebilir.`;
     else if(confirmed>=5) aiLine=`${confirmed}/9 onay. Erken momentum. ${missing.slice(0,2).join(', ')} bekleniyor.`;
     else if(confirmed>=4) aiLine=`${confirmed}/9 onay. Agresif setup. Yüksek risk — stop sıkı tut.`;
@@ -7048,7 +7048,7 @@ const SCE = (() => {
 
     if(!sorted.length){
       const isFirstLoad = !window._scanDone;
-      container.innerHTML = `<div class="sc-empty"><span class="sc-empty-icon">${isFirstLoad?'⏳':'🎯'}</span>${isFirstLoad?'Tarama bekleniyor — sayfa yüklenince otomatik başlar...':'Şu an gösterilecek güçlü setup yok.'}<br><span style="font-size:11px;margin-top:6px;display:block">Mod: ${MODES[_mode].label} · Min skor: ${MODES[_mode].min} · <button onclick="SCE.setMode('AGGRESSIVE')" style="background:none;border:none;color:#00d4ff;cursor:pointer;font-size:11px;text-decoration:underline">Filtreyi gevşet</button></span></div>`;
+      container.innerHTML = `<div class="sc-empty"><span class="sc-empty-icon">${isFirstLoad?'⏳':'🎯'}</span>${isFirstLoad?'Awaiting scan — starts automatically once the page loads...':'No strong setup to show right now.'}<br><span style="font-size:11px;margin-top:6px;display:block">Mod: ${MODES[_mode].label} · Min skor: ${MODES[_mode].min} · <button onclick="SCE.setMode('AGGRESSIVE')" style="background:none;border:none;color:#00d4ff;cursor:pointer;font-size:11px;text-decoration:underline">Filtreyi gevşet</button></span></div>`;
       return;
     }
 
@@ -7225,7 +7225,7 @@ const WSEngine = (() => {
     const el = document.getElementById('wsStatus');
     if(!el) return;
     const cfg = {
-      connected   : {txt:'● WS CANLI',    col:'var(--green)'},
+      connected   : {txt:'● WS LIVE',    col:'var(--green)'},
       connecting  : {txt:'◌ Bağlanıyor...', col:'var(--yellow)'},
       reconnecting: {txt:'↻ Yeniden bağlanıyor...', col:'var(--orange)'},
       disconnected: {txt:'○ Bağlantı Yok', col:'var(--red)'},
@@ -7574,7 +7574,7 @@ const WSEngine = (() => {
         </div>
         <div style="display:flex;align-items:center;gap:5px">
           <span style="font-size:9px;color:var(--text3);letter-spacing:1px">DURUM</span>
-          <span style="font-size:12px;font-weight:700;color:${_status==='connected'?'var(--green)':'var(--red)'}">${_status==='connected'?'CANLI':'KESİLDİ'}</span>
+          <span style="font-size:12px;font-weight:700;color:${_status==='connected'?'var(--green)':'var(--red)'}">${_status==='connected'?'LIVE':'KESİLDİ'}</span>
         </div>
       </div>
     `;
@@ -7621,15 +7621,15 @@ const AIReasoning = (() => {
       else                     { conflicts.push('MACD histogramı negatif'); finalConf-=8; }
       if(rsi>=45&&rsi<=65)     { confirms.push(`RSI ideal bölge (${rsi.toFixed(0)})`); finalConf+=8; }
       else if(rsi>72)          { conflicts.push(`RSI aşırı alım (${rsi.toFixed(0)})`); finalConf-=12; rejects.push('RSI aşırı alım — giriş riskli'); }
-      else if(rsi<35)          { confirms.push(`RSI aşırı satım — dip potansiyeli (${rsi.toFixed(0)})`); }
+      else if(rsi<35)          { confirms.push(`RSI oversold — bottom potential (${rsi.toFixed(0)})`); }
     } else {
       if(e9<e21&&e21<e50)     { confirms.push('EMA tam aşağı hizalama'); finalConf+=10; }
       else if(e9<e21)          { confirms.push('EMA kısmi negatif'); finalConf+=5; }
       else                     { conflicts.push('EMA yükseliş hizalaması short ile çelişiyor'); finalConf-=10; }
-      if(macd.hist<0)          { confirms.push('MACD histogramı negatif — baskı devam'); finalConf+=8; }
-      else                     { conflicts.push('MACD pozitife dönüyor — short zayıflıyor'); finalConf-=8; }
+      if(macd.hist<0)          { confirms.push('MACD histogram negative — pressure continues'); finalConf+=8; }
+      else                     { conflicts.push('MACD turning positive — shorts weakening'); finalConf-=8; }
       if(rsi>=35&&rsi<=55)     { confirms.push(`RSI short için uygun (${rsi.toFixed(0)})`); finalConf+=8; }
-      else if(rsi<28)          { conflicts.push(`RSI aşırı satım — short kovalamak riskli (${rsi.toFixed(0)})`); finalConf-=12; }
+      else if(rsi<28)          { conflicts.push(`RSI oversold — chasing shorts is risky (${rsi.toFixed(0)})`); finalConf-=12; }
     }
 
     // ── Hacim analizi ──
@@ -7647,14 +7647,14 @@ const AIReasoning = (() => {
         const obi = wsData.obImbalance;
         if(isLong&&obi>0.6)       { confirms.push(`Order book alım baskısı (${(obi*100).toFixed(0)}%)`); finalConf+=6; }
         else if(!isLong&&obi<0.4) { confirms.push(`Order book satış baskısı (${((1-obi)*100).toFixed(0)}%)`); finalConf+=6; }
-        else if(isLong&&obi<0.4)  { conflicts.push('Order book satış tarafında ağır'); finalConf-=6; }
+        else if(isLong&&obi<0.4)  { conflicts.push('Order book heavy on the sell side'); finalConf-=6; }
       }
       if(wsData.lastLiquidation){
         const liq = wsData.lastLiquidation;
         const age = (Date.now()-liq.ts)/1000;
         if(age<60){
-          if(isLong&&liq.side==='BUY')   { confirms.push('Short likidasyon yakın — long momentum'); finalConf+=5; }
-          if(!isLong&&liq.side==='SELL') { confirms.push('Long likidasyon yakın — short momentum'); finalConf+=5; }
+          if(isLong&&liq.side==='BUY')   { confirms.push('Short liquidation near — long momentum'); finalConf+=5; }
+          if(!isLong&&liq.side==='SELL') { confirms.push('Long liquidation near — short momentum'); finalConf+=5; }
         }
       }
     }
@@ -7665,43 +7665,43 @@ const AIReasoning = (() => {
         const f = oiData.fund;
         if(isLong&&f>0.08)         { conflicts.push(`Funding aşırı pozitif (%${f.toFixed(3)}) — long kalabalık`); finalConf-=10; rejects.push(`Funding %${f.toFixed(3)} — long pozisyon için maliyetli`); }
         else if(isLong&&f<-0.05)   { confirms.push(`Negatif funding long'u destekliyor (%${f.toFixed(3)})`); finalConf+=8; }
-        else if(!isLong&&f<-0.08)  { conflicts.push(`Funding aşırı negatif — short kalabalık`); finalConf-=10; }
+        else if(!isLong&&f<-0.08)  { conflicts.push(`Funding extremely negative — shorts crowded`); finalConf-=10; }
         else if(!isLong&&f>0.05)   { confirms.push(`Pozitif funding short'u destekliyor`); finalConf+=8; }
       }
       if(oiData.oiChange!==null){
         const oiC = +oiData.oiChange;
         if(isLong&&oiC>2)          { confirms.push(`OI artışı long momentum destekliyor (+%${oiC.toFixed(1)})`); finalConf+=5; }
         if(!isLong&&oiC<-2)        { confirms.push(`OI düşüşü short momentum destekliyor (%${oiC.toFixed(1)})`); finalConf+=5; }
-        if(isLong&&oiC<-3)         { conflicts.push(`OI hızla düşüyor — pozisyon kapanıyor olabilir`); finalConf-=8; }
+        if(isLong&&oiC<-3)         { conflicts.push(`OI dropping fast — positions may be closing`); finalConf-=8; }
       }
     }
 
     // ── BTC Korelasyon ──
     if(btcData){
       if(isLong&&btcData.chg>1)    { confirms.push(`BTC yükseliş desteği (%${btcData.chg.toFixed(2)})`); finalConf+=6; }
-      else if(isLong&&btcData.chg<-2) { conflicts.push(`BTC düşüyor — altcoin yukarı yönlü görünüm için olumsuz`); finalConf-=8; rejects.push('BTC zayıflığı yukarı yönlü görünüm için risk oluşturuyor'); }
-      else if(!isLong&&btcData.chg<-1) { confirms.push(`BTC düşüşü aşağı yönlü görünümü destekliyor`); finalConf+=6; }
+      else if(isLong&&btcData.chg<-2) { conflicts.push(`BTC falling — negative for altcoin upward outlook`); finalConf-=8; rejects.push('BTC weakness poses a risk to the upward outlook'); }
+      else if(!isLong&&btcData.chg<-1) { confirms.push(`the BTC decline supports the downward outlook`); finalConf+=6; }
     }
 
     // ── SMC ──
     if(smcData){
-      if(smcData.sweeps)     { confirms.push('Likidite süpürmesi gerçekleşti — reversal ihtimali'); finalConf+=6; }
-      if(smcData.ob)         { confirms.push(isLong?'Bullish order block destek sağlıyor':'Bearish order block baskı oluşturuyor'); finalConf+=5; }
-      if(smcData.choch)      { confirms.push('CHoCH oluştu — trend değişim işareti'); finalConf+=8; }
-      if(smcData.eqHighs&&isLong) { conflicts.push('Equal highs üstte — likidite tuzağı riski'); finalConf-=5; }
+      if(smcData.sweeps)     { confirms.push('A liquidity sweep occurred — reversal possible'); finalConf+=6; }
+      if(smcData.ob)         { confirms.push(isLong?'Bullish order block provides support':'Bearish order block creates pressure'); finalConf+=5; }
+      if(smcData.choch)      { confirms.push('CHoCH occurred — trend change signal'); finalConf+=8; }
+      if(smcData.eqHighs&&isLong) { conflicts.push('Equal highs above — liquidity trap risk'); finalConf-=5; }
     }
 
     // ── Fake Breakout ──
     if(fakeBreak){
-      rejects.push('Fake breakout riski yüksek — hacimsiz kırılım tespit edildi');
-      conflicts.push('Wick manipülasyonu veya hacimsiz breakout');
+      rejects.push('Fake breakout risk high — low-volume breakout detected');
+      conflicts.push('Wick manipulation or a low-volume breakout');
       finalConf -= 15;
     }
 
     // ── Market Regime ──
-    if(regimeMode==='PANIC'&&isLong)   { rejects.push('Panik modu — long pozisyon açmak riskli'); finalConf-=15; }
-    if(regimeMode==='TREND')           { confirms.push('Trend modu — momentum göstergeleri güçlü'); finalConf+=5; }
-    if(regimeMode==='VOLATILE')        { conflicts.push('Volatil market — stop aralığı genişletilmeli'); finalConf-=8; }
+    if(regimeMode==='PANIC'&&isLong)   { rejects.push('Panic mode — opening longs is risky'); finalConf-=15; }
+    if(regimeMode==='TREND')           { confirms.push('Trend mode — momentum indicators strong'); finalConf+=5; }
+    if(regimeMode==='VOLATILE')        { conflicts.push('Volatile market — stop range should be widened'); finalConf-=8; }
 
     // ── R/R kontrolü ──
     if(entry){
@@ -7745,7 +7745,7 @@ const AIReasoning = (() => {
     } else {
       lines.push(`${sn} — BEKLEME (Güven: %${conf})`);
       if(conflicts.length) lines.push(`⚠ ${conflicts[0]}`);
-      lines.push('Daha güçlü konfirmasyon bekleniyor.');
+      lines.push('Awaiting stronger confirmation.');
     }
 
     return lines;
@@ -8102,7 +8102,7 @@ const ECE2 = (() => {
     if(!window.NC) return;
     NC.add({
       sym:_sym, dir:'entry', level:'critical',
-      msg:`🎯 HIGH CONFIDENCE ENTRY — ${_sym.replace('USDT','')} için tüm giriş koşulları karşılandı! Entry bölgesi oluştu.`
+      msg:`🎯 HIGH CONFIDENCE ENTRY — ${_sym.replace('USDT','')} all entry conditions met! Entry zone formed.`
     });
   }
 
@@ -8341,12 +8341,12 @@ const FBDetector = (() => {
     const prevLow  = Math.min(...candles.slice(-10,-1).map(c=>c.l));
     if(price>prevHigh&&lastC.c<prevHigh){
       signals.push({type:'Trapped Longs', risk:20, col:'var(--red)',
-        desc:'Fiyat önceki yüksek üstüne çıkıp geri kapandı — longlar sıkıştı'});
+        desc:'Price pushed above the prior high then closed back — longs got squeezed'});
       riskScore += 20;
     }
     if(price<prevLow&&lastC.c>prevLow){
       signals.push({type:'Trapped Shorts', risk:20, col:'var(--green)',
-        desc:'Fiyat önceki düşük altına indi, geri kapandı — shortlar sıkıştı'});
+        desc:'Price dropped below the prior low then closed back — shorts got squeezed'});
       riskScore += 20;
     }
 
@@ -8386,7 +8386,7 @@ const FBDetector = (() => {
       const obi = wsData.obImbalance;
       if(price>prevHigh&&obi<0.35){
         signals.push({type:'Order Book Uyumsuz', risk:10, col:'var(--yellow)',
-          desc:'Breakout yukarı ama order book satış ağırlıklı'});
+          desc:'Breakout up but order book sell-weighted'});
         riskScore += 10;
       }
     }
@@ -8552,8 +8552,8 @@ const SMCPro = (() => {
       else if(ms.trend==='bearish') parts.push(`<b>${sn}</b> düşüş yapısında.`);
       if(lastSw) parts.push(`Likidite sweep: ${lastSw.msg}.`);
       if(lastOB) parts.push(`${lastOB.type==='bullish'?'Kurumsal alım':'Kurumsal satış'} bölgesi tespit edildi.`);
-      if(eqLevels.equalHighs.length) parts.push(`Equal highs: buy-side likidite tuzağı riski.`);
-      if(displacement.length) parts.push(`Displacement hareketi — kurumsal giriş işareti.`);
+      if(eqLevels.equalHighs.length) parts.push(`Equal highs: buy-side liquidity trap risk.`);
+      if(displacement.length) parts.push(`Displacement move — sign of institutional entry.`);
       if(ms.events.length) parts.push(`${ms.events[ms.events.length-1].type} oluştu — dikkat.`);
       if(parts.length){
         comEl.style.display='block';
@@ -8671,12 +8671,12 @@ const RiskEnginePro = (() => {
 
     // ── Tavsiye ──
     let advice = '';
-    if(atrPct>4)      advice += 'Yüksek volatilite — pozisyon boyutunu küçük tut. ';
+    if(atrPct>4)      advice += 'High volatility — keep your position size small. ';
     if(lev<=3)        advice += 'Düşük kaldıraç önerilir. ';
     if(conf>=75&&lev>=5) advice += `Güçlü setup: ${lev}x kaldıraç ve %${riskPct} risk ile girilebilir. `;
     else if(conf<60)  advice += 'Değerlendirme düşük — daha fazla teyit beklenmeli. ';
     if(oiData&&oiData.fund&&Math.abs(oiData.fund)>0.08) advice += 'Yüksek funding nedeniyle kaldıraç düşürüldü. ';
-    if(regimeMode==='PANIC') advice += 'Panik modu — agresif pozisyon açmaktan kaçın. ';
+    if(regimeMode==='PANIC') advice += 'Panic mode — avoid opening aggressive positions. ';
     if(!advice) advice = `${lev}x kaldıraç ile portföyün %${riskPct}'ini riske at. Stop: %${stopPct.toFixed(1)}.`;
 
     // ── UI Güncelle ──
@@ -8848,7 +8848,7 @@ function updateSwipeScanList(){
   // Son tarama sonuçlarını al (scanMarket'ten)
   const longGrid  = document.getElementById('longGrid');
   const shortGrid = document.getElementById('shortGrid');
-  if(!longGrid||!shortGrid){ el.innerHTML='<span style="color:var(--text3)">Tarama çalıştır...</span>'; return; }
+  if(!longGrid||!shortGrid){ el.innerHTML='<span style="color:var(--text3)">Run a scan...</span>'; return; }
   const longs  = [...longGrid.querySelectorAll('.opp-sym')].slice(0,3).map(e=>e.textContent);
   const shorts = [...shortGrid.querySelectorAll('.opp-sym')].slice(0,3).map(e=>e.textContent);
   if(!longs.length&&!shorts.length){ el.innerHTML='<span style="color:var(--text3)">Tarama bekleniyor...</span>'; return; }
@@ -8868,7 +8868,7 @@ function updateSwipeScanList(){
       <span style="font-size:13px;font-weight:800;color:var(--text)">${sym}</span>
     </div>`;
   });
-  el.innerHTML=html||'<span style="color:var(--text3)">Analiz bulunamadı</span>';
+  el.innerHTML=html||'<span style="color:var(--text3)">No analysis found</span>';
 }
 
 // ── 3. SECTION REVEAL OBSERVER ───────────────────────────────────────
@@ -9245,7 +9245,7 @@ const Analytics = (() => {
     // Sub text
     const subEl=document.getElementById('wrGaugeSub');
     if(subEl){
-      if(stats.total===0) subEl.textContent='Henüz analiz yok. Tarama yapın.';
+      if(stats.total===0) subEl.textContent='No analysis yet. Run a scan.';
       else subEl.textContent=`${stats.wins} kazanan · ${stats.losses} kaybeden · ${stats.pending} beklemede`;
     }
 
@@ -9298,7 +9298,7 @@ const Analytics = (() => {
     const el=document.getElementById('sigHistList');
     if(!el) return;
     _load();
-    if(!_history.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Henüz analiz kaydedilmedi.</div>'; return; }
+    if(!_history.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">No analysis recorded yet.</div>'; return; }
     el.innerHTML='';
     _history.slice(0,50).forEach(s=>{
       const ago=_timeAgo(s.ts);
@@ -9670,7 +9670,7 @@ const P10 = (() => {
 
     // SMC hikayesi
     if(smcData){
-      if(smcData.sweeps) parts.push(`<span class="n-${isLong?'bull':'bear'}">Likidite süpürmesi gerçekleşti${isLong?' — reversal güçleniyor':' — düşüş momentumu arttı'}.</span>`);
+      if(smcData.sweeps) parts.push(`<span class="n-${isLong?'bull':'bear'}">A liquidity sweep occurred${isLong?' — reversal güçleniyor':' — düşüş momentumu arttı'}.</span>`);
       if(smcData.choch)  parts.push(`<span class="n-${isLong?'bull':'bear'}">CHoCH oluştu — market yapısı ${isLong?'pozitife':'negatife'} döndü.</span>`);
       if(smcData.ob)     parts.push(`${isLong?'Bullish':'Bearish'} order block ${isLong?'destek':'direnç'} sağlıyor.`);
     }
@@ -9709,12 +9709,12 @@ const P10 = (() => {
     }
 
     // Fake breakout
-    if(fakeBreak) parts.push(`<span class="n-warn">⚠ Fake breakout riski tespit edildi — hacimsiz kırılım, dikkatli ol.</span>`);
+    if(fakeBreak) parts.push(`<span class="n-warn">⚠ Fake breakout risk detected — low-volume breakout, be careful.</span>`);
 
     // Regime
-    if(regimeMode === 'TREND')    parts.push(`<span class="n-bull">Trend modu aktif — momentum göstergeleri güçlü.</span>`);
-    if(regimeMode === 'PANIC')    parts.push(`<span class="n-bear">Panik satış modu — yukarı yönlü görünüm zayıf.</span>`);
-    if(regimeMode === 'VOLATILE') parts.push(`<span class="n-warn">Volatilite yüksek — stop aralığını genişlet.</span>`);
+    if(regimeMode === 'TREND')    parts.push(`<span class="n-bull">Trend mode active — momentum indicators strong.</span>`);
+    if(regimeMode === 'PANIC')    parts.push(`<span class="n-bear">Panic-sell mode — upward outlook weak.</span>`);
+    if(regimeMode === 'VOLATILE') parts.push(`<span class="n-warn">Volatility high — widen your stop range.</span>`);
 
     // Displacement
     if(wsData && wsData.aggressiveBuyRatio > 0.7) parts.push(`<span class="n-bull">Agresif alım akışı dominant (%${(wsData.aggressiveBuyRatio*100).toFixed(0)}) — kurumsal birikim ihtimali.</span>`);
@@ -9724,35 +9724,35 @@ const P10 = (() => {
 
   // ── 4. AI TRADE MENTOR ───────────────────────────────────────────
   function buildMentorAdvice(params, priorityResult){
-    if(!params) return { msg:'Coin seçince mentor aktif olacak...', tags:[] };
+    if(!params) return { msg:'The mentor activates once a coin is selected...', tags:[] };
     const { dir, ind, oiData, btcData, wsData, regimeMode, fakeBreak } = params;
     const isLong = dir === 'LONG';
     const advices = [], tags = [];
 
     // Fake breakout uyarısı
-    if(fakeBreak){ advices.push('🚨 Fake breakout riski yüksek — Girişi geciktir, hacim onayı bekle.'); tags.push('fake-breakout-risk'); }
+    if(fakeBreak){ advices.push('🚨 Fake breakout risk high — delay entry, await volume confirmation.'); tags.push('fake-breakout-risk'); }
 
     // RSI aşırı alım/satım
     if(ind){
-      if(isLong && ind.rsi > 72)  { advices.push('⚠ RSI aşırı alım bölgesinde — Kısmi pozisyon aç veya retest bekle.'); tags.push('partial-tp-recommended'); }
-      if(!isLong && ind.rsi < 28) { advices.push('⚠ RSI aşırı satım bölgesinde — Short kapatmayı değerlendir.'); tags.push('momentum-weakening'); }
+      if(isLong && ind.rsi > 72)  { advices.push('⚠ RSI in overbought zone — open a partial position or await retest.'); tags.push('partial-tp-recommended'); }
+      if(!isLong && ind.rsi < 28) { advices.push('⚠ RSI in oversold zone — consider closing shorts.'); tags.push('momentum-weakening'); }
     }
 
     // Funding riski
     if(oiData && oiData.fund !== null){
-      if(isLong && oiData.fund > 0.08)  { advices.push('💰 Yüksek funding maliyeti — Pozisyonu uzun süre tutma, kısa vadeli hedefle.'); tags.push('reduce-leverage'); }
-      if(!isLong && oiData.fund < -0.08){ advices.push('💰 Negatif funding yüksek — Short sıkışma riski var.'); tags.push('volatility-spike-detected'); }
+      if(isLong && oiData.fund > 0.08)  { advices.push('💰 High funding cost — do not hold long; aim for short-term targets.'); tags.push('reduce-leverage'); }
+      if(!isLong && oiData.fund < -0.08){ advices.push('💰 Negative funding high — short squeeze risk present.'); tags.push('volatility-spike-detected'); }
     }
 
     // BTC ters yön
     if(btcData){
-      if(isLong && btcData.chg < -2)  { advices.push('📉 BTC düşüyor — yukarı yönlü görünüm zayıflıyor, BTC toparlanması izlenebilir.'); tags.push('wait-for-retest'); }
-      if(!isLong && btcData.chg > 2)  { advices.push('📈 BTC güçlü — aşağı yönlü görünüm zayıflıyor.'); tags.push('wait-for-retest'); }
+      if(isLong && btcData.chg < -2)  { advices.push('📉 BTC falling — upward outlook weakening, watch for a BTC recovery.'); tags.push('wait-for-retest'); }
+      if(!isLong && btcData.chg > 2)  { advices.push('📈 BTC strong — downward outlook weakening.'); tags.push('wait-for-retest'); }
     }
 
     // Regime
-    if(regimeMode === 'PANIC' && isLong)   { advices.push('🔴 Panik satış modu — Long pozisyon açma, bekle.'); tags.push('wait-for-retest'); }
-    if(regimeMode === 'VOLATILE')          { advices.push('⚡ Volatilite spike tespit edildi — Pozisyon boyutunu yarıya indir.'); tags.push('volatility-spike-detected'); }
+    if(regimeMode === 'PANIC' && isLong)   { advices.push('🔴 Panic-sell mode — do not open longs, wait.'); tags.push('wait-for-retest'); }
+    if(regimeMode === 'VOLATILE')          { advices.push('⚡ Volatility spike detected — halve your position size.'); tags.push('volatility-spike-detected'); }
 
     // WS mentor
     if(wsData){
@@ -9763,19 +9763,19 @@ const P10 = (() => {
       }
       if(wsData.obImbalance !== undefined){
         const obi = wsData.obImbalance;
-        if(isLong && obi < 0.4) { advices.push('📚 Order book satış tarafında ağır — Giriş ertelenmeli.'); tags.push('wait-for-retest'); }
+        if(isLong && obi < 0.4) { advices.push('📚 Order book heavy on the sell side — entry should be deferred.'); tags.push('wait-for-retest'); }
       }
     }
 
     // Priority score bazlı genel tavsiye
     if(priorityResult){
       const ps = priorityResult.priorityScore || 50;
-      if(ps >= 80) advices.push('✅ Yüksek kalite setup — Plan dahilinde giriş yapılabilir.');
-      else if(ps >= 60) advices.push('⚡ Orta kalite setup — Agresif giriş kabul edilebilir, stop sıkı tut.');
-      else { advices.push('⏸ Zayıf setup — Daha güçlü konfirmasyon bekle.'); tags.push('wait-for-retest'); }
+      if(ps >= 80) advices.push('✅ High-quality setup — entry can be taken per plan.');
+      else if(ps >= 60) advices.push('⚡ Medium-quality setup — aggressive entry acceptable, keep a tight stop.');
+      else { advices.push('⏸ Weak setup — wait for stronger confirmation.'); tags.push('wait-for-retest'); }
     }
 
-    if(!advices.length) advices.push('✅ Setup normal görünüyor — Planı takip et, stop seviyeni koru.');
+    if(!advices.length) advices.push('✅ Setup looks normal — follow the plan, keep your stop level.');
 
     return { msg: advices.join('<br>'), tags: [...new Set(tags)] };
   }
@@ -9886,7 +9886,7 @@ const P10 = (() => {
     const el = document.getElementById('p10CompactPanel');
     if(!el) return;
     const ranked = rankScanResults(results).slice(0,6);
-    if(!ranked.length){ el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:8px">Tarama çalıştır...</div>'; return; }
+    if(!ranked.length){ el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:8px">Run a scan...</div>'; return; }
 
     el.innerHTML = `
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);margin-bottom:8px">◈ TOP PRIORITY SETUPS</div>
@@ -9920,7 +9920,7 @@ const P10 = (() => {
     const el = document.getElementById('p10QuantPanel');
     if(!el) return;
     const ranked = rankScanResults(results).slice(0,10);
-    if(!ranked.length){ el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:8px">Tarama çalıştır...</div>'; return; }
+    if(!ranked.length){ el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:8px">Run a scan...</div>'; return; }
 
     const rows = ranked.map((item,i)=>{
       const dir = item.lScore >= item.sScore ? 'LONG' : 'SHORT';
