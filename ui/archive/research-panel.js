@@ -35,6 +35,14 @@
     return b || '—';
   }
   function _pct(v) { const n = Number(v); return (v == null || isNaN(n)) ? '—' : '%' + n; }
+  function _fmtDT(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' +
+             d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return String(iso); }
+  }
   function _relTime(iso) {
     if (!iso) return '—';
     const t = new Date(iso).getTime();
@@ -157,27 +165,31 @@
       ? (Number(ageSec) < 90 ? Number(ageSec) + ' sn' : Math.round(Number(ageSec) / 60) + ' dk')
       : '—';
     const regime = mc.regime ? _esc(mc.regime) : '—';
-    const moveLine = resolved
-      ? '<span class="aic-rsch-move">Lehte <span class="fav">' + _pct(rec.max_favorable_move_pct) + '</span> · Aleyhte <span class="adv">' + _pct(rec.max_adverse_move_pct) + '</span></span>'
-      : '';
-    // Bekleyen kayıtlar: sonuç penceresine kalan süre (production paneliyle aynı alan: review_due_at)
-    const due = rec.review_due_at ? new Date(rec.review_due_at).getTime() : null;
-    let dueLine = '';
-    if (!resolved && due != null && !isNaN(due)) {
-      dueLine = (due <= Date.now())
-        ? '<span class="aic-rsch-due ready">📊 5 saat doldu — sıradaki otomatik turda çözülecek</span>'
+
+    // 5. satır: çözülmüşse hareket sonucu, bekliyorsa sonuç penceresine kalan süre
+    let outcomeLine;
+    if (resolved) {
+      outcomeLine = '<span class="aic-rsch-move">Lehte <span class="fav">' + _pct(rec.max_favorable_move_pct) + '</span> · Aleyhte <span class="adv">' + _pct(rec.max_adverse_move_pct) + '</span></span>';
+    } else {
+      const due = rec.review_due_at ? new Date(rec.review_due_at).getTime() : null;
+      outcomeLine = (due != null && !isNaN(due) && due <= Date.now())
+        ? '<span class="aic-rsch-due ready">📊 5 saat doldu — sıradaki turda çözülecek</span>'
         : '<span class="aic-rsch-due">⏳ Sonuç: ' + _esc(_relFuture(rec.review_due_at)) + '</span>';
     }
+
+    // Yapı bekleyen-inceleme kartıyla AYNI (7 satır) → aynı yükseklik/boyut.
     return '' +
       '<div class="aic-pend-card">' +
         '<span class="aic-pend-toprow">' +
           '<span class="aic-pend-sym">' + _esc(rec.sym) + '</span>' +
           _statusPill(os) +
         '</span>' +
-        '<span class="aic-pend-meta">' + _tierBadge(rec.radar_tier_at_open) + ' · ' + _esc(_dirLabel(rec.direction_bias)) + ' · Skor: ' + _esc(score) + '</span>' +
-        moveLine +
-        dueLine +
-        '<span class="aic-rsch-ctx">açılışta yaş: ' + ageStr + ' · rejim: ' + regime + ' · ' + _esc(_relTime(rec.created_at)) + '</span>' +
+        '<span class="aic-pend-meta">auto · ' + _esc(_dirLabel(rec.direction_bias)) + '</span>' +
+        '<span class="aic-pend-meta">' + _tierBadge(rec.radar_tier_at_open) + ' · Skor: ' + _esc(score) + '</span>' +
+        '<span class="aic-pend-rel">⏱ Açıldı: ' + _esc(_relTime(rec.created_at)) + '</span>' +
+        outcomeLine +
+        '<span class="aic-rsch-ctx">rejim: ' + regime + ' · açılışta yaş: ' + ageStr + '</span>' +
+        '<span class="aic-pend-date">' + _esc(_fmtDT(rec.created_at)) + '</span>' +
       '</div>';
   }
 
