@@ -5,6 +5,8 @@
 window.TIWatchlistCard = (() => {
   'use strict';
 
+  function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
+
   function _esc(s) {
     if (s == null) return '';
     return String(s)
@@ -29,28 +31,23 @@ window.TIWatchlistCard = (() => {
           <span class="ti-watch-dir ${dirCls}">${_esc(dirTxt)}</span>
           <span class="ti-watch-tier">${_esc(tierCd)}</span>
           <span class="ti-watch-score">${+s.score || 0}</span>
-          <span class="ti-watch-mat">Olgunluk ${matPct}%</span>
+          <span class="ti-watch-mat">${_t('ti.maturityShort', null, 'Olgunluk')} ${matPct}%</span>
         </div>
       `;
     }).join('');
 
     return `
       <div class="ti-card">
-        <div class="ti-card-label"><span class="ti-card-label-dot"></span>İZLEME LİSTESİ</div>
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>${_t('ti.watchlistLabel', null, 'İZLEME LİSTESİ')}</div>
         <div class="ti-watch">${rows}</div>
       </div>
     `;
   }
 
   function _tierTR(code) {
-    switch (code) {
-      case 'ELITE':  return 'ELİT';
-      case 'STRONG': return 'GÜÇLÜ';
-      case 'VALID':  return 'GEÇERLİ';
-      case 'WEAK':   return 'ZAYIF';
-      case 'AVOID':  return 'KAÇIN';
-      default:       return code || '';
-    }
+    var c = String(code || '').toUpperCase();
+    // ELITE/STRONG/VALID/WEAK/AVOID → dile göre (TR: ELİT/GÜÇLÜ…, EN: ELITE/STRONG…)
+    return _t('tier.' + c, null, code || '');
   }
 
   return { render };

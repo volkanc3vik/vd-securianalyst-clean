@@ -185,7 +185,7 @@
       else if (k === 'futures') { openFuturesLab(); }
       else if (k === 'perf') { if (window.VDPerfWorkspace && VDPerfWorkspace.open) VDPerfWorkspace.open(); }
       else if (k === 'elite') { location.href = 'intelligence-center.html'; }
-      else if (k === 'elite-locked') { location.href = 'legal/premium.html'; }
+      else if (k === 'elite-locked') { location.href = '/legal/premium.html'; }
       else if (k === 'archive') { location.href = 'archive.html'; }
     } catch (e) {}
   }

@@ -6,6 +6,8 @@
 window.TIWarningsCard = (() => {
   'use strict';
 
+  function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
+
   function _esc(s) {
     if (s == null) return '';
     return String(s)
@@ -37,7 +39,7 @@ window.TIWarningsCard = (() => {
 
     return `
       <div class="ti-card">
-        <div class="ti-card-label"><span class="ti-card-label-dot"></span>UYARILAR</div>
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>${_t('ti.warningsLabel', null, 'UYARILAR')}</div>
         <div class="ti-warnings">${rows}</div>
       </div>
     `;

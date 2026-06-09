@@ -106,7 +106,7 @@
       + '<div class="rl-card rl-locked">'
       + '<div class="rl-h"><span class="rl-h-ic">🔒</span><span class="rl-h-t">AI PİYASA BIAS · FIRSATLAR</span></div>'
       + '<p class="rl-lk-tx">Yön dağılımı ve en olgun fırsatlar <b>Premium ve Elite</b> üyelere açıktır.</p>'
-      + '<a class="rl-btn rl-btn-g" href="legal/premium.html">Erişim Al →</a>'
+      + '<a class="rl-btn rl-btn-g" href="/legal/premium.html">Erişim Al →</a>'
       + '</div>';
   }
 

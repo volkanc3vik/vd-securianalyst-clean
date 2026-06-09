@@ -301,7 +301,7 @@
     if (elite) return archBox('⬡ ARŞİV TUTARLILIĞI', head+'<div style="font-size:10px;color:#9fb4d6;margin-top:3px">'+brk+'</div>', '#9d7dfa');
     return archBox('🔒 ELİTE · ARŞİV', head
       +'<div style="filter:blur(4px);user-select:none;font-size:10px;color:#9fb4d6;margin-top:3px">'+brk+'</div>'
-      +'<a href="legal/premium.html" style="display:inline-block;margin-top:6px;font-size:9px;font-weight:800;color:#04101f;background:linear-gradient(90deg,#9d7dfa,#38bdf8);padding:3px 9px;border-radius:6px;text-decoration:none">Elite ile detay</a>', '#b39dfa');
+      +'<a href="/legal/premium.html" style="display:inline-block;margin-top:6px;font-size:9px;font-weight:800;color:#04101f;background:linear-gradient(90deg,#9d7dfa,#38bdf8);padding:3px 9px;border-radius:6px;text-decoration:none">Elite ile detay</a>', '#b39dfa');
   }
 
   // ── YÖN görünürlüğü (build 133): olgunluktan AYRI bilgi ──
@@ -556,8 +556,8 @@
       + '<li style="font-size:12px;color:#a9c7e8;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);border-radius:20px;padding:5px 12px">9 kart · 3 güç katmanı</li>'
       + '<li style="font-size:12px;color:#a9c7e8;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);border-radius:20px;padding:5px 12px">Aşama Geçiş Takibi</li></ul>'
       + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
-      + '<a href="legal/premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#9fdfff;border:1px solid rgba(56,189,248,.5);background:transparent">Detaylar</a>'
-      + '<a href="legal/premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#04101f;background:linear-gradient(135deg,#38bdf8,#3b9eff)">Erişim Al</a></div>'
+      + '<a href="/legal/premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#9fdfff;border:1px solid rgba(56,189,248,.5);background:transparent">Detaylar</a>'
+      + '<a href="/legal/premium.html" style="text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;color:#04101f;background:linear-gradient(135deg,#38bdf8,#3b9eff)">Erişim Al</a></div>'
       + '</div>';
   }
 
