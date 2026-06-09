@@ -11,6 +11,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const TOAST_ID = 'vd-welcome-toast';
   const DEFAULT_DURATION = 4500;
@@ -45,9 +46,7 @@
     const titleIcon = document.createElement('span');
     titleIcon.textContent = '📊';
     const titleText = document.createElement('span');
-    titleText.textContent = (window.VDI18n && VDI18n.t)
-      ? (sourceLabel ? VDI18n.t('toast.welcomeSource', { src: sourceLabel }) : VDI18n.t('toast.welcome'))
-      : (sourceLabel ? `${sourceLabel} hoş geldiniz` : 'Hoş geldiniz');
+    titleText.textContent = sourceLabel ? _t('prm.welcomeTg', null, "Telegram'dan hoş geldiniz") : _t('prm.welcome', null, 'Hoş geldiniz');
     titleEl.appendChild(titleIcon);
     titleEl.appendChild(titleText);
 
@@ -55,19 +54,15 @@
     const bodyEl = document.createElement('div');
     bodyEl.className = 'vd-welcome-toast-body';
     if (symBase) {
-      bodyEl.textContent = (window.VDI18n && VDI18n.t)
-        ? VDI18n.t('toast.analysisLoaded', { sym: symBase })
-        : `${symBase} analizi yüklendi · İncelemeye başlayın`;
+      bodyEl.textContent = symBase + ' ' + _t('prm.analysisLoadedReview', null, 'analizi yüklendi · İncelemeye başlayın');
     } else {
-      bodyEl.textContent = (window.VDI18n && VDI18n.t)
-        ? VDI18n.t('toast.platformLoaded')
-        : 'Analiz platformu yüklendi';
+      bodyEl.textContent = _t('prm.platformLoaded', null, 'Analiz platformu yüklendi');
     }
 
     // ── Close button ──
     const closeBtn = document.createElement('button');
     closeBtn.className = 'vd-welcome-toast-close';
-    closeBtn.setAttribute('aria-label', 'Kapat');
+    closeBtn.setAttribute('aria-label', _t('prm.close', null, 'Kapat'));
     closeBtn.textContent = '✕';
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();

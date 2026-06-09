@@ -10,17 +10,18 @@
 // ════════════════════════════════════════════════════════════════════
 (function (w, d) {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   if (w.__vdTgFunnel) return; w.__vdTgFunnel = true;
 
   // ── KANAL (BURAYI AYARLA) ──
   var CHANNEL = w.VD_TG_CHANNEL_URL || 'https://t.me/vdsecurianalyst'; // ← gerçek kanal linkini koy
   var COPY = {
-    main:  '📢 Ücretsiz Telegram Kanalına Katıl',
-    sub:   'Her gün ücretsiz analizler, market özeti ve örnek setup paylaşımları.',
-    teaser:'📢 Benzer analizler Telegram kanalında ücretsiz paylaşılıyor.',
-    premiumSecondary: '📢 Önce Ücretsiz Kanalı İncele',
-    academy:'📢 Güncel piyasa örneklerini Telegram kanalında takip et',
-    btn:   'Telegram Kanalına Katıl',
+    main:  _t('prm.tgJoinFree', null, '📢 Ücretsiz Telegram Kanalına Katıl'),
+    sub:   _t('prm.tgDailyDesc', null, 'Her gün ücretsiz analizler, market özeti ve örnek setup paylaşımları.'),
+    teaser:_t('prm.tgSimilarFree', null, '📢 Benzer analizler Telegram kanalında ücretsiz paylaşılıyor.'),
+    premiumSecondary: _t('prm.tgCheckFirst', null, '📢 Önce Ücretsiz Kanalı İncele'),
+    academy:_t('prm.tgFollowExamples', null, '📢 Güncel piyasa örneklerini Telegram kanalında takip et'),
+    btn:   _t('prm.tgJoin', null, 'Telegram Kanalına Katıl'),
   };
 
   // ── TIKLAMA TAKİBİ (şimdilik sadece debug log; ileride analytics buraya) ──
@@ -79,9 +80,9 @@
     if (suppress() || d.getElementById('vdtg-bar')) return;
     if (sessionStorage.getItem('vdtg_bar_closed') === '1') return;
     var bar = d.createElement('div'); bar.className = 'vdtg-bar'; bar.id = 'vdtg-bar';
-    bar.innerHTML = '<span class="ic">📢</span><div class="tx"><b>Ücretsiz Telegram Kanalı</b>'
-      + 'Günlük analiz, market özeti ve örnek setup\'lar.</div>'
-      + '<button class="go">Katıl</button><div class="x" title="Kapat">✕</div>';
+    bar.innerHTML = '<span class="ic">📢</span><div class="tx"><b>'+_t('prm.tgFreeChannel', null, 'Ücretsiz Telegram Kanalı')+'</b>'
+      + ''+_t('prm.tgDailyShort', null, "Günlük analiz, market özeti ve örnek setup\'lar.")+'</div>'
+      + '<button class="go">'+_t('prm.join', null, 'Katıl')+'</button><div class="x" title="'+_t('prm.close', null, 'Kapat')+'">✕</div>';
     bar.querySelector('.go').addEventListener('click', function () { openChannel('site_bar'); });
     bar.querySelector('.x').addEventListener('click', function () { try { sessionStorage.setItem('vdtg_bar_closed', '1'); } catch (e) {} bar.remove(); });
     d.body.appendChild(bar);
@@ -107,7 +108,7 @@
         if (el.getAttribute('data-vdtg') === '1') return;
         el.setAttribute('data-vdtg', '1');
         var cta = d.createElement('div'); cta.className = 'vdtg-cta';
-        cta.innerHTML = '<div class="m">🔒 Bu analizin detayları gizlenmiştir.<br>' + COPY.teaser + '</div>'
+        cta.innerHTML = '<div class="m">🔒 '+_t('prm.tgHidden', null, 'Bu analizin detayları gizlenmiştir.')+'<br>' + COPY.teaser + '</div>'
           + '<a class="b" href="' + CHANNEL + '" target="_blank" rel="noopener">' + COPY.btn + '</a>';
         cta.querySelector('.b').addEventListener('click', function () { trackTelegramClick('teaser_card'); });
         el.appendChild(cta);
