@@ -6,6 +6,9 @@
 window.TIPanel = (() => {
   'use strict';
 
+  // i18n: korumalı çeviri (i18n.js yüklü değilse Türkçe yedeğe düşer)
+  function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
+
   let _mount         = null;
   let _unsubState    = null;
   let _renderScheduled = false;
@@ -13,21 +16,21 @@ window.TIPanel = (() => {
   let _lastCommitTs  = 0;
 
   function _relativeTime(ts) {
-    if (!ts) return 'veri bekleniyor';
+    if (!ts) return _t('ti.waitingData', null, 'veri bekleniyor');
     const sec = Math.floor((Date.now() - ts) / 1000);
-    if (sec < 5)    return 'şimdi';
-    if (sec < 60)   return sec + 'sn önce';
-    if (sec < 3600) return Math.floor(sec / 60) + 'dk önce';
-    return Math.floor(sec / 3600) + 'sa önce';
+    if (sec < 5)    return _t('ti.relNow', null, 'şimdi');
+    if (sec < 60)   return _t('ti.relSec', { n: sec }, sec + 'sn önce');
+    if (sec < 3600) return _t('ti.relMin', { n: Math.floor(sec / 60) }, Math.floor(sec / 60) + 'dk önce');
+    return _t('ti.relHour', { n: Math.floor(sec / 3600) }, Math.floor(sec / 3600) + 'sa önce');
   }
 
   function _renderSources(sources) {
     if (!sources) return '';
     // CoinGlass artık üç-durumlu string: OFF / PARTIAL / FULL
     const cgStatus = sources.coinglass;
-    const cgLabel  = cgStatus === 'FULL'    ? 'CoinGlass: Aktif'
-                   : cgStatus === 'PARTIAL' ? 'CoinGlass: Kısıtlı'
-                                            : 'CoinGlass: Yok';
+    const cgLabel  = cgStatus === 'FULL'    ? _t('ti.cgActive', null, 'CoinGlass: Aktif')
+                   : cgStatus === 'PARTIAL' ? _t('ti.cgPartial', null, 'CoinGlass: Kısıtlı')
+                                            : _t('ti.cgOff', null, 'CoinGlass: Yok');
     const cgCls    = cgStatus === 'FULL'    ? 'active'
                    : cgStatus === 'PARTIAL' ? 'partial'
                                             : '';
@@ -41,7 +44,7 @@ window.TIPanel = (() => {
           <i></i>${cgLabel}
         </span>
         <span class="ti-source-dot ${sources.ws ? 'active' : ''}">
-          <i></i>Canlı WS
+          <i></i>${_t('ti.liveWS', null, 'Canlı WS')}
         </span>
       </div>
     `;
@@ -51,7 +54,7 @@ window.TIPanel = (() => {
     if (!volObs) return '';
     return `
       <div class="ti-card">
-        <div class="ti-card-label"><span class="ti-card-label-dot"></span>VOLATİLİTE GÖZLEMİ</div>
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>${_t('ti.volObs', null, 'VOLATİLİTE GÖZLEMİ')}</div>
         <div class="ti-mm-headline">${volObs.label}</div>
         <div class="ti-mm-detail" style="margin-top:4px">${volObs.tone}</div>
       </div>
@@ -67,7 +70,7 @@ window.TIPanel = (() => {
       <div class="ti-card">
         <div class="ti-card-label">
           <span class="ti-card-label-dot"></span>
-          PİYASA BASKISI
+          ${_t('ti.pressure', null, 'PİYASA BASKISI')}
           <span class="ti-pressure-intensity ${intCls}">${intensity}</span>
         </div>
         ${pressure.headline ? `<div class="ti-mm-headline">${_esc(pressure.headline)}</div>` : ''}
@@ -99,7 +102,7 @@ window.TIPanel = (() => {
 
     return `
       <div class="ti-card">
-        <div class="ti-card-label"><span class="ti-card-label-dot"></span>AKTİVİTE AKIŞI</div>
+        <div class="ti-card-label"><span class="ti-card-label-dot"></span>${_t('ti.activity', null, 'AKTİVİTE AKIŞI')}</div>
         <ul class="ti-activity-list">${rows}</ul>
       </div>
     `;
@@ -107,14 +110,14 @@ window.TIPanel = (() => {
 
   function _catTR(cat) {
     switch (cat) {
-      case 'system':      return 'SİS';
-      case 'regime':      return 'REJ';
-      case 'volatility':  return 'VOL';
-      case 'setup':       return 'STP';
-      case 'pressure':    return 'BSK';
+      case 'system':      return _t('ti.catSystem', null, 'SİS');
+      case 'regime':      return _t('ti.catRegime', null, 'REJ');
+      case 'volatility':  return _t('ti.catVolatility', null, 'VOL');
+      case 'setup':       return _t('ti.catSetup', null, 'STP');
+      case 'pressure':    return _t('ti.catPressure', null, 'BSK');
       case 'btc':         return 'BTC';
       case 'eth':         return 'ETH';
-      case 'market':      return 'PYS';
+      case 'market':      return _t('ti.catMarket', null, 'PYS');
       default:            return cat.toUpperCase().slice(0, 3);
     }
   }
@@ -132,13 +135,13 @@ window.TIPanel = (() => {
       <div class="ti-panel" id="tiPanelRoot">
         <div class="ti-header">
           <span class="ti-header-pulse"></span>
-          <span class="ti-header-title">◈ Piyasa İstihbarat Terminali</span>
-          <span class="ti-header-meta" id="tiHeaderMeta">veri bekleniyor</span>
+          <span class="ti-header-title">${_t('ti.headerTitle', null, '◈ Piyasa İstihbarat Terminali')}</span>
+          <span class="ti-header-meta" id="tiHeaderMeta">${_t('ti.waitingData', null, 'veri bekleniyor')}</span>
         </div>
         <div class="ti-grid" id="tiGrid">
           <div class="ti-empty">
-            <div class="ti-empty-title">İstihbarat motoru başlatılıyor</div>
-            <div>İlk tarama döngüsünün tamamlanması bekleniyor...</div>
+            <div class="ti-empty-title">${_t('ti.engineStart', null, 'İstihbarat motoru başlatılıyor')}</div>
+            <div>${_t('ti.engineStartSub', null, 'İlk tarama döngüsünün tamamlanması bekleniyor...')}</div>
           </div>
         </div>
       </div>
@@ -163,8 +166,8 @@ window.TIPanel = (() => {
     if (!snap.ready) {
       grid.innerHTML = `
         <div class="ti-empty">
-          <div class="ti-empty-title">İstihbarat motoru başlatılıyor</div>
-          <div>İlk tarama döngüsünün tamamlanması bekleniyor...</div>
+          <div class="ti-empty-title">${_t('ti.engineStart', null, 'İstihbarat motoru başlatılıyor')}</div>
+          <div>${_t('ti.engineStartSub', null, 'İlk tarama döngüsünün tamamlanması bekleniyor...')}</div>
         </div>
       `;
       return;
@@ -249,6 +252,10 @@ window.TIPanel = (() => {
     if (_mount) _mount.innerHTML = '';
     _mount = null;
   }
+
+  // Dil değişince tüm terminali yeniden çiz (anında TR↔EN geçişi)
+  // _scheduleRender içinde _mount guard'ı var; mount edilmemişse güvenli.
+  window.addEventListener('vd:lang:change', _scheduleRender);
 
   return { mount, unmount, render: _render };
 })();
