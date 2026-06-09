@@ -19,6 +19,8 @@
 (function () {
   'use strict';
   if (window.VDDashSnapshot) return;
+
+  function _L(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
   const KEY = 'vd_dash_snapshot_v1';
   const MAX_AGE_MS = 30 * 60 * 1000;
   const GRID_IDS = ['longGrid', 'shortGrid', 'jokerGrid'];
@@ -26,7 +28,7 @@
   const TI_ID = 'tiPanelMount';
   const SCAN_TXT_ID = 'scanTxt';
   const SNAP_ID = 'vd-ti-snap';
-  const BANNER = '📦 Önbellekten gösteriliyor · canlı tarama yenileniyor…';
+  const BANNER = _L('ds.banner', null, '📦 Önbellekten gösteriliyor · canlı tarama yenileniyor…');
   const INIT_RE = /başlatılıyor|İlk tarama|veri bekleniyor/i;
 
   const byId = (id) => document.getElementById(id);
@@ -65,8 +67,8 @@
   }
   function ageLabel(ts) {
     const min = Math.floor((Date.now() - ts) / 60000);
-    if (min < 1) return 'az önce'; if (min === 1) return '1 dk önce';
-    if (min < 60) return min + ' dk önce'; return Math.floor(min / 60) + ' sa önce';
+    if (min < 1) return _L('er.justNow', null, 'az önce'); if (min === 1) return _L('ds.oneMinAgo', null, '1 dk önce');
+    if (min < 60) return min + _L('er.minAgo', null, ' dk önce'); return Math.floor(min / 60) + _L('er.hourAgo', null, ' sa önce');
   }
 
   // ── Terminal: snapshot'ı canlı shell üstünde KLON olarak göster ──
