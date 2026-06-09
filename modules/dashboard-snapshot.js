@@ -39,12 +39,12 @@
     if (id === TI_ID) return el.children.length > 0 && !INIT_RE.test(el.textContent || '');
     const kids = Array.from(el.children);
     if (!kids.length) return false;
-    return kids.some(c => !c.classList.contains('loading') && !/Taranıyor/i.test(c.textContent || ''));
+    return kids.some(c => !c.classList.contains('loading') && !/Taranıyor|Scanning/i.test(c.textContent || ''));
   }
   function _gridPristine(id) {
     const el = byId(id); if (!el) return false;
     const kids = Array.from(el.children);
-    return kids.length === 0 || kids.every(c => c.classList.contains('loading') || /Taranıyor/i.test(c.textContent || ''));
+    return kids.length === 0 || kids.every(c => c.classList.contains('loading') || /Taranıyor|Scanning/i.test(c.textContent || ''));
   }
   // Terminal henüz canlı veriyle dolmamış mı? (boş ya da "başlatılıyor")
   function _terminalIsInitial(el) {
