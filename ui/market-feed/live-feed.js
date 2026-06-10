@@ -42,6 +42,9 @@ window.VDLiveFeed = (function () {
   let _reconnectT    = null;
   let _attempts      = 0;
   let _mounted       = false;
+  let _sessHigh      = null;   // seans yüksek (coin başına)
+  let _sessLow       = null;   // seans düşük
+  let _lastPrice     = null;
   let _status        = 'idle'; // idle | connecting | live | error
 
   function _setStatus(s) {
@@ -178,6 +181,9 @@ window.VDLiveFeed = (function () {
     // taker buy = buyer is NOT maker (m === false)
     const buy = (isBuyerMaker === false);
     _trades.push({ ts: Date.now(), price: price, val: val, buy: buy, whale: val >= WHALE_USD });
+    _lastPrice = price;
+    if (_sessHigh == null || price > _sessHigh) _sessHigh = price;
+    if (_sessLow  == null || price < _sessLow)  _sessLow  = price;
     if (_trades.length > MAX_TRADES) _trades.shift();
     _scheduleRender();
   }
@@ -246,6 +252,7 @@ window.VDLiveFeed = (function () {
     const key = String(sym).toLowerCase();
     if (key === _curKey) return;
     _trades = [];           // yeni coin → akış sıfırlanır
+    _sessHigh = _sessLow = _lastPrice = null;
     _render();
     if (_mounted) _connect(key);
   }
@@ -289,5 +296,11 @@ window.VDLiveFeed = (function () {
     return { buyRatio: buyVal / total, n: _trades.length, ts: _trades[_trades.length - 1].ts };
   }
 
-  return { mount, unmount, setSymbol, remount, flowSummary };
+  // Summary paneli için: canlı akıştan seans seviyeleri (dürüst, türetilmiş)
+  function sessionStats() {
+    if (_lastPrice == null) return null;
+    return { high: _sessHigh, low: _sessLow, last: _lastPrice, sym: _curKey ? _curKey.toUpperCase() : null };
+  }
+
+  return { mount, unmount, setSymbol, remount, flowSummary, sessionStats };
 })();
