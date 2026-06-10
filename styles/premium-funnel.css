@@ -132,6 +132,7 @@
 .vdf-plan-name { font-size: 15px; font-weight: 800; color: var(--v4-text, #EAF6FF); margin-top: 6px; }
 .vdf-plan-price { font-size: 27px; font-weight: 900; color: #EAF6FF; margin: 8px 0 14px; }
 .vdf-plan-price small { font-size: 12px; font-weight: 600; color: var(--v4-text-2, #7FA9C9); margin-left: 2px; }
+.vdf-plan-price .vdf-usd { font-size: 16px; font-weight: 800; color: var(--v4-cyan, #00D1FF); }
 .vdf-plan-btn {
   width: 100%; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
   color: var(--v4-cyan, #00D1FF); background: rgba(0,209,255,.08);
