@@ -24,7 +24,10 @@ window.VDLiveFeed = (function () {
   // i18n: korumalı çeviri (i18n.js yoksa Türkçe yedeğe düşer)
   function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
 
-  const FWSS       = 'wss://fstream.binance.com/stream?streams=';  // combined — mevcut çalışan WS ile aynı endpoint
+  // Endpoint: Binance SPOT tek-stream. (Futures fstream bazı bölgelerde
+  // bloklu — teşhisle doğrulandı; spot stream.binance.com erişilebilir.)
+  // Tek-stream → düz aggTrade objesi: { e:'aggTrade', p, q, m, ... }
+  const FWSS       = 'wss://stream.binance.com:9443/ws/';
   const PANEL_ID   = 'vd-live-feed';
   const MAX_TRADES = 50;       // son 50 trade (kural: 40–60)
   const WHALE_USD  = 50000;    // whale highlight eşiği
@@ -233,6 +236,7 @@ window.VDLiveFeed = (function () {
     _mounted = true;
     _ensurePanel();
     const sym = window.SYM || 'BTCUSDT';
+    try { console.log('[LiveFeed] mount → sym:', sym); } catch (e) {}
     _connect(String(sym).toLowerCase());
     // Saniyede bir "x s önce" zaman etiketlerini tazele (yeni trade gelmese de)
     setInterval(function () { if (_trades.length) _scheduleRender(); }, 5000);
