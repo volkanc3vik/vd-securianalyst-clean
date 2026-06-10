@@ -1,0 +1,75 @@
+/* ════════════════════════════════════════════════════════════════════
+   MARKET PULSE BAND — 4 kompakt durum kartı
+   Tasarım dili: dark terminal, glass panel, ince border, soft glow.
+   Desktop: 4 yan yana · Mobil: 2x2 grid.
+   ════════════════════════════════════════════════════════════════════ */
+.vd-mp {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.vd-mp-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  background: linear-gradient(180deg, rgba(8, 14, 26, 0.85), rgba(4, 9, 18, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.25s ease;
+}
+.vd-mp-card:hover { border-color: rgba(0, 212, 255, 0.25); }
+
+.vd-mp-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.vd-mp-ic {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.vd-mp-flow .vd-mp-ic { background: var(--cyan, #00d4ff);   box-shadow: 0 0 8px rgba(0,212,255,.5); }
+.vd-mp-oi   .vd-mp-ic { background: var(--purple, #9d7dfa); box-shadow: 0 0 8px rgba(157,125,250,.5); }
+.vd-mp-fund .vd-mp-ic { background: var(--yellow, #ffc107); box-shadow: 0 0 8px rgba(255,193,7,.5); }
+.vd-mp-liq  .vd-mp-ic { background: var(--orange, #ff7a00); box-shadow: 0 0 8px rgba(255,122,0,.5); }
+
+.vd-mp-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: var(--text, #e8f4ff);
+  white-space: nowrap;
+}
+.vd-mp-sub {
+  font-size: 9px;
+  color: var(--text3, #3a6080);
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.vd-mp-val {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 3px 9px;
+  border-radius: 7px;
+  flex: none;
+}
+.vd-mp-val.up  { color: var(--green, #00e5a0); background: rgba(0, 229, 160, 0.1);  border: 1px solid rgba(0, 229, 160, 0.22); }
+.vd-mp-val.dn  { color: var(--red, #ff3d6b);   background: rgba(255, 61, 107, 0.1); border: 1px solid rgba(255, 61, 107, 0.22); }
+.vd-mp-val.mid { color: var(--text2, #7aaac8); background: rgba(122, 170, 200, 0.08); border: 1px solid rgba(122, 170, 200, 0.18); }
+.vd-mp-val.na  { color: var(--text3, #3a6080); background: rgba(58, 96, 128, 0.07);  border: 1px solid rgba(58, 96, 128, 0.15); }
+
+/* Mobil: 2x2 */
+@media (max-width: 900px) {
+  .vd-mp { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .vd-mp-card { padding: 9px 11px; }
+  .vd-mp-val { font-size: 10px; padding: 2px 7px; }
+}
+@media (max-width: 420px) {
+  .vd-mp-title { font-size: 9px; }
+  .vd-mp-sub { display: none; }
+}
