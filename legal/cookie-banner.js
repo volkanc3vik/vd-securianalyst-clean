@@ -88,7 +88,7 @@
       hide();
     } else if (action === 'details') {
       // Hukuki sayfaya yönlendir — banner kaybolmasın
-      var path = /\/legal\//.test(window.location.pathname) ? 'cookies.html' : '/legal/cookies.html';
+      var path = /\/legal\//.test(window.location.pathname) ? 'cookies.html' : (/^\/en(\/|$)/i.test(window.location.pathname) ? '/en/legal/cookies.html' : '/legal/cookies.html');
       window.location.href = path;
     }
   }

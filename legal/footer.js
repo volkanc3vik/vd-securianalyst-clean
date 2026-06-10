@@ -19,9 +19,8 @@
   function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
 
   const FOOTER_ID = 'vd-legal-footer';
-  // Legal sayfalar köke mutlak bağlanır → /en/ dahil her yerden açılır (404 önlenir).
-  // (EN legal sayfaları /en/legal/ olarak sonraki adımda eklenecek; o zaman route-aware yapılacak.)
-  const LEGAL_PATH = '/legal/';
+  // Route-aware: /en/ altında EN legal kopyaları, kökte TR orijinaller.
+  const LEGAL_PATH = /^\/en(\/|$)/i.test(window.location.pathname) ? '/en/legal/' : '/legal/';
 
   function _isInLegalPage() {
     // Hukuki sayfa içindeysek mount etme (zaten kendi footer'ı var)
