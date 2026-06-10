@@ -7,6 +7,12 @@ window.TIWarningsCard = (() => {
   'use strict';
 
   function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
+  // Motor Türkçe üretir; mm-bias headline'ı buraya ham geçer — çizim anında anahtara çevrilir.
+  var _MSGKEY = {
+    'Funding aşırı ısınmış — long kalabalığı risk altında.': 'mm.h.overLong',
+    'Funding aşırı negatif — short squeeze koşulları oluşuyor.': 'mm.h.overShort'
+  };
+  function _trMsg(m) { var k = _MSGKEY[m]; return k ? _t(k, null, m) : m; }
 
   function _esc(s) {
     if (s == null) return '';
@@ -32,7 +38,7 @@ window.TIWarningsCard = (() => {
       return `
         <div class="ti-warn-row ${_esc(sev)}">
           <span class="ti-warn-icon">${icon}</span>
-          <span>${_esc(w.msg || '')}</span>
+          <span>${_esc(_trMsg(w.msg || ''))}</span>
         </div>
       `;
     }).join('');
