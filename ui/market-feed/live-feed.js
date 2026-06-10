@@ -72,17 +72,12 @@ window.VDLiveFeed = (function () {
   }
 
   // ── Panel iskeleti ─────────────────────────────────────────────────
-  function _ensurePanel() {
-    if (document.getElementById(PANEL_ID)) return;
-    const el = document.createElement('aside');
-    el.id = PANEL_ID;
-    el.className = 'vd-lf';
-    el.setAttribute('role', 'complementary');
-    el.innerHTML =
-      '<div class="vd-lf-hdr">' +
-        '<span class="vd-lf-dot"></span>' +
+  function _panelHTML() {
+    return '<div class="vd-lf-hdr">' +
+        '<span class="vd-lf-dot st-' + _status + '"></span>' +
         '<span class="vd-lf-title">' + _t('lf.title', null, 'LIVE MARKET FEED') + '</span>' +
-        '<span class="vd-lf-sym" id="vdLfSym">—</span>' +
+        '<span class="vd-lf-spot">SPOT</span>' +
+        '<span class="vd-lf-sym" id="vdLfSym">' + (_curKey ? _curKey.toUpperCase() : '—') + '</span>' +
         '<button class="vd-lf-collapse" id="vdLfCollapse" aria-label="' + _t('lf.collapse', null, 'Gizle/Göster') + '">▾</button>' +
       '</div>' +
       '<div class="vd-lf-body" id="vdLfBody">' +
@@ -95,16 +90,40 @@ window.VDLiveFeed = (function () {
       '<div class="vd-lf-foot">' +
         '<span class="vd-lf-foot-lbl">' + _t('lf.poweredBy', null, 'Binance · canlı işlem akışı') + '</span>' +
       '</div>';
-    document.body.appendChild(el);
+  }
 
-    // Collapse toggle (mobil + tercih)
-    const cBtn = document.getElementById('vdLfCollapse');
+  function _bindCollapse(el) {
+    const cBtn = el.querySelector('#vdLfCollapse');
     if (cBtn) {
       cBtn.addEventListener('click', function () {
         el.classList.toggle('is-collapsed');
         cBtn.textContent = el.classList.contains('is-collapsed') ? '▴' : '▾';
       });
     }
+  }
+
+  function _ensurePanel() {
+    const mountTarget = document.getElementById('vdLfMount');
+    let el = document.getElementById(PANEL_ID);
+
+    if (el) {
+      // Panel var: rail mount noktası oluştuysa oraya taşı (innerHTML ezmesi sonrası)
+      if (mountTarget && el.parentNode !== mountTarget) {
+        mountTarget.appendChild(el);
+        el.classList.add('vd-lf-railed');
+        _bindCollapse(el);  // innerHTML korunduğu için event'ler durur ama güvenli
+      }
+      return;
+    }
+
+    el = document.createElement('aside');
+    el.id = PANEL_ID;
+    el.className = mountTarget ? 'vd-lf vd-lf-railed' : 'vd-lf';
+    el.setAttribute('role', 'complementary');
+    el.innerHTML = _panelHTML();
+    (mountTarget || document.body).appendChild(el);
+    _bindCollapse(el);
+    _render();
   }
 
   // ── Render (throttle'lı) ───────────────────────────────────────────
@@ -249,5 +268,13 @@ window.VDLiveFeed = (function () {
     if (el) el.remove();
   }
 
-  return { mount, unmount, setSymbol };
+  // right-rail her render'da innerHTML'i ezer; panel mount noktasına
+  // yeniden yerleştirilir ve içerik tazelenir (socket'e dokunulmaz).
+  function remount() {
+    if (!_mounted) return;
+    _ensurePanel();
+    _render();
+  }
+
+  return { mount, unmount, setSymbol, remount };
 })();
