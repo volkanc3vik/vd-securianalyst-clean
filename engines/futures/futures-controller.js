@@ -7,6 +7,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.FuturesController = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   // Aboneliği bilinen semboller (sym → unsubscribe handle yoksa true)
   const _subscribedSymbols = new Set();
@@ -171,25 +172,25 @@ window.FuturesController = (() => {
     const FL = window.FuturesLiquidation;
     const FS = window.FuturesState;
 
-    if (!input) return { ok: false, error: 'Geçersiz girdi.' };
+    if (!input) return { ok: false, error: _t('fut.errInput',null,'Geçersiz girdi.') };
 
     const symRaw = (input.sym || '').toString().toUpperCase().trim();
-    if (!symRaw) return { ok: false, error: 'Sembol boş olamaz.' };
+    if (!symRaw) return { ok: false, error: _t('fut.errSym',null,'Sembol boş olamaz.') };
     const symFull = symRaw.endsWith('USDT') ? symRaw : symRaw + 'USDT';
     const sym     = symFull.replace('USDT', '');
 
     const dir     = (input.dir || 'LONG').toUpperCase();
-    if (dir !== 'LONG' && dir !== 'SHORT') return { ok: false, error: 'Yön LONG veya SHORT olmalı.' };
+    if (dir !== 'LONG' && dir !== 'SHORT') return { ok: false, error: _t('fut.errDir',null,'Yön LONG veya SHORT olmalı.') };
 
     const mode    = (input.mode || FS.getMode() || 'CROSS').toUpperCase();
-    if (mode !== 'CROSS' && mode !== 'ISOLATED') return { ok: false, error: 'Mod CROSS veya ISOLATED olmalı.' };
+    if (mode !== 'CROSS' && mode !== 'ISOLATED') return { ok: false, error: _t('fut.errMode',null,'Mod CROSS veya ISOLATED olmalı.') };
 
     const entry   = +input.entry;
     const lev     = +input.leverage;
     const margin  = +input.margin;
-    if (!Number.isFinite(entry) || entry <= 0)   return { ok: false, error: 'Giriş fiyatı geçersiz.' };
-    if (!Number.isFinite(lev) || lev < 1 || lev > 125) return { ok: false, error: 'Kaldıraç 1-125 arası olmalı.' };
-    if (!Number.isFinite(margin) || margin <= 0) return { ok: false, error: 'Margin pozitif olmalı.' };
+    if (!Number.isFinite(entry) || entry <= 0)   return { ok: false, error: _t('fut.errEntryInvalid',null,'Giriş fiyatı geçersiz.') };
+    if (!Number.isFinite(lev) || lev < 1 || lev > 125) return { ok: false, error: _t('fut.errLevRange',null,'Kaldıraç 1-125 arası olmalı.') };
+    if (!Number.isFinite(margin) || margin <= 0) return { ok: false, error: _t('fut.errMarginPos',null,'Margin pozitif olmalı.') };
 
     // Bakiye kontrolü
     const balance       = FS.getBalance();
@@ -197,7 +198,7 @@ window.FuturesController = (() => {
     const usedMargin    = activePos.reduce((s, p) => s + (+p.margin || 0), 0);
     const availableBal  = balance - usedMargin;
     if (margin > availableBal + 0.01) {
-      return { ok: false, error: `Yetersiz bakiye. Kullanılabilir: $${availableBal.toFixed(2)}` };
+      return { ok: false, error: _t('fut.errBalance',{a:availableBal.toFixed(2)},'Yetersiz bakiye. Kullanılabilir: $'+availableBal.toFixed(2)) };
     }
 
     // SL/TP validasyon
@@ -256,8 +257,8 @@ window.FuturesController = (() => {
    */
   function closePosition(id, exitPrice = null, reason = 'MANUAL') {
     const p = window.FuturesState.getPositionById(id);
-    if (!p) return { ok: false, error: 'Pozisyon bulunamadı.' };
-    if (p.status !== 'ACTIVE') return { ok: false, error: 'Pozisyon zaten kapalı.' };
+    if (!p) return { ok: false, error: _t('fut.errNotFound',null,'Pozisyon bulunamadı.') };
+    if (p.status !== 'ACTIVE') return { ok: false, error: _t('fut.errClosed',null,'Pozisyon zaten kapalı.') };
 
     const finalPrice = Number.isFinite(+exitPrice) ? +exitPrice : (p.markPrice || p.entry);
     window.FuturesState.closePosition(id, finalPrice, reason);

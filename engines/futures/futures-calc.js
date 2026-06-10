@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.FuturesCalc = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   // ── Yardımcılar ───────────────────────────────────────────────────
   const _num = (v) => {
@@ -71,17 +72,17 @@ window.FuturesCalc = (() => {
   function validateLevels(dir, entry, sl, tp1, tp2, tp3) {
     const D  = (dir || '').toUpperCase();
     const e  = _num(entry);
-    if (e <= 0) return { valid: false, error: 'Giriş fiyatı pozitif olmalı.' };
-    if (D !== 'LONG' && D !== 'SHORT') return { valid: false, error: 'Yön LONG veya SHORT olmalı.' };
+    if (e <= 0) return { valid: false, error: _t('fut.errEntryPos',null,'Giriş fiyatı pozitif olmalı.') };
+    if (D !== 'LONG' && D !== 'SHORT') return { valid: false, error: _t('fut.errDir',null,'Yön LONG veya SHORT olmalı.') };
 
     const isLong = D === 'LONG';
 
     // SL kontrolü (opsiyonel)
     if (sl !== null && sl !== undefined && sl !== '' && sl !== 0) {
       const s = _num(sl);
-      if (s <= 0) return { valid: false, error: 'Stop Loss pozitif olmalı.' };
-      if (isLong  && s >= e) return { valid: false, error: 'LONG için Stop Loss girişten küçük olmalı.' };
-      if (!isLong && s <= e) return { valid: false, error: 'SHORT için Stop Loss girişten büyük olmalı.' };
+      if (s <= 0) return { valid: false, error: _t('fut.errSlPos',null,'Stop Loss pozitif olmalı.') };
+      if (isLong  && s >= e) return { valid: false, error: _t('fut.errSlLong',null,'LONG için Stop Loss girişten küçük olmalı.') };
+      if (!isLong && s <= e) return { valid: false, error: _t('fut.errSlShort',null,'SHORT için Stop Loss girişten büyük olmalı.') };
     }
 
     // TP'leri sırala
@@ -94,8 +95,8 @@ window.FuturesCalc = (() => {
     });
 
     for (const { idx, val } of tps) {
-      if (isLong  && val <= e) return { valid: false, error: `LONG için TP${idx} girişten büyük olmalı.` };
-      if (!isLong && val >= e) return { valid: false, error: `SHORT için TP${idx} girişten küçük olmalı.` };
+      if (isLong  && val <= e) return { valid: false, error: _t('fut.errTpLong',{i:idx},'LONG için TP'+idx+' girişten büyük olmalı.') };
+      if (!isLong && val >= e) return { valid: false, error: _t('fut.errTpShort',{i:idx},'SHORT için TP'+idx+' girişten küçük olmalı.') };
     }
 
     return { valid: true, error: null };
