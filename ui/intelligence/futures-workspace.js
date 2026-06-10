@@ -13,6 +13,7 @@
 //   verify-code, SQL. Yeni API/veri yok. Sadece görünürlük + odak.
 // ════════════════════════════════════════════════════════════════════
 (function () {
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   'use strict';
   if (window.VDFuturesWorkspace) return;
   var _open = false, _hidden = [];
@@ -85,9 +86,9 @@
     launcher.id = 'fxWsLauncher';
     launcher.innerHTML =
       '<div class="ic">\u25c8</div>'
-      + '<div class="tx"><div class="t">Grafik / Futures Workspace</div>'
-      + '<div class="d">TradingView + AI grafik \u00b7 SMC \u00b7 Risk Engine \u00b7 OI/Funding \u00b7 Trade Management. Tam ekran analiz \u2014 i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir.</div></div>'
-      + '<button class="fxws-open" id="fxWsOpenBtn">Tam Ekran A\u00e7 \u2192</button>';
+      + '<div class="tx"><div class="t">'+_t('fut.wsTitle',null,'Grafik / Futures Workspace')+'</div>'
+      + '<div class="d">'+_t('fut.wsDesc',null,'TradingView + AI grafik \u00b7 SMC \u00b7 Risk Engine \u00b7 OI/Funding \u00b7 Trade Management. Tam ekran analiz \u2014 i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir.')+'</div></div>'
+      + '<button class="fxws-open" id="fxWsOpenBtn">'+_t('fut.wsOpen',null,'Tam Ekran A\u00e7')+' \u2192</button>';
     anchor.parentNode.insertBefore(launcher, anchor);
 
     // 2) Sticky geri-dön bar (odak modunda görünür)
@@ -95,9 +96,9 @@
     bar.className = 'fxws-bar';
     bar.id = 'fxWsBar';
     bar.innerHTML =
-      '<button class="fxws-back" id="fxWsBack">\u2190 Geri D\u00f6n</button>'
-      + '<span class="fxws-title">\u25c8 Grafik / Futures Workspace</span>'
-      + '<span class="fxws-note">i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir</span>';
+      '<button class="fxws-back" id="fxWsBack">\u2190 '+_t('fut.wsBack',null,'Geri D\u00f6n')+'</button>'
+      + '<span class="fxws-title">\u25c8 '+_t('fut.wsTitle',null,'Grafik / Futures Workspace')+'</span>'
+      + '<span class="fxws-note">'+_t('fut.wsNote',null,'i\u015flem/y\u00f6n \u00f6nerisi de\u011fildir \u00b7 yat\u0131r\u0131m tavsiyesi de\u011fildir')+'</span>';
     document.body.appendChild(bar);
 
     // 3) Olaylar
