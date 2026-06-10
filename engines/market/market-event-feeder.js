@@ -14,6 +14,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   if (window.VDMarketFeeder) return;
   const TAG = '[MarketFeeder]';
   const MAX_EVENTS_PER_CYCLE = 24;   // gürültüyü sınırla (dedupe ayrıca korur)
@@ -57,29 +58,29 @@
 
       // 1) RISK — aşırı alım/satım, stop avı, sahte kırılım
       if (risk >= 72 || (rsi != null && rsi >= 80 && chg >= 6) || (upWick > 2 * body && body > 0 && chg > 4)) {
-        return mk(`${C} aşırı uzama / stop avı riski — sahte kırılım ihtimali`, risk >= 85 ? 'critical' : 'high', 'fake');
+        return mk(_t('tlf.fakeRisk',{c:C},C+' aşırı uzama / stop avı riski — sahte kırılım ihtimali'), risk >= 85 ? 'critical' : 'high', 'fake');
       }
       // 2) BREAKOUT — seviye kırılımı + hacim
-      if (last && last >= recentHigh && chg >= 2.5) return mk(`${C} breakout teyidi — direnç kırıldı`, 'high', 'long');
-      if (last && last <= recentLow && chg <= -2.5) return mk(`${C} breakout teyidi — destek kırıldı (aşağı)`, 'high', 'short');
+      if (last && last >= recentHigh && chg >= 2.5) return mk(_t('tlf.breakUp',{c:C},C+' breakout teyidi — direnç kırıldı'), 'high', 'long');
+      if (last && last <= recentLow && chg <= -2.5) return mk(_t('tlf.breakDown',{c:C},C+' breakout teyidi — destek kırıldı (aşağı)'), 'high', 'short');
       // 3) FUNDING (proxy) — kalabalık taraf
-      if (chg >= 7 && lSc >= 68 && rsi != null && rsi >= 70) return mk(`${C} funding aşırı pozitifleşti — long tarafı kalabalıklaşıyor`, 'medium', 'warn');
-      if (chg <= -7 && sSc >= 68 && rsi != null && rsi <= 30) return mk(`${C} funding aşırı negatifleşti — short tarafı kalabalıklaşıyor`, 'medium', 'warn');
+      if (chg >= 7 && lSc >= 68 && rsi != null && rsi >= 70) return mk(_t('tlf.fundPos',{c:C},C+' funding aşırı pozitifleşti — long tarafı kalabalıklaşıyor'), 'medium', 'warn');
+      if (chg <= -7 && sSc >= 68 && rsi != null && rsi <= 30) return mk(_t('tlf.fundNeg',{c:C},C+' funding aşırı negatifleşti — short tarafı kalabalıklaşıyor'), 'medium', 'warn');
       // 4) OPEN INTEREST (proxy) — hacim/ilgi artışı
-      if (vRatio >= 1.8) return mk(`${C} open interest artıyor (OI) — açık ilgi ve hacim yükselişi`, 'medium', 'info');
+      if (vRatio >= 1.8) return mk(_t('tlf.oiRise',{c:C},C+' open interest artıyor (OI) — açık ilgi ve hacim yükselişi'), 'medium', 'info');
       // 5) LİKİDİTE — fitil ile seviye süpürme
-      if (maxWick > 1.8 * body && body > 0 && maxWick / range > 0.45) return mk(`${C} likidite süpürmesi — fitil ile seviye temizliği`, 'medium', 'warn');
+      if (maxWick > 1.8 * body && body > 0 && maxWick / range > 0.45) return mk(_t('tlf.liqSweep',{c:C},C+' likidite süpürmesi — fitil ile seviye temizliği'), 'medium', 'warn');
       // 6) SMART MONEY — hacim + emilim (küçük gövde)
-      if (vRatio >= 1.5 && body / range < 0.32) return mk(`${C} büyük oyuncu akışı izi (smart money emilimi)`, 'medium', 'info');
+      if (vRatio >= 1.5 && body / range < 0.32) return mk(_t('tlf.smartFlow',{c:C},C+' büyük oyuncu akışı izi (smart money emilimi)'), 'medium', 'info');
       // 7) TREND SHIFT — kısa vadeli yön dönüşü
       if (closes.length >= 12) {
         const a = closes[closes.length - 11], b = closes[closes.length - 4], c = closes[closes.length - 1];
-        if (a > b && c > b && chg > 0.5) return mk(`${C} trend shift — yapı yukarı dönüyor`, 'medium', 'long');
-        if (a < b && c < b && chg < -0.5) return mk(`${C} trend shift — yapı aşağı dönüyor`, 'medium', 'short');
+        if (a > b && c > b && chg > 0.5) return mk(_t('tlf.trendUp',{c:C},C+' trend shift — yapı yukarı dönüyor'), 'medium', 'long');
+        if (a < b && c < b && chg < -0.5) return mk(_t('tlf.trendDown',{c:C},C+' trend shift — yapı aşağı dönüyor'), 'medium', 'short');
       }
       // 8) MOMENTUM (varsayılan) — güçlü skor/değişim
-      if (lSc >= 66 || chg >= 3) return mk(`${C} momentum güçleniyor — yukarı ivme`, 'medium', 'long');
-      if (sSc >= 66 || chg <= -3) return mk(`${C} momentum güçleniyor — aşağı ivme`, 'medium', 'short');
+      if (lSc >= 66 || chg >= 3) return mk(_t('tlf.momUp',{c:C},C+' momentum güçleniyor — yukarı ivme'), 'medium', 'long');
+      if (sSc >= 66 || chg <= -3) return mk(_t('tlf.momDown',{c:C},C+' momentum güçleniyor — aşağı ivme'), 'medium', 'short');
       return null; // dikkat çekici bir şey yok → olay üretme
     } catch (e) { return null; }
   }
