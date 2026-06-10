@@ -14,6 +14,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function() {
   'use strict';
+  var LEGAL_PATH = /^\/en(\/|$)/i.test(window.location.pathname) ? '/en/legal/' : '/legal/';
 
   const OVERLAY_ID = 'vd-welcome-overlay';
   const STORAGE_KEY = 'vd_welcome_seen';
@@ -47,9 +48,9 @@
   }
 
   function _html() {
-    var linkTerms = '<a href="/legal/terms.html" target="_blank" rel="noopener">' + _t('welcome.linkTerms', null, 'Kullanım Koşulları') + '</a>';
-    var linkRisk  = '<a href="/legal/risk.html" target="_blank" rel="noopener">' + _t('welcome.linkRisk', null, 'Risk Bildirimi') + '</a>';
-    var linkKvkk  = '<a href="/legal/kvkk.html" target="_blank" rel="noopener">' + _t('welcome.linkKvkk', null, 'KVKK Aydınlatma Metni') + '</a>';
+    var linkTerms = '<a href="' + LEGAL_PATH + 'terms.html" target="_blank" rel="noopener">' + _t('welcome.linkTerms', null, 'Kullanım Koşulları') + '</a>';
+    var linkRisk  = '<a href="' + LEGAL_PATH + 'risk.html" target="_blank" rel="noopener">' + _t('welcome.linkRisk', null, 'Risk Bildirimi') + '</a>';
+    var linkKvkk  = '<a href="' + LEGAL_PATH + 'kvkk.html" target="_blank" rel="noopener">' + _t('welcome.linkKvkk', null, 'KVKK Aydınlatma Metni') + '</a>';
     var termsText = _t('welcome.termsHtml', { t: linkTerms, r: linkRisk, k: linkKvkk },
       'Devam ederek ' + linkTerms + ', ' + linkRisk + ' ve ' + linkKvkk + '\u2019ni okumayı ve kabul etmeyi onaylamış sayılırsınız.');
 
@@ -113,7 +114,7 @@
       if (action === 'accept') _markSeen();
       hide();
     } else if (action === 'terms') {
-      window.open('/legal/terms.html', '_blank', 'noopener');
+      window.open(LEGAL_PATH + 'terms.html', '_blank', 'noopener');
     }
   }
 

@@ -21,7 +21,9 @@
   const FOOTER_ID = 'vd-legal-footer';
   // Legal sayfalar köke mutlak bağlanır → /en/ dahil her yerden açılır (404 önlenir).
   // (EN legal sayfaları /en/legal/ olarak sonraki adımda eklenecek; o zaman route-aware yapılacak.)
-  const LEGAL_PATH = '/legal/';
+  const EN = /^\/en(\/|$)/i.test(window.location.pathname);
+  const LEGAL_PATH = EN ? '/en/legal/' : '/legal/';
+  const ARCHIVE_PATH = EN ? '/en/archive.html' : 'archive.html';
 
   function _isInLegalPage() {
     // Hukuki sayfa içindeysek mount etme (zaten kendi footer'ı var)
@@ -43,7 +45,7 @@
           ${_t('footerc.disclaimer', null, '⚠ Bu platform yatırım tavsiyesi vermez. Tüm içerikler bilgilendirme amaçlıdır. Kripto para işlemleri yüksek risk içerir.')}
         </div>
         <div class="vd-legal-links">
-          <a href="archive.html">${_t('footerc.archive', null, 'Analiz Arşivi')}</a>
+          <a href="${ARCHIVE_PATH}">${_t('footerc.archive', null, 'Analiz Arşivi')}</a>
           <span class="vd-legal-links-sep">·</span>
           <a href="${LEGAL_PATH}about.html">${_t('footerc.about', null, 'Hakkımızda')}</a>
           <span class="vd-legal-links-sep">·</span>
