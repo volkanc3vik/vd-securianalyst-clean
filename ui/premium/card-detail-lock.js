@@ -25,8 +25,8 @@
   const SYM_ATTR  = 'data-vd-symorig';
   const NOTE_CLASS = 'vd-card-locknote';
   const NOTE_TEXT = _t('prm.cardLockText', null, '🔒 Bu analizin detayları Premium üyeler için açıktır.');
-  const KEEP_LABELS = /^(Güven|Risk)$/;          // metrik kutularında korunacaklar
-  const PRICE_LABELS = /Giriş|Stop|TP\s*\d/i;     // fiyat bloğu tespiti
+  const KEEP_LABELS = /^(Güven|Risk|Confidence)$/; // metrik kutularında korunacaklar (TR+EN)
+  const PRICE_LABELS = /Giriş|Entry|Stop|TP\s*\d/i; // fiyat bloğu tespiti (TR+EN)
   const HIDE_SELECTORS = ['.sc-conf-bar', '.sc-conf-grid', '.sc-missing', '.sc-timing', '.sc-tags'];
 
   let _mounted = false, _observer = null, _raf = false;
