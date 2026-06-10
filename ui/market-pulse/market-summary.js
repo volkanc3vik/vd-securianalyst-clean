@@ -31,6 +31,14 @@ window.VDMarketSummary = (function () {
   let _unsub   = null;
 
   // ── Yardımcılar ────────────────────────────────────────────────────
+  function _fmtUsd(v) {
+    if (v == null || !Number.isFinite(+v)) return null;
+    if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+    if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K';
+    return '$' + (+v).toFixed(0);
+  }
+
   function _fmtP(p) {
     if (p == null) return '—';
     if (p >= 1000) return p.toLocaleString('en-US', { maximumFractionDigits: 1 });
@@ -75,6 +83,20 @@ window.VDMarketSummary = (function () {
     else if (liq === 'MEDIUM') parts.push(_t('ms.cLiqMed',  null, 'Likidasyon riski şu an orta seviyede.'));
     else if (liq === 'HIGH')   parts.push(_t('ms.cLiqHigh', null, 'Likidasyon riski yüksek — ani hareketlere dikkat.'));
 
+    // Gerçek 24s likidasyon verisi (Pulse getState'ten gelir)
+    if (p.liq24h && p.liq24h.total24h > 0) {
+      const t = _fmtUsd(p.liq24h.total24h);
+      if (p.liq24h.dominant === 'LONG')
+        parts.push(_t('ms.cLiq24hLong', { t: t }, 'Son 24 saatte ' + t + ' likidasyon gerçekleşti — long tarafı ağırlıkta.'));
+      else if (p.liq24h.dominant === 'SHORT')
+        parts.push(_t('ms.cLiq24hShort', { t: t }, 'Son 24 saatte ' + t + ' likidasyon gerçekleşti — short tarafı ağırlıkta.'));
+    }
+    // Smart money ayrışması (top trader vs retail)
+    if (p.smart && p.smart.divergence === 'TOP_LONG_RETAIL_SHORT')
+      parts.push(_t('ms.cSmartTopLong', null, 'Top trader pozisyonları retail\'in tersine long tarafta — kısa sıkışması ihtimali izleniyor.'));
+    else if (p.smart && p.smart.divergence === 'TOP_SHORT_RETAIL_LONG')
+      parts.push(_t('ms.cSmartTopShort', null, 'Top trader pozisyonları retail\'in tersine short tarafta — uzun tasfiyesi riski izleniyor.'));
+
     const rc = ti.regime && ti.regime.code;
     if (rc) {
       const map = {
@@ -103,6 +125,10 @@ window.VDMarketSummary = (function () {
     if (p.flow) add(p.flow, null, null);
     if (p.liq)  out.push('<span class="vd-ms-badge ' + p.liq.cls + '">' + _t('ms.bLiq', null, 'Likidasyon:') + ' ' + _t(p.liq.k, null, p.liq.f) + '</span>');
     if (p.fund) out.push('<span class="vd-ms-badge ' + p.fund.cls + '">' + _t('ms.bFund', null, 'Funding:') + ' ' + _t(p.fund.k, null, p.fund.f) + '</span>');
+    if (p.smart && p.smart.divergence === 'TOP_LONG_RETAIL_SHORT')
+      out.push('<span class="vd-ms-badge up">🐋 ' + _t('ms.smartTopLong', null, 'Top trader long · retail short') + '</span>');
+    else if (p.smart && p.smart.divergence === 'TOP_SHORT_RETAIL_LONG')
+      out.push('<span class="vd-ms-badge dn">🐋 ' + _t('ms.smartTopShort', null, 'Top trader short · retail long') + '</span>');
     return out.join('');
   }
 
