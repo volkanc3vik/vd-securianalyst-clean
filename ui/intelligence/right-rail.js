@@ -117,8 +117,11 @@
     if (!canSee()) { rail.innerHTML = lockedCard(); bind(rail); return; }
     var s = {};
     try { if (window.VDEarlyRadar && VDEarlyRadar.summary) s = VDEarlyRadar.summary(); } catch (e) { s = {}; }
-    rail.innerHTML = biasCard(s) + oppCard(s);
+    // LIVE FEED mount container'ı oppCard'dan sonra korunur (innerHTML ezse de yeniden eklenir)
+    rail.innerHTML = biasCard(s) + oppCard(s) + '<div id="vdLfMount"></div>';
     bind(rail);
+    // Render sonrası LIVE FEED'i mount noktasına yerleştir/yeniden bağla
+    try { if (window.VDLiveFeed && VDLiveFeed.remount) VDLiveFeed.remount(); } catch (e) {}
   }
 
   function openRadar() { try { if (window.VDRadarWorkspace && VDRadarWorkspace.open) VDRadarWorkspace.open(); } catch (e) {} }
