@@ -40,15 +40,15 @@
 
     <!-- 2. PRICING CARDS -->
     <section>
-      <p class="pr-access-note">◆ Tek plan, tam <strong>Elite erişim</strong> — haftalık.</p>
+      <p class="pr-access-note" id="prAccessNote">◆ Tek plan, tam <strong>Elite erişim</strong> — haftalık.</p>
       <div style="display:flex;justify-content:center">
 
         <!-- WEEKLY (Elite) -->
         <div class="pr-card pr-featured" style="max-width:400px;width:100%">
-          <div class="pr-badge">★ ELITE PASS</div>
-          <div class="pr-plan">Elite — Haftalık</div>
-          <div class="pr-price"><span class="pr-price-cur">₺</span>7.500</div>
-          <div class="pr-duration">7 gün tam Elite erişim</div>
+          <div class="pr-badge" id="prBadge">★ ELITE PASS</div>
+          <div class="pr-plan" id="prPlanName">Elite — Haftalık</div>
+          <div class="pr-price"><span class="pr-price-cur">₺</span><span id="prPriceVal">4.000</span> <span id="prPriceUsd" style="font-size:17px;font-weight:800;color:#00D1FF">/ $90</span></div>
+          <div class="pr-duration" id="prDuration">7 gün tam Elite erişim</div>
           <ul class="pr-feat">
             <li>Tüm coin erişimi</li>
             <li>Kilitli analiz alanlarını açar</li>
@@ -56,7 +56,7 @@
             <li>Detaylı teknik görünüm</li>
             <li>Elite fiyat haritası alanları</li>
           </ul>
-          <button class="pr-cta" onclick="prBuy('Elite — Haftalık')">Elite Pass Al</button>
+          <button class="pr-cta" id="prCtaBtn" onclick="prBuy(window._prPlanLabel||'Elite — Haftalık')">Elite Pass Al</button>
         </div>
 
       </div>
@@ -138,6 +138,28 @@
        font-size:14px;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 30px rgba(0,212,255,0.18);
        opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:9999;max-width:90vw;text-align:center;">
   </div>
+
+
+  <!-- Erişim seviyesi (salt okuma) + Premium→Elite yükseltme fiyatı -->
+  <script src="../modules/access-levels.js"></script>
+  <script>
+    // Premium üye algılanırsa kart yükseltme varyantına döner. Render-only; mantığa dokunmaz.
+    (function () {
+      'use strict';
+      try {
+        var lvl = (window.VDAccess && window.VDAccess.level) ? window.VDAccess.level() : 'free';
+        if (lvl !== 'premium') return; // free/teaser → standart fiyat; admin → zaten tam erişim
+        var T = function (id) { return document.getElementById(id); };
+        if (T('prBadge'))      T('prBadge').textContent = '★ PREMIUM → ELITE';
+        if (T('prPlanName'))   T('prPlanName').textContent = 'Elite Yükseltme — Haftalık';
+        if (T('prPriceVal'))   T('prPriceVal').textContent = '1.500';
+        if (T('prPriceUsd'))   T('prPriceUsd').textContent = '/ $35';
+        if (T('prDuration'))   T('prDuration').textContent = '7 gün tam Elite erişim · mevcut Premium üyeliğine özel yükseltme fiyatı';
+        if (T('prAccessNote')) T('prAccessNote').innerHTML = '◆ Premium üyeliğin algılandı — <strong>sadece paket yükseltme</strong> fiyatı uygulanıyor.';
+        window._prPlanLabel = 'Elite Yükseltme — Haftalık';
+      } catch (e) { /* sessiz — standart kart kalır */ }
+    })();
+  </script>
 
   <script>
     (function() {
