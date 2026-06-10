@@ -10085,6 +10085,7 @@ const P10 = (() => {
 <link rel="stylesheet" href="ui/market-feed/live-feed.css">
 <link rel="stylesheet" href="ui/market-pulse/market-pulse.css">
 <link rel="stylesheet" href="ui/market-pulse/market-summary.css">
+<link rel="stylesheet" href="ui/ai-terminal/ai-terminal.css">
 <script src="engines/intelligence/ti-state.js"></script>
 <script src="engines/intelligence/ti-regime.js"></script>
 <script src="engines/intelligence/ti-mm-bias.js"></script>
@@ -10119,6 +10120,8 @@ const P10 = (() => {
 <script src="ui/market-pulse/market-pulse.js"></script>
 <!-- ── MARKET INTELLIGENCE SUMMARY (3. iş — yorum paneli) ──────────── -->
 <script src="ui/market-pulse/market-summary.js"></script>
+<!-- ── AI TERMINAL (4. iş — Anthropic soru-cevap, BETA) ────────────── -->
+<script src="ui/ai-terminal/ai-terminal.js"></script>
 <script>
 (function () {
   function _initLF() {
@@ -10126,6 +10129,7 @@ const P10 = (() => {
     try { window.VDLiveFeed.mount(); } catch (e) {}
     try { if (window.VDMarketPulse) window.VDMarketPulse.mount(); } catch (e) {}
     try { if (window.VDMarketSummary) window.VDMarketSummary.mount(); } catch (e) {}
+    try { if (window.VDAITerminal) window.VDAITerminal.mount(); } catch (e) {}
     // Aktif coin değişimini izle: window.SYM polling (en az invaziv —
     // hiçbir fonksiyonu sarmalamaz, bare loadCoin/openCoin çağrılarını da yakalar)
     let _lastSym = window.SYM || null;
