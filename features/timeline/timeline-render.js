@@ -13,6 +13,7 @@
 (function () {
   'use strict';
   if (window.VDTimeline) return;
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   // 8 görünüm kategorisi — mor YOK (cyan/blue/green/amber/red paleti)
   const CATS = [
@@ -26,6 +27,8 @@
     { key: 'trend',    label: 'Trend Shift',   icon: '🔀', color: 'var(--v4-teal)',      kw: ['trend', 'yön değiş', 'trend değiş', 'reversal', 'dönüş', 'rejim', 'regime', 'yapı değiş'], desc: 'Piyasa yönünün değişmeye başladığını gösteren yapı değişimidir.' },
   ];
   const CAT_BY_KEY = {}; CATS.forEach(c => { CAT_BY_KEY[c.key] = c; });
+  function _lbl(c){ return _t('tlr.cat.'+c.key, null, c.label); }
+  function _dsc(c){ return _t('tlr.desc.'+c.key, null, c.desc||''); }
   // NC iç kategorisi → görünüm kategorisi (anahtar kelime eşleşmezse yedek)
   const NC_FALLBACK = { momentum: 'momentum', likidite: 'likidite', risk: 'risk', piyasa: 'trend', ogren: 'momentum', referans: 'smart' };
   // Öncelik sırası (en belirleyici önce)
@@ -62,24 +65,24 @@
       const lv = (ev.level || 'medium').toLowerCase();
       pct = lv === 'critical' ? 95 : lv === 'high' ? 80 : lv === 'low' ? 30 : 55;
     }
-    const label = pct >= 85 ? 'Çok Yüksek' : pct >= 70 ? 'Yüksek' : pct >= 45 ? 'Orta' : 'Düşük';
+    const label = pct >= 85 ? _t('tlr.confVHigh',null,'Çok Yüksek') : pct >= 70 ? _t('tlr.confHigh',null,'Yüksek') : pct >= 45 ? _t('tlr.confMid',null,'Orta') : _t('tlr.confLow',null,'Düşük');
     const tone  = pct >= 70 ? 'hi' : pct >= 45 ? 'mid' : 'lo';
     return { pct: Math.round(pct), label, tone };
   }
 
-  function _coin(sym) { return sym ? String(sym).replace('USDT', '').replace('PERP', '') : 'PİYASA'; }
+  function _coin(sym) { return sym ? String(sym).replace('USDT', '').replace('PERP', '') : _t('tlr.market',null,'PİYASA'); }
   function _pad(n) { return n < 10 ? '0' + n : '' + n; }
   function _time(ts) { const d = new Date(ts || 0); return _pad(d.getHours()) + ':' + _pad(d.getMinutes()); }
-  function _date(ts) { try { return new Date(ts || 0).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }); } catch (e) { return ''; } }
+  function _date(ts) { try { return new Date(ts || 0).toLocaleDateString((window.VDI18n&&window.VDI18n.getLang&&window.VDI18n.getLang()==='en')?'en-US':'tr-TR', { day: 'numeric', month: 'short' }); } catch (e) { return ''; } }
   function _rel(ts) {
     const diff = Date.now() - (ts || 0);
-    if (diff < 0) return 'az önce';
+    if (diff < 0) return _t('tlr.justNow',null,'az önce');
     const m = Math.floor(diff / 60000);
-    if (m < 1) return 'az önce';
-    if (m < 60) return m + ' dakika önce';
+    if (m < 1) return _t('tlr.justNow',null,'az önce');
+    if (m < 60) return _t('tlr.minAgo',{n:m},m+' dakika önce');
     const h = Math.floor(m / 60);
-    if (h < 24) return h + ' saat önce';
-    return Math.floor(h / 24) + ' gün önce';
+    if (h < 24) return _t('tlr.hourAgo',{n:h},h+' saat önce');
+    return _t('tlr.dayAgo',{n:Math.floor(h/24)},Math.floor(h/24)+' gün önce');
   }
 
   let _filter = 'all';
@@ -116,7 +119,7 @@
       const dim = (key !== 'all' && n === 0) ? ' dim' : '';
       return `<button class="tl-chip${on}${dim}" data-tl-cat="${key}" type="button">${icon ? icon + ' ' : ''}${_esc(label)}<span class="tl-chip-n">${n}</span></button>`;
     };
-    return `<div class="tl-chips">${chip('all', 'Tümü', '🧭')}${CATS.map(c => chip(c.key, c.label, c.icon)).join('')}</div>`;
+    return `<div class="tl-chips">${chip('all', _t('tlr.all',null,'Tümü'), '🧭')}${CATS.map(c => chip(c.key, _lbl(c), c.icon)).join('')}</div>`;
   }
 
   function _cardHTML(it) {
@@ -129,11 +132,11 @@
           <div class="tl-head">
             <span class="tl-coin">${_esc(_coin(it.sym))}</span>
             <span class="tl-cat-wrap">
-              <span class="tl-cat" style="--c:${c.color}">${c.icon} ${_esc(c.label)}</span>
-              <button class="tl-i" data-tl-tip type="button" aria-label="${_esc(c.label)} açıklaması">ⓘ</button>
-              <span class="tl-tip" role="tooltip"><b>${_esc(c.label)}</b><br>${_esc(c.desc || '')}</span>
+              <span class="tl-cat" style="--c:${c.color}">${c.icon} ${_esc(_lbl(c))}</span>
+              <button class="tl-i" data-tl-tip type="button" aria-label="${_esc(_lbl(c))} ${_t('tlr.ariaDesc',null,'açıklaması')}">ⓘ</button>
+              <span class="tl-tip" role="tooltip"><b>${_esc(_lbl(c))}</b><br>${_esc(_dsc(c))}</span>
             </span>
-            <span class="tl-conf tl-conf-${it.conf.tone}" title="Güven seviyesi">${_esc(it.conf.label)} · %${it.conf.pct}</span>
+            <span class="tl-conf tl-conf-${it.conf.tone}" title="${_t('tlr.confTitle',null,'Güven seviyesi')}">${_esc(it.conf.label)} · %${it.conf.pct}</span>
             <span class="tl-rel">${_esc(_rel(it.ts))}</span>
           </div>
           <div class="tl-msg">${_esc(it.msg)}</div>
@@ -146,7 +149,7 @@
     if (!feed) return;
     const list = _filter === 'all' ? _items : _items.filter(it => it.dcat === _filter);
     if (!list.length) {
-      feed.innerHTML = `<div class="tl-empty">${_items.length ? 'Bu kategoride olay yok.' : 'Henüz kayıtlı piyasa olayı yok. Ana sayfada analiz çalıştıkça olaylar burada görünecek.'}</div>`;
+      feed.innerHTML = `<div class="tl-empty">${_items.length ? _t('tlr.emptyCat',null,'Bu kategoride olay yok.') : _t('tlr.emptyAll',null,'Henüz kayıtlı piyasa olayı yok. Ana sayfada analiz çalıştıkça olaylar burada görünecek.')}</div>`;
       return;
     }
     feed.innerHTML = `<div class="tl-line">${list.map(_cardHTML).join('')}</div>`;
@@ -166,7 +169,7 @@
 
   function _summaryHTML() {
     const coins = new Set(); _items.forEach(it => { if (it.sym) coins.add(_coin(it.sym)); });
-    return `<span><b>${_items.length}</b> olay</span><span><b>${coins.size}</b> coin</span><span>8 kategori</span>`;
+    return `<span><b>${_items.length}</b> ${_t('tlr.events',null,'olay')}</span><span><b>${coins.size}</b> coin</span><span>8 ${_t('tlr.categories',null,'kategori')}</span>`;
   }
 
   function render(rootId) {
