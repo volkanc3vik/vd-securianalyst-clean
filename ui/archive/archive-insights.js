@@ -63,10 +63,10 @@
         case 'bias': return v === 'bullish' ? 'Bullish' : v === 'bearish' ? 'Bearish' : _t('arc.neutralShort', null, 'Nötr');
         case 'conf': return 'Confidence ' + v;
         case 'tf': return v;
-        case 'risk': return 'Risk ' + (v === 'high' ? 'High' : v === 'med' ? 'Orta' : 'Low');
-        case 'regime': return 'Rejim: ' + v;
+        case 'risk': return 'Risk ' + (v === 'high' ? 'High' : v === 'med' ? _t('md.riskMid', null, 'Orta') : 'Low');
+        case 'regime': return _t('arc.regimePrefix', null, 'Rejim: ') + v;
         case 'smart': return 'Smart Money';
-        case 'liq': return 'Likidite Sweep';
+        case 'liq': return _t('arc.liqSweep', null, 'Likidite Sweep');
         default: return tok;
       }
     }
@@ -117,7 +117,7 @@
         let labelParts = [_label('bias:' + bias)]; if (band) labelParts.push(_label(band));
         if (similar.length < NOTE_MIN_SAMPLE) { similar = rev.filter(r => r.direction_bias === bias); labelParts = [_label('bias:' + bias)]; }
         if (similar.length < NOTE_MIN_SAMPLE) return null;
-        return `Bu setup (${labelParts.join(' + ')}) son ${similar.length} benzer analizde %${_rate(similar)} ${_t('arc.shownRate', null, 'doğrulama oranı göstermiştir.')}`;
+        return _t('arc.setupNote', {label:labelParts.join(' + '), n:similar.length, r:_rate(similar)}, 'Bu setup ('+labelParts.join(' + ')+') son '+similar.length+' benzer analizde %'+_rate(similar)+' doğrulama oranı göstermiştir.');
       } catch (e) { console.warn(TAG, 'noteForSync hata:', e); return null; }
     }
     async function load(force) {
