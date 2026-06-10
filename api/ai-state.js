@@ -98,6 +98,69 @@ module.exports = async function handler(req, res) {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
 
+  // ════════════════════════════════════════════════════════════════
+  // AI CHAT DALI (4. iş — AI Terminal): action:'ai_chat'
+  // Anthropic key SUNUCUDA kalır (ANTHROPIC_API_KEY env). Mevcut
+  // state-save yoluna dokunmaz; aynı admin-key guard'ını kullanır.
+  // ════════════════════════════════════════════════════════════════
+  if (body.action === 'ai_chat') {
+    // Chat'e ayrı (daha sıkı) rate limit: dakikada 10
+    const cBucket = `chat|${ip}|${keyHash}`;
+    const cNow = Date.now();
+    const cArr = (_rateStore.get(cBucket) || []).filter(t => cNow - t < 60_000);
+    if (cArr.length >= 10) return res.status(429).json({ ok: false, error: 'chat_rate_limited' });
+    cArr.push(cNow); _rateStore.set(cBucket, cArr);
+
+    const akey = process.env.ANTHROPIC_API_KEY;
+    if (!akey) return res.status(503).json({ ok: false, error: 'ai_not_configured' });
+
+    const question = typeof body.question === 'string' ? body.question.trim().slice(0, 600) : '';
+    const context  = typeof body.context  === 'string' ? body.context.trim().slice(0, 4000) : '';
+    const lang     = body.lang === 'en' ? 'en' : 'tr';
+    if (question.length < 3) return res.status(400).json({ ok: false, error: 'invalid_question' });
+
+    const sys = lang === 'en'
+      ? 'You are the market analysis assistant of VD SecuriAnalyst, a crypto ANALYSIS platform (not a signal service). '
+        + 'Rules: NEVER give buy/sell/entry/stop/target advice, never promise profit or guarantee outcomes. '
+        + 'Provide objective technical observation and education only. Answer in English, concise (max ~8 short lines), '
+        + 'use the provided live market context when relevant. End with: "Not investment advice."'
+      : 'VD SecuriAnalyst kripto ANALİZ platformunun piyasa analiz asistanısın (sinyal servisi değil). '
+        + 'Kurallar: ASLA al/sat/giriş/stop/hedef tavsiyesi verme, kâr vaadi veya garanti sunma. '
+        + 'Yalnızca nesnel teknik gözlem ve eğitim amaçlı açıklama yap. Türkçe ve öz yanıtla (en çok ~8 kısa satır), '
+        + 'verilen canlı piyasa bağlamını ilgiliyse kullan. Sonunda şunu ekle: "Yatırım tavsiyesi değildir."';
+
+    const userMsg = (context ? ('CANLI PİYASA BAĞLAMI:\n' + context + '\n\n') : '') + 'SORU: ' + question;
+
+    try {
+      const ar = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': akey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+          max_tokens: 700,
+          system: sys,
+          messages: [{ role: 'user', content: userMsg }],
+        }),
+      });
+      const aText = await ar.text();
+      let aData; try { aData = JSON.parse(aText); } catch { aData = null; }
+      if (!ar.ok) {
+        return res.status(502).json({ ok: false, error: 'anthropic_' + ar.status });
+      }
+      const out = (aData && Array.isArray(aData.content))
+        ? aData.content.filter(c => c.type === 'text').map(c => c.text).join('\n').trim()
+        : '';
+      if (!out) return res.status(502).json({ ok: false, error: 'empty_response' });
+      return res.status(200).json({ ok: true, text: out });
+    } catch (e) {
+      return res.status(502).json({ ok: false, error: 'anthropic_unreachable' });
+    }
+  }
+
   const data = body.data;
   let v = body.v;
 
