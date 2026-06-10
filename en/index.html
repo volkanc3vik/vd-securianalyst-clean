@@ -10128,9 +10128,9 @@ const P10 = (() => {
     }, 700);
   }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { setTimeout(_initLF, 400); }, { once: true });
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(_initLF, 1000); }, { once: true });
   } else {
-    setTimeout(_initLF, 400);
+    setTimeout(_initLF, 1000);
   }
 })();
 </script>
