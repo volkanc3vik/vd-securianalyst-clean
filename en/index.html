@@ -10084,6 +10084,7 @@ const P10 = (() => {
 <link rel="stylesheet" href="../styles/intelligence.css">
 <link rel="stylesheet" href="../ui/market-feed/live-feed.css">
 <link rel="stylesheet" href="../ui/market-pulse/market-pulse.css">
+<link rel="stylesheet" href="../ui/market-pulse/market-summary.css">
 <script src="../engines/intelligence/ti-state.js"></script>
 <script src="../engines/intelligence/ti-regime.js"></script>
 <script src="../engines/intelligence/ti-mm-bias.js"></script>
@@ -10116,12 +10117,15 @@ const P10 = (() => {
 <script src="../ui/market-feed/live-feed.js"></script>
 <!-- ── MARKET PULSE BAND (2. iş — FLOW/OI/FUNDING/LIQ kartları) ─────── -->
 <script src="../ui/market-pulse/market-pulse.js"></script>
+<!-- ── MARKET INTELLIGENCE SUMMARY (3. iş — yorum paneli) ──────────── -->
+<script src="../ui/market-pulse/market-summary.js"></script>
 <script>
 (function () {
   function _initLF() {
     if (!window.VDLiveFeed) return;
     try { window.VDLiveFeed.mount(); } catch (e) {}
     try { if (window.VDMarketPulse) window.VDMarketPulse.mount(); } catch (e) {}
+    try { if (window.VDMarketSummary) window.VDMarketSummary.mount(); } catch (e) {}
     let _lastSym = window.SYM || null;
     setInterval(function () {
       const s = window.SYM;
