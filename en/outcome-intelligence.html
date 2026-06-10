@@ -24,13 +24,61 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 <div id="app"><p class="sub">Loading…</p></div>
 <script>
 const API='/api/archive-stats';
+// ── EN: API'den gelen bilinen Türkçe metinleri çevir (yalnız görüntü; mantık anahtarsız) ──
+function trA(o){
+  const PH = [
+    ['Aşırı Satım Tepkisi + Dönüş Yapısı','Oversold Reaction + Reversal Structure'],
+    ['Güçlü Momentum + RSI Genişlemesi','Strong Momentum + RSI Expansion'],
+    ['Trend + Momentum Uyumu','Trend + Momentum Alignment'],
+    ['Yapısal Denge + Momentum Takibi','Structural Balance + Momentum Tracking'],
+    ['Çok Faktörlü Güçlü Yapı','Multi-Factor Strong Structure'],
+    ['Çok Faktörlü AI Yapısı','Multi-Factor AI Structure'],
+    ['Aşırı Satım Tepkisi','Oversold Reaction'],
+    ['Yapısal Denge','Structural Balance'],
+    ['Düşük Risk','Low Risk'],['Orta Risk','Medium Risk'],['Yüksek Risk','High Risk'],['Bilinmiyor','Unknown'],
+    ['RSI Yüksek (≥65)','RSI High (≥65)'],['RSI Düşük (≤35)','RSI Low (≤35)'],['RSI Orta (35-65)','RSI Mid (35-65)'],
+    ['Negatif Funding','Negative Funding'],['Pozitif Funding','Positive Funding'],['Nötr Funding','Neutral Funding'],
+    ['Long Baskın','Long-Dominant'],['Short Baskın','Short-Dominant'],['Dengeli','Balanced'],
+    ['Yukarı Yönlü','Upside'],['Aşağı Yönlü','Downside'],['Nötr','Neutral'],['Diğer','Other'],
+    ['Yeterli beklenti-kayıtlı veri yok (engine paylaşımları biriktikçe dolar).','Not enough expectation-tagged data yet (fills as engine reports accumulate).'],
+    ['Yapı kalıcı kolon değil; rsi/score/yön ile türetiliyor. Tam doğruluk için scanner market_context.structure yazmalı.','Structure is not a persisted column; it is derived from rsi/score/direction. For full accuracy the scanner should write market_context.structure.'],
+    ['Timeline olay etiketi (timeline_event) YENİ kayıtlardan toplanıyor (Phase 9). Scanner gerçek olay tespitini market_context.timeline_event olarak yayınladıkça dolacak — şu an tespit edilemediğinde null yazılıyor (uydurma yok).','Timeline event tags (timeline_event) are collected from NEW records (Phase 9). They will fill as the scanner publishes real event detections as market_context.timeline_event — currently null is written when nothing is detected (no fabrication).'],
+    ['Market koşulu verisi birikiyor (Phase 9 zenginleştirme).','Market condition data is accumulating (Phase 9 enrichment).'],
+    ['Funding / Open Interest / Volatilite YENİ kayıtlardan itibaren toplanıyor (Phase 9). Yeterli veri birikince koşul-başarı analizi otomatik açılır. Eski kayıtlarda bu alanlar yok.','Funding / Open Interest / Volatility are collected from NEW records onward (Phase 9). Condition-success analysis opens automatically once enough data accumulates. Older records lack these fields.'],
+    ['Open Interest değeri toplanıyor; değişim (open_interest_change) verisi henüz yok — bu kırılım ileride genişletilecek.','Open Interest values are being collected; change data (open_interest_change) is not available yet — this breakdown will be expanded later.'],
+  ];
+  const RX = [
+    [/^Düşük risk \+ 90 üzeri confidence kombinasyonu (\d+) analizde %([\d.,]+) başarı göstermiştir\.$/,'The low-risk + 90+ confidence combination showed %$2 success across $1 analyses.'],
+    [/^(.+) yapısı, sistem ortalamasının %([\d.,]+) üzerinde performans göstermektedir \((\d+) örnek\)\.$/,'The $1 structure performs %$2 above the system average ($3 samples).'],
+    [/^(.+) volatilite koşulunda, sistem ortalamasının %([\d.,]+) üzerinde uyum göstermiştir \((\d+) örnek\)\.$/,'Under $1 volatility conditions, consistency was %$2 above the system average ($3 samples).'],
+    [/^(.+) koşulunda, sistem ortalamasının %([\d.,]+) üzerinde uyum göstermiştir \((\d+) örnek\)\.$/,'Under $1 conditions, consistency was %$2 above the system average ($3 samples).'],
+    [/^(.+) rejiminde, sistem ortalamasının %([\d.,]+) üzerinde uyum göstermiştir \((\d+) örnek\)\.$/,'In the $1 regime, consistency was %$2 above the system average ($3 samples).'],
+    [/^(.+) dağılımında, sistem ortalamasının %([\d.,]+) üzerinde uyum göstermiştir \((\d+) örnek\)\.$/,'In the $1 distribution, consistency was %$2 above the system average ($3 samples).'],
+    [/^(.+) analizleri sistem ortalamasının altında performans göstermektedir \(%([\d.,]+), (\d+) örnek\)\.$/,'$1 analyses perform below the system average (%$2, $3 samples).'],
+    [/^Henüz (\d+)\+ örnekli yeterli veri yok — gözlemler doğrulanmış analizler biriktikçe otomatik üretilecek\.$/,'Not enough data with $1+ samples yet — observations will be generated automatically as validated analyses accumulate.'],
+  ];
+  function trs(v){
+    if(typeof v!=='string'||!v) return v;
+    let s=v;
+    for(const [re,rep] of RX){ if(re.test(s)){ s=s.replace(re,rep); break; } }
+    for(const [a,b] of PH){ if(s.indexOf(a)!==-1) s=s.split(a).join(b); }
+    return s;
+  }
+  function walk(x){
+    if(Array.isArray(x)) return x.map(walk);
+    if(x&&typeof x==='object'){ const o2={}; for(const k in x) o2[k]=walk(x[k]); return o2; }
+    return trs(x);
+  }
+  return walk(o);
+}
+
 const rate=(g)=>g.insufficient?'<span class="warn">Insufficient Data</span>':((g.successRate==null?'—':g.successRate+'%'));
 const cls=(x)=>x==null?'':x>=70?'ok':x>=50?'warn':'bad';
 function rows(arr,medal){return (arr&&arr.length)?arr.map(g=>`<div class="row"><span class="k">${medal||''}${g.key} ${g.insufficient?'<span class="ins">(n='+g.total+')</span>':'<span class="k" style="font-weight:400">('+g.success+'/'+g.total+')</span>'}</span><span class="v ${g.insufficient?'':cls(g.successRate)}">${rate(g)}</span></div>`).join(''):'<p class="note">No data.</p>';}
 // Phase 10: enrichment kırılımları — alan hiç yoksa "Collecting Data"
 const rowsC=(arr)=>(arr&&arr.length)?rows(arr):'<p class="note">Collecting Data — this field exists only in records after v76; it fills automatically once enough data accumulates.</p>';
 const rep=(o)=>o?`${o.key} <span class="k" style="font-weight:400">(%${o.rate==null?'—':o.rate}, n=${o.n})</span>`:'—';
-fetch(API).then(r=>r.json()).then(d=>{
+fetch(API).then(r=>r.json()).then(d=>{ d=trA(d);
  if(!d.ok){document.getElementById('app').innerHTML='<p class="bad">Error: '+(d.error||'?')+'</p>';return;}
  document.getElementById('gen').textContent='· '+new Date(d.generated_at).toLocaleString('en-US');
  const L=d.learning;
