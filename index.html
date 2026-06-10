@@ -10083,6 +10083,7 @@ const P10 = (() => {
 <!-- ══ TRADING INTELLIGENCE PANEL — yeni mimari ══ -->
 <link rel="stylesheet" href="styles/intelligence.css">
 <link rel="stylesheet" href="ui/market-feed/live-feed.css">
+<link rel="stylesheet" href="ui/market-pulse/market-pulse.css">
 <script src="engines/intelligence/ti-state.js"></script>
 <script src="engines/intelligence/ti-regime.js"></script>
 <script src="engines/intelligence/ti-mm-bias.js"></script>
@@ -10113,11 +10114,14 @@ const P10 = (() => {
 
 <!-- ── LIVE MARKET FEED (1. iş — Binance aggTrade canlı akış) ───────── -->
 <script src="ui/market-feed/live-feed.js"></script>
+<!-- ── MARKET PULSE BAND (2. iş — FLOW/OI/FUNDING/LIQ kartları) ─────── -->
+<script src="ui/market-pulse/market-pulse.js"></script>
 <script>
 (function () {
   function _initLF() {
     if (!window.VDLiveFeed) return;
     try { window.VDLiveFeed.mount(); } catch (e) {}
+    try { if (window.VDMarketPulse) window.VDMarketPulse.mount(); } catch (e) {}
     // Aktif coin değişimini izle: window.SYM polling (en az invaziv —
     // hiçbir fonksiyonu sarmalamaz, bare loadCoin/openCoin çağrılarını da yakalar)
     let _lastSym = window.SYM || null;
@@ -10126,6 +10130,7 @@ const P10 = (() => {
       if (s && s !== _lastSym) {
         _lastSym = s;
         try { if (window.VDLiveFeed) window.VDLiveFeed.setSymbol(s); } catch (e) {}
+        try { if (window.VDMarketPulse) window.VDMarketPulse.refresh(); } catch (e) {}
       }
     }, 700);
   }
