@@ -12,9 +12,10 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const D = () => window.VDAcademyData || { categories: [], lessons: [] };
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-  const LEVEL = { temel:{label:'Temel',cls:'lvl-temel'}, orta:{label:'Orta',cls:'lvl-orta'}, ileri:{label:'İleri',cls:'lvl-ileri'} };
+  const LEVEL = { temel:{label:_t('aca.lvlBasic',null,'Temel'),cls:'lvl-temel'}, orta:{label:_t('aca.lvlMid',null,'Orta'),cls:'lvl-orta'}, ileri:{label:_t('aca.lvlAdv',null,'İleri'),cls:'lvl-ileri'} };
 
   let _filter = 'all', _query = '';
 
@@ -23,9 +24,9 @@
 
   function _rel(ts) {
     const m = Math.floor((Date.now() - (+ts || 0)) / 60000);
-    if (m < 1) return 'az önce'; if (m < 60) return m + ' dk önce';
-    const h = Math.floor(m / 60); if (h < 24) return h + ' sa önce';
-    return Math.floor(h / 24) + ' gün önce';
+    if (m < 1) return _t('er.justNow',null,'az önce'); if (m < 60) return m + _t('er.minAgo',null,' dk önce');
+    const h = Math.floor(m / 60); if (h < 24) return h + _t('er.hourAgo',null,' sa önce');
+    return Math.floor(h / 24) + _t('aca.daysAgo',null,' gün önce');
   }
 
   // ── Kart ──
@@ -35,7 +36,7 @@
     const tags = (les.events || []).map(t => `<span class="ac-evtag" data-evtag>🔗 ${esc(t)}</span>`).join('');
 
     // Örnekler placeholder (hydrate ile dolar)
-    const examplesBox = `<div class="ac-sec"><div class="ac-sec-lbl">📈 Gerçek Örnekler</div><div class="ac-examples" data-examples>…</div></div>`;
+    const examplesBox = `<div class="ac-sec"><div class="ac-sec-lbl">📈 ${_t('aca.realExamples',null,'Gerçek Örnekler')}</div><div class="ac-examples" data-examples>…</div></div>`;
 
     if (!premium) {
       // FREE: teori + ilk örnek + kilit
@@ -46,11 +47,11 @@
           <h3 class="ac-title">${esc(les.title)}</h3>
           <div class="ac-short">${esc(les.short)}</div>
         </div>
-        <div class="ac-sec"><div class="ac-sec-lbl">📈 Gerçek Örnekler</div><div class="ac-examples" data-examples data-free="1">…</div></div>
+        <div class="ac-sec"><div class="ac-sec-lbl">📈 ${_t('aca.realExamples',null,'Gerçek Örnekler')}</div><div class="ac-examples" data-examples data-free="1">…</div></div>
         <div class="ac-lock">
           <div class="ac-lock-ic">🔒</div>
-          <div class="ac-lock-tx">Grafikte görünüm · trader anlamı · risk notu · <b>tüm örnekler</b> · başarı oranı ve son Timeline olayları <b>Premium</b> üyeler içindir.</div>
-          <button class="ac-lock-btn" type="button" data-ac-premium>🚀 Premium'a Geç</button>
+          <div class="ac-lock-tx">${_t('aca.lockText',null,'Grafikte görünüm · trader anlamı · risk notu · <b>tüm örnekler</b> · başarı oranı ve son Timeline olayları <b>Premium</b> üyeler içindir.')}</div>
+          <button class="ac-lock-btn" type="button" data-ac-premium>${_t('prm.goPremiumRocket',null,'🚀 Premium\'a Geç')}</button>
         </div>
       </article>`;
     }
@@ -64,18 +65,18 @@
           <div class="ac-short">${esc(les.short)}</div>
         </div>
         <div class="ac-detail">
-          <div class="ac-d-row"><div class="ac-d-lbl">📈 Grafikte nasıl görünür?</div><div class="ac-d-val">${esc(les.chart)}</div></div>
-          <div class="ac-d-row"><div class="ac-d-lbl">🎯 Trader için ne anlama gelir?</div><div class="ac-d-val">${esc(les.trader)}</div></div>
-          <div class="ac-d-row ac-d-warn"><div class="ac-d-lbl">⚠️ Riskli yorumlama hatası</div><div class="ac-d-val">${esc(les.mistake)}</div></div>
+          <div class="ac-d-row"><div class="ac-d-lbl">📈 ${_t('aca.howOnChart',null,'Grafikte nasıl görünür?')}</div><div class="ac-d-val">${esc(les.chart)}</div></div>
+          <div class="ac-d-row"><div class="ac-d-lbl">🎯 ${_t('aca.traderMeaning',null,'Trader için ne anlama gelir?')}</div><div class="ac-d-val">${esc(les.trader)}</div></div>
+          <div class="ac-d-row ac-d-warn"><div class="ac-d-lbl">⚠️ ${_t('aca.riskyMistake',null,'Riskli yorumlama hatası')}</div><div class="ac-d-val">${esc(les.mistake)}</div></div>
         </div>
         ${examplesBox}
-        <div class="ac-sec"><div class="ac-sec-lbl">📊 Sonuç İstatistiği <span class="ac-sec-sub">(son 30 gün)</span></div><div class="ac-outcome" data-outcome>…</div></div>
-        <div class="ac-sec" data-condstat hidden><div class="ac-sec-lbl">📊 Enrichment Başarısı <span class="ac-sec-sub">(arşiv geneli)</span></div><div class="ac-condstat">…</div></div>
+        <div class="ac-sec"><div class="ac-sec-lbl">📊 ${_t('aca.outcomeStats',null,'Sonuç İstatistiği')} <span class="ac-sec-sub">${_t('aca.last30d',null,'(son 30 gün)')}</span></div><div class="ac-outcome" data-outcome>…</div></div>
+        <div class="ac-sec" data-condstat hidden><div class="ac-sec-lbl">📊 ${_t('aca.enrichSuccess',null,'Enrichment Başarısı')} <span class="ac-sec-sub">${_t('aca.archiveWide',null,'(arşiv geneli)')}</span></div><div class="ac-condstat">…</div></div>
         <div class="ac-sec ac-tl-sec">
-          <div class="ac-sec-lbl">🕒 Son Timeline Olayları ${tags ? `<span class="ac-evtags-inline">${tags}</span>` : ''}</div>
+          <div class="ac-sec-lbl">🕒 ${_t('aca.recentTlEvents',null,'Son Timeline Olayları')} ${tags ? `<span class="ac-evtags-inline">${tags}</span>` : ''}</div>
           <div class="ac-timeline" data-timeline>…</div>
         </div>
-        <button class="ac-chart-btn" type="button" data-ac-chart data-id="${esc(les.id)}">📈 Grafikte Göster →</button>
+        <button class="ac-chart-btn" type="button" data-ac-chart data-id="${esc(les.id)}">📈 ${_t('aca.showOnChart',null,'Grafikte Göster')} →</button>
       </article>`;
   }
 
@@ -94,9 +95,9 @@
       if (coins.length) {
         exBox.innerHTML = coins.map(c => `<span class="ac-coin">${esc(c)}</span>`).join('')
           + (free && ex.coins.length > 1 ? `<span class="ac-coin ac-coin-more">+${ex.coins.length - 1} · Premium</span>` : '')
-          + (!free ? `<span class="ac-ex-count">${ex.count} olayda görüldü</span>` : '');
+          + (!free ? `<span class="ac-ex-count">${ex.count} ${_t('aca.seenInEvents',null,'olayda görüldü')}</span>` : '');
       } else {
-        exBox.innerHTML = '<span class="ac-ex-empty">Henüz kayıtlı örnek yok — tarama biriktikçe burada görünecek.</span>';
+        exBox.innerHTML = '<span class="ac-ex-empty">'+_t('aca.noExamples',null,'Henüz kayıtlı örnek yok — tarama biriktikçe burada görünecek.')+'</span>';
       }
     }
 
@@ -104,9 +105,9 @@
     const tlBox = cardEl.querySelector('[data-timeline]');
     if (tlBox) {
       if (ex.events.length) {
-        tlBox.innerHTML = ex.events.map(e => `<div class="ac-tl-row" data-ac-tl data-coin="${esc(e.sym)}" data-id="${esc(id)}" title="Grafikte Göster"><span class="ac-tl-coin">${esc(e.sym)}</span><span class="ac-tl-msg">${esc(e.msg||'')}</span><span class="ac-tl-time">${_rel(e.ts)}</span><span class="ac-tl-go">📈</span></div>`).join('');
+        tlBox.innerHTML = ex.events.map(e => `<div class="ac-tl-row" data-ac-tl data-coin="${esc(e.sym)}" data-id="${esc(id)}" title="${_t('aca.showOnChart',null,'Grafikte Göster')}"><span class="ac-tl-coin">${esc(e.sym)}</span><span class="ac-tl-msg">${esc(e.msg||'')}</span><span class="ac-tl-time">${_rel(e.ts)}</span><span class="ac-tl-go">📈</span></div>`).join('');
       } else {
-        tlBox.innerHTML = '<span class="ac-ex-empty">İlgili Timeline olayı henüz yok.</span>';
+        tlBox.innerHTML = '<span class="ac-ex-empty">'+_t('aca.noTlEvents',null,'İlgili Timeline olayı henüz yok.')+'</span>';
       }
     }
   }
@@ -121,14 +122,14 @@
         if (o) {
           box.innerHTML = `
             <div class="ac-oc-grid">
-              <div class="ac-oc"><div class="ac-oc-v">${o.total}</div><div class="ac-oc-l">olay</div></div>
-              <div class="ac-oc ok"><div class="ac-oc-v">${o.validated}</div><div class="ac-oc-l">doğrulandı</div></div>
-              <div class="ac-oc warn"><div class="ac-oc-v">${o.partial}</div><div class="ac-oc-l">kısmi</div></div>
-              <div class="ac-oc bad"><div class="ac-oc-v">${o.rejected}</div><div class="ac-oc-l">başarısız</div></div>
-              <div class="ac-oc rate"><div class="ac-oc-v">%${o.rate}</div><div class="ac-oc-l">başarı</div></div>
+              <div class="ac-oc"><div class="ac-oc-v">${o.total}</div><div class="ac-oc-l">${_t('aca.ocEvents',null,'olay')}</div></div>
+              <div class="ac-oc ok"><div class="ac-oc-v">${o.validated}</div><div class="ac-oc-l">${_t('aca.ocValidated',null,'doğrulandı')}</div></div>
+              <div class="ac-oc warn"><div class="ac-oc-v">${o.partial}</div><div class="ac-oc-l">${_t('aca.ocPartial',null,'kısmi')}</div></div>
+              <div class="ac-oc bad"><div class="ac-oc-v">${o.rejected}</div><div class="ac-oc-l">${_t('aca.ocFailed',null,'başarısız')}</div></div>
+              <div class="ac-oc rate"><div class="ac-oc-v">%${o.rate}</div><div class="ac-oc-l">${_t('aca.ocSuccess',null,'başarı')}</div></div>
             </div>`;
         } else {
-          box.innerHTML = '<span class="ac-ex-empty">Bu yapı için yeterli sonuç verisi yok.</span>';
+          box.innerHTML = '<span class="ac-ex-empty">'+_t('aca.noOutcomeData',null,'Bu yapı için yeterli sonuç verisi yok.')+'</span>';
         }
       });
     });
@@ -145,13 +146,13 @@
         sec.removeAttribute('hidden');
         if (s.state === 'ok') {
           box.innerHTML = `<div class="ac-oc-grid">
-              <div class="ac-oc"><div class="ac-oc-v">${s.n}</div><div class="ac-oc-l">örnek</div></div>
-              <div class="ac-oc rate"><div class="ac-oc-v">%${s.rate}</div><div class="ac-oc-l">başarı</div></div>
+              <div class="ac-oc"><div class="ac-oc-v">${s.n}</div><div class="ac-oc-l">${_t('aca.ocSamples',null,'örnek')}</div></div>
+              <div class="ac-oc rate"><div class="ac-oc-v">%${s.rate}</div><div class="ac-oc-l">${_t('aca.ocSuccess',null,'başarı')}</div></div>
             </div>${s.label ? `<div class="ac-ex-count">${esc(s.label)}</div>` : ''}`;
         } else if (s.state === 'insufficient') {
-          box.innerHTML = `<span class="ac-ex-empty">Yetersiz Veri (n=${s.n || 0} · min 20).</span>`;
+          box.innerHTML = `<span class="ac-ex-empty">${_t('aca.insufficientData',null,'Yetersiz Veri')} (n=${s.n || 0} · min 20).</span>`;
         } else {
-          box.innerHTML = '<span class="ac-ex-empty">Veri Toplanıyor — v76 sonrası kayıtlardan dolar.</span>';
+          box.innerHTML = '<span class="ac-ex-empty">'+_t('aca.collectingData',null,'Veri Toplanıyor — v76 sonrası kayıtlardan dolar.')+'</span>';
         }
       });
     });
@@ -166,8 +167,8 @@
   function _renderGrid() {
     const grid = document.getElementById('acGrid'); if (!grid) return;
     const list = D().lessons.filter(_visible);
-    grid.innerHTML = list.length ? list.map(_card).join('') : '<div class="ac-empty">Aramanıza uygun ders bulunamadı.</div>';
-    const cnt = document.getElementById('acCount'); if (cnt) cnt.textContent = list.length + ' ders';
+    grid.innerHTML = list.length ? list.map(_card).join('') : '<div class="ac-empty">'+_t('aca.noLessonsFound',null,'Aramanıza uygun ders bulunamadı.')+'</div>';
+    const cnt = document.getElementById('acCount'); if (cnt) cnt.textContent = list.length + _t('aca.lessonsSuffix',null,' ders');
     // hydrate
     grid.querySelectorAll('.ac-card').forEach(_hydrateCard);
     if (_isPremium()) _hydrateOutcome();
@@ -176,7 +177,7 @@
   function _renderFilters() {
     const wrap = document.getElementById('acFilters'); if (!wrap) return;
     const btn = (id,label,icon) => `<button class="ac-filter${_filter===id?' active':''}" data-cat="${id}" type="button">${icon?icon+' ':''}${esc(label)}</button>`;
-    wrap.innerHTML = btn('all','Tümü','◈') + D().categories.map(c => btn(c.id, c.label, c.icon)).join('');
+    wrap.innerHTML = btn('all',_t('arc.all',null,'Tümü'),'◈') + D().categories.map(c => btn(c.id, c.label, c.icon)).join('');
   }
 
   function _gotoChart(lessonId, sym) {
@@ -221,7 +222,7 @@
   function init() {
     _renderFilters(); _renderGrid(); _wire();
     const lvl = document.getElementById('acAccess');
-    if (lvl) { const a=_access(); const map={admin:'◈ Admin — tam erişim',premium:'◈ Premium — tam erişim',teaser:'◈ Önizleme',free:'◈ Free — temel erişim'}; lvl.textContent=map[a]||map.free; lvl.className='ac-access ac-access-'+a; }
+    if (lvl) { const a=_access(); const map={admin:_t('aca.accessAdmin',null,'◈ Admin — tam erişim'),premium:_t('aca.accessPremium',null,'◈ Premium — tam erişim'),teaser:_t('aca.accessTeaser',null,'◈ Önizleme'),free:_t('aca.accessFree',null,'◈ Free — temel erişim')}; lvl.textContent=map[a]||map.free; lvl.className='ac-access ac-access-'+a; }
   }
 
   window.VDAcademy = { init, _renderGrid };
