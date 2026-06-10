@@ -42,9 +42,9 @@ window.VDMarketPulse = (function () {
       const s = (window.VDLiveFeed && window.VDLiveFeed.flowSummary) ? window.VDLiveFeed.flowSummary() : null;
       if (!s || s.n < 8) return null;                       // yeterli örnek yok
       if (Date.now() - s.ts > 120000) return null;          // akış bayat (2dk+)
-      if (s.buyRatio >= 0.56) return { code: 'BUY',  label: 'Buyers Dominating',  cls: 'up' };
-      if (s.buyRatio <= 0.44) return { code: 'SELL', label: 'Sellers Dominating', cls: 'dn' };
-      return { code: 'NEUTRAL', label: 'Neutral', cls: 'mid' };
+      if (s.buyRatio >= 0.56) return { code: 'BUY',  k: 'mp.vBuyers',  f: 'Buyers Dominating',  cls: 'up' };
+      if (s.buyRatio <= 0.44) return { code: 'SELL', k: 'mp.vSellers', f: 'Sellers Dominating', cls: 'dn' };
+      return { code: 'NEUTRAL', k: 'mp.vNeutral', f: 'Neutral', cls: 'mid' };
     } catch (e) { return null; }
   }
 
@@ -54,13 +54,13 @@ window.VDMarketPulse = (function () {
     let st = null;
     if (_prevOI != null && _prevOI > 0) {
       const chg = ((cur - _prevOI) / _prevOI) * 100;
-      if (chg >= 0.4)       st = { code: 'EXP',  label: 'Expanding', cls: 'up' };
-      else if (chg <= -0.4) st = { code: 'COOL', label: 'Cooling',   cls: 'dn' };
-      else                  st = { code: 'FLAT', label: 'Flat',      cls: 'mid' };
+      if (chg >= 0.4)       st = { code: 'EXP',  k: 'mp.vExpanding', f: 'Expanding', cls: 'up' };
+      else if (chg <= -0.4) st = { code: 'COOL', k: 'mp.vCooling',   f: 'Cooling',   cls: 'dn' };
+      else                  st = { code: 'FLAT', k: 'mp.vFlat',      f: 'Flat',      cls: 'mid' };
     } else if (oiData.oiExpanding) {
-      st = { code: 'EXP', label: 'Expanding', cls: 'up' };
+      st = { code: 'EXP', k: 'mp.vExpanding', f: 'Expanding', cls: 'up' };
     } else {
-      st = { code: 'FLAT', label: 'Flat', cls: 'mid' };   // ilk poll — referans yok
+      st = { code: 'FLAT', k: 'mp.vFlat', f: 'Flat', cls: 'mid' };   // ilk poll — referans yok
     }
     _prevOI = cur;
     return st;
@@ -69,9 +69,9 @@ window.VDMarketPulse = (function () {
   function _calcFunding(fundData) {
     if (!fundData || fundData.fund == null || !Number.isFinite(+fundData.fund)) return null;
     const r = +fundData.fund; // % (8 saatlik)
-    if (r >= 0.03)  return { code: 'LONGS',  label: 'Longs Crowded',  cls: 'dn', rate: r };
-    if (r <= -0.03) return { code: 'SHORTS', label: 'Shorts Crowded', cls: 'up', rate: r };
-    return { code: 'NEUTRAL', label: 'Neutral', cls: 'mid', rate: r };
+    if (r >= 0.03)  return { code: 'LONGS',  k: 'mp.vLongsCrowded',  f: 'Longs Crowded',  cls: 'dn', rate: r };
+    if (r <= -0.03) return { code: 'SHORTS', k: 'mp.vShortsCrowded', f: 'Shorts Crowded', cls: 'up', rate: r };
+    return { code: 'NEUTRAL', k: 'mp.vNeutral', f: 'Neutral', cls: 'mid', rate: r };
   }
 
   function _calcLiqRisk(fund, ls, oiState) {
@@ -83,14 +83,14 @@ window.VDMarketPulse = (function () {
     const crowd = hasCrowd ? String(ls.crowding).toUpperCase() : 'NEUTRAL';
     if (crowd.indexOf('NEUTRAL') === -1) score += 1;
     if (oiState && oiState.code === 'EXP' && score >= 1) score += 1;
-    if (score >= 3) return { code: 'HIGH',   label: 'High',   cls: 'dn' };
-    if (score >= 1) return { code: 'MEDIUM', label: 'Medium', cls: 'mid' };
-    return { code: 'LOW', label: 'Low', cls: 'up' };
+    if (score >= 3) return { code: 'HIGH',   k: 'mp.vHigh',   f: 'High',   cls: 'dn' };
+    if (score >= 1) return { code: 'MEDIUM', k: 'mp.vMedium', f: 'Medium', cls: 'mid' };
+    return { code: 'LOW', k: 'mp.vLow', f: 'Low', cls: 'up' };
   }
 
   // ── Render ─────────────────────────────────────────────────────────
   function _card(key, title, sub, st) {
-    const val = st ? st.label : '—';
+    const val = st ? _t(st.k, null, st.f) : '—';
     const cls = st ? st.cls : 'na';
     return '<div class="vd-mp-card vd-mp-' + key + '">' +
         '<div class="vd-mp-head"><span class="vd-mp-ic"></span>' +
@@ -169,5 +169,7 @@ window.VDMarketPulse = (function () {
     if (el) el.remove();
   }
 
-  return { mount, refresh, unmount };
+  function getState() { return { flow: _state.flow, oi: _state.oi, fund: _state.fund, liq: _state.liq }; }
+
+  return { mount, refresh, unmount, getState };
 })();
