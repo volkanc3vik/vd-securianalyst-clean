@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png">
+  <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+  <meta name="theme-color" content="#0a0e17">
+  <meta property="og:image" content="https://vd-securianalyst.com/assets/brand/og-image.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Track Record · VD SecuriAnalyst system performance report card (transparent history)">
+  <meta name="robots" content="index,follow">
+  <title>AI Track Record · VD SecuriAnalyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/nav/page-base.css">
+  <link rel="stylesheet" href="../shared/nav/nav.css">
+  <link rel="stylesheet" href="../styles/track-record.css">
+</head>
+<body class="tr-body">
+  <header class="vd-page-header">
+    <a href="index.html" class="vd-page-logo">◈ VD <b>SecuriAnalyst</b></a>
+  </header>
+
+  <main class="tr-wrap">
+    <section class="tr-hero">
+      <span class="tr-badge">◈ AI TRACK RECORD CENTER</span>
+      <h1>How accurate has this system been historically?</h1>
+      <p>A transparent performance report. Not just the wins — the losses are here too. All figures are produced from reviewed analysis records.</p>
+      <div><span class="tr-access" id="trAccess">◈ Free</span></div>
+    </section>
+
+    <div class="tr-filters" id="trFilters"></div>
+    <div id="trBody"><div class="tr-empty">Loading…</div></div>
+
+    <footer class="tr-footer">
+      <div>⚠ Past performance is not a guarantee of future results. All content is for educational/informational purposes.</div>
+      <div style="margin-top:8px"><a href="index.html">← Back to Dashboard</a> · © 2026 VD SecuriAnalyst</div>
+    </footer>
+  </main>
+
+  <!-- Access + veri kaynakları (salt okuma) -->
+  <script src="../modules/access-levels.js"></script>
+  <script src="../modules/teaser-access.js"></script>
+  <script src="../services/supabase-service.js"></script>
+  <script src="../ui/archive/archive-insights.js"></script>
+  <!-- Academy köprüsü (ders bazlı oran için, opsiyonel) -->
+  <script src="../ui/academy/event-lesson-map.js"></script>
+  <script src="../ui/academy/academy-bridge.js"></script>
+  <!-- Track Record -->
+  <script src="../ui/track-record/track-record.js"></script>
+  <script src="../shared/i18n/i18n.js"></script>
+  <script src="../shared/nav/nav.js"></script>
+  <script src="../ui/funnel/telegram-funnel.js"></script>
+</body>
+</html>

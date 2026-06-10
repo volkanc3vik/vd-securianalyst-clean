@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png">
+  <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+  <meta name="theme-color" content="#0a0e17">
+  <meta property="og:image" content="https://vd-securianalyst.com/assets/brand/og-image.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="VD Academy · Live market education — patterns, Smart Money, indicators and more">
+  <meta name="robots" content="index,follow">
+  <title>VD Academy · VD SecuriAnalyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/nav/page-base.css">
+  <link rel="stylesheet" href="../shared/nav/nav.css">
+  <link rel="stylesheet" href="../styles/academy.css">
+</head>
+<body class="ac-body">
+  <header class="vd-page-header">
+    <a href="index.html" class="vd-page-logo">◈ VD <b>SecuriAnalyst</b></a>
+  </header>
+
+  <div class="ac-gridbg"></div>
+  <main class="ac-wrap">
+    <section class="ac-hero">
+      <span class="ac-badge">◈ VD ACADEMY · LIVE MARKET EDUCATION</span>
+      <h1>Learn what the market means as you watch it</h1>
+      <p>Patterns, Smart Money concepts, indicators, and futures fundamentals. Every event you see in the Timeline links to a lesson here — you learn to interpret what you see.</p>
+      <div><span class="ac-access" id="acAccess">◈ Free — basic access</span></div>
+    </section>
+
+    <div class="ac-toolbar">
+      <div class="ac-searchbox"><input id="acSearch" type="text" placeholder="Search lessons — e.g. liquidity, RSI, breakout…" autocomplete="off"></div>
+      <span class="ac-count" id="acCount">—</span>
+    </div>
+
+    <div class="ac-filters" id="acFilters"></div>
+    <div class="ac-grid" id="acGrid"></div>
+
+    <footer class="ac-footer">
+      <div>⚠ This platform does not provide investment advice. All content is for educational and informational purposes.</div>
+      <div style="margin-top:8px"><a href="index.html">← Back to Dashboard</a> · © 2026 VD SecuriAnalyst</div>
+    </footer>
+  </main>
+
+  <!-- Access + teaser (mevcut sistem; salt okuma) -->
+  <script src="../shared/i18n/i18n.js"></script>
+  <script src="../modules/access-levels.js"></script>
+  <script src="../modules/teaser-access.js"></script>
+  <!-- Academy modülleri -->
+  <script src="../services/supabase-service.js"></script>
+  <script src="../features/timeline/event-store.js"></script>
+  <script src="../ui/academy/academy-data.js"></script>
+  <script src="../ui/academy/event-lesson-map.js"></script>
+  <script src="../ui/academy/academy-bridge.js"></script>
+  <script src="../ui/academy/academy.js"></script>
+  <script src="../shared/nav/nav.js"></script>
+  <script src="../ui/funnel/telegram-funnel.js"></script>
+</body>
+</html>
