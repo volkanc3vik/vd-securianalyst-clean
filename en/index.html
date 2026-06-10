@@ -2785,7 +2785,7 @@ function startTimer() {
     </div>
     <div class="smc-pro-grid">
       <div class="smc-pro-card">
-        <div class="smc-pro-lbl">Risk Skoru</div>
+        <div class="smc-pro-lbl">Risk Score</div>
         <div class="smc-pro-val" id="fbRiskScore" style="color:var(--green)">—/100</div>
         <div class="fb-meter"><div class="fb-fill fb-low" id="fbRiskBar" style="width:0%"></div></div>
         <div class="smc-pro-sub" id="fbRiskSub">Awaiting analysis...</div>
@@ -3940,13 +3940,13 @@ function updateUI(tk,candles,fund,ls){
   const vd=document.getElementById('verdict');
   if(ent&&ent.dir==='LONG'){
     vd.className='verdict long-v';
-    vd.innerHTML=`<b style="color:var(--green)">▲ LONG — Upward Bias</b><br>Referans: <b>$${fmtP(ent.entry)}</b> → Risk Seviyesi: <b>$${fmtP(ent.stop)}</b> → Hedef 1: <b>$${fmtP(ent.tp1)}</b> → Hedef 2: <b>$${fmtP(ent.tp2)}</b><br>R/R <b>1:${ent.rr}</b> · Evaluation <b>${conf}/100</b> · Risk: <b>${risk.label}</b> · Assess the risk level.`;
+    vd.innerHTML=`<b style="color:var(--green)">▲ LONG — Upward Bias</b><br>Reference: <b>$${fmtP(ent.entry)}</b> → Risk Level: <b>$${fmtP(ent.stop)}</b> → Target 1: <b>$${fmtP(ent.tp1)}</b> → Target 2: <b>$${fmtP(ent.tp2)}</b><br>R/R <b>1:${ent.rr}</b> · Evaluation <b>${conf}/100</b> · Risk: <b>${risk.label}</b> · Assess the risk level.`;
   }else if(ent&&ent.dir==='SHORT'){
     vd.className='verdict short-v';
-    vd.innerHTML=`<b style="color:var(--red)">▼ SHORT — Downward Bias</b><br>Referans: <b>$${fmtP(ent.entry)}</b> → Risk Seviyesi: <b>$${fmtP(ent.stop)}</b> → Hedef 1: <b>$${fmtP(ent.tp1)}</b> → Hedef 2: <b>$${fmtP(ent.tp2)}</b><br>R/R <b>1:${ent.rr}</b> · Evaluation <b>${conf}/100</b> · Risk: <b>${risk.label}</b> · Assess the risk level.`;
+    vd.innerHTML=`<b style="color:var(--red)">▼ SHORT — Downward Bias</b><br>Reference: <b>$${fmtP(ent.entry)}</b> → Risk Level: <b>$${fmtP(ent.stop)}</b> → Target 1: <b>$${fmtP(ent.tp1)}</b> → Target 2: <b>$${fmtP(ent.tp2)}</b><br>R/R <b>1:${ent.rr}</b> · Evaluation <b>${conf}/100</b> · Risk: <b>${risk.label}</b> · Assess the risk level.`;
   }else{
     vd.className='verdict wait-v';
-    vd.innerHTML=`<b style="color:var(--yellow)">◆ NEUTRAL — No Clear Directional Bias</b><br>RSI: <b>${rv}</b> · MACD: <b>${mr.hist>0?'Pozitif':'Negatif'}</b> · EMA: <b>${e9v>e21v?'Bullish':'Bearish'}</b> · Risk: <b>${risk.label}</b><br>Observation advised until the setup becomes clear.`;
+    vd.innerHTML=`<b style="color:var(--yellow)">◆ NEUTRAL — No Clear Directional Bias</b><br>RSI: <b>${rv}</b> · MACD: <b>${mr.hist>0?'Positive':'Negative'}</b> · EMA: <b>${e9v>e21v?'Bullish':'Bearish'}</b> · Risk: <b>${risk.label}</b><br>Observation advised until the setup becomes clear.`;
   }
 
   // S/R
@@ -6926,7 +6926,7 @@ const SCE = (() => {
       <!-- Stats -->
       <div class="sc-stats">
         <div class="sc-stat">
-          <div class="sc-stat-lbl">Setup Skoru</div>
+          <div class="sc-stat-lbl">Setup Score</div>
           <div class="sc-stat-val" style="color:${score>=75?'var(--green)':score>=50?'var(--yellow)':'var(--red)'}">${score}/100</div>
         </div>
         <div class="sc-stat">
@@ -6942,7 +6942,7 @@ const SCE = (() => {
           <div class="sc-stat-val" style="color:var(--yellow)">1:${entry.rr}</div>
         </div>
         <div class="sc-stat">
-          <div class="sc-stat-lbl">BTC Uyum</div>
+          <div class="sc-stat-lbl">BTC Align</div>
           <div class="sc-stat-val" style="color:${btcAlign>=60?'var(--green)':btcAlign>=40?'var(--yellow)':'var(--red)'}">${btcAlign}/100</div>
         </div>
         <div class="sc-stat">
