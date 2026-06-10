@@ -48,11 +48,11 @@
       _t('prm.bulletTimeline', null, 'Market Timeline ile piyasa olay akışı'),
     ],
 
-    // Paketler — GERÇEK fiyatlar (TL). Buradan düzenleyin.
+    // Paketler — GERÇEK fiyatlar (TL + USD). Buradan düzenleyin.
     plans: [
-      { id: 'daily',   icon: '⚡', name: _t('prm.dayAccess', null, '1 Günlük Erişim'),  price: '₺1.000',  period: _t('prm.per1', null, '/ 1 gün'),   tag: _t('prm.quickStart', null, 'Hızlı Başlangıç'),     highlight: false },
-      { id: 'weekly',  icon: '🔥', name: _t('prm.weekAccess', null, '1 Haftalık Erişim'), price: '₺5.000',  period: _t('prm.per7', null, '/ 7 gün'),   tag: _t('prm.mostPreferred', null, 'En Çok Tercih Edilen'), highlight: true  },
-      { id: 'monthly', icon: '👑', name: _t('prm.monthPremium', null, '1 Aylık Premium'),   price: '₺15.000', period: _t('prm.per30', null, '/ 30 gün'),  tag: _t('prm.bestValue', null, 'En Avantajlı'),         highlight: false },
+      { id: 'daily',   icon: '⚡', name: _t('prm.dayAccess', null, '1 Günlük Erişim'),  price: '₺750',   priceUsd: '$20',  period: _t('prm.per1', null, '/ 1 gün'),   tag: _t('prm.quickStart', null, 'Hızlı Başlangıç'),     highlight: false },
+      { id: 'weekly',  icon: '🔥', name: _t('prm.weekAccess', null, '1 Haftalık Erişim'), price: '₺2.500', priceUsd: '$55',  period: _t('prm.per7', null, '/ 7 gün'),   tag: _t('prm.mostPreferred', null, 'En Çok Tercih Edilen'), highlight: true  },
+      { id: 'monthly', icon: '👑', name: _t('prm.monthPremium', null, '1 Aylık Premium'),   price: '₺6.000', priceUsd: '$150', period: _t('prm.per30', null, '/ 30 gün'),  tag: _t('prm.bestValue', null, 'En Avantajlı'),         highlight: false },
     ],
 
     // İletişim — gerçek kullanıcı adı/numara buradan kolayca değiştirilir

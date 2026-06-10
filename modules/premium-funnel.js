@@ -65,7 +65,7 @@
         ${x.tag ? `<div class="vdf-plan-tag">${esc(x.tag)}</div>` : ''}
         <div class="vdf-plan-ic">${esc(x.icon)}</div>
         <div class="vdf-plan-name">${esc(x.name)}</div>
-        <div class="vdf-plan-price">${esc(x.price)}<small>${esc(x.period || '')}</small></div>
+        <div class="vdf-plan-price">${esc(x.price)}${x.priceUsd ? ` <span class="vdf-usd">/ ${esc(x.priceUsd)}</span>` : ''}<small>${esc(x.period || '')}</small></div>
         <button class="vdf-plan-btn" data-vdf-plan="${esc(x.name)}" type="button">${_t('prm.selectPlan', null, 'Planı Seç')}</button>
       </div>`).join('');
   }
