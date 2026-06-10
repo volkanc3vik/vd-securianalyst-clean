@@ -10082,6 +10082,7 @@ const P10 = (() => {
 
 <!-- ══ TRADING INTELLIGENCE PANEL — yeni mimari ══ -->
 <link rel="stylesheet" href="styles/intelligence.css">
+<link rel="stylesheet" href="ui/market-feed/live-feed.css">
 <script src="engines/intelligence/ti-state.js"></script>
 <script src="engines/intelligence/ti-regime.js"></script>
 <script src="engines/intelligence/ti-mm-bias.js"></script>
@@ -10109,6 +10110,32 @@ const P10 = (() => {
 <script src="ui/intelligence/ti-warnings-card.js"></script>
 <script src="ui/intelligence/ti-panel.js"></script>
 <script src="modules/ti-init.js"></script>
+
+<!-- ── LIVE MARKET FEED (1. iş — Binance aggTrade canlı akış) ───────── -->
+<script src="ui/market-feed/live-feed.js"></script>
+<script>
+(function () {
+  function _initLF() {
+    if (!window.VDLiveFeed) return;
+    try { window.VDLiveFeed.mount(); } catch (e) {}
+    // Aktif coin değişimini izle: window.SYM polling (en az invaziv —
+    // hiçbir fonksiyonu sarmalamaz, bare loadCoin/openCoin çağrılarını da yakalar)
+    let _lastSym = window.SYM || null;
+    setInterval(function () {
+      const s = window.SYM;
+      if (s && s !== _lastSym) {
+        _lastSym = s;
+        try { if (window.VDLiveFeed) window.VDLiveFeed.setSymbol(s); } catch (e) {}
+      }
+    }, 700);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(_initLF, 400); }, { once: true });
+  } else {
+    setTimeout(_initLF, 400);
+  }
+})();
+</script>
 
 <!-- ── Telegram engine (Aşama 2) ───────────────────────────────── -->
 <script src="engines/telegram/telegram-formatter.js"></script>
