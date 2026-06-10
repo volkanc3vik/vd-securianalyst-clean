@@ -24,7 +24,7 @@ window.VDLiveFeed = (function () {
   // i18n: korumalı çeviri (i18n.js yoksa Türkçe yedeğe düşer)
   function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
 
-  const FWSS       = 'wss://fstream.binance.com/ws/';  // tek-stream → düz aggTrade objesi
+  const FWSS       = 'wss://fstream.binance.com/stream?streams=';  // combined — mevcut çalışan WS ile aynı endpoint
   const PANEL_ID   = 'vd-live-feed';
   const MAX_TRADES = 50;       // son 50 trade (kural: 40–60)
   const WHALE_USD  = 50000;    // whale highlight eşiği
@@ -39,6 +39,14 @@ window.VDLiveFeed = (function () {
   let _reconnectT    = null;
   let _attempts      = 0;
   let _mounted       = false;
+  let _status        = 'idle'; // idle | connecting | live | error
+
+  function _setStatus(s) {
+    _status = s;
+    const dot = document.querySelector('#' + PANEL_ID + ' .vd-lf-dot');
+    if (dot) dot.className = 'vd-lf-dot st-' + s;
+    if (!_trades.length) _scheduleRender(); // boş ekranda durum metnini güncelle
+  }
 
   // ── Sayı formatları ────────────────────────────────────────────────
   function _fmtVal(v) {
@@ -112,7 +120,13 @@ window.VDLiveFeed = (function () {
     if (!list) return;
 
     if (!_trades.length) {
-      if (empty) empty.style.display = '';
+      if (empty) {
+        empty.style.display = '';
+        const txt = _status === 'connecting' ? _t('lf.connecting', null, 'Bağlanıyor…')
+                  : _status === 'error'      ? _t('lf.reconnecting', null, 'Yeniden bağlanıyor…')
+                  :                            _t('lf.waiting', null, 'Canlı akış bekleniyor…');
+        empty.innerHTML = '<span class="vd-lf-empty-ic">📡</span>' + txt;
+      }
       list.innerHTML = '';
       return;
     }
@@ -150,14 +164,21 @@ window.VDLiveFeed = (function () {
   function _connect(key) {
     _disconnect();
     _curKey = key;
+    _setStatus('connecting');
     const symEl = document.getElementById('vdLfSym');
     if (symEl) symEl.textContent = key.toUpperCase();
 
+    let url;
     try {
-      _socket = new WebSocket(FWSS + key + '@aggTrade');
-    } catch (e) { _scheduleReconnect(key); return; }
+      url = FWSS + key + '@aggTrade';
+      _socket = new WebSocket(url);
+    } catch (e) { _setStatus('error'); _scheduleReconnect(key); return; }
 
-    _socket.onopen = function () { _attempts = 0; };
+    _socket.onopen = function () {
+      _attempts = 0;
+      _setStatus('live');
+      try { console.log('[LiveFeed] connected:', url); } catch (e) {}
+    };
     _socket.onmessage = function (e) {
       let msg;
       try { msg = JSON.parse(e.data); } catch (err) { return; }
@@ -167,12 +188,15 @@ window.VDLiveFeed = (function () {
       if (!d || d.e !== 'aggTrade') return;
       const price = +d.p, qty = +d.q;
       if (!Number.isFinite(price) || !Number.isFinite(qty)) return;
+      if (_status !== 'live') _setStatus('live');
       _pushTrade(price, qty, d.m);
     };
     _socket.onclose = function () {
-      if (_curKey === key) _scheduleReconnect(key);
+      if (_curKey === key) { _setStatus('error'); _scheduleReconnect(key); }
     };
     _socket.onerror = function () {
+      _setStatus('error');
+      try { console.warn('[LiveFeed] ws error:', url); } catch (e) {}
       try { _socket.close(); } catch (e) {}
     };
   }

@@ -5,10 +5,10 @@
    ════════════════════════════════════════════════════════════════════ */
 .vd-lf {
   position: fixed;
-  top: 64px;
+  top: 92px;
   right: 14px;
   width: 268px;
-  max-height: calc(100vh - 88px);
+  max-height: calc(100vh - 112px);
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, rgba(6, 11, 22, 0.92), rgba(2, 7, 14, 0.94));
@@ -39,6 +39,10 @@
   animation: vdLfPulse 1.8s ease-in-out infinite;
   flex: none;
 }
+.vd-lf-dot.st-connecting { background: var(--yellow, #ffc107); box-shadow: 0 0 8px var(--yellow, #ffc107); }
+.vd-lf-dot.st-live       { background: var(--green, #00e5a0); box-shadow: 0 0 8px var(--green, #00e5a0); }
+.vd-lf-dot.st-error      { background: var(--red, #ff3d6b); box-shadow: 0 0 8px var(--red, #ff3d6b); animation: none; }
+.vd-lf-dot.st-idle       { background: var(--text3, #3a6080); box-shadow: none; animation: none; }
 @keyframes vdLfPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 .vd-lf-title {
   font-size: 10.5px;
@@ -136,7 +140,7 @@
 
 /* ── Responsive: dar ekranda alta toplanabilir ──────────────────────── */
 @media (max-width: 1280px) {
-  .vd-lf { width: 232px; top: 60px; }
+  .vd-lf { width: 232px; top: 90px; }
 }
 @media (max-width: 1024px) {
   /* Sağ panel mevcut içeriği sıkıştırmasın → mobilde alta collapsible bar */
