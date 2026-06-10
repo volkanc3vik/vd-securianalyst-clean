@@ -45,6 +45,14 @@ window.VDAITerminal = (function () {
       if (p.oi)   L.push('Open Interest: ' + p.oi.f);
       if (p.fund) L.push('Funding: ' + p.fund.f + (p.fund.rate != null ? ' (' + p.fund.rate + '%)' : ''));
       if (p.liq)  L.push('Likidasyon riski: ' + p.liq.f);
+      if (p.liq24h && p.liq24h.total24h > 0) {
+        const M = function (v) { return v >= 1e9 ? (v/1e9).toFixed(2)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : (v/1e3).toFixed(0)+'K'; };
+        L.push('Likidasyon 24s: $' + M(p.liq24h.total24h) + ' (Long $' + M(p.liq24h.long24h||0) + ' / Short $' + M(p.liq24h.short24h||0) + ')');
+      }
+      if (p.smart && p.smart.topLong != null)
+        L.push('Pozisyonlanma: top trader long %' + p.smart.topLong + ' vs retail long %' + p.smart.retailLong + (p.smart.divergence ? ' (AYRIŞMA)' : ''));
+      if (p.taker && p.taker.buyPct != null)
+        L.push('Borsa-geneli taker buy: %' + p.taker.buyPct);
       const ti = (window.TIState && window.TIState.get) ? window.TIState.get() : {};
       if (ti.regime && ti.regime.code) L.push('Piyasa rejimi: ' + ti.regime.code + (ti.regime.label ? ' (' + ti.regime.label + ')' : ''));
       if (ti.mmBias && ti.mmBias.headline) L.push('MM yönelimi: ' + ti.mmBias.headline);
