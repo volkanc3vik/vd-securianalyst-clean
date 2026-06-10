@@ -6,6 +6,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.FuturesPanel = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   let _mount = null;
   let _unsubState = null;
@@ -19,22 +20,22 @@ window.FuturesPanel = (() => {
     _mount.innerHTML = `
       <div class="fp-container">
         <div class="fp-header">
-          <span class="fp-title">📊 FUTURES İŞLEM TAKİBİ</span>
-          <span class="fp-count zero" id="fpCount">0 AKTİF</span>
+          <span class="fp-title">📊 ${_t('fut.panelTitle',null,'FUTURES İŞLEM TAKİBİ')}</span>
+          <span class="fp-count zero" id="fpCount">0 ${_t('fut.active',null,'AKTİF')}</span>
           <span class="fp-balance">
-            Bakiye:
+            ${_t('fut.balance',null,'Bakiye')}:
             <span class="fp-balance-view" id="fpBalanceView">
               <b id="fpBalance">$0.00</b>
-              <button class="fp-balance-edit" id="fpBalanceEdit" title="Bakiyeyi düzenle" aria-label="Bakiyeyi düzenle">✎</button>
+              <button class="fp-balance-edit" id="fpBalanceEdit" title="${_t('fut.editBalance',null,'Bakiyeyi düzenle')}" aria-label="${_t('fut.editBalance',null,'Bakiyeyi düzenle')}">✎</button>
             </span>
             <span class="fp-balance-edit-wrap" id="fpBalanceEditWrap" style="display:none">
               <span class="fp-balance-prefix">$</span>
               <input type="number" inputmode="decimal" step="0.01" min="0" class="fp-balance-input" id="fpBalanceInput">
-              <button class="fp-balance-ok" id="fpBalanceOk" title="Kaydet">✓</button>
-              <button class="fp-balance-cancel" id="fpBalanceCancel" title="Vazgeç">×</button>
+              <button class="fp-balance-ok" id="fpBalanceOk" title="${_t('fut.save',null,'Kaydet')}">✓</button>
+              <button class="fp-balance-cancel" id="fpBalanceCancel" title="${_t('fut.cancel',null,'Vazgeç')}">×</button>
             </span>
           </span>
-          <button class="fp-btn-open" id="fpOpenBtn">+ Manuel Pozisyon Ekle</button>
+          <button class="fp-btn-open" id="fpOpenBtn">+ ${_t('fut.addManual',null,'Manuel Pozisyon Ekle')}</button>
         </div>
         <div id="fpList"></div>
       </div>
@@ -82,7 +83,7 @@ window.FuturesPanel = (() => {
       if (!ok) {
         // setBalance reddetti — büyük olasılıkla kullanılan margin'in altına düşürüldü
         input.classList.add('error');
-        _flashTooltip(input, 'Bakiye, aktif pozisyon marginin altına düşemez');
+        _flashTooltip(input, _t('fut.balanceTip',null,'Bakiye, aktif pozisyon marginin altına düşemez'));
         return;
       }
       cancelEdit();
@@ -124,7 +125,7 @@ window.FuturesPanel = (() => {
     const countEl   = _mount.querySelector('#fpCount');
     const balanceEl = _mount.querySelector('#fpBalance');
     if (countEl) {
-      countEl.textContent = positions.length + ' AKTİF';
+      countEl.textContent = positions.length + ' ' + _t('fut.active',null,'AKTİF');
       countEl.classList.toggle('zero', positions.length === 0);
     }
     if (balanceEl) {
@@ -144,8 +145,8 @@ window.FuturesPanel = (() => {
       list.innerHTML = `
         <div class="fp-empty">
           <div class="fp-empty-icon">📊</div>
-          <div class="fp-empty-title">Aktif işlem yok</div>
-          <div class="fp-empty-sub">Yukarıdaki <b style="color:var(--cyan)">+ Manuel Pozisyon Ekle</b> butonuna veya analiz kartındaki <b style="color:var(--cyan)">⚡ Pozisyon Ekle</b> butonuna bas.</div>
+          <div class="fp-empty-title">${_t('fut.emptyTitle',null,'Aktif işlem yok')}</div>
+          <div class="fp-empty-sub">${_t('fut.emptySub',null,'Yukarıdaki <b style="color:var(--cyan)">+ Manuel Pozisyon Ekle</b> butonuna veya analiz kartındaki <b style="color:var(--cyan)">⚡ Pozisyon Ekle</b> butonuna bas.')}</div>
         </div>
       `;
       return;
@@ -169,7 +170,7 @@ window.FuturesPanel = (() => {
     const p = window.FuturesState.getPositionById(id);
     if (!p) return;
     const pnlStr = (p.pnl >= 0 ? '+' : '') + (+p.pnl || 0).toFixed(2);
-    if (!confirm(`${p.sym} ${p.dir} işlemini kapatmak istiyor musun?\nGüncel PNL: $${pnlStr}`)) return;
+    if (!confirm(_t('fut.confirmClose',{sym:p.sym,dir:p.dir,pnl:pnlStr},p.sym+' '+p.dir+' işlemini kapatmak istiyor musun?\nGüncel PNL: $'+pnlStr))) return;
     window.FuturesController.closePosition(id, p.markPrice, 'MANUAL');
   }
 

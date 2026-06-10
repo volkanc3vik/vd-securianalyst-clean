@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.FuturesCard = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   // Format yardımcısı
   function _fmt(v, d = 2) {
@@ -45,30 +46,30 @@ window.FuturesCard = (() => {
     const FL = window.FuturesLiquidation;
     const liqDistPct = distLiqPct;
 
-    if (liqDistPct < 1.5)  return { cls: 'liq', text: '⚠ LİKİDASYON YAKIN' };
+    if (liqDistPct < 1.5)  return { cls: 'liq', text: '⚠ '+_t('fut.liqNear',null,'LİKİDASYON YAKIN') };
     if (p.slHit)           return { cls: 'sl',  text: '🛑 STOP HIT' };
     if (p.tp3Hit)          return { cls: 'tp',  text: '🏆 TP3 HIT' };
     if (p.tp2Hit)          return { cls: 'tp',  text: '🏆 TP2 HIT' };
     if (p.tp1Hit)          return { cls: 'tp',  text: '🎯 TP1 HIT' };
-    if (liqDistPct < 5)    return { cls: 'sl',  text: '⚠ LİK. BÖLGESİ' };
+    if (liqDistPct < 5)    return { cls: 'sl',  text: '⚠ '+_t('fut.liqZone',null,'LİK. BÖLGESİ') };
     return null;
   }
 
   // Zone'a göre alt mesaj
   function _statusMsg(zone, dir, p) {
-    if (p.slHit)  return '🛑 Stop seviyesi geçildi.';
-    if (p.tp3Hit) return '🏆 TP3 hedefine ulaşıldı — kâr kilitle.';
-    if (p.tp2Hit) return '🎯 TP2 hedefine ulaşıldı — TP3 izle.';
-    if (p.tp1Hit) return '🎯 TP1 hedefine ulaşıldı — TP2 izle.';
+    if (p.slHit)  return '🛑 '+_t('fut.stStopHit',null,'Stop seviyesi geçildi.');
+    if (p.tp3Hit) return '🏆 '+_t('fut.stTp3',null,'TP3 hedefine ulaşıldı — kâr kilitle.');
+    if (p.tp2Hit) return '🎯 '+_t('fut.stTp2',null,'TP2 hedefine ulaşıldı — TP3 izle.');
+    if (p.tp1Hit) return '🎯 '+_t('fut.stTp1',null,'TP1 hedefine ulaşıldı — TP2 izle.');
     switch (zone) {
-      case 'STOP':       return '⚠ Stop bölgesi — risk yüksek.';
-      case 'PRE_ENTRY':  return '⚡ Referans bölgesinde — gözlem.';
-      case 'IN_PROFIT':  return '📈 Kâr bölgesinde — momentum izle.';
-      case 'PROFIT_1':   return '🎯 TP1 bölgesinde.';
-      case 'PROFIT_2':   return '🏆 TP2 bölgesinde.';
-      case 'PROFIT_3':   return '🚀 TP3 bölgesinde — hedef yakın.';
-      case 'BEYOND':     return '🚀 TP hedefini geçti.';
-      default:           return '⚡ Pozisyon aktif.';
+      case 'STOP':       return '⚠ '+_t('fut.zStop',null,'Stop bölgesi — risk yüksek.');
+      case 'PRE_ENTRY':  return '⚡ '+_t('fut.zPre',null,'Referans bölgesinde — gözlem.');
+      case 'IN_PROFIT':  return '📈 '+_t('fut.zProfit',null,'Kâr bölgesinde — momentum izle.');
+      case 'PROFIT_1':   return '🎯 '+_t('fut.zTp1',null,'TP1 bölgesinde.');
+      case 'PROFIT_2':   return '🏆 '+_t('fut.zTp2',null,'TP2 bölgesinde.');
+      case 'PROFIT_3':   return '🚀 '+_t('fut.zTp3',null,'TP3 bölgesinde — hedef yakın.');
+      case 'BEYOND':     return '🚀 '+_t('fut.zBeyond',null,'TP hedefini geçti.');
+      default:           return '⚡ '+_t('fut.zActive',null,'Pozisyon aktif.');
     }
   }
 
@@ -124,8 +125,8 @@ window.FuturesCard = (() => {
         <div class="fp-status">
           <div class="fp-status-msg">${_statusMsg(pos.zone, p.dir, p)}</div>
           <div class="fp-status-legend">
-            <span><i style="background:rgba(255,61,107,.5)"></i>SL Bölgesi</span>
-            <span><i style="background:rgba(0,229,160,.5)"></i>Kâr Bölgesi</span>
+            <span><i style="background:rgba(255,61,107,.5)"></i>${_t('fut.slZone',null,'SL Bölgesi')}</span>
+            <span><i style="background:rgba(0,229,160,.5)"></i>${_t('fut.profitZone',null,'Kâr Bölgesi')}</span>
           </div>
         </div>
       </div>
@@ -147,7 +148,7 @@ window.FuturesCard = (() => {
         <span class="fp-pill ${dirCls}">${dirIcon}</span>
         ${warnHtml}
         <span class="fp-duration" data-duration="${p.openTs}">⏱ ${_duration(p.openTs)}</span>
-        <button class="fp-btn-close" data-close-id="${p.id}">Kapat ✕</button>
+        <button class="fp-btn-close" data-close-id="${p.id}">${_t('fut.close',null,'Kapat')} ✕</button>
       </div>
     `;
   }
@@ -200,7 +201,7 @@ window.FuturesCard = (() => {
         </div>
 
         <div class="fp-cell">
-          <div class="fp-cell-label">MİKTAR</div>
+          <div class="fp-cell-label">${_t('fut.qty',null,'MİKTAR')}</div>
           <div class="fp-cell-val muted">${_fmtQty(p.qty, p.sym)}</div>
         </div>
 

@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.FuturesModal = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   let _root = null;
   let _abortCtrl = null;
@@ -83,13 +84,13 @@ window.FuturesModal = (() => {
 
       const liqEl = _root.querySelector('#fmLiq');
       if (liqEl) {
-        liqEl.innerHTML = `⚡ Likidasyon (${_currentMode}): ` +
+        liqEl.innerHTML = '⚡ '+_t('fut.liqLabel',{m:_currentMode},'Likidasyon ('+_currentMode+'): ') +
           `<b style="color:var(--green)">LONG</b> ~$${_fmt(liqLong, 4)} ` +
           ` &nbsp;·&nbsp; ` +
           `<b style="color:var(--red)">SHORT</b> ~$${_fmt(liqShort, 4)}`;
       }
     } else {
-      _setText('#fmLiq', '⚡ Likidasyon hesaplanıyor...');
+      _setText('#fmLiq', '⚡ '+_t('fut.liqCalc',null,'Likidasyon hesaplanıyor...'));
     }
 
     // Kullanılabilir bakiye — edit modu açık değilse yenile
@@ -124,7 +125,7 @@ window.FuturesModal = (() => {
     if (cta) {
       cta.classList.toggle('long',  _currentDir === 'LONG');
       cta.classList.toggle('short', _currentDir === 'SHORT');
-      cta.textContent = _currentDir === 'LONG' ? '▲ LONG İŞLEMİ AÇ' : '▼ SHORT İŞLEMİ AÇ';
+      cta.textContent = _currentDir === 'LONG' ? '▲ '+_t('fut.openLong',null,'LONG İŞLEMİ AÇ') : '▼ '+_t('fut.openShort',null,'SHORT İŞLEMİ AÇ');
     }
     _recalc();
   }
@@ -180,7 +181,7 @@ window.FuturesModal = (() => {
 
         <div class="fm-head">
           <span class="fm-head-sym">${_currentSym.replace('USDT', '')}/USDT</span>
-          <button class="fm-x" id="fmClose" aria-label="Kapat">✕</button>
+          <button class="fm-x" id="fmClose" aria-label="${_t('fut.close',null,'Kapat')}">✕</button>
         </div>
 
         <!-- LONG / SHORT Toggle -->
@@ -194,16 +195,16 @@ window.FuturesModal = (() => {
           <button class="fm-mode-btn ${_currentMode === 'CROSS'    ? 'active' : ''}" data-mode="CROSS">CROSS</button>
           <button class="fm-mode-btn ${_currentMode === 'ISOLATED' ? 'active' : ''}" data-mode="ISOLATED">ISOLATED</button>
           <span class="fm-balance-disp">
-            Bakiye:
+            ${_t('fut.balance',null,'Bakiye')}:
             <span class="fm-balance-view" id="fmBalanceView">
               <b id="fmAvail">$0.00</b>
-              <button class="fm-balance-edit" id="fmBalanceEdit" type="button" title="Bakiyeyi düzenle" aria-label="Bakiyeyi düzenle">✎</button>
+              <button class="fm-balance-edit" id="fmBalanceEdit" type="button" title="${_t('fut.editBalance',null,'Bakiyeyi düzenle')}" aria-label="${_t('fut.editBalance',null,'Bakiyeyi düzenle')}">✎</button>
             </span>
             <span class="fm-balance-edit-wrap" id="fmBalanceEditWrap" style="display:none">
               <span class="fm-balance-prefix">$</span>
               <input type="number" inputmode="decimal" step="0.01" min="0" class="fm-balance-input" id="fmBalanceInput">
-              <button class="fm-balance-ok" id="fmBalanceOk" type="button" title="Kaydet">✓</button>
-              <button class="fm-balance-cancel" id="fmBalanceCancel" type="button" title="Vazgeç">×</button>
+              <button class="fm-balance-ok" id="fmBalanceOk" type="button" title="${_t('fut.save',null,'Kaydet')}">✓</button>
+              <button class="fm-balance-cancel" id="fmBalanceCancel" type="button" title="${_t('fut.cancel',null,'Vazgeç')}">×</button>
             </span>
           </span>
         </div>
@@ -212,12 +213,12 @@ window.FuturesModal = (() => {
         <div class="fm-form">
 
           <div class="fm-field">
-            <label class="fm-field-label">GİRİŞ FİYATI</label>
+            <label class="fm-field-label">${_t('fut.entryPrice',null,'GİRİŞ FİYATI')}</label>
             <input class="fm-input" id="fmEntry" type="number" step="any" placeholder="0.00" value="${prefill.price || ''}">
           </div>
 
           <div class="fm-field">
-            <label class="fm-field-label">KALDIRAÇ</label>
+            <label class="fm-field-label">${_t('fut.leverage',null,'KALDIRAÇ')}</label>
             <input class="fm-input" id="fmLev" type="number" step="1" min="1" max="125" value="10">
           </div>
 
@@ -227,42 +228,42 @@ window.FuturesModal = (() => {
           </div>
 
           <div class="fm-field">
-            <label class="fm-field-label">POZİSYON (OTOMATİK)</label>
+            <label class="fm-field-label">${_t('fut.positionAuto',null,'POZİSYON (OTOMATİK)')}</label>
             <div class="fm-readout" id="fmPos">$1,000.00</div>
           </div>
 
           <div class="fm-field">
-            <label class="fm-field-label">MİKTAR (OTOMATİK)</label>
+            <label class="fm-field-label">${_t('fut.qtyAuto',null,'MİKTAR (OTOMATİK)')}</label>
             <div class="fm-readout" id="fmQty">—</div>
           </div>
 
           <div class="fm-field">
             <label class="fm-field-label">STOP LOSS</label>
-            <input class="fm-input sl" id="fmSl" type="number" step="any" placeholder="opsiyonel" value="${prefill.sl || ''}">
+            <input class="fm-input sl" id="fmSl" type="number" step="any" placeholder="${_t('fut.optional',null,'opsiyonel')}" value="${prefill.sl || ''}">
           </div>
 
           <div class="fm-field">
             <label class="fm-field-label">TAKE PROFIT 1</label>
-            <input class="fm-input tp1" id="fmTp1" type="number" step="any" placeholder="opsiyonel" value="${prefill.tp1 || ''}">
+            <input class="fm-input tp1" id="fmTp1" type="number" step="any" placeholder="${_t('fut.optional',null,'opsiyonel')}" value="${prefill.tp1 || ''}">
           </div>
 
           <div class="fm-field">
             <label class="fm-field-label">TAKE PROFIT 2</label>
-            <input class="fm-input tp2" id="fmTp2" type="number" step="any" placeholder="opsiyonel" value="${prefill.tp2 || ''}">
+            <input class="fm-input tp2" id="fmTp2" type="number" step="any" placeholder="${_t('fut.optional',null,'opsiyonel')}" value="${prefill.tp2 || ''}">
           </div>
 
           <div class="fm-field">
             <label class="fm-field-label">TAKE PROFIT 3</label>
-            <input class="fm-input tp3" id="fmTp3" type="number" step="any" placeholder="opsiyonel" value="${prefill.tp3 || ''}">
+            <input class="fm-input tp3" id="fmTp3" type="number" step="any" placeholder="${_t('fut.optional',null,'opsiyonel')}" value="${prefill.tp3 || ''}">
           </div>
 
         </div>
 
-        <div class="fm-liq" id="fmLiq">⚡ Likidasyon hesaplanıyor...</div>
+        <div class="fm-liq" id="fmLiq">⚡ ${_t('fut.liqCalc',null,'Likidasyon hesaplanıyor...')}</div>
         <div class="fm-error" id="fmError" style="display:none"></div>
 
         <button class="fm-cta ${_currentDir === 'LONG' ? 'long' : 'short'}" id="fmCta">
-          ${_currentDir === 'LONG' ? '▲ LONG İŞLEMİ AÇ' : '▼ SHORT İŞLEMİ AÇ'}
+          ${_currentDir === 'LONG' ? '▲ '+_t('fut.openLong',null,'LONG İŞLEMİ AÇ') : '▼ '+_t('fut.openShort',null,'SHORT İŞLEMİ AÇ')}
         </button>
       </div>
     `;
@@ -344,7 +345,7 @@ window.FuturesModal = (() => {
       const ok = window.FuturesState.setBalance(v);
       if (!ok) {
         input.classList.add('error');
-        _flashModalTooltip(input, 'Bakiye, aktif pozisyon marginin altına düşemez');
+        _flashModalTooltip(input, _t('fut.balanceTip',null,'Bakiye, aktif pozisyon marginin altına düşemez'));
         return;
       }
       cancelEdit();
@@ -385,9 +386,9 @@ window.FuturesModal = (() => {
     const tp2    = _val('fmTp2');
     const tp3    = _val('fmTp3');
 
-    if (!entry || entry <= 0)   return _showError('Giriş fiyatı zorunlu.');
-    if (!lev   || lev <= 0)     return _showError('Kaldıraç zorunlu (1-125).');
-    if (!margin || margin <= 0) return _showError('Margin zorunlu.');
+    if (!entry || entry <= 0)   return _showError(_t('fut.errEntry',null,'Giriş fiyatı zorunlu.'));
+    if (!lev   || lev <= 0)     return _showError(_t('fut.errLev',null,'Kaldıraç zorunlu (1-125).'));
+    if (!margin || margin <= 0) return _showError(_t('fut.errMargin',null,'Margin zorunlu.'));
 
     const result = window.FuturesController.openPosition({
       sym:       _currentSym,
@@ -400,7 +401,7 @@ window.FuturesModal = (() => {
     });
 
     if (!result.ok) {
-      _showError(result.error || 'Pozisyon oluşturulamadı.');
+      _showError(result.error || _t('fut.errCreate',null,'Pozisyon oluşturulamadı.'));
       return;
     }
 
