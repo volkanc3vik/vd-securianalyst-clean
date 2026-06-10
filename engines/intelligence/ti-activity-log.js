@@ -15,6 +15,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.TIActivityLog = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   /**
    * Önceki ve yeni snapshot arasındaki anlamlı değişimleri tespit eder.
@@ -32,7 +33,7 @@ window.TIActivityLog = (() => {
         code: 'SCAN_COMPLETE',
         severity: 'info',
         category: 'system',
-        msg: `Tarama tamamlandı — ${next.scanStats.total} coin değerlendirildi.`,
+        msg: _t('tia.scanDone',{n:next.scanStats.total},'Tarama tamamlandı — '+next.scanStats.total+' coin değerlendirildi.'),
       });
     }
 
@@ -42,7 +43,7 @@ window.TIActivityLog = (() => {
         code: 'REGIME_SHIFT',
         severity: 'high',
         category: 'regime',
-        msg: `Piyasa rejimi değişti: ${prev.regime.label} → ${next.regime.label}`,
+        msg: _t('tia.regimeShift',{a:prev.regime.label,b:next.regime.label},'Piyasa rejimi değişti: '+prev.regime.label+' → '+next.regime.label),
       });
     }
 
@@ -54,7 +55,7 @@ window.TIActivityLog = (() => {
         code: 'VOL_CONDITION_CHANGE',
         severity: 'med',
         category: 'volatility',
-        msg: `Volatilite kondisyonu: ${_volTR(prevVol)} → ${_volTR(nextVol)}`,
+        msg: _t('tia.volShift',{a:_volTR(prevVol),b:_volTR(nextVol)},'Volatilite kondisyonu: '+_volTR(prevVol)+' → '+_volTR(nextVol)),
       });
     }
 
@@ -67,14 +68,14 @@ window.TIActivityLog = (() => {
           code: 'SETUP_LEADER_CHANGE',
           severity: 'med',
           category: 'setup',
-          msg: `Lider setup değişti: ${prevSetup} → ${nextSetup} (${next.bestSetup.score})`,
+          msg: _t('tia.leaderChange',{a:prevSetup,b:nextSetup,s:next.bestSetup.score},'Lider setup değişti: '+prevSetup+' → '+nextSetup+' ('+next.bestSetup.score+')'),
         });
       } else {
         events.push({
           code: 'SETUP_LEADER_NEW',
           severity: 'info',
           category: 'setup',
-          msg: `Yeni lider setup: ${nextSetup} ${next.bestSetup.dir} · skor ${next.bestSetup.score}`,
+          msg: _t('tia.leaderNew',{sym:nextSetup,dir:next.bestSetup.dir,s:next.bestSetup.score},'Yeni lider setup: '+nextSetup+' '+next.bestSetup.dir+' · skor '+next.bestSetup.score),
         });
       }
     }
@@ -99,7 +100,7 @@ window.TIActivityLog = (() => {
         code: 'BTC_DIR_CHANGE',
         severity: 'high',
         category: 'btc',
-        msg: `BTC yön değişimi: ${_dirTR(prev.btc.dir)} → ${_dirTR(next.btc.dir)}`,
+        msg: _t('tia.btcDir',{a:_dirTR(prev.btc.dir),b:_dirTR(next.btc.dir)},'BTC yön değişimi: '+_dirTR(prev.btc.dir)+' → '+_dirTR(next.btc.dir)),
       });
     }
     if (prev?.btc?.momentum && next.btc?.momentum && prev.btc.momentum !== next.btc.momentum) {
@@ -126,7 +127,7 @@ window.TIActivityLog = (() => {
         code: 'ETH_DIR_CHANGE',
         severity: 'med',
         category: 'eth',
-        msg: `ETH yön değişimi: ${_dirTR(prev.eth.dir)} → ${_dirTR(next.eth.dir)}`,
+        msg: _t('tia.ethDir',{a:_dirTR(prev.eth.dir),b:_dirTR(next.eth.dir)},'ETH yön değişimi: '+_dirTR(prev.eth.dir)+' → '+_dirTR(next.eth.dir)),
       });
     }
 
@@ -135,19 +136,19 @@ window.TIActivityLog = (() => {
 
   function _volTR(v) {
     switch (v) {
-      case 'SQUEEZED':  return 'Sıkışık';
-      case 'HEALTHY':   return 'Sağlıklı';
-      case 'ELEVATED':  return 'Yüksek';
-      case 'EXTREME':   return 'Aşırı';
+      case 'SQUEEZED':  return _t('tia.volSqueezed',null,'Sıkışık');
+      case 'HEALTHY':   return _t('tia.volHealthy',null,'Sağlıklı');
+      case 'ELEVATED':  return _t('tia.volElevated',null,'Yüksek');
+      case 'EXTREME':   return _t('tia.volExtreme',null,'Aşırı');
       default:          return v;
     }
   }
 
   function _dirTR(d) {
     switch (d) {
-      case 'UP':   return 'Yükseliş';
-      case 'DOWN': return 'Düşüş';
-      case 'FLAT': return 'Yatay';
+      case 'UP':   return _t('tia.dirUp',null,'Yükseliş');
+      case 'DOWN': return _t('tia.dirDown',null,'Düşüş');
+      case 'FLAT': return _t('tia.dirFlat',null,'Yatay');
       default:     return d;
     }
   }
@@ -160,7 +161,7 @@ window.TIActivityLog = (() => {
       code: 'TI_BOOTSTRAP',
       severity: 'info',
       category: 'system',
-      msg: 'Piyasa istihbarat motoru hazır.',
+      msg: _t('tia.ready',null,'Piyasa istihbarat motoru hazır.'),
     };
   }
 

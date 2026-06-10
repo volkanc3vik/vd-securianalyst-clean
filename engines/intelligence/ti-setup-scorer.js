@@ -10,6 +10,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.TISetupScorer = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   const _num = (v) => Number.isFinite(+v) ? +v : 0;
 
@@ -266,13 +267,13 @@ window.TISetupScorer = (() => {
   function _tierFor(score, factors) {
     if (score >= 90) {
       const strong = factors.filter(f => !f.negative && f.available && f.score >= 8).length;
-      if (strong >= 3) return { code: 'ELITE',  label: 'ELİTE SETUP',  color: 'purple' };
-      return                  { code: 'STRONG', label: 'GÜÇLÜ SETUP',  color: 'cyan' };
+      if (strong >= 3) return { code: 'ELITE',  label: _t('tis.tierElite',null,'ELİTE SETUP'),  color: 'purple' };
+      return                  { code: 'STRONG', label: _t('tis.tierStrong',null,'GÜÇLÜ SETUP'),  color: 'cyan' };
     }
-    if (score >= 80) return { code: 'STRONG', label: 'GÜÇLÜ SETUP',     color: 'cyan' };
-    if (score >= 70) return { code: 'VALID',  label: 'GEÇERLİ SETUP',   color: 'green' };
-    if (score >= 60) return { code: 'WEAK',   label: 'ZAYIF SETUP',     color: 'yellow' };
-    return                  { code: 'AVOID',  label: 'KAÇIN',           color: 'red' };
+    if (score >= 80) return { code: 'STRONG', label: _t('tis.tierStrong',null,'GÜÇLÜ SETUP'),     color: 'cyan' };
+    if (score >= 70) return { code: 'VALID',  label: _t('tis.tierValid',null,'GEÇERLİ SETUP'),   color: 'green' };
+    if (score >= 60) return { code: 'WEAK',   label: _t('tis.tierWeak',null,'ZAYIF SETUP'),     color: 'yellow' };
+    return                  { code: 'AVOID',  label: _t('tis.tierAvoid',null,'KAÇIN'),           color: 'red' };
   }
 
   /**
@@ -357,12 +358,12 @@ window.TISetupScorer = (() => {
     else if (phrases.length === 2) combined = phrases[0] + ' + ' + phrases[1];
     else combined = phrases[0] + ', ' + phrases[1] + ' + ' + phrases[2];
 
-    let sentence = `${sym} ${combined} kombinasyonunu sergiliyor.`;
+    let sentence = _t('tis.rationale',{sym:sym,c:combined},sym+' '+combined+' kombinasyonunu sergiliyor.');
 
     // FBR uyarısı (negatif faktör)
     const fbr = factors.find(f => f.code === 'FBR');
     if (fbr?.available && fbr.score >= 6) {
-      sentence += ' Ancak giriş mumunda fakeout işaretleri mevcut — dikkat.';
+      sentence += ' ' + _t('tis.fbrWarn',null,'Ancak giriş mumunda fakeout işaretleri mevcut — dikkat.');
     }
 
     return sentence;
@@ -370,18 +371,18 @@ window.TISetupScorer = (() => {
 
   function _shortPhrase(code) {
     switch (code) {
-      case 'STRUCTURE':  return 'piyasa yapısı hizalaması';
-      case 'LIQUIDITY':  return 'likidite sweep konfirmasyonu';
-      case 'FUNDING':    return 'sağlıklı funding';
-      case 'OI':         return 'OI desteği';
-      case 'LIQS':       return 'likidasyon akışı lehte';
-      case 'VOLUME':     return 'hacim genişlemesi';
-      case 'VOLATILITY': return 'sağlıklı volatilite';
-      case 'MOMENTUM':   return 'güçlü momentum';
-      case 'HTF':        return 'HTF hizalama';
-      case 'SMC':        return 'SMC konfluans';
-      case 'TREND':      return 'trend hizalama';
-      case 'RR':         return 'premium R/R';
+      case 'STRUCTURE':  return _t('tis.fStructure',null,'piyasa yapısı hizalaması');
+      case 'LIQUIDITY':  return _t('tis.fLiquidity',null,'likidite sweep konfirmasyonu');
+      case 'FUNDING':    return _t('tis.fFunding',null,'sağlıklı funding');
+      case 'OI':         return _t('tis.fOi',null,'OI desteği');
+      case 'LIQS':       return _t('tis.fLiqs',null,'likidasyon akışı lehte');
+      case 'VOLUME':     return _t('tis.fVolume',null,'hacim genişlemesi');
+      case 'VOLATILITY': return _t('tis.fVolatility',null,'sağlıklı volatilite');
+      case 'MOMENTUM':   return _t('tis.fMomentum',null,'güçlü momentum');
+      case 'HTF':        return _t('tis.fHtf',null,'HTF hizalama');
+      case 'SMC':        return _t('tis.fSmc',null,'SMC konfluans');
+      case 'TREND':      return _t('tis.fTrend',null,'trend hizalama');
+      case 'RR':         return _t('tis.fRr',null,'premium R/R');
       default:           return null;
     }
   }

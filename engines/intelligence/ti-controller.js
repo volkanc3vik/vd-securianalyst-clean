@@ -7,6 +7,7 @@
 // ════════════════════════════════════════════════════════════════════
 window.TIController = (() => {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
   let _listenerAttached = false;
   let _lastScanResults  = null;
@@ -53,11 +54,11 @@ window.TIController = (() => {
 
     if (regime?.code === 'LIQUIDITY_TRAP') {
       warnings.push({ code:'LIQ_TRAP', severity:'high',
-        msg:'Likidite tuzağı koşulları — kırılımlar güvenilmez.' });
+        msg:_t('tiw.liqTrap',null,'Likidite tuzağı koşulları — kırılımlar güvenilmez.') });
     }
     if (regime?.code === 'CHOPPY' && regime.diagnostics?.vol?.quality === 'ELEVATED') {
       warnings.push({ code:'CHOP_VOL', severity:'med',
-        msg:'Yatay piyasada yüksek volatilite — sabır gerekli.' });
+        msg:_t('tiw.chopVol',null,'Yatay piyasada yüksek volatilite — sabır gerekli.') });
     }
 
     if (mmBias?.headline) {
@@ -71,12 +72,12 @@ window.TIController = (() => {
       const fbr = bestSetup.factors.find(f => f.code === 'FBR');
       if (fbr?.available && fbr.score >= 7) {
         warnings.push({ code:'BS_FBR', severity:'high',
-          msg:`${bestSetup.sym}: giriş mumunda yüksek fakeout riski.` });
+          msg:_t('tiw.fbr',{sym:bestSetup.sym},bestSetup.sym+': giriş mumunda yüksek fakeout riski.') });
       }
       const fund = bestSetup.factors.find(f => f.code === 'FUNDING');
       if (fund?.available && fund.score <= 3) {
         warnings.push({ code:'BS_FUNDING', severity:'med',
-          msg:`${bestSetup.sym}: funding stres altında — geç giriş riski.` });
+          msg:_t('tiw.funding',{sym:bestSetup.sym},bestSetup.sym+': funding stres altında — geç giriş riski.') });
       }
     }
 
@@ -254,10 +255,10 @@ window.TIController = (() => {
     const vol = regime?.diagnostics?.vol;
     if (!vol) return null;
     const map = {
-      'SQUEEZED': { label: 'Volatilite sıkışmış',    tone: 'Genişleme bekleniyor. Kırılım yakın olabilir.' },
-      'HEALTHY':  { label: 'Sağlıklı volatilite',    tone: 'Koşullar yapılandırılmış işlemler için uygun.' },
-      'ELEVATED': { label: 'Yüksek volatilite',      tone: 'Daha geniş stoplar gerekli; pozisyon küçült.' },
-      'EXTREME':  { label: 'Aşırı volatilite',       tone: 'El sürme bölgesi; gürültü çok yüksek.' },
+      'SQUEEZED': { label: _t('tiv.sqLabel',null,'Volatilite sıkışmış'), tone: _t('tiv.sqTone',null,'Genişleme bekleniyor. Kırılım yakın olabilir.') },
+      'HEALTHY':  { label: _t('tiv.hlLabel',null,'Sağlıklı volatilite'), tone: _t('tiv.hlTone',null,'Koşullar yapılandırılmış işlemler için uygun.') },
+      'ELEVATED': { label: _t('tiv.elLabel',null,'Yüksek volatilite'), tone: _t('tiv.elTone',null,'Daha geniş stoplar gerekli; pozisyon küçült.') },
+      'EXTREME':  { label: _t('tiv.exLabel',null,'Aşırı volatilite'), tone: _t('tiv.exTone',null,'El sürme bölgesi; gürültü çok yüksek.') },
       'UNKNOWN':  null,
     };
     return map[vol.quality] || null;
