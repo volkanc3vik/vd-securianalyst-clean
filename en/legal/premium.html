@@ -37,15 +37,15 @@
 
     <!-- 2. PRICING CARDS -->
     <section>
-      <p class="pr-access-note">◆ One plan, full <strong>Elite access</strong> — weekly.</p>
+      <p class="pr-access-note" id="prAccessNote">◆ One plan, full <strong>Elite access</strong> — weekly.</p>
       <div style="display:flex;justify-content:center">
 
         <!-- WEEKLY (Elite) -->
         <div class="pr-card pr-featured" style="max-width:400px;width:100%">
-          <div class="pr-badge">★ ELITE PASS</div>
-          <div class="pr-plan">Elite — Weekly</div>
-          <div class="pr-price"><span class="pr-price-cur">₺</span>7.500</div>
-          <div class="pr-duration">7 days of full Elite access</div>
+          <div class="pr-badge" id="prBadge">★ ELITE PASS</div>
+          <div class="pr-plan" id="prPlanName">Elite — Weekly</div>
+          <div class="pr-price"><span class="pr-price-cur">₺</span><span id="prPriceVal">4.000</span> <span id="prPriceUsd" style="font-size:17px;font-weight:800;color:#00D1FF">/ $90</span></div>
+          <div class="pr-duration" id="prDuration">7 days of full Elite access</div>
           <ul class="pr-feat">
             <li>All-coin access</li>
             <li>Unlocks locked analysis areas</li>
@@ -53,7 +53,7 @@
             <li>Detailed technical view</li>
             <li>Elite price-map areas</li>
           </ul>
-          <button class="pr-cta" onclick="prBuy('Elite — Weekly')">Get Elite Pass</button>
+          <button class="pr-cta" id="prCtaBtn" onclick="prBuy(window._prPlanLabel||'Elite — Weekly')">Get Elite Pass</button>
         </div>
 
       </div>
@@ -135,6 +135,28 @@
        font-size:14px;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 30px rgba(0,212,255,0.18);
        opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:9999;max-width:90vw;text-align:center;">
   </div>
+
+
+  <!-- Access level (read-only) + Premium→Elite upgrade pricing -->
+  <script src="../../modules/access-levels.js"></script>
+  <script>
+    // If a Premium member is detected the card switches to the upgrade variant. Render-only.
+    (function () {
+      'use strict';
+      try {
+        var lvl = (window.VDAccess && window.VDAccess.level) ? window.VDAccess.level() : 'free';
+        if (lvl !== 'premium') return; // free/teaser → standard price; admin → already full access
+        var T = function (id) { return document.getElementById(id); };
+        if (T('prBadge'))      T('prBadge').textContent = '★ PREMIUM → ELITE';
+        if (T('prPlanName'))   T('prPlanName').textContent = 'Elite Upgrade — Weekly';
+        if (T('prPriceVal'))   T('prPriceVal').textContent = '1.500';
+        if (T('prPriceUsd'))   T('prPriceUsd').textContent = '/ $35';
+        if (T('prDuration'))   T('prDuration').textContent = '7 days of full Elite access · upgrade price exclusive to your active Premium membership';
+        if (T('prAccessNote')) T('prAccessNote').innerHTML = '◆ Premium membership detected — the <strong>upgrade-only</strong> price is applied.';
+        window._prPlanLabel = 'Elite Upgrade — Weekly';
+      } catch (e) { /* silent — standard card stays */ }
+    })();
+  </script>
 
   <script>
     (function() {
