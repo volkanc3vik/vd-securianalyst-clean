@@ -13,6 +13,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
   const WEIGHT = { validated: 1, partially_validated: 0.5, not_validated: 0 };
   const MIN_GROUP = 3;
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -68,7 +69,7 @@
 
   // ── UI parçaları ──
   function _statusChip(st) {
-    const m = { validated:['✓ Doğrulandı','ok'], partially_validated:['~ Kısmi','warn'], not_validated:['✗ Başarısız','bad'] };
+    const m = { validated:['✓ '+_t('trk.validated',null,'Doğrulandı'),'ok'], partially_validated:['~ '+_t('trk.partial',null,'Kısmi'),'warn'], not_validated:['✗ '+_t('trk.failed',null,'Başarısız'),'bad'] };
     const x = m[st] || ['—',''];
     return `<span class="tr-st tr-st-${x[1]}">${x[0]}</span>`;
   }
@@ -81,7 +82,7 @@
     const premium = _isPremium();
 
     if (s.total < 1) {
-      host.innerHTML = `<div class="tr-empty">Seçili dönemde incelenmiş analiz bulunamadı. Farklı bir zaman aralığı deneyin.</div>`;
+      host.innerHTML = `<div class="tr-empty">${_t('trk.emptyPeriod',null,'Seçili dönemde incelenmiş analiz bulunamadı. Farklı bir zaman aralığı deneyin.')}</div>`;
       return;
     }
 
@@ -89,8 +90,8 @@
     const gauge = `
       <div class="tr-gauge">
         <div class="tr-gauge-v">%${s.overall}</div>
-        <div class="tr-gauge-l">Genel Başarı Oranı</div>
-        <div class="tr-gauge-sub">${s.total} incelenmiş analiz · son ${_days} gün</div>
+        <div class="tr-gauge-l">${_t('trk.overallRate',null,'Genel Başarı Oranı')}</div>
+        <div class="tr-gauge-sub">${_t('trk.gaugeSub',{n:s.total,d:_days},s.total+' incelenmiş analiz · son '+_days+' gün')}</div>
       </div>`;
 
     if (!premium) {
@@ -98,8 +99,8 @@
         ${gauge}
         <div class="tr-lock">
           <div class="tr-lock-ic">🔒</div>
-          <div class="tr-lock-tx">Doğrulanan / kısmi / başarısız kırılımı, <b>en başarılı coin · timeframe · setup · Smart Money yapıları</b> ve şeffaf analiz geçmişi <b>Premium</b> üyeler içindir.</div>
-          <button class="tr-lock-btn" type="button" data-tr-premium>🚀 Premium'a Geç</button>
+          <div class="tr-lock-tx">${_t('trk.lockText',null,'Doğrulanan / kısmi / başarısız kırılımı, <b>en başarılı coin · timeframe · setup · Smart Money yapıları</b> ve şeffaf analiz geçmişi <b>Premium</b> üyeler içindir.')}</div>
+          <button class="tr-lock-btn" type="button" data-tr-premium>🚀 ${_t('prm.goPremiumRocket',null,"Premium'a Geç").replace('🚀 ','')}</button>
         </div>`;
       return;
     }
@@ -107,31 +108,31 @@
     // Scorecard (premium)
     const scorecard = `
       <div class="tr-score">
-        <div class="tr-sc tr-sc-total"><div class="tr-sc-v">${s.total}</div><div class="tr-sc-l">Toplam Analiz</div></div>
-        <div class="tr-sc ok"><div class="tr-sc-v">${s.validated}</div><div class="tr-sc-l">Doğrulandı</div></div>
-        <div class="tr-sc warn"><div class="tr-sc-v">${s.partial}</div><div class="tr-sc-l">Kısmi</div></div>
-        <div class="tr-sc bad"><div class="tr-sc-v">${s.rejected}</div><div class="tr-sc-l">Başarısız</div></div>
+        <div class="tr-sc tr-sc-total"><div class="tr-sc-v">${s.total}</div><div class="tr-sc-l">${_t('trk.totalAnalyses',null,'Toplam Analiz')}</div></div>
+        <div class="tr-sc ok"><div class="tr-sc-v">${s.validated}</div><div class="tr-sc-l">${_t('trk.validated',null,'Doğrulandı')}</div></div>
+        <div class="tr-sc warn"><div class="tr-sc-v">${s.partial}</div><div class="tr-sc-l">${_t('trk.partial',null,'Kısmi')}</div></div>
+        <div class="tr-sc bad"><div class="tr-sc-v">${s.rejected}</div><div class="tr-sc-l">${_t('trk.failed',null,'Başarısız')}</div></div>
       </div>`;
 
     const cb = s.coin.best ? `${coinOf(s.coin.best.k)} · %${s.coin.best.rate}` : '—';
     const tb = s.tf.best ? `${esc(String(s.tf.best.k).toUpperCase())} · %${s.tf.best.rate}` : '—';
-    const sb = s.setup ? `${esc(s.setup.label)} · %${s.setup.rate}` : 'Yeterli veri yok';
+    const sb = s.setup ? `${esc(s.setup.label)} · %${s.setup.rate}` : _t('trk.noData',null,'Yeterli veri yok');
     const mb = s.smc ? `${esc(s.smc.label)} · %${s.smc.rate}` : (s.setup ? `${esc(s.setup.label)} · %${s.setup.rate}` : '—');
 
     const best = `
-      <div class="tr-sec-ttl">🏆 En Başarılı</div>
+      <div class="tr-sec-ttl">🏆 ${_t('trk.topPerformers',null,'En Başarılı')}</div>
       <div class="tr-best">
-        ${_kv('En başarılı coin', cb, s.coin.best ? `${s.coin.best.n} analiz` : '')}
-        ${_kv('En başarılı timeframe', tb, s.tf.best ? `${s.tf.best.n} analiz` : '')}
-        ${_kv('En başarılı setup', sb, s.setup ? `${s.setup.n} örnek` : '')}
-        ${_kv('Smart Money yapısı', mb, s.smc ? `${s.smc.n} örnek` : '')}
+        ${_kv(_t('trk.bestCoin',null,'En başarılı coin'), cb, s.coin.best ? _t('trk.nAnalyses',{n:s.coin.best.n},s.coin.best.n+' analiz') : '')}
+        ${_kv(_t('trk.bestTf',null,'En başarılı timeframe'), tb, s.tf.best ? _t('trk.nAnalyses',{n:s.tf.best.n},s.tf.best.n+' analiz') : '')}
+        ${_kv(_t('trk.bestSetup',null,'En başarılı setup'), sb, s.setup ? _t('trk.nSamples',{n:s.setup.n},s.setup.n+' örnek') : '')}
+        ${_kv(_t('trk.smcStructure',null,'Smart Money yapısı'), mb, s.smc ? _t('trk.nSamples',{n:s.smc.n},s.smc.n+' örnek') : '')}
       </div>`;
 
     // Şeffaflık — en zayıf + son analizler (başarısızlar dahil)
     const worstCoin = s.coin.worst && s.coin.worst.k !== (s.coin.best && s.coin.best.k)
-      ? `<div class="tr-trans-note">⚖️ Şeffaflık: en düşük coin <b>${coinOf(s.coin.worst.k)} · %${s.coin.worst.rate}</b> (${s.coin.worst.n} analiz)</div>` : '';
+      ? `<div class="tr-trans-note">⚖️ ${_t('trk.transparency',null,'Şeffaflık: en düşük coin')} <b>${coinOf(s.coin.worst.k)} · %${s.coin.worst.rate}</b> (${_t('trk.nAnalyses',{n:s.coin.worst.n},s.coin.worst.n+' analiz')})</div>` : '';
     const recent = `
-      <div class="tr-sec-ttl">📋 Son Analizler <span class="tr-sec-sub">(başarılı + başarısız, şeffaf)</span></div>
+      <div class="tr-sec-ttl">📋 ${_t('trk.recentAnalyses',null,'Son Analizler')} <span class="tr-sec-sub">${_t('trk.recentSub',null,'(başarılı + başarısız, şeffaf)')}</span></div>
       ${worstCoin}
       <div class="tr-recent">
         ${s.recent.map(r => `
@@ -149,12 +150,12 @@
   function _renderFilters() {
     const w = document.getElementById('trFilters'); if (!w) return;
     const opt = (d, lbl) => `<button class="tr-filter${_days === d ? ' active' : ''}" data-days="${d}" type="button">${lbl}</button>`;
-    w.innerHTML = opt(7, 'Son 7 gün') + opt(30, 'Son 30 gün') + opt(90, 'Son 90 gün');
+    w.innerHTML = opt(7, _t('trk.last7',null,'Son 7 gün')) + opt(30, _t('trk.last30',null,'Son 30 gün')) + opt(90, _t('trk.last90',null,'Son 90 gün'));
   }
 
   async function _refresh() {
     const host = document.getElementById('trBody');
-    if (host) host.innerHTML = '<div class="tr-empty">Yükleniyor…</div>';
+    if (host) host.innerHTML = '<div class="tr-empty">'+_t('trk.loading',null,'Yükleniyor…')+'</div>';
     const rev = await _load(_days);
     _render(_compute(rev));
   }
@@ -175,7 +176,7 @@
 
   function init() {
     const lvl = document.getElementById('trAccess');
-    if (lvl) { const a = _access(); const m = { admin:'◈ Admin', premium:'◈ Premium', teaser:'◈ Önizleme', free:'◈ Free' }; lvl.textContent = m[a] || m.free; lvl.className = 'tr-access tr-access-' + a; }
+    if (lvl) { const a = _access(); const m = { admin:'◈ Admin', premium:'◈ Premium', teaser:'◈ '+_t('trk.preview',null,'Önizleme'), free:'◈ Free' }; lvl.textContent = m[a] || m.free; lvl.className = 'tr-access tr-access-' + a; }
     _renderFilters(); _wire(); _refresh();
   }
 
