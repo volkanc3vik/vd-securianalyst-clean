@@ -28,16 +28,16 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 20px;font-size
 const API='/api/archive-stats';
 const rate=(x)=>x==null?'—':x+'%';
 const cls=(x)=>x==null?'':x>=70?'ok':x>=50?'warn':'bad';
-function rateRows(arr,label){return arr.map(r=>`<div class="row"><span class="k">${r.key}${r.lowSample?'<span class="low">az veri (n='+r.total+')</span>':''}</span><span class="v ${cls(r.successRate)}">${rate(r.successRate)} <span class="k" style="font-weight:400">(${r.success}/${r.total})</span></span></div>`).join('')||'<p class="note">Veri yok.</p>';}
+function rateRows(arr,label){return arr.map(r=>`<div class="row"><span class="k">${r.key}${r.lowSample?'<span class="low">low sample (n='+r.total+')</span>':''}</span><span class="v ${cls(r.successRate)}">${rate(r.successRate)} <span class="k" style="font-weight:400">(${r.success}/${r.total})</span></span></div>`).join('')||'<p class="note">No data.</p>';}
 fetch(API).then(r=>r.json()).then(d=>{
- if(!d.ok){document.getElementById('app').innerHTML='<p class="bad">Hata: '+(d.error||'bilinmiyor')+'</p>';return;}
- document.getElementById('gen').textContent='· '+new Date(d.generated_at).toLocaleString('tr-TR');
+ if(!d.ok){document.getElementById('app').innerHTML='<p class="bad">Error: '+(d.error||'unknown')+'</p>';return;}
+ document.getElementById('gen').textContent='· '+new Date(d.generated_at).toLocaleString('en-US');
  const o=d.overall;
  const H=`
  <div class="grid">
-  <div class="card"><h2>Genel Performans</h2><div class="big ${cls(o.successRate)}">${rate(o.successRate)}</div>
+  <div class="card"><h2>Overall Performance</h2><div class="big ${cls(o.successRate)}">${rate(o.successRate)}</div>
    <div class="note">Success rate (validated)</div>
-   <div class="row"><span class="k">Toplam Analiz</span><span class="v">${o.total}</span></div>
+   <div class="row"><span class="k">Total Analyses</span><span class="v">${o.total}</span></div>
    <div class="row"><span class="k">Successful</span><span class="v ok">${o.success}</span></div>
    <div class="row"><span class="k">Partial</span><span class="v warn">${o.partial}</span></div>
    <div class="row"><span class="k">Failed</span><span class="v bad">${o.fail}</span></div>
@@ -45,17 +45,17 @@ fetch(API).then(r=>r.json()).then(d=>{
   </div>
   <div class="card"><h2>AI Expectation Performance</h2>
    <div class="big ${cls(d.expectation.uyumOrani)}">${rate(d.expectation.uyumOrani)}</div><div class="note">Expectation match rate</div>
-   <div class="row"><span class="k">Uyumlu</span><span class="v ok">${d.expectation.uyumlu}</span></div>
+   <div class="row"><span class="k">Matched</span><span class="v ok">${d.expectation.uyumlu}</span></div>
    <div class="row"><span class="k">Exceeded expectation</span><span class="v ok">${d.expectation.asti}</span></div>
-   <div class="row"><span class="k">Uyumsuz</span><span class="v bad">${d.expectation.uyumsuz}</span></div>
+   <div class="row"><span class="k">Mismatched</span><span class="v bad">${d.expectation.uyumsuz}</span></div>
    ${d.expectation.note?'<p class="note">'+d.expectation.note+'</p>':''}
   </div>
   <div class="card"><h2>Weekly Summary (7d)</h2>
    <div class="big ${cls(d.weekly.successRate)}">${rate(d.weekly.successRate)}</div><div class="note">Success this week</div>
-   <div class="row"><span class="k">Analiz</span><span class="v">${d.weekly.total}</span></div>
-   <div class="row"><span class="k">En iyi coin</span><span class="v">${d.weekly.topCoin||'—'}</span></div>
+   <div class="row"><span class="k">Analyses</span><span class="v">${d.weekly.total}</span></div>
+   <div class="row"><span class="k">Best coin</span><span class="v">${d.weekly.topCoin||'—'}</span></div>
    <div class="row"><span class="k">Best structure</span><span class="v">${d.weekly.topStructure||'—'}</span></div>
-   <div class="row"><span class="k">En iyi risk</span><span class="v">${d.weekly.topRisk||'—'}</span></div>
+   <div class="row"><span class="k">Best risk</span><span class="v">${d.weekly.topRisk||'—'}</span></div>
   </div>
  </div>
  <div class="grid">
@@ -66,7 +66,7 @@ fetch(API).then(r=>r.json()).then(d=>{
  <div class="grid">
   <div class="card full"><h2>Performance by Structure (Academy)</h2>${rateRows(d.byStructure)}
    <p class="note">${d.gaps.structure_note}</p></div>
-  <div class="card full"><h2>Timeline Entegrasyonu</h2><p class="note">${d.timeline.note}</p></div>
+  <div class="card full"><h2>Timeline Integration</h2><p class="note">${d.timeline.note}</p></div>
  </div>`;
  document.getElementById('app').innerHTML=H;
 }).catch(e=>{document.getElementById('app').innerHTML='<p class="bad">Connection error: '+e.message+'</p>';});

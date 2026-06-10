@@ -1811,7 +1811,7 @@ body{overscroll-behavior-y:none;}
   <div class="lb lb2"></div>
   <div class="lb lb3"></div>
   <!-- B.5: Modal kapatma butonu -->
-  <button class="vd-login-close" onclick="closePremiumLogin()" aria-label="Kapat">×</button>
+  <button class="vd-login-close" onclick="closePremiumLogin()" aria-label="Close">×</button>
   <div class="login-card">
     <div class="login-logo">
       <div class="login-logo-icon">🔑</div>
@@ -2197,7 +2197,7 @@ function grantAccess(isAdmin) {
         'color:#fff;font:600 14px Inter,sans-serif;'+
         'box-shadow:0 8px 32px rgba(157,125,250,.4);'+
         'border:1px solid rgba(255,255,255,.2);';
-      toast.textContent = '✨ Premium aktive edildi';
+      toast.textContent = '✨ Premium activated';
       document.body.appendChild(toast);
       setTimeout(()=>{
         toast.style.transition = 'opacity .5s ease';
@@ -2392,8 +2392,8 @@ function startTimer() {
     </div>
     <div class="nc-filters">
       <button class="nc-filter nf-all active" id="nf-all"      onclick="NC.filter('all')">All</button>
-      <button class="nc-filter"               id="nf-piyasa"   onclick="NC.filter('piyasa')">🌐 Piyasa</button>
-      <button class="nc-filter"               id="nf-likidite" onclick="NC.filter('likidite')">💧 Likidite</button>
+      <button class="nc-filter"               id="nf-piyasa"   onclick="NC.filter('piyasa')">🌐 Market</button>
+      <button class="nc-filter"               id="nf-likidite" onclick="NC.filter('likidite')">💧 Liquidity</button>
       <button class="nc-filter"               id="nf-momentum" onclick="NC.filter('momentum')">⚡ Momentum</button>
       <button class="nc-filter"               id="nf-risk"     onclick="NC.filter('risk')">⚠ Risk</button>
       <button class="nc-filter"               id="nf-ogren"    onclick="NC.filter('ogren')">🎓 Learn</button>
@@ -2524,7 +2524,7 @@ function startTimer() {
   <div style="margin:0 12px 8px;display:grid;gap:8px">
     <div id="marketDrivers" style="background:#111722;border:1px solid #1e2836;border-radius:12px;padding:11px 13px">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px"><span style="font-size:11px;font-weight:800;letter-spacing:.04em;color:#e6edf6">◈ MARKET DRIVERS</span><span style="font-size:8.5px;font-weight:800;letter-spacing:.05em;color:#3b9eff;border:1px solid rgba(59,158,255,.4);border-radius:5px;padding:1px 6px">PHASE 13.1</span><span style="font-size:9.5px;color:#8b98ac">trend · momentum · risk — AI context (not a signal)</span></div>
-      <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))"><div style="background:#0e1626;border:1px solid #1e2836;border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:9px"><span style="font-weight:800;font-size:12px;color:#e6edf6;min-width:52px">BTC</span><span style="font-size:10px;color:#8b98ac">Trend <b style="color:#5b6677">—</b> · Mom <b style="color:#5b6677">—</b> · Risk <b style="color:#5b6677">—</b></span><span style="margin-left:auto;font-size:9px;color:#5b6677;white-space:nowrap">⏳ bekleniyor</span></div><div style="background:#0e1626;border:1px solid #1e2836;border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:9px"><span style="font-weight:800;font-size:12px;color:#e6edf6;min-width:52px">ETH</span><span style="font-size:10px;color:#8b98ac">Trend <b style="color:#5b6677">—</b> · Mom <b style="color:#5b6677">—</b> · Risk <b style="color:#5b6677">—</b></span><span style="margin-left:auto;font-size:9px;color:#5b6677;white-space:nowrap">⏳ bekleniyor</span></div><div style="background:#0e1626;border:1px solid #1e2836;border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:9px"><span style="font-weight:800;font-size:12px;color:#e6edf6;min-width:52px">NASDAQ</span><span style="font-size:10px;color:#8b98ac">Trend <b style="color:#5b6677">—</b> · Mom <b style="color:#5b6677">—</b> · Risk <b style="color:#5b6677">—</b></span><span style="margin-left:auto;font-size:9px;color:#5b6677;white-space:nowrap">⏳ bekleniyor</span></div></div>
+      <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))"><div style="background:#0e1626;border:1px solid #1e2836;border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:9px"><span style="font-weight:800;font-size:12px;color:#e6edf6;min-width:52px">BTC</span><span style="font-size:10px;color:#8b98ac">Trend <b style="color:#5b6677">—</b> · Mom <b style="color:#5b6677">—</b> · Risk <b style="color:#5b6677">—</b></span><span style="margin-left:auto;font-size:9px;color:#5b6677;white-space:nowrap">⏳ pending</span></div><div style="background:#0e1626;border:1px solid #1e2836;border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:9px"><span style="font-weight:800;font-size:12px;color:#e6edf6;min-width:52px">ETH</span><span style="font-size:10px;color:#8b98ac">Trend <b style="color:#5b6677">—</b> · Mom <b style="color:#5b6677">—</b> · Risk <b style="color:#5b6677">—</b></span><span style="margin-left:auto;font-size:9px;color:#5b6677;white-space:nowrap">⏳ pending</span></div><div style="background:#0e1626;border:1px solid #1e2836;border-radius:9px;padding:8px 11px;display:flex;align-items:center;gap:9px"><span style="font-weight:800;font-size:12px;color:#e6edf6;min-width:52px">NASDAQ</span><span style="font-size:10px;color:#8b98ac">Trend <b style="color:#5b6677">—</b> · Mom <b style="color:#5b6677">—</b> · Risk <b style="color:#5b6677">—</b></span><span style="margin-left:auto;font-size:9px;color:#5b6677;white-space:nowrap">⏳ pending</span></div></div>
     </div>
     <div id="newsImpact" style="background:#111722;border:1px solid #1e2836;border-radius:12px;padding:10px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:11px;font-weight:800;color:#e6edf6">◈ NEWS IMPACT</span><span style="font-size:8.5px;font-weight:800;letter-spacing:.05em;color:#3b9eff;border:1px solid rgba(59,158,255,.4);border-radius:5px;padding:1px 6px">PHASE 13.1</span><span style="font-size:9.5px;color:#8b98ac">ETF · FED · SEC · CPI · NASDAQ — AI-summarized impact</span><span style="margin-left:auto;font-size:10px;color:#5b6677;white-space:nowrap">⏳ Awaiting Data Source</span></div>
   </div>
@@ -2533,7 +2533,7 @@ function startTimer() {
   <div class="regime-bar" id="regimeBar">
     <div class="regime-dot" id="regimeDot" style="background:var(--yellow)"></div>
     <div class="regime-badge regime-SIDEWAYS" id="regimeBadge">◈ ANALYZING</div>
-    <div class="regime-desc" id="regimeDesc">Piyasa modu tespit ediliyor...</div>
+    <div class="regime-desc" id="regimeDesc">Detecting market mode...</div>
     <div class="squeeze-badge sq-inactive" id="squeezeBadge">◈ SQUEEZE: YOK</div>
   </div>
 
@@ -2552,7 +2552,7 @@ function startTimer() {
   <div id="p10NarrativePanel" style="margin:8px 12px 0;display:none">
     <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);margin-bottom:6px">◈ AI MARKET NARRATIVE</div>
     <div class="p10-narrative" id="p10NarrativeText">
-      Piyasa verisi analiz ediliyor...
+      Analyzing market data...
     </div>
   </div>
 
@@ -2568,7 +2568,7 @@ function startTimer() {
   <!-- PHASE 10: LIVE LIQUIDITY MAP -->
   <div id="p10LiqMapPanel" style="margin:8px 12px 0;display:none">
     <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);margin-bottom:6px">◈ LIVE LIQUIDITY MAP</div>
-    <div class="p10-liq-map" id="p10LiqMapContent">Veri bekleniyor...</div>
+    <div class="p10-liq-map" id="p10LiqMapContent">Awaiting data...</div>
   </div>
 
   <!-- PHASE 10: PRIORITY RANKING PANEL (Compact + Quant for) -->
@@ -2609,7 +2609,7 @@ function startTimer() {
     <div style="background:rgba(0,0,0,.25);border:1px solid rgba(157,125,250,.25);border-radius:12px;padding:12px;margin-bottom:12px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <span style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase">◈ AI Market Yorumu</span>
-        <span id="aiNarratorBadge" style="font-size:9px;padding:1px 8px;background:rgba(255,255,255,.06);border-radius:8px;color:var(--text3)">⚪ API Key Yok</span>
+        <span id="aiNarratorBadge" style="font-size:9px;padding:1px 8px;background:rgba(255,255,255,.06);border-radius:8px;color:var(--text3)">⚪ No API Key</span>
         <span id="aiNarratorTs" style="font-size:9px;color:var(--text3);margin-left:auto">—</span>
       </div>
       <div id="aiNarratorText" style="font-size:11px;color:var(--text3);line-height:1.6">
@@ -2707,7 +2707,7 @@ function startTimer() {
   <div class="sig-card-panel" id="sigCardPanel">
     <!-- Trade Mode Seçici -->
     <div class="trade-mode-bar">
-      <span class="trade-mode-label">Analiz Modu:</span>
+      <span class="trade-mode-label">Analysis Mode:</span>
       <div class="tm-btns">
         <button class="tm-btn tm-safe active"       id="tm-safe"       onclick="SCE.setMode('SAFE')">🛡 SAFE</button>
         <button class="tm-btn tm-balanced"           id="tm-balanced"   onclick="SCE.setMode('BALANCED')">⚖ BALANCED</button>
@@ -2727,10 +2727,10 @@ function startTimer() {
       <!-- Sort Bar -->
       <div class="sc-sort-bar">
         <span style="font-size:9px;color:var(--text3);font-weight:600">SIRALA:</span>
-        <button class="sc-sort-btn active" id="sort-score"   onclick="SCE.setSort('score')">⬆ Skor</button>
-        <button class="sc-sort-btn"        id="sort-conf"    onclick="SCE.setSort('conf')">✓ Onay</button>
+        <button class="sc-sort-btn active" id="sort-score"   onclick="SCE.setSort('score')">⬆ Score</button>
+        <button class="sc-sort-btn"        id="sort-conf"    onclick="SCE.setSort('conf')">✓ Confirm</button>
         <button class="sc-sort-btn"        id="sort-rr"      onclick="SCE.setSort('rr')">R/R</button>
-        <button class="sc-sort-btn"        id="sort-newest"  onclick="SCE.setSort('newest')">🕐 Yeni</button>
+        <button class="sc-sort-btn"        id="sort-newest"  onclick="SCE.setSort('newest')">🕐 Newest</button>
         <button class="sc-sort-btn"        id="sort-long"    onclick="SCE.setSort('long')">▲ Long</button>
         <button class="sc-sort-btn"        id="sort-short"   onclick="SCE.setSort('short')">▼ Short</button>
       </div>
@@ -2788,7 +2788,7 @@ function startTimer() {
         <div class="smc-pro-lbl">Risk Skoru</div>
         <div class="smc-pro-val" id="fbRiskScore" style="color:var(--green)">—/100</div>
         <div class="fb-meter"><div class="fb-fill fb-low" id="fbRiskBar" style="width:0%"></div></div>
-        <div class="smc-pro-sub" id="fbRiskSub">Analiz bekleniyor...</div>
+        <div class="smc-pro-sub" id="fbRiskSub">Awaiting analysis...</div>
       </div>
       <div class="smc-pro-card">
         <div class="smc-pro-lbl">Tespit Edilen</div>
@@ -2819,7 +2819,7 @@ function startTimer() {
     </div>
 
     <!-- Liquidity -->
-    <div style="font-size:10px;font-weight:600;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Likidite Analizi</div>
+    <div style="font-size:10px;font-weight:600;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Liquidity Analysis</div>
     <div class="smc-pro-grid" style="margin-bottom:12px">
       <div class="smc-pro-card">
         <div class="smc-pro-lbl">Equal Highs/Lows</div>
@@ -2827,7 +2827,7 @@ function startTimer() {
         <div class="smc-pro-sub" id="smcProEqSub">—</div>
       </div>
       <div class="smc-pro-card">
-        <div class="smc-pro-lbl">Likidite Sweep</div>
+        <div class="smc-pro-lbl">Liquidity Sweep</div>
         <div class="smc-pro-val" id="smcProSweep">—</div>
         <div class="smc-pro-sub" id="smcProSweepSub">—</div>
       </div>
@@ -2917,9 +2917,9 @@ function startTimer() {
     <div class="smc-grid">
       <!-- Liquidity -->
       <div class="smc-card">
-        <div class="smc-card-title">Likidite Analizi</div>
+        <div class="smc-card-title">Liquidity Analysis</div>
         <div class="smc-card-val" id="smcLiqVal" style="color:var(--green)">—</div>
-        <div class="smc-card-sub" id="smcLiqSub">Analiz bekleniyor...</div>
+        <div class="smc-card-sub" id="smcLiqSub">Awaiting analysis...</div>
         <div id="smcLiqTags"></div>
       </div>
       <!-- Market Structure -->
@@ -2958,7 +2958,7 @@ function startTimer() {
     <!-- FVG listesi -->
     <div style="font-size:10px;font-weight:600;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;margin-top:10px">◈ Fair Value Gaps</div>
     <div class="fvg-list" id="smcFVGList">
-      <div style="font-size:11px;color:var(--text3);padding:4px 0">FVG analizi bekleniyor...</div>
+      <div style="font-size:11px;color:var(--text3);padding:4px 0">Awaiting FVG analysis...</div>
     </div>
 
     <!-- SMC Yorum -->
@@ -2984,12 +2984,12 @@ function startTimer() {
       </div>
       <div class="ece-stage pending" id="ece-s2">
         <div class="ece-stage-icon pending" id="ece-i2">2</div>
-        <div style="flex:1"><div class="ece-stage-name">Breakout Forming</div><div class="ece-stage-desc" id="ece-d2">Fiyat hareketi izleniyor...</div></div>
+        <div style="flex:1"><div class="ece-stage-name">Breakout Forming</div><div class="ece-stage-desc" id="ece-d2">Watching price action...</div></div>
         <div class="ece-stage-time" id="ece-t2"></div>
       </div>
       <div class="ece-stage pending" id="ece-s3">
         <div class="ece-stage-icon pending" id="ece-i3">3</div>
-        <div style="flex:1"><div class="ece-stage-name">Awaiting Volume Confirmation</div><div class="ece-stage-desc" id="ece-d3">Hacim konfirmasyonu gerekiyor...</div></div>
+        <div style="flex:1"><div class="ece-stage-name">Awaiting Volume Confirmation</div><div class="ece-stage-desc" id="ece-d3">Volume confirmation needed...</div></div>
         <div class="ece-stage-time" id="ece-t3"></div>
       </div>
       <div class="ece-stage pending" id="ece-s4">
@@ -3024,7 +3024,7 @@ function startTimer() {
       <span style="font-size:16px">📊</span>
       <span class="analytics-title">◈ Performance Analytics</span>
       <div style="display:flex;gap:6px;margin-left:auto;">
-        <button class="analytics-tab active" id="atab-overview" onclick="Analytics.tab('overview')">Genel</button>
+        <button class="analytics-tab active" id="atab-overview" onclick="Analytics.tab('overview')">Overview</button>
         <button class="analytics-tab" id="atab-coins"    onclick="Analytics.tab('coins')">Coinler</button>
         <button class="analytics-tab" id="atab-history"  onclick="Analytics.tab('history')">History</button>
       </div>
@@ -3040,8 +3040,8 @@ function startTimer() {
             <span id="wrGaugePct" style="font-size:14px;font-weight:900;color:var(--green)">—%</span>
           </div>
           <div class="wr-gauge-info">
-            <div class="wr-gauge-title">Genel Win Rate</div>
-            <div class="wr-gauge-sub" id="wrGaugeSub">Analiz verisi bekleniyor...</div>
+            <div class="wr-gauge-title">Overall Win Rate</div>
+            <div class="wr-gauge-sub" id="wrGaugeSub">Awaiting analysis data...</div>
           </div>
         </div>
 
@@ -3049,7 +3049,7 @@ function startTimer() {
         <div class="perf-grid">
           <div class="perf-card">
             <div class="perf-card-val" id="perf-total" style="color:var(--cyan)">—</div>
-            <div class="perf-card-lbl">Toplam Analiz</div>
+            <div class="perf-card-lbl">Total Analyses</div>
           </div>
           <div class="perf-card">
             <div class="perf-card-val" id="perf-win" style="color:var(--green)">—</div>
@@ -3091,17 +3091,17 @@ function startTimer() {
           <div style="flex:1;min-width:120px;background:rgba(0,0,0,.2);border-radius:10px;padding:10px;border:1px solid rgba(255,255,255,.05);">
             <div style="font-size:10px;color:var(--text3);margin-bottom:4px">🌏 Asya</div>
             <div style="font-size:16px;font-weight:800;color:var(--text)" id="sess-asia-wr">—%</div>
-            <div style="font-size:9px;color:var(--text3)" id="sess-asia-cnt">— analiz</div>
+            <div style="font-size:9px;color:var(--text3)" id="sess-asia-cnt">— analyses</div>
           </div>
           <div style="flex:1;min-width:120px;background:rgba(0,0,0,.2);border-radius:10px;padding:10px;border:1px solid rgba(255,255,255,.05);">
             <div style="font-size:10px;color:var(--text3);margin-bottom:4px">🇬🇧 London</div>
             <div style="font-size:16px;font-weight:800;color:var(--text)" id="sess-london-wr">—%</div>
-            <div style="font-size:9px;color:var(--text3)" id="sess-london-cnt">— analiz</div>
+            <div style="font-size:9px;color:var(--text3)" id="sess-london-cnt">— analyses</div>
           </div>
           <div style="flex:1;min-width:120px;background:rgba(0,0,0,.2);border-radius:10px;padding:10px;border:1px solid rgba(255,255,255,.05);">
             <div style="font-size:10px;color:var(--text3);margin-bottom:4px">🇺🇸 New York</div>
             <div style="font-size:16px;font-weight:800;color:var(--text)" id="sess-ny-wr">—%</div>
-            <div style="font-size:9px;color:var(--text3)" id="sess-ny-cnt">— analiz</div>
+            <div style="font-size:9px;color:var(--text3)" id="sess-ny-cnt">— analyses</div>
           </div>
         </div>
       </div>
@@ -3110,7 +3110,7 @@ function startTimer() {
       <div id="analytics-coins" style="display:none">
         <div style="font-size:10px;font-weight:600;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">◈ Coin Win Rate Ranking</div>
         <div class="coin-lb" id="coinLeaderboard">
-          <div style="font-size:12px;color:var(--text3);padding:10px 0">Analiz verisi bekleniyor...</div>
+          <div style="font-size:12px;color:var(--text3);padding:10px 0">Awaiting analysis data...</div>
         </div>
       </div>
 
@@ -3159,7 +3159,7 @@ function startTimer() {
       <div class="entry-item"><div class="entry-lbl">TP 3</div><div class="entry-val up" id="eTp3">—</div><div class="entry-sub up" id="eTp3P"></div></div>
       <div class="entry-item"><div class="entry-lbl">RISK / REWARD</div><div class="entry-val yl" id="eRR">—</div><div class="entry-sub" id="eRRN"></div></div>
     </div>
-    <div class="verdict wait-v" id="verdict">Analiz bekleniyor...</div>
+    <div class="verdict wait-v" id="verdict">Awaiting analysis...</div>
   </div>
 
   <!-- DESTEK / DİRENÇ -->
@@ -3225,25 +3225,25 @@ function startTimer() {
     <!-- Likidasyon Baskısı -->
     <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,61,107,.2);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">🔴 LIQUIDATION PRESSURE</div>
-      <div id="liqPanel">Veri bekleniyor...</div>
+      <div id="liqPanel">Awaiting data...</div>
     </div>
 
     <!-- Squeeze Risk -->
     <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,122,0,.2);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">⚡ SQUEEZE RISK</div>
-      <div id="squeezePanel">Veri bekleniyor...</div>
+      <div id="squeezePanel">Awaiting data...</div>
     </div>
 
     <!-- Crowd Positioning -->
     <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,193,7,.2);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">🧠 CROWD POSITIONING</div>
-      <div id="crowdPanel">Veri bekleniyor...</div>
+      <div id="crowdPanel">Awaiting data...</div>
     </div>
 
     <!-- Orderflow -->
     <div style="background:rgba(0,0,0,.2);border:1px solid rgba(0,212,255,.15);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">📊 ORDER FLOW</div>
-      <div id="orderflowPanel">Veri bekleniyor...</div>
+      <div id="orderflowPanel">Awaiting data...</div>
     </div>
 
     <!-- Learning Engine -->
@@ -3269,7 +3269,7 @@ function startTimer() {
     <div class="gc-title">◈ Risk Management AI</div>
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px;" id="tmStatus">Open a chart for active position analysis.</div>
     <div class="tm-list" id="tmList">
-      <div style="font-size:11px;color:var(--text3);padding:4px 0">Veri analiz ediliyor...</div>
+      <div style="font-size:11px;color:var(--text3);padding:4px 0">Analyzing data...</div>
     </div>
   </div>
 
@@ -3300,7 +3300,7 @@ function startTimer() {
 
   <!-- COPY -->
   <div class="glass-card">
-    <div class="gc-title">◈ AI Analiz — Claude.ai</div>
+    <div class="gc-title">◈ AI Analysis — Claude.ai</div>
     <div class="copy-desc">Tap the button → the prompt is copied → <span style="color:#f5a623;font-weight:600">claude.ai</span> opens → paste with Ctrl+V → get a detailed analysis.</div>
     <div class="copy-row">
       <button class="gbtn gbtn-yellow" onclick="copyPrompt()">📋 Kopyala → Claude.ai</button>
@@ -3321,12 +3321,12 @@ function startTimer() {
       <div class="ai-brain"></div>
       <span>◈ AI Performance — Learning Engine</span>
       <span class="ai-live-badge">● AUTO-TRACK</span>
-      <span style="margin-left:auto;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:none;font-weight:500;" id="aiLearnInfo">0 analiz</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:none;font-weight:500;" id="aiLearnInfo">0 analyses</span>
     </div>
 
     <div class="ai-stats">
       <div class="ai-stat">
-        <div class="ai-stat-lbl">Toplam Analiz</div>
+        <div class="ai-stat-lbl">Total Analyses</div>
         <div class="ai-stat-val" id="aiTotal" style="color:var(--text)">0</div>
         <div class="ai-stat-sub">all time</div>
       </div>
@@ -3364,7 +3364,7 @@ function startTimer() {
       <div class="ai-witem"><div class="ai-wrow"><span class="ai-wname">EMA</span><span class="ai-wval" id="wEma">1.00x</span></div><div class="ai-wbar"><div class="ai-wfill" id="wEmaB" style="width:50%"></div></div></div>
       <div class="ai-witem"><div class="ai-wrow"><span class="ai-wname">MACD</span><span class="ai-wval" id="wMacd">1.00x</span></div><div class="ai-wbar"><div class="ai-wfill" id="wMacdB" style="width:50%"></div></div></div>
       <div class="ai-witem"><div class="ai-wrow"><span class="ai-wname">RSI</span><span class="ai-wval" id="wRsi">1.00x</span></div><div class="ai-wbar"><div class="ai-wfill" id="wRsiB" style="width:50%"></div></div></div>
-      <div class="ai-witem"><div class="ai-wrow"><span class="ai-wname">Hacim</span><span class="ai-wval" id="wVol">1.00x</span></div><div class="ai-wbar"><div class="ai-wfill" id="wVolB" style="width:50%"></div></div></div>
+      <div class="ai-witem"><div class="ai-wrow"><span class="ai-wname">Volume</span><span class="ai-wval" id="wVol">1.00x</span></div><div class="ai-wbar"><div class="ai-wfill" id="wVolB" style="width:50%"></div></div></div>
       <div class="ai-witem"><div class="ai-wrow"><span class="ai-wname">Funding</span><span class="ai-wval" id="wFund">1.00x</span></div><div class="ai-wbar"><div class="ai-wfill" id="wFundB" style="width:50%"></div></div></div>
       <div class="ai-witem"><div class="ai-wrow"><span class="ai-wname">Volatilite</span><span class="ai-wval" id="wVola">1.00x</span></div><div class="ai-wbar"><div class="ai-wfill" id="wVolaB" style="width:50%"></div></div></div>
     </div>
@@ -3423,7 +3423,7 @@ const FBASE='https://fapi.binance.com';
 function startClock(){
   const el=document.getElementById('liveTime');
   clockTimer=setInterval(()=>{
-    if(el)el.textContent=new Date().toLocaleTimeString('tr-TR');
+    if(el)el.textContent=new Date().toLocaleTimeString('en-US');
   },1000);
 }
 
@@ -3447,7 +3447,7 @@ function sendNotif(sym,type,price){
   // Browser Notification (ekran kapalıyken bile çalışır)
   if(notifPerm&&Notification.permission==='granted'){
     const n=new Notification(`${type==='buy'?'▲ Upward Bias':'▼ Downward Bias'} — ${sym}`,{
-      body:`Fiyat: $${price}\nEMA + MACD crossover detected\nVD SecuriAnalyst`,
+      body:`Price: $${price}\nEMA + MACD crossover detected\nVD SecuriAnalyst`,
       icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="%2300e896"/><text x="16" y="22" text-anchor="middle" font-size="18" fill="white">◈</text></svg>',
       tag:'crypto-signal',
       requireInteraction:true,
@@ -3460,7 +3460,7 @@ function sendNotif(sym,type,price){
   beep(type);
   // Alarm log
   const el=document.getElementById('almLog');
-  if(el)el.textContent=(type==='buy'?'YUKARI':'DOWN')+' '+sym+' @ '+new Date().toLocaleTimeString('tr-TR');
+  if(el)el.textContent=(type==='buy'?'YUKARI':'DOWN')+' '+sym+' @ '+new Date().toLocaleTimeString('en-US');
 }
 
 // ══════════════════════════════════════════
@@ -3506,7 +3506,7 @@ function showPopup(sym,type,price){
     <div style="font-size:18px;font-weight:800;margin-bottom:3px">${sym}</div>
     <div style="font-size:13px;color:var(--text2);font-weight:500">$${price}</div>
     <div style="font-size:10px;color:var(--text3);margin-top:6px;font-weight:400">EMA + MACD crossover detected</div>
-    <div style="margin-top:10px;font-size:11px;cursor:pointer;color:var(--text3);font-weight:500" onclick="this.parentElement.remove()">✕ Kapat</div>`;
+    <div style="margin-top:10px;font-size:11px;cursor:pointer;color:var(--text3);font-weight:500" onclick="this.parentElement.remove()">✕ Close</div>`;
   document.body.appendChild(d);
   setTimeout(()=>{if(d.parentElement)d.remove();},10000);
 }
@@ -3656,7 +3656,7 @@ async function updateMarketOverview(){
       if(adv)adv.textContent='💡 While dominance is low, selective altcoin upward outlooks can be observed.';
     }else{
       if(desc)desc.textContent='BTC dominance at a neutral level';
-      if(sig){sig.className='mkt-signal neut';sig.innerHTML='◆ Dengeli Piyasa';}
+      if(sig){sig.className='mkt-signal neut';sig.innerHTML='◆ Balanced Market';}
       if(adv)adv.textContent='💡 Mixed approach — both BTC and selective altcoin positions are suitable.';
     }
     const chgEl=document.getElementById('btcdChg');
@@ -3968,7 +3968,7 @@ function updateUI(tk,candles,fund,ls){
   // Patterns
   const pats=detectPatterns(candles,e9a,e21a,mr);
   const pl=document.getElementById('patList');
-  if(!pats.length){pl.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">◌ Belirgin formasyon tespit edilmedi.</div>';}
+  if(!pats.length){pl.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">◌ No clear pattern detected.</div>';}
   else{
     pl.innerHTML='';
     pats.forEach(p=>{
@@ -4028,7 +4028,7 @@ function updateUI(tk,candles,fund,ls){
     }
   }
 
-  setEl('tsEl','Last update: '+new Date().toLocaleTimeString('tr-TR')+' · 30s otomatik yenilenir');
+  setEl('tsEl','Last update: '+new Date().toLocaleTimeString('en-US')+' · 30s otomatik yenilenir');
   document.getElementById('mainPanel').style.display='block';
 }
 
@@ -4367,7 +4367,7 @@ async function scanMarket(){
 
   dot.classList.remove('on');if(pw)pw.style.display='none';
   window._scanDone = true;
-  setEl('scanTxt',`✓ ${results.length} coins scanned · ${new Date().toLocaleTimeString('tr-TR')} · 2 dk'da yenilenir`);
+  setEl('scanTxt',`✓ ${results.length} coins scanned · ${new Date().toLocaleTimeString('en-US')} · 2 dk'da yenilenir`);
   console.log(`[Scanner] Tarama tamamlandı: ${results.length} coin, Long top: ${top3L.map(i=>i.sym).join(', ')}, Short top: ${top3S.map(i=>i.sym).join(', ')}`);
 
   // ── Trading Intelligence — scan sonuçlarını yayınla ──
@@ -4733,12 +4733,12 @@ const AI = (() => {
     if(volatility<0.7) lines.push(`High-volatility analyses failed — a penalty was applied.`);
     if(funding<0.7)    lines.push(`Extreme funding conditions are being avoided.`);
     if(volume>1.3)     lines.push(`High-volume confirmation improves success.`);
-    if(st.best)        lines.push(`Most successful: <b>${st.best.sym.replace('USDT','')}</b> (%${(st.best.wr*100).toFixed(0)} WR, ${st.best.total} analiz).`);
+    if(st.best)        lines.push(`Most successful: <b>${st.best.sym.replace('USDT','')}</b> (%${(st.best.wr*100).toFixed(0)} WR, ${st.best.total} analyses).`);
     if(st.worst&&st.worst.sym!==st.best?.sym&&st.worst.wr<0.4)
       lines.push(`Sorunlu coin: <b>${st.worst.sym.replace('USDT','')}</b> — confidence lowered for this coin.`);
     if(st.bestPat)     lines.push(`Strongest formation: <b>${st.bestPat.name}</b> (%${(st.bestPat.wr*100).toFixed(0)}).`);
 
-    return lines.join(' ') || 'Sistem analiz ediyor...';
+    return lines.join(' ') || 'System is analyzing...';
   }
 
   // ── Adaptif confidence ayarı ──────────────────────────────────────
@@ -4842,7 +4842,7 @@ function renderAI(){
         d.innerHTML=`<span class="ac-sym">${c.sym.replace('USDT','')}</span>
           <span class="ac-wr" style="color:${col}">%${wr}${fakeTag}</span>
           <div class="ac-bar"><div class="ac-fill" style="width:${wr}%;background:${col}"></div></div>
-          <span class="ac-cnt">${c.total} analiz</span>`;
+          <span class="ac-cnt">${c.total} analyses</span>`;
         cl.appendChild(d);
       });
     }
@@ -5109,7 +5109,7 @@ function renderOIFunding(data, price){
 
 // ── 3. BTC CORRELATION ENGINE ─────────────────────────────────────────
 function calcBTCInfluence(btcData, coinChg, coinRsi){
-  if(!btcData) return {score:50,desc:'BTC verisi bekleniyor...',color:'var(--text3)'};
+  if(!btcData) return {score:50,desc:'Awaiting BTC data...',color:'var(--text3)'};
   const {chg:btcChg,rsi:btcRsi,e9v,e21v,atrPct}=btcData;
   let score=50;
   let factors=[];
@@ -5503,7 +5503,7 @@ const LWC = (() => {
     );
     el.innerHTML=notes.length
       ?notes.map(n=>`<span class="lwc-note" style="background:${n.bg};color:${n.c};border:1px solid ${n.b}">${n.t}</span>`).join('')
-      :'<span style="font-size:11px;color:var(--text3)">Analiz bekleniyor...</span>';
+      :'<span style="font-size:11px;color:var(--text3)">Awaiting analysis...</span>';
   }
 
   function redraw(data){
@@ -5629,12 +5629,12 @@ const NC = (() => {
   const DEDUPE_MS = 30 * 60 * 1000;   // aynı olay 30 dk içinde tekrar etmesin
   const CATS = ['piyasa','likidite','momentum','risk','ogren','referans'];
   const CAT_META = {
-    piyasa:   { label:'Piyasa',   icon:'🌐', color:'#00D1FF' },
-    likidite: { label:'Likidite', icon:'💧', color:'#2B8EFF' },
+    piyasa:   { label:'Market',   icon:'🌐', color:'#00D1FF' },
+    likidite: { label:'Liquidity', icon:'💧', color:'#2B8EFF' },
     momentum: { label:'Momentum', icon:'⚡', color:'#00E5A0' },
     risk:     { label:'Risk',     icon:'⚠',  color:'#FF3D6B' },
     ogren:    { label:'Learn',    icon:'🎓', color:'#FFC247' },
-    referans: { label:'Referans', icon:'🔗', color:'#5CDFFF' },
+    referans: { label:'Reference', icon:'🔗', color:'#5CDFFF' },
   };
 
   let _events = [];
@@ -5786,7 +5786,7 @@ const NC = (() => {
     const filtered = _filter === 'all' ? _events : _events.filter(e => e.category === _filter);
     if(cnt) cnt.textContent = filtered.length + ' olay';
     if(!filtered.length){
-      list.innerHTML = '<div class="nc-empty"><span>📈</span>Bu kategoride olay yok</div>';
+      list.innerHTML = '<div class="nc-empty"><span>📈</span>No events in this category</div>';
       return;
     }
     list.innerHTML = '';
@@ -5896,7 +5896,7 @@ const ECE = (() => {
     ico.className = 'ece-stage-icon '+status;
     ico.textContent = status==='done'?'✓':status==='failed'?'✗':(idx+1);
     if(dEl&&desc) dEl.textContent = desc;
-    if(tEl) tEl.textContent = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    if(tEl) tEl.textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     if(notify && _sym){
       NC.add({
         sym:_sym, dir:_dir||'info',
@@ -5970,7 +5970,7 @@ const ECE = (() => {
     if(hasSetup){
       const emaStr = isLong ? 'EMA9 > EMA21' : 'EMA9 < EMA21';
       _setStage(0,'done',
-        `${emaStr} · MACD ${isLong?'pozitif':'negatif'} · RSI ${rsi}`,
+        `${emaStr} · MACD ${isLong?'positive':'negative'} · RSI ${rsi}`,
         `${sym} for ${dir} directional setup is strengthening. ${emaStr} alignment present.`
       );
     } else {
@@ -5984,7 +5984,7 @@ const ECE = (() => {
     const bbBreak = bb && (price>bb.upper||(isLong&&price>bb.mid)||(!isLong&&price<bb.mid));
     if(bbBreak){
       _setStage(1,'done',
-        `Fiyat ${isLong?'Bollinger upper band':'Bollinger middle band'} ${isLong?'exceeded':'broke'}`,
+        `Price ${isLong?'Bollinger upper band':'Bollinger middle band'} ${isLong?'exceeded':'broke'}`,
         `${sym} is showing a breakout move. Awaiting close confirmation.`
       );
     } else {
@@ -6002,7 +6002,7 @@ const ECE = (() => {
         `${sym} got volume confirmation in the move. The move may be real.`
       );
     } else {
-      _setStage(2,'active',`Hacim ${volRatio}x — 1.3x needed for confirmation`);
+      _setStage(2,'active',`Volume ${volRatio}x — 1.3x needed for confirmation`);
       _setStage(3,'pending','—');
       _setComment(`Breakout formed but <span class="warn">volume confirmation has not arrived yet.</span> A low-volume breakout carries fake breakout risk.`);
       _setTA('Volume confirmation missing. Waiting is safer.','var(--orange)');
@@ -6013,7 +6013,7 @@ const ECE = (() => {
 
     // ── Stage 4: Fake breakout filtresi ──
     if(fakeBreakout){
-      _setStage(3,'failed','Fake breakout riski tespit edildi!');
+      _setStage(3,'failed','Fake breakout risk detected!');
       _setStage(4,'pending','—');_setStage(5,'pending','—');
       _setComment(`<span class="bad">⚠ FAKE BREAKOUT RISK!</span> A low-volume breakout or BTC divergence was detected. Trusting this move is risky.`);
       _setTA('Fake breakout risk high. Opening a position is not advised.','var(--red)');
@@ -6054,11 +6054,11 @@ const ECE = (() => {
     });
 
     // Yorum
-    const riskTr = atrPct>4?'<span class="bad">high volatility</span>':atrPct>2.5?'<span class="warn">orta volatilite</span>':'<span class="good">low volatility</span>';
+    const riskTr = atrPct>4?'<span class="bad">high volatility</span>':atrPct>2.5?'<span class="warn">medium volatility</span>':'<span class="good">low volatility</span>';
     _setComment(
       `<b>Directional Bias Confirmed.</b> ${isLong?'Upward':'Downward'} the setup met all conditions. ` +
-      `Hacim ${volRatio}x above average. Momentum ${dirTr} strengthening in that direction. ` +
-      `Risk: ${riskTr}. ${entry?.rr>=2?`<span class="good">R/R 1:${entry.rr} — iyi bir teknik görünüm.</span>`:`<span class="warn">R/R 1:${entry?.rr||'—'} — risk seviyesi yüksek.</span>`}`
+      `Volume ${volRatio}x above average. Momentum ${dirTr} strengthening in that direction. ` +
+      `Risk: ${riskTr}. ${entry?.rr>=2?`<span class="good">R/R 1:${entry.rr} — a good technical picture.</span>`:`<span class="warn">R/R 1:${entry?.rr||'—'} — risk level is high.</span>`}`
     );
     _setTA(`ENTRY READY — Stop Loss: $${entry?.stop?.toFixed?entry.stop.toFixed(4):entry?.stop||'—'} · TP1: $${entry?.tp1?.toFixed?entry.tp1.toFixed(4):entry?.tp1||'—'}`, 'var(--green)');
 
@@ -6084,7 +6084,7 @@ const ECE = (() => {
       const btcUp = btcData.chg > 0;
       if((isLong && !btcUp) || (!isLong && btcUp)){
         NC.add({sym, dir:'warn', level:'high',
-          msg:`BTC ${btcData.chg>0?'rising':'falling'} ama ${sym} is moving in the opposite direction. BTC direction became inconsistent with the setup.`});
+          msg:`BTC ${btcData.chg>0?'rising':'falling'} but ${sym} is moving in the opposite direction. BTC direction became inconsistent with the setup.`});
       }
     }
 
@@ -6327,7 +6327,7 @@ const SMC = (() => {
       score+=20; reasons.push('Nearby liquidity sweep');
     }
     // Order block support
-    if(obs.length) { score+=15; reasons.push('Order block tespit edildi'); }
+    if(obs.length) { score+=15; reasons.push('Order block detected'); }
     // FVG var
     if(fvgs.length) { score+=10; reasons.push('FVG imbalance mevcut'); }
     // Displacement
@@ -6336,7 +6336,7 @@ const SMC = (() => {
     if(ms.trend==='bullish'&&entry&&entry.dir==='LONG')  { score+=20; reasons.push('MS trend uyumlu'); }
     if(ms.trend==='bearish'&&entry&&entry.dir==='SHORT') { score+=20; reasons.push('MS trend uyumlu'); }
     // BOS/CHOCH
-    if(ms.events.length) { score+=10; reasons.push(ms.events[0].type+' tespit edildi'); }
+    if(ms.events.length) { score+=10; reasons.push(ms.events[0].type+' detected'); }
     // R/R
     if(entry&&entry.rr>=2.5) { score+=10; reasons.push('Strong R/R'); }
     // Volume
@@ -6381,9 +6381,9 @@ const SMC = (() => {
     const hasBuySide  = eqLevels.equalHighs.length > 0;
     const hasSellSide = eqLevels.equalLows.length  > 0;
     const lastSweep   = sweeps[sweeps.length-1];
-    const liqStatus   = lastSweep ? (lastSweep.type==='bearish_sweep'?'Buy-side collected':'Sell-side collected') : 'Aktif likidite havuzu';
+    const liqStatus   = lastSweep ? (lastSweep.type==='bearish_sweep'?'Buy-side collected':'Sell-side collected') : 'Active liquidity pool';
     const liqCol      = lastSweep ? (lastSweep.type==='bearish_sweep'?'var(--red)':'var(--green)') : 'var(--text)';
-    setEl('smcLiqVal', lastSweep ? '⚡ Sweep Detected' : hasBuySide||hasSellSide ? '◈ Likidite Var' : '— Neutral');
+    setEl('smcLiqVal', lastSweep ? '⚡ Sweep Detected' : hasBuySide||hasSellSide ? '◈ Liquidity Present' : '— Neutral');
     document.getElementById('smcLiqVal').style.color = liqCol;
     setEl('smcLiqSub', sess.desc);
     const liqTags=document.getElementById('smcLiqTags');
@@ -6415,7 +6415,7 @@ const SMC = (() => {
 
     // ── Order Block Kartı ────────────────────────────────────────
     const lastOB = obs[obs.length-1];
-    setEl('smcOBVal', lastOB ? (lastOB.type==='bullish'?'▲ Bullish OB':'▼ Bearish OB') : '— Tespit Yok');
+    setEl('smcOBVal', lastOB ? (lastOB.type==='bullish'?'▲ Bullish OB':'▼ Bearish OB') : '— No Detection');
     document.getElementById('smcOBVal').style.color = lastOB ? (lastOB.type==='bullish'?'var(--green)':'var(--red)') : 'var(--text3)';
     setEl('smcOBSub', lastOB ? lastOB.desc : 'No institutional zone detected');
     const obTags=document.getElementById('smcOBTags');
@@ -6449,17 +6449,17 @@ const SMC = (() => {
     const el3=document.getElementById('liqSellBar');if(el3)el3.style.width=sellPct+'%';
     setEl('liqSellVal', fp(sellLiq));
     const el4=document.getElementById('liqEHBar');if(el4)el4.style.width=eqHPct+'%';
-    setEl('liqEHVal', eqLevels.equalHighs.length ? eqLevels.equalHighs.length+' zone' : 'Yok');
+    setEl('liqEHVal', eqLevels.equalHighs.length ? eqLevels.equalHighs.length+' zone' : 'None');
     const el5=document.getElementById('liqELBar');if(el5)el5.style.width=eqLPct+'%';
-    setEl('liqELVal', eqLevels.equalLows.length ? eqLevels.equalLows.length+' zone' : 'Yok');
+    setEl('liqELVal', eqLevels.equalLows.length ? eqLevels.equalLows.length+' zone' : 'None');
     const el6=document.getElementById('liqSHBar');if(el6)el6.style.width=shPct+'%';
-    setEl('liqSHVal', sweeps.length ? sweeps.length+' sweep' : 'Yok');
+    setEl('liqSHVal', sweeps.length ? sweeps.length+' sweep' : 'None');
 
     // ── FVG Listesi ──────────────────────────────────────────────
     const fvgList=document.getElementById('smcFVGList');
     if(fvgList){
       if(!fvgs.length){
-        fvgList.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">Aktif FVG tespit edilmedi</div>';
+        fvgList.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">No active FVG detected</div>';
       } else {
         fvgList.innerHTML='';
         fvgs.slice(-4).forEach(f=>{
@@ -6672,7 +6672,7 @@ const SCE = (() => {
     const volRatio=curV/avgV;
     if(volRatio>2)      {score+=15;factors.push('Strong volume ('+volRatio.toFixed(1)+'x)');}
     else if(volRatio>1.3){score+=8; factors.push('Volume confirmation');}
-    else                 {warnings.push('Hacim yetersiz');}
+    else                 {warnings.push('Insufficient volume');}
 
     // ── R/R ──
     if(entry){
@@ -6689,7 +6689,7 @@ const SCE = (() => {
     if(smcData){
       if(smcData.quality>=70) {score+=12;factors.push('High SMC quality');}
       else if(smcData.quality>=50){score+=6;}
-      if(smcData.sweeps)      {score+=8; factors.push('Likidite sweep');}
+      if(smcData.sweeps)      {score+=8; factors.push('Liquidity sweep');}
       if(smcData.ob)          {score+=8; factors.push('Order block support');}
       if(smcData.fvg)         {score+=5; factors.push('FVG mevcut');}
       if(smcData.displacement){score+=10;factors.push('Displacement hareketi');}
@@ -6802,11 +6802,11 @@ const SCE = (() => {
       {id:'ema',   lbl:'EMA Hizalama', ok: ind&&(isLong?(ind.ema9>ind.ema21):(ind.ema9<ind.ema21))},
       {id:'macd',  lbl:'MACD',         ok: ind&&(isLong?ind.macd.hist>0:ind.macd.hist<0)},
       {id:'rsi',   lbl:'RSI',          ok: ind&&(isLong?(ind.rsi>=42&&ind.rsi<=68):(ind.rsi>=32&&ind.rsi<=58))},
-      {id:'vol',   lbl:'Hacim',        ok: volRatio>=1.3},
+      {id:'vol',   lbl:'Volume',        ok: volRatio>=1.3},
       {id:'btc',   lbl:'BTC Uyum',     ok: btcAlign>=50},
       {id:'rr',    lbl:'R/R',          ok: entry&&entry.rr>=2},
       {id:'smc',   lbl:'SMC',          ok: smcData&&(smcData.ob||smcData.sweeps||smcData.choch)},
-      {id:'fake',  lbl:'Fake Yok',     ok: !fakeBreakout},
+      {id:'fake',  lbl:'No Fake',     ok: !fakeBreakout},
       {id:'regime',lbl:'Regime',       ok: !!params.regimeMode&&params.regimeMode!=='PANIC'},
     ];
 
@@ -6828,7 +6828,7 @@ const SCE = (() => {
     let aiLine='';
     if(confirmed>=9)      aiLine='All 9 confirmations complete. Institutional-quality setup.';
     else if(confirmed>=7) aiLine=`${confirmed}/9 confirmations. Strong setup — entry can be considered.`;
-    else if(confirmed>=5) aiLine=`${confirmed}/9 onay. Erken momentum. ${missing.slice(0,2).join(', ')} bekleniyor.`;
+    else if(confirmed>=5) aiLine=`${confirmed}/9 confirmations. Early momentum. Awaiting ${missing.slice(0,2).join(', ')}.`;
     else if(confirmed>=4) aiLine=`${confirmed}/9 confirmations. Aggressive setup. High risk — keep a tight stop.`;
     else                  aiLine=`${confirmed}/9 confirmations. Weak setup — ${missing.slice(0,3).join(', ')} eksik.`;
 
@@ -6892,7 +6892,7 @@ const SCE = (() => {
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="sc-dir-badge sc-dir-${isLong?'long':'short'}" style="margin-bottom:4px">${isLong?'▲ LONG':'▼ SHORT'}</div>
-          <div style="font-size:9px;color:var(--text3)">${new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div style="font-size:9px;color:var(--text3)">${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
       </div>
 
@@ -6946,7 +6946,7 @@ const SCE = (() => {
           <div class="sc-stat-val" style="color:${btcAlign>=60?'var(--green)':btcAlign>=40?'var(--yellow)':'var(--red)'}">${btcAlign}/100</div>
         </div>
         <div class="sc-stat">
-          <div class="sc-stat-lbl">Hacim</div>
+          <div class="sc-stat-lbl">Volume</div>
           <div class="sc-stat-val" style="color:${volRatio>=1.5?'var(--green)':volRatio>=1?'var(--yellow)':'var(--red)'}">${volRatio.toFixed(1)}x</div>
         </div>
       </div>
@@ -6962,7 +6962,7 @@ const SCE = (() => {
       <!-- Missing confirmations -->
       ${conf9.missing.length?`
         <div class="sc-missing">
-          <div class="sc-missing-lbl">⏳ EKSİK ONAYLAR</div>
+          <div class="sc-missing-lbl">⏳ MISSING CONFIRMATIONS</div>
           ${conf9.missing.join(' · ')}
         </div>
       `:''}
@@ -7496,7 +7496,7 @@ const WSEngine = (() => {
     const side = liq.side==='BUY'?'Short Likidasyon':'Long Likidasyon';
     const val  = liq.value>=1e6?(liq.value/1e6).toFixed(2)+'M$':(liq.value/1e3).toFixed(0)+'K$';
     NC.add({sym, dir:'warn', level: liq.value>500000?'critical':'high',
-      msg:`⚡ ${sym.replace('USDT','')} ${side}: ${val} pozisyon tasfiye edildi @ $${liq.price.toFixed(4)}. Likidite hareketi dikkat!`
+      msg:`⚡ ${sym.replace('USDT','')} ${side}: ${val} position liquidated @ $${liq.price.toFixed(4)}. Watch the liquidity move!`
     });
   }
 
@@ -7616,7 +7616,7 @@ const AIReasoning = (() => {
     if(isLong){
       if(e9>e21&&e21>e50)     { confirms.push('EMA tam hizalama (9>21>50)'); finalConf+=10; }
       else if(e9>e21)          { confirms.push('EMA partially positive'); finalConf+=5; }
-      else                     { conflicts.push('EMA hizalama yok'); finalConf-=10; }
+      else                     { conflicts.push('No EMA alignment'); finalConf-=10; }
       if(macd.hist>0)          { confirms.push('MACD histogram positive'); finalConf+=8; }
       else                     { conflicts.push('MACD histogram negative'); finalConf-=8; }
       if(rsi>=45&&rsi<=65)     { confirms.push(`RSI ideal zone (${rsi.toFixed(0)})`); finalConf+=8; }
@@ -7639,7 +7639,7 @@ const AIReasoning = (() => {
     const volR = curV/avgV;
     if(volR>=1.5)      { confirms.push(`Strong volume confirmation (${volR.toFixed(1)}x)`); finalConf+=8; }
     else if(volR>=1.1) { confirms.push(`Volume increase present (${volR.toFixed(1)}x)`); finalConf+=4; }
-    else               { conflicts.push(`Hacim yetersiz (${volR.toFixed(1)}x ort.)`); finalConf-=6; }
+    else               { conflicts.push(`Insufficient volume (${volR.toFixed(1)}x avg.)`); finalConf-=6; }
 
     // ── WS Gerçek zamanlı veri ──
     if(wsData){
@@ -7768,7 +7768,7 @@ const AIDecisionEngine = (() => {
     { id:'btc',         weight:8,  label:'BTC Korelasyon',                critical:false },
     { id:'rr',          weight:10, label:'R/R Ratio (≥2.0)',              critical:true  },
     { id:'smc',         weight:8,  label:'SMC Structure (OB/CHoCH/Sweep)',     critical:false },
-    { id:'no_fake',     weight:10, label:'Fake Breakout Yok',             critical:true  },
+    { id:'no_fake',     weight:10, label:'No Fake Breakout',             critical:true  },
     { id:'regime',      weight:8,  label:'Market Rejimi Uyumu',           critical:false },
     { id:'ob_imbalance',weight:8,  label:'Order Book Pressure',            critical:false },
     { id:'funding',     weight:8,  label:'Funding Healthy',              critical:false },
@@ -7801,11 +7801,11 @@ const AIDecisionEngine = (() => {
         case 'ema_full':
           if(isLong){
             if(ind.ema9>ind.ema21 && ind.ema21>ind.ema50){ status='confirmed'; score=cond.weight; detail='9>21>50 ✓'; }
-            else if(ind.ema9>ind.ema21){ status='pending'; score=cond.weight*0.5; detail='9>21 ✓, 50 bekleniyor'; }
+            else if(ind.ema9>ind.ema21){ status='pending'; score=cond.weight*0.5; detail='9>21 ✓, awaiting 50'; }
             else { status='failed'; detail='EMA negatif'; }
           } else {
             if(ind.ema9<ind.ema21 && ind.ema21<ind.ema50){ status='confirmed'; score=cond.weight; detail='9<21<50 ✓'; }
-            else if(ind.ema9<ind.ema21){ status='pending'; score=cond.weight*0.5; detail='9<21 ✓, 50 bekleniyor'; }
+            else if(ind.ema9<ind.ema21){ status='pending'; score=cond.weight*0.5; detail='9<21 ✓, awaiting 50'; }
             else { status='failed'; detail='EMA bullish alignment'; }
           }
           break;
@@ -7813,11 +7813,11 @@ const AIDecisionEngine = (() => {
         case 'macd':
           if(isLong){
             if(ind.macd.hist>0 && ind.macd.macd>ind.macd.signal){ status='confirmed'; score=cond.weight; detail=`Hist: +${ind.macd.hist.toFixed(4)}`; }
-            else if(ind.macd.hist>0){ status='pending'; score=cond.weight*0.6; detail='Hist pozitif, teyit bekleniyor'; }
+            else if(ind.macd.hist>0){ status='pending'; score=cond.weight*0.6; detail='Hist positive, awaiting confirmation'; }
             else { status='failed'; detail=`Hist: ${ind.macd.hist.toFixed(4)}`; }
           } else {
             if(ind.macd.hist<0 && ind.macd.macd<ind.macd.signal){ status='confirmed'; score=cond.weight; detail=`Hist: ${ind.macd.hist.toFixed(4)}`; }
-            else if(ind.macd.hist<0){ status='pending'; score=cond.weight*0.6; detail='Hist negatif, teyit bekleniyor'; }
+            else if(ind.macd.hist<0){ status='pending'; score=cond.weight*0.6; detail='Hist negative, awaiting confirmation'; }
             else { status='failed'; detail='MACD turning'; }
           }
           break;
@@ -7850,7 +7850,7 @@ const AIDecisionEngine = (() => {
             else if(!isLong && btcData.chg<-0.5){ status='confirmed'; score=cond.weight; detail=`BTC -%${Math.abs(btcData.chg).toFixed(2)}`; }
             else if(Math.abs(btcData.chg)<0.5){ status='pending'; score=cond.weight*0.5; detail=`BTC neutral (%${btcData.chg.toFixed(2)})`; }
             else { status='failed'; detail=`BTC opposite direction (%${btcData.chg.toFixed(2)})`; }
-          } else { status='pending'; detail='BTC verisi bekleniyor'; }
+          } else { status='pending'; detail='Awaiting BTC data'; }
           break;
 
         case 'rr':
@@ -7866,12 +7866,12 @@ const AIDecisionEngine = (() => {
             if(pts>=2){ status='confirmed'; score=cond.weight; detail=`${pts} SMC signal`; }
             else if(pts>=1){ status='pending'; score=cond.weight*0.6; detail=`${pts} SMC signal`; }
             else { status='failed'; detail='No SMC structure'; }
-          } else { status='pending'; detail='SMC analizi bekleniyor'; }
+          } else { status='pending'; detail='Awaiting SMC analysis'; }
           break;
 
         case 'no_fake':
-          if(!fakeBreak){ status='confirmed'; score=cond.weight; detail='Fake breakout riski yok'; }
-          else { status='failed'; detail='Fake breakout tespit edildi'; }
+          if(!fakeBreak){ status='confirmed'; score=cond.weight; detail='No fake breakout risk'; }
+          else { status='failed'; detail='Fake breakout detected'; }
           break;
 
         case 'regime':
@@ -7879,7 +7879,7 @@ const AIDecisionEngine = (() => {
           else if(regimeMode==='RANGE'||regimeMode==='BREAKOUT'){ status='pending'; score=cond.weight*0.6; detail=regimeMode; }
           else if(regimeMode==='PANIC'&&isLong){ status='failed'; detail='Panik modu — long riskli'; }
           else if(regimeMode==='VOLATILE'){ status='pending'; score=cond.weight*0.4; detail='Volatil market'; }
-          else { status='pending'; score=cond.weight*0.5; detail=regimeMode||'Analiz ediliyor'; }
+          else { status='pending'; score=cond.weight*0.5; detail=regimeMode||'Analyzing'; }
           break;
 
         case 'ob_imbalance':
@@ -7889,7 +7889,7 @@ const AIDecisionEngine = (() => {
             else if(!isLong&&obi<0.4){ status='confirmed'; score=cond.weight; detail=`Sell pressure %${((1-obi)*100).toFixed(0)}`; }
             else if(Math.abs(obi-0.5)<0.1){ status='pending'; score=cond.weight*0.5; detail='Balanced order book'; }
             else { status='failed'; detail=`Reverse pressure %${(isLong?((1-obi)*100):(obi*100)).toFixed(0)}`; }
-          } else { status='pending'; detail='WS verisi bekleniyor'; }
+          } else { status='pending'; detail='Awaiting WS data'; }
           break;
 
         case 'funding':
@@ -7899,7 +7899,7 @@ const AIDecisionEngine = (() => {
             else if(!isLong&&f>=-0.05&&f<=0.02){ status='confirmed'; score=cond.weight; detail=`Funding: %${f.toFixed(3)}`; }
             else if(Math.abs(f)<0.1){ status='pending'; score=cond.weight*0.5; detail=`Funding: %${f.toFixed(3)}`; }
             else { status='failed'; detail=`Funding extreme: %${f.toFixed(3)}`; }
-          } else { status='pending'; detail='Funding verisi bekleniyor'; }
+          } else { status='pending'; detail='Awaiting funding data'; }
           break;
       }
 
@@ -7970,15 +7970,15 @@ const AIDecisionEngine = (() => {
       return `${sn} — ${confirmed}/${total} confirmations complete (%${pct} skor). Kurumsal kalite ${dir} setup. All critical conditions met.`;
     }
     if(tier==='STRONG SETUP'){
-      return `${sn} — ${confirmed}/${total} onay (%${pct}). Strong ${dir} setup. ${missing.filter(m=>m.status==='pending').slice(0,2).map(m=>m.label).join(', ')} bekleniyor.`;
+      return `${sn} — ${confirmed}/${total} confirmations (%${pct}). Strong ${dir} setup. Awaiting ${missing.filter(m=>m.status==='pending').slice(0,2).map(m=>m.label).join(', ')}.`;
     }
     if(tier==='CONFIRMED SETUP'){
-      return `${sn} — ${confirmed}/${total} onay (%${pct}). Erken momentum. ${missing.slice(0,3).map(m=>m.label).join(', ')} eksik.`;
+      return `${sn} — ${confirmed}/${total} confirmations (%${pct}). Early momentum. Missing: ${missing.slice(0,3).map(m=>m.label).join(', ')}.`;
     }
     if(tier==='AGGRESSIVE ENTRY'){
-      return `${sn} — ${confirmed}/${total} onay (%${pct}). Aggressive entry. High risk — keep a tight stop. ${missing.slice(0,2).map(m=>m.label).join(', ')} bekleniyor.`;
+      return `${sn} — ${confirmed}/${total} confirmations (%${pct}). Aggressive entry. High risk — keep a tight stop. Awaiting ${missing.slice(0,2).map(m=>m.label).join(', ')}.`;
     }
-    return `${sn} — ${confirmed}/${total} onay (%${pct}). Weak setup — awaiting stronger confirmation.`;
+    return `${sn} — ${confirmed}/${total} confirmations (%${pct}). Weak setup — awaiting stronger confirmation.`;
   }
 
   function _renderPhase3UI(r){
@@ -8029,7 +8029,7 @@ const AIDecisionEngine = (() => {
           <div style="height:100%;width:${barW}%;background:linear-gradient(90deg,${barCol},${barCol}88);border-radius:4px;transition:width .5s"></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:3px;color:var(--text3)">
-          <span>✓ ${r.confirmed} onay</span>
+          <span>✓ ${r.confirmed} confirmations</span>
           <span>◌ ${r.pending} bekliyor</span>
           <span>✗ ${r.failed} failed</span>
         </div>
@@ -8048,7 +8048,7 @@ const AIDecisionEngine = (() => {
 
       <!-- Eksik koşullar -->
       ${r.missing.filter(m=>m.status!=='confirmed').length>0?`
-        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">◈ EKSİK / BEKLENEN</div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">◈ MISSING / EXPECTED</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px">${missingHtml}</div>
       `:''}
     `;
@@ -8066,7 +8066,7 @@ const ECE2 = (() => {
     {id:'breakout',  name:'Breakout Formed',       icon:'📊'},
     {id:'candle',    name:'Candle Close',          icon:'🕯'},
     {id:'retest',    name:'Retest',                icon:'🔄'},
-    {id:'volume',    name:'Hacim Teyidi',          icon:'📈'},
+    {id:'volume',    name:'Volume Confirmation',          icon:'📈'},
     {id:'btc',       name:'BTC Direction',              icon:'₿'},
     {id:'funding',   name:'Funding Healthy',      icon:'💰'},
     {id:'orderbook', name:'Orderbook Support',     icon:'📚'},
@@ -8417,8 +8417,8 @@ const FBDetector = (() => {
     if(scoreEl){scoreEl.textContent=score+'/100';scoreEl.style.color=col;}
     if(barEl){barEl.style.width=score+'%';barEl.className='fb-fill '+barCls;}
     if(subEl) subEl.textContent=lbl;
-    if(typeEl){typeEl.textContent=isFake?'⚠ Fake Risk Var':'✓ Real Move';typeEl.style.color=isFake?col:'var(--green)';}
-    if(typeSub) typeSub.textContent=signals.length?signals[0].desc:'Belirgin risk sinyali yok';
+    if(typeEl){typeEl.textContent=isFake?'⚠ Fake Risk Present':'✓ Real Move';typeEl.style.color=isFake?col:'var(--green)';}
+    if(typeSub) typeSub.textContent=signals.length?signals[0].desc:'No clear risk indication';
 
     if(tagsEl){
       tagsEl.innerHTML='';
@@ -8504,7 +8504,7 @@ const SMCPro = (() => {
     const eqSub = document.getElementById('smcProEqSub');
     const totalEq = eqLevels.equalHighs.length+eqLevels.equalLows.length;
     if(eqEl){
-      eqEl.textContent=totalEq>0?totalEq+' Seviye':'Yok';
+      eqEl.textContent=totalEq>0?totalEq+' Levels':'None';
       eqEl.style.color=totalEq>0?'var(--orange)':'var(--green)';
     }
     if(eqSub){
@@ -8519,7 +8519,7 @@ const SMCPro = (() => {
     const swSub = document.getElementById('smcProSweepSub');
     const lastSw=sweeps[sweeps.length-1];
     if(swEl){
-      swEl.textContent=lastSw?'⚡ '+sweeps.length+' Sweep':'Yok';
+      swEl.textContent=lastSw?'⚡ '+sweeps.length+' Sweep':'None';
       swEl.style.color=lastSw?'var(--orange)':'var(--green)';
     }
     if(swSub) swSub.textContent=lastSw?lastSw.msg:'No recent sweep';
@@ -8550,7 +8550,7 @@ const SMCPro = (() => {
       const parts=[];
       if(ms.trend==='bullish') parts.push(`<b>${sn}</b> in an uptrend structure.`);
       else if(ms.trend==='bearish') parts.push(`<b>${sn}</b> in a downtrend structure.`);
-      if(lastSw) parts.push(`Likidite sweep: ${lastSw.msg}.`);
+      if(lastSw) parts.push(`Liquidity sweep: ${lastSw.msg}.`);
       if(lastOB) parts.push(`${lastOB.type==='bullish'?'Institutional buy':'Institutional sell'} zone detected.`);
       if(eqLevels.equalHighs.length) parts.push(`Equal highs: buy-side liquidity trap risk.`);
       if(displacement.length) parts.push(`Displacement move — sign of institutional entry.`);
@@ -8592,7 +8592,7 @@ const SMCPro = (() => {
       const age=(Date.now()-liq.ts)/1000;
       if(age<120&&liq.value>200000){
         const val=liq.value>=1e6?(liq.value/1e6).toFixed(1)+'M$':(liq.value/1e3).toFixed(0)+'K$';
-        alerts.push(`<b>Large Liquidation:</b> ${val} ${liq.side==='BUY'?'short':'long'} pozisyon tasfiye edildi.`);
+        alerts.push(`<b>Large Liquidation:</b> ${val} ${liq.side==='BUY'?'short':'long'} positions liquidated.`);
       }
     }
 
@@ -8600,7 +8600,7 @@ const SMCPro = (() => {
     const vols=candles.slice(-10).map(c=>c.v);
     const avgV=vols.slice(0,-1).reduce((a,b)=>a+b,0)/9;
     if(vols[vols.length-1]>avgV*3){
-      alerts.push(`<b>Hacim Spike:</b> Son mum ortalama hacmin ${(vols[vols.length-1]/avgV).toFixed(1)}x above — may be a whale move.`);
+      alerts.push(`<b>Volume Spike:</b> Last candle volume is ${(vols[vols.length-1]/avgV).toFixed(1)}x above average — may be a whale move.`);
     }
 
     // OI ani değişim
@@ -8851,7 +8851,7 @@ function updateSwipeScanList(){
   if(!longGrid||!shortGrid){ el.innerHTML='<span style="color:var(--text3)">Run a scan...</span>'; return; }
   const longs  = [...longGrid.querySelectorAll('.opp-sym')].slice(0,3).map(e=>e.textContent);
   const shorts = [...shortGrid.querySelectorAll('.opp-sym')].slice(0,3).map(e=>e.textContent);
-  if(!longs.length&&!shorts.length){ el.innerHTML='<span style="color:var(--text3)">Tarama bekleniyor...</span>'; return; }
+  if(!longs.length&&!shorts.length){ el.innerHTML='<span style="color:var(--text3)">Awaiting scan...</span>'; return; }
 
   let html='';
   longs.forEach(sym=>{
@@ -9076,7 +9076,7 @@ const Onboarding = (() => {
       if(d) d.classList.toggle('active', i===_step);
     }
     const btn=document.getElementById('obNextBtn');
-    if(btn) btn.textContent = _step===TOTAL ? 'Get started! →' : 'Devam Et →';
+    if(btn) btn.textContent = _step===TOTAL ? 'Get started! →' : 'Continue →';
   }
 
   function skip(){
@@ -9268,7 +9268,7 @@ const Analytics = (() => {
       const wrEl=document.getElementById('sess-'+id+'-wr');
       const cntEl=document.getElementById('sess-'+id+'-cnt');
       if(wrEl){wrEl.textContent=wr!==null?wr+'%':'—%';wrEl.style.color=col;}
-      if(cntEl) cntEl.textContent=s.t+' analiz';
+      if(cntEl) cntEl.textContent=s.t+' analyses';
     });
   }
 
@@ -9276,7 +9276,7 @@ const Analytics = (() => {
     const el=document.getElementById('coinLeaderboard');
     if(!el) return;
     const sorted=Object.entries(stats.coins).sort((a,b)=>b[1].wr-a[1].wr).slice(0,10);
-    if(!sorted.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Yeterli veri yok...</div>'; return; }
+    if(!sorted.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0">Not enough data...</div>'; return; }
     el.innerHTML='';
     sorted.forEach(([sym,c],i)=>{
       const rankCls=i===0?'gold':i===1?'silver':i===2?'bronze':'';
@@ -9288,7 +9288,7 @@ const Analytics = (() => {
         <span class="coin-lb-sym">${sym.replace('USDT','')}</span>
         <div class="coin-lb-bar-wrap"><div class="coin-lb-bar" style="width:${c.wr}%;background:${col}"></div></div>
         <span class="coin-lb-wr" style="color:${col}">${c.wr}%</span>
-        <span class="coin-lb-cnt">${c.total} analiz</span>
+        <span class="coin-lb-cnt">${c.total} analyses</span>
       `;
       el.appendChild(d);
     });
@@ -9575,12 +9575,12 @@ function initApp(isAdmin){
     </div>
     <div class="ob-step" id="ob-s2">
       <div class="ob-icon">🔍</div>
-      <div class="ob-title">Otomatik Tarama</div>
+      <div class="ob-title">Automatic Scanning</div>
       <div class="ob-desc">The system continuously scans every Binance Futures coin. When a strong technical setup forms, it generates an Analysis Card and notifies you.</div>
     </div>
     <div class="ob-step" id="ob-s3">
       <div class="ob-icon">🧠</div>
-      <div class="ob-title">AI Karar Motoru</div>
+      <div class="ob-title">AI Decision Engine</div>
       <div class="ob-desc">It checks 9 conditions and explains every decision with its rationale, ranking them ELITE SETUP → STRONG SETUP → CONFIRMED → AGGRESSIVE.</div>
     </div>
     <div class="ob-step" id="ob-s4">
@@ -9589,7 +9589,7 @@ function initApp(isAdmin){
       <div class="ob-desc">Use the 🧠 AI button at the top right for the assistant and 🔔 for notifications. Switch coins quickly from the bottom bar.</div>
     </div>
 
-    <button class="ob-btn" id="obNextBtn" onclick="Onboarding.next()">Devam Et →</button>
+    <button class="ob-btn" id="obNextBtn" onclick="Onboarding.next()">Continue →</button>
     <div class="ob-skip" onclick="Onboarding.skip()">Skip</div>
   </div>
 </div>
@@ -9699,7 +9699,7 @@ const P10 = (() => {
     if(wsData){
       if(wsData.lastWhale && Date.now()-wsData.lastWhale.ts < 60000){
         const w = wsData.lastWhale;
-        parts.push(`<span class="n-${w.buy?'bull':'bear'}">🐋 Whale ${w.buy?'buy':'sell'} tespit edildi — $${(w.val/1000).toFixed(0)}K @ $${w.price?.toFixed(2)}.</span>`);
+        parts.push(`<span class="n-${w.buy?'bull':'bear'}">🐋 Whale ${w.buy?'buy':'sell'} detected — $${(w.val/1000).toFixed(0)}K @ $${w.price?.toFixed(2)}.</span>`);
       }
       if(wsData.obImbalance !== undefined){
         const obi = wsData.obImbalance;
@@ -9758,7 +9758,7 @@ const P10 = (() => {
     if(wsData){
       if(wsData.lastWhale && Date.now()-wsData.lastWhale.ts < 30000){
         const w = wsData.lastWhale;
-        advices.push(`🐋 Kurumsal ${w.buy?'buy':'sell'} tespit edildi — ${w.buy&&isLong?'Setup strengthened':'Dikkatli ol'}.`);
+        advices.push(`🐋 Institutional ${w.buy?'buy':'sell'} detected — ${w.buy&&isLong?'Setup strengthened':'Be cautious'}.`);
         tags.push('institutional-absorption-active');
       }
       if(wsData.obImbalance !== undefined){
@@ -9825,7 +9825,7 @@ const P10 = (() => {
       .sort((a,b)=>a.strength!==b.strength?b.strength-a.strength:Math.abs(a.price-price)-Math.abs(b.price-price))
       .slice(0,8);
 
-    if(!filtered.length){ el.innerHTML='<div style="font-size:10px;color:var(--text3)">Likidite seviyesi analiz ediliyor...</div>'; return; }
+    if(!filtered.length){ el.innerHTML='<div style="font-size:10px;color:var(--text3)">Analyzing liquidity levels...</div>'; return; }
 
     const maxStr = Math.max(...filtered.map(f=>f.strength));
     const rows = filtered.map(l=>{
@@ -10359,7 +10359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         var anchor=document.getElementById('futuresPanelMount');
         if(anchor&&anchor.parentNode){
           var d=document.createElement('div'); d.className='vd-analysis-divider';
-          d.innerHTML='<span>\u25c8 Detayl\u0131 Analiz \u00b7 bir coin se\u00e7ti\u011finizde derinle\u015fir</span>';
+          d.innerHTML='<span>\u25c8 Detailed Analysis \u00b7 deepens when you select a coin</span>';
           anchor.parentNode.insertBefore(d, anchor);
         }
       }

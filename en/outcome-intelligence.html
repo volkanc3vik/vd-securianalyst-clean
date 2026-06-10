@@ -24,15 +24,15 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
 <div id="app"><p class="sub">Loading…</p></div>
 <script>
 const API='/api/archive-stats';
-const rate=(g)=>g.insufficient?'<span class="warn">Yetersiz Veri</span>':((g.successRate==null?'—':g.successRate+'%'));
+const rate=(g)=>g.insufficient?'<span class="warn">Insufficient Data</span>':((g.successRate==null?'—':g.successRate+'%'));
 const cls=(x)=>x==null?'':x>=70?'ok':x>=50?'warn':'bad';
-function rows(arr,medal){return (arr&&arr.length)?arr.map(g=>`<div class="row"><span class="k">${medal||''}${g.key} ${g.insufficient?'<span class="ins">(n='+g.total+')</span>':'<span class="k" style="font-weight:400">('+g.success+'/'+g.total+')</span>'}</span><span class="v ${g.insufficient?'':cls(g.successRate)}">${rate(g)}</span></div>`).join(''):'<p class="note">Veri yok.</p>';}
+function rows(arr,medal){return (arr&&arr.length)?arr.map(g=>`<div class="row"><span class="k">${medal||''}${g.key} ${g.insufficient?'<span class="ins">(n='+g.total+')</span>':'<span class="k" style="font-weight:400">('+g.success+'/'+g.total+')</span>'}</span><span class="v ${g.insufficient?'':cls(g.successRate)}">${rate(g)}</span></div>`).join(''):'<p class="note">No data.</p>';}
 // Phase 10: enrichment kırılımları — alan hiç yoksa "Collecting Data"
 const rowsC=(arr)=>(arr&&arr.length)?rows(arr):'<p class="note">Collecting Data — this field exists only in records after v76; it fills automatically once enough data accumulates.</p>';
 const rep=(o)=>o?`${o.key} <span class="k" style="font-weight:400">(%${o.rate==null?'—':o.rate}, n=${o.n})</span>`:'—';
 fetch(API).then(r=>r.json()).then(d=>{
- if(!d.ok){document.getElementById('app').innerHTML='<p class="bad">Hata: '+(d.error||'?')+'</p>';return;}
- document.getElementById('gen').textContent='· '+new Date(d.generated_at).toLocaleString('tr-TR');
+ if(!d.ok){document.getElementById('app').innerHTML='<p class="bad">Error: '+(d.error||'?')+'</p>';return;}
+ document.getElementById('gen').textContent='· '+new Date(d.generated_at).toLocaleString('en-US');
  const L=d.learning;
  const obs=L.observations.length?L.observations.map(o=>`<div class="obs">🧠 <b>AI Observation</b><br>${o}</div>`).join(''):`<p class="note">${L.obsNote||''}</p>`;
  const lr=L.learningReport;
@@ -55,27 +55,27 @@ fetch(API).then(r=>r.json()).then(d=>{
  </div>
  <div class="grid">
   <div class="card"><h2>Success by Market Regime</h2>${rowsC(L.byRegime)}</div>
-  <div class="card"><h2>Open Interest Verisi</h2>
+  <div class="card"><h2>Open Interest Data</h2>
    <div class="row"><span class="k">Records with data</span><span class="v">${L.oiPresence.withData}</span></div>
-   <div class="row"><span class="k">Veri olmayan</span><span class="v">${L.oiPresence.withoutData}</span></div>
+   <div class="row"><span class="k">Without data</span><span class="v">${L.oiPresence.withoutData}</span></div>
    <p class="note">${L.oiPresence.note}</p>
   </div>
  </div>
  <div class="grid">
   <div class="card"><h2>Low Risk + 90+ Confidence</h2>
    <div class="row"><span class="k">Sample</span><span class="v">${L.combo.total}</span></div>
-   <div class="row"><span class="k">Success</span><span class="v ${L.combo.insufficient?'':cls(L.combo.rate)}">${L.combo.insufficient?'<span class="warn">Yetersiz Veri</span>':(L.combo.rate==null?'—':L.combo.rate+'%')}</span></div>
+   <div class="row"><span class="k">Success</span><span class="v ${L.combo.insufficient?'':cls(L.combo.rate)}">${L.combo.insufficient?'<span class="warn">Insufficient Data</span>':(L.combo.rate==null?'—':L.combo.rate+'%')}</span></div>
   </div>
   <div class="card"><h2>📊 AI Learning Report (ready for Telegram)</h2>
    <div class="row"><span class="k">Best structure</span><span class="v">${rep(lr.enIyiYapi)}</span></div>
-   <div class="row"><span class="k">En iyi volatilite</span><span class="v">${rep(lr.enIyiVolatilite)}</span></div>
-   <div class="row"><span class="k">En iyi rejim</span><span class="v">${rep(lr.enIyiRejim)}</span></div>
-   <div class="row"><span class="k">En iyi funding</span><span class="v">${rep(lr.enIyiFunding)}</span></div>
-   <div class="row"><span class="k">En iyi long/short</span><span class="v">${rep(lr.enIyiLongShort)}</span></div>
-   <div class="row"><span class="k">En iyi coin</span><span class="v">${rep(lr.enIyiCoin)}</span></div>
+   <div class="row"><span class="k">Best volatility</span><span class="v">${rep(lr.enIyiVolatilite)}</span></div>
+   <div class="row"><span class="k">Best regime</span><span class="v">${rep(lr.enIyiRejim)}</span></div>
+   <div class="row"><span class="k">Best funding</span><span class="v">${rep(lr.enIyiFunding)}</span></div>
+   <div class="row"><span class="k">Best long/short</span><span class="v">${rep(lr.enIyiLongShort)}</span></div>
+   <div class="row"><span class="k">Best coin</span><span class="v">${rep(lr.enIyiCoin)}</span></div>
    <p class="note">${lr.ready?'Report data ready (Telegram send is a later phase).':'Will be ready once enough data accumulates.'}</p>
   </div>
-  <div class="card"><h2>Timeline Entegrasyonu</h2><p class="note">${d.timeline.note}</p></div>
+  <div class="card"><h2>Timeline Integration</h2><p class="note">${d.timeline.note}</p></div>
  </div>`;
 }).catch(e=>{document.getElementById('app').innerHTML='<p class="bad">Connection error: '+e.message+'</p>';});
 </script>

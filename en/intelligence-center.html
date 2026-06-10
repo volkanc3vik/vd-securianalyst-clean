@@ -194,7 +194,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
         <div style="font-size:30px">🔒</div>
         <div class="ttl">Elite Access Required</div>
         <div class="tx">The Elite Intelligence Center is available to Elite members.</div>
-        <a class="btn" href="legal/premium.html">Elite Pass Al →</a>
+        <a class="btn" href="../legal/premium.html">Get Elite Pass →</a>
       </div>`;
   }
 
@@ -202,7 +202,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     const dataReady = count >= TARGET;
     const st = cardState(false, dataReady); // premium: erişim yok → 🔒
     app.innerHTML =
-      `<div class="reqbar"><span class="badge badge-req badge-lg">🔒 Elite Access Required</span><a class="btn btn-sm" href="legal/premium.html">Elite Pass Al →</a></div>` +
+      `<div class="reqbar"><span class="badge badge-req badge-lg">🔒 Elite Access Required</span><a class="btn btn-sm" href="../legal/premium.html">Get Elite Pass →</a></div>` +
       `<div class="grid">${progressBox('premium', count)}</div>` +
       `<div class="sell">
         <b>Elite Intelligence Layer</b>, a high-level analysis layer that activates when AI Learning and Archive results reach sufficient data levels.
@@ -244,7 +244,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
   // Kompakt mini-panel (risk/güven gibi az satırlı koşullar için)
   function miniRows(items){
     const list=(items||[]).filter(it=>(it.total||0)>0).sort((a,b)=>scoreOf(b)-scoreOf(a));
-    if(!list.length) return `<p class="collecting">Veri birikiyor…</p>`;
+    if(!list.length) return `<p class="collecting">Collecting data…</p>`;
     return list.map(it=>{
       const r=rateOf(it), n=it.total||0;
       return `<div class="mrow"><span class="mlabel">${esc(it.key)}</span><span class="mpct ${pctCls(r)}">%${r}</span><div class="mbar"><i data-w="${r}"></i></div><span class="mn">${n} observations</span></div>`;
@@ -304,7 +304,7 @@ h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px;font-size
     <div class="ehead">
       <div class="hm"><b>${cnt}</b><span>Validated result</span></div>
       <div class="hm"><b>%${rate}</b><span>Overall consistency</span></div>
-      <div class="hm"><b>${total}</b><span>Toplam analiz</span></div>
+      <div class="hm"><b>${total}</b><span>Total analyses</span></div>
       <div class="hm hm-bd"><b>${succ}/${part}/${fail}</b><span>Correct / Partial / Misleading</span></div>
       <div class="asof"><span>Last update</span><b>${esc(asof)}</b></div>
     </div>
