@@ -276,5 +276,18 @@ window.VDLiveFeed = (function () {
     _render();
   }
 
-  return { mount, unmount, setSymbol, remount };
+  // Market Pulse FLOW kartı için: son trade'lerden gerçek taker özeti.
+  // { buyRatio: 0-1, n: örnek sayısı, ts: son trade zamanı } | null (veri yoksa)
+  function flowSummary() {
+    if (!_trades.length) return null;
+    let buyVal = 0, total = 0;
+    for (let i = 0; i < _trades.length; i++) {
+      total += _trades[i].val;
+      if (_trades[i].buy) buyVal += _trades[i].val;
+    }
+    if (total <= 0) return null;
+    return { buyRatio: buyVal / total, n: _trades.length, ts: _trades[_trades.length - 1].ts };
+  }
+
+  return { mount, unmount, setSymbol, remount, flowSummary };
 })();
