@@ -73,7 +73,17 @@
     var score = (r.s && r.s.score != null) ? _num(r.s.score) : null;
     var rsi = (r.s && r.s.rsi != null) ? _num(r.s.rsi) : null;
     var ageSec = (r.stageSince ? Math.round((Date.now() - r.stageSince) / 1000) : null);
-    var payload = {
+    // ── HYBRID V2 damgası (cache'ten; yoksa price-only alanlar) ──
+    var hyFields = {};
+    try {
+      var HE = window.VDHybridEngine;
+      if (HE) {
+        var rec = (HE.get && HE.get(sym, dir)) || null;
+        if (!rec && HE.evaluate) { /* senkron akış: cache yoksa price-only damga */ }
+        hyFields = HE.payloadFields(rec || (score != null ? { price: Math.round(score), priceVerdict: HE.verdictOf(score), deriv: { score: null, available: false, factors: {}, nFactors: 0 }, derivVerdict: null, hybrid: Math.round(score), hybridVerdict: HE.verdictOf(score) } : null));
+      }
+    } catch (e) {}
+    var payload = Object.assign({}, hyFields, {
       action: 'create',
       sym: sym,
       direction: dir,
@@ -95,7 +105,7 @@
         stage_age_sec: ageSec,           // örnekleme anında kartın yaşı (tazelik kanıtı)
         sampled_at: new Date().toISOString()
       }
-    };
+    });
     var res;
     try {
       res = await disp.adminFetch(ENDPOINT, payload);

@@ -135,7 +135,16 @@
     // KURAL 1: enrichment create'i ASLA bozmaz (pre-enrich gelmezse burada güvenli üret)
     if (!enriched) { try { enriched = await _enrich(c); } catch (e) { enriched = {}; } }
     _enrLog(c.sym, enriched); // KURAL 7
-    const payload = {
+    // ── HYBRID V2: kayıt anında Price/Deriv/Final üçlüsü hesaplanır ve damgalanır ──
+    let hyFields = {};
+    try {
+      const HE = window.VDHybridEngine;
+      if (HE && HE.evaluate) {
+        const rec = await HE.evaluate(c.sym, c.dir, c.score);
+        hyFields = HE.payloadFields(rec);
+      }
+    } catch (e) { hyFields = (window.VDHybridEngine && window.VDHybridEngine.payloadFields) ? window.VDHybridEngine.payloadFields(null) : {}; }
+    const payload = Object.assign({}, hyFields, {
       action: 'create',
       sym: c.sym,
       direction: c.dir,
@@ -153,7 +162,7 @@
         score: c.score, rsi: c.rsi,
         created_at: new Date().toISOString(),
       }, enriched),                        // funding/oi/long-short/atr/vol/regime/structure (+null'lar)
-    };
+    });
     let r;
     try { r = await disp.adminFetch(ENDPOINT, payload); }
     catch (e) { console.warn(TAG, c.sym, c.dir, 'create FIRLATTI:', e && e.message); return false; }
