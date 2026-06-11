@@ -39,6 +39,7 @@ const LIMITS = {
   update_review: { max: 30, windowMs: 60_000 },
   mark_shared:   { max: 20, windowMs: 60_000 },
   list_research: { max: 60, windowMs: 60_000 },
+  hybrid_matrix: { max: 20, windowMs: 60_000 },   // Faz 3 — ağır agregasyon, daha sıkı
 };
 function rateLimit(action, ip) {
   const cfg = LIMITS[action];
@@ -192,6 +193,16 @@ function clampText(v, max) {
   const s = String(v);
   return s.length > max ? s.slice(0, max) : s;
 }
+// ── HYBRID V2 alan doğrulayıcıları ──
+function _numOrNull(v) {
+  if (v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function _verdictOrNull(v) {
+  return (v === 'CONFIRMED' || v === 'ARMED' || v === 'WATCH') ? v : null;
+}
+
 
 // ── Handler ─────────────────────────────────────────────────────────
 export default async function handler(req, res) {
@@ -274,6 +285,20 @@ export default async function handler(req, res) {
         radar_tier_at_open: radarTier,
         excluded_from_learning: (sampleType === 'research'),
         telegram_msg_id: msgId,
+        // ── HYBRID V2 damgası (Volkan onaylı şema; yoksa null — eski istemciler bozulmaz) ──
+        price_score: _numOrNull(body.price_score),
+        deriv_score: _numOrNull(body.deriv_score),
+        hybrid_score: _numOrNull(body.hybrid_score),
+        price_verdict: _verdictOrNull(body.price_verdict),
+        deriv_verdict: _verdictOrNull(body.deriv_verdict),
+        hybrid_verdict: _verdictOrNull(body.hybrid_verdict),
+        deriv_available: body.deriv_available === true,
+        funding_score: _numOrNull(body.funding_score),
+        oi_score: _numOrNull(body.oi_score),
+        positioning_score: _numOrNull(body.positioning_score),
+        liquidation_score: _numOrNull(body.liquidation_score),
+        deriv_factors: (body.deriv_factors && typeof body.deriv_factors === 'object') ? body.deriv_factors : null,
+        research_period: (typeof body.research_period === 'string' && body.research_period.length <= 64) ? body.research_period : null,
       };
       const rows = await sbFetch(`/analysis_archive?select=${RETURN_COLS}`, {
         method: 'POST',
@@ -296,6 +321,104 @@ export default async function handler(req, res) {
         { method: 'GET' }
       );
       return res.status(200).json({ ok: true, rows: rows || [], count: (rows || []).length });
+    }
+
+    // ── HYBRID_MATRIX: Faz 3 Agreement Matrix (SALT-OKUNUR, admin-only) ──
+    // Price × Deriv verdict kombinasyonlarının başarı oranları + taraf karşılaştırması
+    // + faktör etkinliği. Hiçbir şey yazmaz; RLS/public feed DEĞİŞMEZ.
+    if (action === 'hybrid_matrix') {
+      const period = (typeof body.period === 'string' && /^[\w-]{1,64}$/.test(body.period))
+        ? body.period : 'hybrid_research_v1';
+      const COLS = 'price_verdict,deriv_verdict,hybrid_verdict,deriv_available,outcome_status,outcome_quality,max_favorable_move_pct,max_adverse_move_pct,deriv_factors';
+      // Sayfalama: 1000'lik dilimlerle en çok 5000 kayıt
+      let rows = [];
+      for (let off = 0; off < 5000; off += 1000) {
+        const page = await sbFetch(
+          `/analysis_archive?research_period=eq.${encodeURIComponent(period)}&select=${COLS}&order=created_at.desc&limit=1000&offset=${off}`,
+          { method: 'GET' }
+        );
+        if (!page || !page.length) break;
+        rows = rows.concat(page);
+        if (page.length < 1000) break;
+      }
+
+      const V = ['CONFIRMED', 'ARMED', 'WATCH'];
+      const DV = ['CONFIRMED', 'ARMED', 'WATCH', 'NA'];
+      const cell = () => ({ n: 0, resolved: 0, confirmed: 0, invalidated: 0, partial: 0, expired: 0, recovered: 0, reversed: 0, mfeSum: 0, maeSum: 0 });
+      const matrix = {};
+      V.forEach(p => { matrix[p] = {}; DV.forEach(d => { matrix[p][d] = cell(); }); });
+      const sideAgg = { price: {}, deriv: {}, hybrid: {} };
+      ['price', 'deriv', 'hybrid'].forEach(k => V.forEach(v => { sideAgg[k][v] = cell(); }));
+      const factors = {
+        funding: { with: cell(), without: cell() },
+        oi: { with: cell(), without: cell() },
+        positioning: { with: cell(), against: cell(), neutral: cell() },
+        liq: { clean: cell(), storm: cell(), other: cell() },
+      };
+      let pending = 0;
+
+      function feed(c, os, q, mfe, mae) {
+        c.n++;
+        if (os === 'pending') return;
+        c.resolved++;
+        if (os === 'confirmed') c.confirmed++;
+        else if (os === 'invalidated') c.invalidated++;
+        else if (os === 'partial') c.partial++;
+        else c.expired++;
+        if (q === 'invalidated_then_recovered') c.recovered++;
+        if (q === 'confirmed_then_reversed') c.reversed++;
+        if (mfe != null && !isNaN(Number(mfe))) c.mfeSum += Number(mfe);
+        if (mae != null && !isNaN(Number(mae))) c.maeSum += Number(mae);
+      }
+
+      rows.forEach(r => {
+        const os = r.outcome_status || 'pending';
+        if (os === 'pending') { pending++; }
+        const pv = V.indexOf(r.price_verdict) >= 0 ? r.price_verdict : null;
+        const dv = (r.deriv_available === false || r.deriv_verdict == null) ? 'NA'
+                 : (V.indexOf(r.deriv_verdict) >= 0 ? r.deriv_verdict : 'NA');
+        const hv = V.indexOf(r.hybrid_verdict) >= 0 ? r.hybrid_verdict : null;
+        const q = r.outcome_quality, mfe = r.max_favorable_move_pct, mae = r.max_adverse_move_pct;
+        if (pv) feed(matrix[pv][dv], os, q, mfe, mae);
+        if (pv) feed(sideAgg.price[pv], os, q, mfe, mae);
+        if (dv !== 'NA') feed(sideAgg.deriv[dv], os, q, mfe, mae);
+        if (hv) feed(sideAgg.hybrid[hv], os, q, mfe, mae);
+        const f = r.deriv_factors || {};
+        if (f.funding_aligned === true) feed(factors.funding.with, os, q, mfe, mae);
+        else if (f.funding_aligned === false) feed(factors.funding.without, os, q, mfe, mae);
+        if (f.oi_expanding === true) feed(factors.oi.with, os, q, mfe, mae);
+        else if (f.oi_expanding === false) feed(factors.oi.without, os, q, mfe, mae);
+        if (f.positioning === 'SMART_WITH') feed(factors.positioning.with, os, q, mfe, mae);
+        else if (f.positioning === 'SMART_AGAINST') feed(factors.positioning.against, os, q, mfe, mae);
+        else if (f.positioning) feed(factors.positioning.neutral, os, q, mfe, mae);
+        if (f.liq_context === 'CLEAN') feed(factors.liq.clean, os, q, mfe, mae);
+        else if (f.liq_context === 'STORM') feed(factors.liq.storm, os, q, mfe, mae);
+        else if (f.liq_context) feed(factors.liq.other, os, q, mfe, mae);
+      });
+
+      // Oranları/ortalamaları kapanışta hesapla (istemci hesap yapmasın)
+      function finalize(c) {
+        return {
+          n: c.n, resolved: c.resolved, confirmed: c.confirmed, invalidated: c.invalidated,
+          partial: c.partial, expired: c.expired, recovered: c.recovered, reversed: c.reversed,
+          confirmRate: c.resolved > 0 ? Math.round((c.confirmed / c.resolved) * 100) : null,
+          avgMfe: c.resolved > 0 ? Math.round((c.mfeSum / c.resolved) * 100) / 100 : null,
+          avgMae: c.resolved > 0 ? Math.round((c.maeSum / c.resolved) * 100) / 100 : null,
+        };
+      }
+      const walk = (o) => {
+        const out = {};
+        Object.keys(o).forEach(k => { out[k] = (o[k] && o[k].n !== undefined) ? finalize(o[k]) : walk(o[k]); });
+        return out;
+      };
+      return res.status(200).json({
+        ok: true, period,
+        total: rows.length, pending,
+        capped: rows.length >= 5000,
+        matrix: walk(matrix),
+        sides: walk(sideAgg),
+        factors: walk(factors),
+      });
     }
 
     // ── LIST_RESEARCH: admin-only "Araştırma Katmanı" görünümü (SALT-OKUNUR) ──
