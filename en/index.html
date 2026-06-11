@@ -10086,6 +10086,9 @@ const P10 = (() => {
 <link rel="stylesheet" href="../ui/market-pulse/market-pulse.css">
 <link rel="stylesheet" href="../ui/market-pulse/market-summary.css">
 <link rel="stylesheet" href="../ui/ai-terminal/ai-terminal.css">
+<link rel="stylesheet" href="../ui/market-cards/market-cards.css">
+<link rel="stylesheet" href="../ui/research/agreement-matrix.css">
+<link rel="stylesheet" href="../ui/market-feed/ob-pressure.css">
 <script src="../engines/intelligence/ti-state.js"></script>
 <script src="../engines/intelligence/ti-regime.js"></script>
 <script src="../engines/intelligence/ti-mm-bias.js"></script>
@@ -10095,6 +10098,8 @@ const P10 = (() => {
 <script src="../engines/intelligence/ti-feed.js"></script>
 <script src="../engines/intelligence/ti-risk-assessor.js"></script>
 <script src="../engines/intelligence/ti-market-pressure.js"></script>
+<!-- ── HYBRID ENGINE V2 (Price+Deriv → Final; radar bundan önce ister) ── -->
+<script src="../engines/intelligence/hybrid-deriv-score.js"></script>
 <script src="../ui/intelligence/early-radar.js"></script>
 <script src="../ui/intelligence/ai-workspace.js"></script>
 <script src="../ui/intelligence/perf-workspace.js"></script>
@@ -10122,6 +10127,13 @@ const P10 = (() => {
 <script src="../ui/market-pulse/market-summary.js"></script>
 <!-- ── AI TERMINAL (4. iş — Anthropic soru-cevap, BETA) ────────────── -->
 <script src="../ui/ai-terminal/ai-terminal.js"></script>
+<!-- ── MARKET CARDS (6. iş — OI/Funding/Liq metrik kartları) ──────── -->
+<script src="../ui/market-cards/market-cards.js"></script>
+<!-- ── AGREEMENT MATRIX (Faz 3 — admin araştırma paneli) ──────────── -->
+<script src="../engines/learning/hybrid-insights.js"></script>
+<script src="../ui/research/agreement-matrix.js"></script>
+<!-- ── ORDER BOOK PRESSURE (8. iş — derinlik denge barı) ──────────── -->
+<script src="../ui/market-feed/ob-pressure.js"></script>
 <script>
 (function () {
   function _initLF() {
@@ -10130,6 +10142,9 @@ const P10 = (() => {
     try { if (window.VDMarketPulse) window.VDMarketPulse.mount(); } catch (e) {}
     try { if (window.VDMarketSummary) window.VDMarketSummary.mount(); } catch (e) {}
     try { if (window.VDAITerminal) window.VDAITerminal.mount(); } catch (e) {}
+    try { if (window.VDMarketCards) window.VDMarketCards.mount(); } catch (e) {}
+    try { if (window.VDAgreementMatrix) window.VDAgreementMatrix.mount(); } catch (e) {}
+    try { if (window.VDObPressure) window.VDObPressure.mount(); } catch (e) {}
     let _lastSym = window.SYM || null;
     setInterval(function () {
       const s = window.SYM;
