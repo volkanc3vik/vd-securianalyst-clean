@@ -62,27 +62,54 @@ function mapValidationScore(outcome) {
 
 // ── First-hit çözümleyici (saf fonksiyon) ─────────────────────────────
 // klines: Binance fapi formatı [openTime, open, high, low, close, ...]
-function resolveFirstHit({ bias, entry, klines, confirmPct, invalidPct, partialPct }) {
+function resolveFirstHit({ bias, entry, klines, confirmPct, invalidPct, partialPct, startMs }) {
   const e = Number(entry);
   const b = (bias === 'bearish') ? 'short' : (bias === 'neutral' ? 'neutral' : 'long');
 
   let maxFav = 0, maxAdv = 0;
   let status = null, firstHit = null, resolvedMs = null;
+  // ── OUTCOME INTELLIGENCE (first_hit_v1_oi) ek takip — karar mantığına DOKUNMAZ ──
+  let mfeAtMs = null, maeAtMs = null;          // zirvelerin zamanı
+  let firstConfirmTouchMs = null, firstInvalidTouchMs = null; // seviyelere İLK değme (çözümden bağımsız)
+  let peakAfterResolve = 0;                    // çözümden SONRAKİ en iyi lehte hareket
+  let lastClosePct = null;                     // pencere kapanışı (lehte işaretli)
 
   for (const k of klines) {
     const openTime = +k[0];
     const high = +k[2], low = +k[3];
     if (isNaN(high) || isNaN(low)) continue;
+    const closeP = +k[4];
 
     const upPct   = (high - e) / e * 100;  // yukarı hareket (%)
     const downPct = (e - low) / e * 100;   // aşağı hareket (%) — pozitif
 
     // Max favorable / adverse (bilgi) — TÜM pencere boyunca
-    if (b === 'long')       { maxFav = Math.max(maxFav, upPct);   maxAdv = Math.max(maxAdv, downPct); }
-    else if (b === 'short') { maxFav = Math.max(maxFav, downPct); maxAdv = Math.max(maxAdv, upPct); }
-    else                    { const m = Math.max(upPct, downPct); maxFav = Math.max(maxFav, m); maxAdv = Math.max(maxAdv, m); }
+    let favHere, advHere;
+    if (b === 'long')       { favHere = upPct;   advHere = downPct; }
+    else if (b === 'short') { favHere = downPct; advHere = upPct; }
+    else                    { const m = Math.max(upPct, downPct); favHere = m; advHere = m; }
+    if (favHere > maxFav) { maxFav = favHere; mfeAtMs = openTime; }
+    if (advHere > maxAdv) { maxAdv = advHere; maeAtMs = openTime; }
 
-    if (status) continue; // zaten çözüldü → kalan mumlarda yalnız maxFav/Adv toplanır
+    // Pencere kapanışı (lehte işaretli %) — her mumda güncellenir, sonuncusu kalır
+    if (!isNaN(closeP)) {
+      lastClosePct = (b === 'short') ? (e - closeP) / e * 100 : (closeP - e) / e * 100;
+    }
+
+    // Seviyelere ilk değme zamanları (yön bazlı; karar mantığından bağımsız bilgi)
+    if (b !== 'neutral') {
+      const cTouch = (b === 'long') ? upPct >= confirmPct : downPct >= confirmPct;
+      const iTouch = (b === 'long') ? downPct >= invalidPct : upPct >= invalidPct;
+      if (cTouch && firstConfirmTouchMs == null) firstConfirmTouchMs = openTime;
+      if (iTouch && firstInvalidTouchMs == null) firstInvalidTouchMs = openTime;
+    }
+
+    // Çözüm SONRASI zirve (çözüm mumunun kendisi hariç — intrabar belirsiz)
+    if (status && resolvedMs != null && openTime > resolvedMs) {
+      peakAfterResolve = Math.max(peakAfterResolve, favHere);
+    }
+
+    if (status) continue; // zaten çözüldü → kalan mumlarda yalnız bilgi toplanır
 
     let hitConfirm = false, hitInvalid = false;
     if (b === 'long')       { hitConfirm = upPct   >= confirmPct; hitInvalid = downPct >= invalidPct; }
@@ -112,7 +139,36 @@ function resolveFirstHit({ bias, entry, klines, confirmPct, invalidPct, partialP
     }
   }
 
-  return { status, firstHit, resolvedMs, maxFav: r2(maxFav), maxAdv: r2(maxAdv) };
+  const _min = (ms) => (ms != null && startMs != null) ? Math.max(0, Math.round((ms - startMs) / 60000)) : null;
+  return {
+    status, firstHit, resolvedMs, maxFav: r2(maxFav), maxAdv: r2(maxAdv),
+    // ── Outcome Intelligence alanları ──
+    mfeAtMs, maeAtMs,
+    windowClosePct: lastClosePct != null ? r2(lastClosePct) : null,
+    ttcMin: _min(firstConfirmTouchMs),
+    ttiMin: _min(firstInvalidTouchMs),
+    peakAfterConfirm: (status === 'confirmed') ? r2(peakAfterResolve) : null,
+    peakAfterInvalid: (status === 'invalidated') ? r2(peakAfterResolve) : null,
+  };
+}
+
+// ── Outcome Quality (Volkan onaylı kurallar) ──────────────────────────
+//   clean_confirmed           : confirmed & close ≥ 0 (reversal yoksa)
+//   confirmed_then_reversed   : confirmed & close < 0
+//   invalidated_then_recovered: invalidated & (MFE ≥ confirm eşiği VEYA close ≥ +partial)
+//   clean_invalidated         : kalan invalidated
+//   (partial/expired/neutral → null)
+function outcomeQuality(res, confirmPct, partialPct) {
+  const c = res.windowClosePct;
+  if (res.status === 'confirmed') {
+    if (c != null && c < 0) return 'confirmed_then_reversed';
+    return 'clean_confirmed';
+  }
+  if (res.status === 'invalidated') {
+    if (res.maxFav >= confirmPct || (c != null && c >= partialPct)) return 'invalidated_then_recovered';
+    return 'clean_invalidated';
+  }
+  return null;
 }
 
 // ── Tek kaydı çöz ─────────────────────────────────────────────────────
@@ -148,7 +204,7 @@ async function resolveOne(rec, dry) {
   const invalidPct = (rec.invalid_threshold_pct != null) ? Number(rec.invalid_threshold_pct) : prof.invalid;
   const partialPct = prof.partial;
 
-  const res = resolveFirstHit({ bias: rec.direction_bias, entry, klines: kl, confirmPct, invalidPct, partialPct });
+  const res = resolveFirstHit({ bias: rec.direction_bias, entry, klines: kl, confirmPct, invalidPct, partialPct, startMs });
   const lastClose = +kl[kl.length - 1][4];
   const endMovePct = (!isNaN(lastClose)) ? r2((lastClose - entry) / entry * 100) : null;
 
@@ -172,6 +228,15 @@ async function resolveOne(rec, dry) {
     max_favorable_move_pct: res.maxFav,
     max_adverse_move_pct: res.maxAdv,
     outcome_engine_version: rec.outcome_engine_version || OUTCOME_ENGINE_VERSION,
+    // ── OUTCOME INTELLIGENCE (Volkan onaylı yeni alanlar) ──
+    window_close_pct: res.windowClosePct,
+    time_to_confirm_min: res.ttcMin,
+    time_to_invalid_min: res.ttiMin,
+    mfe_at: res.mfeAtMs ? new Date(res.mfeAtMs).toISOString() : null,
+    mae_at: res.maeAtMs ? new Date(res.maeAtMs).toISOString() : null,
+    peak_profit_after_confirm: res.peakAfterConfirm,
+    peak_profit_after_invalid: res.peakAfterInvalid,
+    outcome_quality: outcomeQuality(res, confirmPct, partialPct),
     // ── ESKİ alanlar (UI/stats köprüsü — değişmeden çalışsın) ──
     review_status: reviewStatus,
     reviewed_at: nowIso,
@@ -187,6 +252,9 @@ async function resolveOne(rec, dry) {
       engine: 'first_hit_v1', outcome_status: res.status, first_hit: res.firstHit,
       confirm_pct: confirmPct, invalid_pct: invalidPct, partial_pct: partialPct,
       max_favorable_move_pct: res.maxFav, max_adverse_move_pct: res.maxAdv, ttr_minutes: ttr,
+      window_close_pct: res.windowClosePct, ttc_min: res.ttcMin, tti_min: res.ttiMin,
+      peak_after_confirm: res.peakAfterConfirm, peak_after_invalid: res.peakAfterInvalid,
+      outcome_quality: outcomeQuality(res, confirmPct, partialPct),
     },
   };
 

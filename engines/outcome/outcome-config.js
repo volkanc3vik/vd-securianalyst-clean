@@ -7,7 +7,7 @@
 //   sonuç ona göre kapanır. Max favorable/adverse SADECE bilgi.
 // ═══════════════════════════════════════════════════════════════════
 
-export const OUTCOME_ENGINE_VERSION = 'first_hit_v1';
+export const OUTCOME_ENGINE_VERSION = 'first_hit_v1_oi'; // _oi = Outcome Intelligence alan eki; first-hit karar mantığı bit-bit AYNI
 
 // Intrabar belirsizlik: tek mumda hem confirm hem invalid değerse → kim kazanır?
 // Volkan kararı: invalid (muhafazakâr).
