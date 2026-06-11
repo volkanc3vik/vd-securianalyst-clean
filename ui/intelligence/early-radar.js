@@ -145,15 +145,17 @@
     return { value: Math.round(structPart + energyEff), structBase };
   }
 
-  // ── Aşama ──
-  function classify(s, rd) {
-    if (s.volConfirmed && s.align >= 0.99 && s.conf >= 0.6) return 'CONFIRMED';
-    if (rd.structBase >= CFG.structFloorArmed && s.align >= 2 / 3 && s.riskInv >= CFG.riskInvArmed
-        && s.volFiring && rd.value >= CFG.ARMED_MIN) return 'ARMED';
-    if ((s.score || 0) >= 60 && rd.structBase >= CFG.structFloorWatch
-        && ((s.squeeze || 0) >= 0.5 || (s.compress || 0) >= 0.5)
-        && !s.volConfirmed && rd.value >= CFG.WATCH_MIN) return 'WATCH';
-    return null;
+  // ── Aşama — HYBRID V2 (Volkan direktifi: final karar YALNIZ Final Hybrid Score'dan) ──
+  // Eski yapısal kapılar (hacim/hizalama/conf) kaldırıldı; o sinyaller zaten
+  // PriceScore tarafına yansıyor. Deriv değerlendirilmemişse hybrid=price.
+  function classify(s, rd, sym, dir) {
+    const p = (s.score != null && Number.isFinite(+s.score)) ? +s.score : null;
+    if (p == null) return null;
+    const HE = window.VDHybridEngine;
+    const rec = (HE && HE.get) ? HE.get(sym, dir) : null;
+    const hybrid = rec ? rec.hybrid : Math.round(p);
+    if (HE && HE.verdictOf) return HE.verdictOf(hybrid);
+    return hybrid >= 80 ? 'CONFIRMED' : hybrid >= 65 ? 'ARMED' : hybrid >= 50 ? 'WATCH' : null;
   }
   const RANK = { WATCH: 1, ARMED: 2, CONFIRMED: 3 };
 
@@ -191,7 +193,7 @@
     const dir = lS >= sS ? 'LONG' : 'SHORT';
     const s = subScores(item, dir);
     const rd = readiness(s);
-    const cand = classify(s, rd);
+    const cand = classify(s, rd, item.sym, dir);
 
     const prev = ST.get(item.sym);
     let stage = prev ? prev.stage : null;
@@ -331,6 +333,41 @@
       + '<div class="er-micro" style="margin-top:8px">'+_L('er.biasMicro2', null, 'Yön dağılımı'+_L('er.observations', null, ' gözlem')+'i — olgunluk katmanından (Altın/Turuncu/Gri) ayrı bilgidir. Yatırım tavsiyesi değildir.')+'</div></div>';
   }
 
+  // ── HYBRID V2 kart bloğu: Price / Derivative / FINAL üçlüsü + faktör rozetleri ──
+  function vWord(v){ return v==='CONFIRMED'?_L('hy.conf',null,'Confirmed'):v==='ARMED'?_L('hy.armed',null,'Armed'):v==='WATCH'?_L('hy.watch',null,'Watch'):'—'; }
+  function vCol(v){ return v==='CONFIRMED'?'#e8b84b':v==='ARMED'?'#ff8a3d':v==='WATCH'?'#9aa6b8':'#5b6678'; }
+  function hybridBlock(r){
+    var HE=window.VDHybridEngine; if(!HE||!HE.get) return '';
+    var rec=HE.get(r.sym, r.dir);
+    var p=(r.s&&r.s.score!=null)?Math.round(+r.s.score):null;
+    if(rec==null && p==null) return '';
+    var price=rec?rec.price:p, pv=rec?rec.priceVerdict:(HE.verdictOf?HE.verdictOf(price):null);
+    var dAvail=!!(rec&&rec.deriv&&rec.deriv.available);
+    var d=dAvail?rec.deriv.score:null, dv=dAvail?rec.derivVerdict:null;
+    var h=rec?rec.hybrid:price, hv=rec?rec.hybridVerdict:pv;
+    function line(lbl,sc,v,strong){
+      var c=vCol(v);
+      return '<div class="er-hy-line'+(strong?' er-hy-final':'')+'"><span class="er-hy-lbl">'+lbl+'</span>'
+        + '<b class="er-hy-sc">'+(sc!=null?sc:'—')+'</b>'
+        + '<span class="er-hy-v" style="color:'+c+';border-color:'+c+'66;background:'+c+'14">'+(strong?'★ ':'')+vWord(v)+'</span></div>';
+    }
+    var chips='';
+    if(dAvail&&rec.deriv.factors){
+      var f=rec.deriv.factors, cs=[];
+      if(f.funding) cs.push((f.funding.aligned?'✓ ':'✗ ')+_L('hy.fFund',null,'Funding'));
+      if(f.oi) cs.push((f.oi.expanding?'✓ ':'· ')+_L('hy.fOi',null,'OI'));
+      if(f.positioning) cs.push((f.positioning.context==='SMART_WITH'?'✓ ':f.positioning.context==='SMART_AGAINST'?'✗ ':'· ')+_L('hy.fPos',null,'Smart $'));
+      if(f.liquidation) cs.push((f.liquidation.context==='CLEAN'?'✓ ':f.liquidation.context==='STORM'?'✗ ':'· ')+_L('hy.fLiq',null,'Liq'));
+      chips='<div class="er-hy-chips">'+cs.map(function(t){return '<span class="er-hy-chip'+(t.charAt(0)==='✓'?' ok':t.charAt(0)==='✗'?' bad':'')+'">'+esc(t)+'</span>';}).join('')+'</div>';
+    }
+    return '<div class="er-hy">'
+      + line(_L('hy.price',null,'Price Structure'), price, pv, false)
+      + line(_L('hy.deriv',null,'Derivative Intel'), d, dv, false)
+      + (dAvail?'':'<div class="er-hy-na">'+_L('hy.na',null,'Deriv: veri henüz yok (top-10 dışı veya ısınıyor)')+'</div>')
+      + line(_L('hy.final',null,'FINAL HYBRID'), h, hv, true)
+      + chips + '</div>';
+  }
+
   function radarCard(r, tierCls, big, elite, ethC){
     var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(1):'—'), sw=(typeof score==='number'?score:0);
     var btc=ctxLabel(r.btcChg), col=(tierCls==='er-gold')?'#e8b84b':(tierCls==='er-orange')?'#ff8a3d':'#9aa6b8';
@@ -343,6 +380,7 @@
       + '<span class="er-stage" style="color:'+col+';border:1px solid '+col+'80;background:'+col+'1a">'+stageWord(r.stage)+'</span></div>'
       + '<div class="er-scrow"><span>'+_L('er.confScoreLbl', null, 'Güven Skoru')+'</span><b style="color:'+col+'">'+score+'<span style="color:#8b98ac;font-size:9px">/100</span></b></div>'
       + '<div class="er-bar"><i style="width:'+sw+'%;background:linear-gradient(90deg,'+col+'88,'+col+')"></i></div>'
+      + hybridBlock(r)
       + '<div class="er-tech"><span>RSI <b>'+rsi+'</b></span><span>EMA <b style="color:'+(r.s.okEma?'#36d399':'#8b98ac')+'">'+(r.s.okEma?'▲▲▲':'—')+'</b></span><span>MACD <b style="color:'+(r.s.okMacd?'#36d399':'#8b98ac')+'">'+(r.s.okMacd?'▲':'—')+'</b></span><span>Readiness <b>'+r.value+'</b></span></div>'
       + '<div class="er-ctx"><span>BTC <b style="color:'+btc.col+'">'+btc.txt+'</b></span><span>ETH <b style="color:'+ethC.col+'">'+ethC.txt+'</b></span></div>'
       + (chips?'<div class="er-why"><span class="er-why-h">Neden burada?</span><div class="er-chips">'+chips+'</div></div>':'')
@@ -369,12 +407,26 @@
       + '<div class="er-hero-meta"><span class="er-hero-stage" style="color:'+col+';border-color:'+col+'80;background:'+col+'1a">'+stageWord(r.stage)+'</span>'
       + '<span class="er-hero-dir" style="color:'+dirCol+'">'+_L('er.dirBias', null, 'Yön eğilimi: ')+''+dirTxt+'</span>'
       + '<span class="er-hero-ctx">BTC '+ctxLabel(r.btcChg).txt+' · ETH '+ethC.txt+'</span></div>'
+      + hybridBlock(r)
       + (chips?'<div class="er-hero-why"><span class="er-hero-whyh">'+_L('er.whyStood', null, 'Neden öne çıktı?')+'</span><div class="er-hchips">'+chips+'</div></div>':'')
       + '<button class="er-hero-cta">'+_L('er.goChart', null, 'Grafiğe Git →')+'</button>'
       + '<div class="er-micro">'+_L('er.matObs2', null, 'Yapı olgunluğu'+_L('er.observations', null, ' gözlem')+'i — işlem/yön önerisi değildir, yatırım tavsiyesi değildir.')+'</div></div>';
   }
 
   var STYLE_CSS=''
+  + '.vd-radar .er-hy{margin:7px 0 4px;padding:7px 8px;background:#0a111e;border:1px solid #1a2434;border-radius:9px}'
+  + '.vd-radar .er-hy-line{display:flex;align-items:center;gap:7px;font-size:10px;color:#8b98ac;padding:2px 0}'
+  + '.vd-radar .er-hy-lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+  + '.vd-radar .er-hy-sc{color:#e6edf6;font-size:11px;min-width:22px;text-align:right;font-variant-numeric:tabular-nums}'
+  + '.vd-radar .er-hy-v{font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px;border:1px solid}'
+  + '.vd-radar .er-hy-final{border-top:1px dashed #223046;margin-top:3px;padding-top:5px}'
+  + '.vd-radar .er-hy-final .er-hy-lbl{color:#cfd9e6;font-weight:700}'
+  + '.vd-radar .er-hy-final .er-hy-sc{font-size:13px}'
+  + '.vd-radar .er-hy-na{font-size:9px;color:#5b6678;padding:1px 0 3px}'
+  + '.vd-radar .er-hy-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}'
+  + '.vd-radar .er-hy-chip{font-size:8.5px;color:#8b98ac;border:1px solid #223046;border-radius:7px;padding:1px 6px}'
+  + '.vd-radar .er-hy-chip.ok{color:#36d399;border-color:#36d39955}'
+  + '.vd-radar .er-hy-chip.bad{color:#f87272;border-color:#f8727255}'
   + '.vd-radar .er-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}'
   + '.vd-radar .er-title{font-size:14px;font-weight:800;color:#e6edf6}'
   + '.vd-radar .er-live{font-size:10px;color:#36d399}'
@@ -594,6 +646,22 @@
     _lastScanAt=Date.now(); _stale=false;
     var rows=[];
     for (var i=0;i<results.length;i++){ var item=results[i]; try{ if(item&&item.sym) rows.push(process(item)); }catch(e){} }
+    // ── HYBRID V2 Stage-2: price-top-N + BTC/ETH için DerivScore (rate-limit dostu) ──
+    try {
+      var HE = window.VDHybridEngine;
+      if (HE && HE.evaluate) {
+        var topN = rows.slice().filter(function(r){ return r && r.s && r.s.score != null; })
+          .sort(function(a,b){ return (+b.s.score||0) - (+a.s.score||0); })
+          .slice(0, (HE.CFG && HE.CFG.TOP_N) || 10);
+        var seen = {};
+        topN.forEach(function(r){ seen[r.sym]=1; HE.evaluate(r.sym, r.dir, +r.s.score).catch(function(){}); });
+        ['BTCUSDT','ETHUSDT'].forEach(function(sym){
+          if (seen[sym]) return;
+          var st = ST.get(sym);
+          if (st && st.s && st.s.score != null) HE.evaluate(sym, st.dir, +st.s.score).catch(function(){});
+        });
+      }
+    } catch (e) {}
     _saveCache(rows);
     loadArchive(function(){ _lastRows=rows; renderSummary(rows); if(_wsOpen) renderWorkspace(rows); });
   }

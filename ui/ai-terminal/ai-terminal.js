@@ -53,6 +53,11 @@ window.VDAITerminal = (function () {
         L.push('Pozisyonlanma: top trader long %' + p.smart.topLong + ' vs retail long %' + p.smart.retailLong + (p.smart.divergence ? ' (AYRIŞMA)' : ''));
       if (p.taker && p.taker.buyPct != null)
         L.push('Borsa-geneli taker buy: %' + p.taker.buyPct);
+      try {
+        const ob = (window.VDObPressure && window.VDObPressure.get) ? window.VDObPressure.get() : null;
+        if (ob && ob.bidPct != null)
+          L.push('Order book ±%' + ob.range + ': bid %' + ob.bidPct + ' / ask %' + ob.askPct + ' (pasif derinlik, 3 borsa)');
+      } catch (e) {}
       const ti = (window.TIState && window.TIState.get) ? window.TIState.get() : {};
       if (ti.regime && ti.regime.code) L.push('Piyasa rejimi: ' + ti.regime.code + (ti.regime.label ? ' (' + ti.regime.label + ')' : ''));
       if (ti.mmBias && ti.mmBias.headline) L.push('MM yönelimi: ' + ti.mmBias.headline);

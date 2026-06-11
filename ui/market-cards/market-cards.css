@@ -1,0 +1,63 @@
+/* ════════════════════════════════════════════════════════════════════
+   MARKET CARDS — 6. iş · OI / Funding / Liquidation metrik kartları
+   .mkt-card temel stilleri index'te global; burada yalnız vd-mc ekleri.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Kart aksan renkleri (mevcut btc/eth/btcd desenindeki gibi) */
+.vd-mc-oi { border-top: 2px solid rgba(0, 212, 255, 0.55); }
+.vd-mc-fr { border-top: 2px solid rgba(255, 193, 7, 0.55); }
+.vd-mc-lq { border-top: 2px solid rgba(255, 145, 0, 0.55); }
+
+.vd-mc-ic-oi { background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--cyan, #00d4ff); }
+.vd-mc-ic-fr { background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); color: var(--yellow, #ffc107); }
+.vd-mc-ic-lq { background: rgba(255, 145, 0, 0.1); border: 1px solid rgba(255, 145, 0, 0.3); color: var(--orange, #ff9100); }
+
+.vd-mc-bdg-oi { background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--cyan, #00d4ff); }
+.vd-mc-bdg-fr { background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); color: var(--yellow, #ffc107); }
+.vd-mc-bdg-lq { background: rgba(255, 145, 0, 0.1); border: 1px solid rgba(255, 145, 0, 0.3); color: var(--orange, #ff9100); }
+
+/* ── OI kartı: Long/Short hesap oranı barı ── */
+.vd-mc-ratio { margin: 6px 0 8px; }
+.vd-mc-ratio-lbl { font-size: 9px; color: var(--text3, #3a6080); letter-spacing: 0.04em; margin-bottom: 4px; }
+.vd-mc-ratio-track {
+  height: 6px; border-radius: 4px; overflow: hidden;
+  background: rgba(255, 61, 107, 0.35);   /* kalan kısım = short */
+}
+.vd-mc-ratio-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green, #00e5a0), rgba(0, 229, 160, 0.65));
+  transition: width 0.6s ease;
+}
+.vd-mc-ratio-pcts { display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 700; margin-top: 3px; }
+.vd-mc-ratio-pcts .up { color: var(--green, #00e5a0); }
+.vd-mc-ratio-pcts .dn { color: var(--red, #ff3d6b); }
+
+/* ── Funding kartı: sentiment rozeti ── */
+.vd-mc-sent {
+  display: inline-block;
+  font-size: 10px; font-weight: 800;
+  padding: 3px 10px; border-radius: 7px;
+  margin: 4px 0 6px;
+}
+.vd-mc-sent.dn  { color: var(--red, #ff3d6b);   background: rgba(255, 61, 107, 0.09); border: 1px solid rgba(255, 61, 107, 0.25); }
+.vd-mc-sent.up  { color: var(--green, #00e5a0); background: rgba(0, 229, 160, 0.09);  border: 1px solid rgba(0, 229, 160, 0.25); }
+.vd-mc-sent.mid { color: var(--text2, #7aaac8); background: rgba(122, 170, 200, 0.07); border: 1px solid rgba(122, 170, 200, 0.2); }
+
+/* ── Likidasyon kartı: sol metin + sağ donut ── */
+.vd-mc-lq-body { display: flex; align-items: center; gap: 10px; }
+.vd-mc-lq-left { flex: 1; min-width: 0; }
+.vd-mc-lq-right { flex: none; }
+.vd-mc-lq-split { font-size: 10.5px; color: var(--text2, #7aaac8); margin-top: 6px; line-height: 1.7; }
+.vd-mc-lq-split b { color: var(--text, #e8f4ff); font-variant-numeric: tabular-nums; }
+.vd-mc-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+.vd-mc-dot.up { background: var(--green, #00e5a0); }
+.vd-mc-dot.dn { background: var(--red, #ff3d6b); }
+
+.vd-mc-donut { width: 72px; height: 72px; }
+.vd-mc-donut-t { font-size: 13px; font-weight: 800; fill: var(--text, #e8f4ff); }
+.vd-mc-donut-s { font-size: 7px; fill: var(--green, #00e5a0); letter-spacing: 0.08em; }
+.vd-mc-donut-na { width: 72px; text-align: center; font-size: 18px; color: var(--text3, #3a6080); }
+
+@media (max-width: 560px) {
+  .vd-mc-donut { width: 60px; height: 60px; }
+}
