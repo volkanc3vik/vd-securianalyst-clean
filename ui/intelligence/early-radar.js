@@ -433,7 +433,14 @@
   }
 
   function radarCard(r, tierCls, big, elite, ethC){
-    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(1):'—'), sw=(typeof score==='number'?score:0);
+    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), rsi=(r.s.rsi!=null?(+r.s.rsi).toFixed(1):'—');
+    // ── TEK KARAR TEK SKOR: manşet "Güven Skoru" = FINAL HYBRID (deriv varsa).
+    // Price zaten blokta kendi satırında; manşet kademeyle çelişmesin.
+    try {
+      var _hh = (window.VDHybridEngine && window.VDHybridEngine.get) ? window.VDHybridEngine.get(r.sym, r.dir) : null;
+      if (_hh && _hh.hybrid != null) score = _hh.hybrid;
+    } catch (e) {}
+    var sw=(typeof score==='number'?score:0);
     var btc=ctxLabel(r.btcChg), col=(tierCls==='er-gold')?'#e8b84b':(tierCls==='er-orange')?'#ff8a3d':'#9aa6b8';
     var chips=reasonChips(r.s).map(function(t){return '<span class="er-chip">'+esc(t)+'</span>';}).join('');
     var di=dirInfo(r);
