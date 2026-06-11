@@ -341,6 +341,15 @@
   // (istendi, bekliyor) · LOW_DATA (<2 faktör) · CG_OFF · ENGINE_MISSING.
   // Hata bile olsa kart kırılmaz; blok durumunu söyler.
   var _hyWarned = {};
+  // Tembel değerlendirme tamamlanınca kartları BİR KEZ tazele (fırtına yok)
+  var _hyRrT = null;
+  function _hyRerender(){
+    if(_hyRrT) return;
+    _hyRrT = setTimeout(function(){
+      _hyRrT = null;
+      try { if(_lastRows && _lastRows.length){ renderSummary(_lastRows); if(_wsOpen) renderWorkspace(_lastRows); } } catch(e){}
+    }, 900);
+  }
   function _hyWarn(code, msg){
     if(_hyWarned[code]) return; _hyWarned[code]=1;
     try { console.error('[Hybrid] '+msg); } catch(e){}
@@ -387,6 +396,12 @@
     if(!dAvail){
       var cgOn=false;
       try { cgOn=!!(window.CoinGlassService&&window.CoinGlassService.isEnabled&&window.CoinGlassService.isEnabled()); } catch(e){}
+      // ── TEMBEL ÖZ-İYİLEŞME: hangi render yolundan gelirsek gelelim,
+      // rec yoksa burada iste (inflight+TTL tekrarları korur; görünür kart ≤9 → limit-güvenli).
+      // Tamamlanınca kartlar debounce ile BİR KEZ tazelenir.
+      if(!rec && cgOn && p!=null && HE.evaluate){
+        try { HE.evaluate(r.sym, r.dir, p).then(function(){ _hyRerender(); }).catch(function(){}); } catch(e){}
+      }
       if(!cgOn){
         naMsg=_L('hy.naCgOff',null,'CoinGlass kapalı/erişilemez — konsoldaki [CoinGlass] hatasına bak');
         _hyWarn('cgoff','CoinGlass servis kapalı/erişilemez — DerivScore üretilemiyor (price fallback aktif).');
@@ -440,7 +455,12 @@
 
   // ── TEK DEV HERO KART: en olgun fırsat (göz buraya gider) ──
   function heroCard(r, elite, ethC){
-    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—'), sw=(typeof score==='number'?score:0);
+    var sym=esc(r.sym.replace('USDT','')), score=(r.s.score!=null?r.s.score:'—');
+    try {
+      var _hh = (window.VDHybridEngine && window.VDHybridEngine.get) ? window.VDHybridEngine.get(r.sym, r.dir) : null;
+      if (_hh && _hh.hybrid != null) score = _hh.hybrid;
+    } catch (e) {}
+    var sw=(typeof score==='number'?score:0);
     var col=(r.stage==='CONFIRMED')?'#e8b84b':(r.stage==='ARMED')?'#ff8a3d':'#9aa6b8';
     var chips=reasonChips(r.s).map(function(t){return '<span class="er-hchip">✓ '+esc(t)+'</span>';}).join('');
     var dir=(r.dir||'').toUpperCase();
@@ -707,8 +727,8 @@
         topN.forEach(function(r){ seen[r.sym]=1; HE.evaluate(r.sym, r.dir, +r.s.score).catch(function(){}); });
         ['BTCUSDT','ETHUSDT'].forEach(function(sym){
           if (seen[sym]) return;
-          var st = ST.get(sym);
-          if (st && st.s && st.s.score != null) HE.evaluate(sym, st.dir, +st.s.score).catch(function(){});
+          var rr=null; for (var j=0;j<rows.length;j++){ if(rows[j]&&rows[j].sym===sym){ rr=rows[j]; break; } }
+          if (rr && rr.s && rr.s.score != null) HE.evaluate(sym, rr.dir, +rr.s.score).catch(function(){});
         });
       }
     } catch (e) {}
