@@ -145,7 +145,18 @@ module.exports = async function handler(req, res) {
     if (!ELITE_ACTIONS.includes(body.action)) {
       return res.status(403).json({ ok: false, error: 'unauthorized' });
     }
-    const v = await verifyEliteCode(req.headers['x-elite-code'], ip);
+    const eliteCode = req.headers['x-elite-code'];
+    // Kolaylık: Elite alanına ADMIN anahtarı yazılırsa admin olarak kabul et
+    // (aynı gizli değer, aynı taşıma — tabloya gitmeye gerek yok).
+    const adminViaElite = typeof eliteCode === 'string' && validKeys.includes(eliteCode);
+    if (adminViaElite) {
+      keyHash = sha256(eliteCode).slice(0, 12);
+      const rlA = rateLimit(ip, keyHash);
+      if (!rlA.ok) return res.status(429).json({ ok: false, error: 'rate_limited', retry_in_ms: rlA.retryInMs });
+      if (body.action === 'elite_verify') return res.status(200).json({ ok: true, tier: 'admin' });
+      // ai_chat → admin limitleriyle devam (aşağıdaki ortak akışa düşer)
+    } else {
+    const v = await verifyEliteCode(eliteCode, ip);
     if (v.why === 'verify_rate') return res.status(429).json({ ok: false, error: 'verify_rate_limited' });
     if (!v.ok) return res.status(403).json({ ok: false, error: 'unauthorized' });   // jenerik — kod sızdırmaz
     keyHash = 'el_' + v.hash.slice(0, 12);
@@ -156,6 +167,7 @@ module.exports = async function handler(req, res) {
       return res.status(429).json({ ok: false, error: 'daily_limit' });
     if (body.action === 'elite_verify') {
       return res.status(200).json({ ok: true, tier: 'elite' });
+    }
     }
   }
 
