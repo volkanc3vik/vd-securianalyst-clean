@@ -22,7 +22,7 @@ const CoinGlassService = (() => {
 
   const CONFIG = { enabled: false, timeout: 8000 };
   const _cache = new Map();
-  const TTL = { fund: 120000, oi: 60000, ls: 300000, liq: 300000, top: 300000, taker: 60000 };
+  const TTL = { fund: 120000, oi: 60000, ls: 300000, liq: 300000, top: 300000, taker: 60000, hist: 300000, ob: 120000 };
 
   // Hobbyist'te kapalı endpoint'ler (paket tablosundan)
   const UNAVAILABLE = new Set([
@@ -217,22 +217,32 @@ const CoinGlassService = (() => {
     try {
       if (!CONFIG.enabled) throw new Error('disabled');
       const data = await _fetch('/api/futures/liquidation/aggregated-history', {
-        exchange_list: 'Binance,OKX,Bybit', symbol: coin, interval: '4h', limit: 7,
+        exchange_list: 'Binance,OKX,Bybit', symbol: coin, interval: '4h', limit: 13,
       });
       if (Array.isArray(data) && data.length) {
-        const buckets = data.slice(-6).map(d => ({
+        const mk = d => ({
           ts: +d.time,
           long: +(d.aggregated_long_liquidation_usd || 0),
           short: +(d.aggregated_short_liquidation_usd || 0),
-        }));
+        });
+        const all = data.map(mk);
+        const buckets = all.slice(-6);                 // son 24 saat (6×4h)
+        const prevBuckets = all.slice(-12, -6);        // önceki 24 saat
         const long24h = buckets.reduce((s, b) => s + b.long, 0);
         const short24h = buckets.reduce((s, b) => s + b.short, 0);
         const total24h = long24h + short24h;
+        const prev24h = prevBuckets.length >= 6
+          ? prevBuckets.reduce((s, b) => s + b.long + b.short, 0) : null;
+        const change24h = (prev24h != null && prev24h > 0)
+          ? +(((total24h - prev24h) / prev24h) * 100).toFixed(1) : null;
+        let maxBucket = null;
+        buckets.forEach(b => { const t = b.long + b.short; if (!maxBucket || t > maxBucket.total) maxBucket = { ts: b.ts, total: t }; });
         const lastT = buckets.length ? buckets[buckets.length - 1].long + buckets[buckets.length - 1].short : 0;
-        const prev = buckets.slice(0, -1);
-        const avgPrev = prev.length ? prev.reduce((s, b) => s + b.long + b.short, 0) / prev.length : 0;
+        const prevAvgSrc = buckets.slice(0, -1);
+        const avgPrev = prevAvgSrc.length ? prevAvgSrc.reduce((s, b) => s + b.long + b.short, 0) / prevAvgSrc.length : 0;
         result = {
           long24h, short24h, total24h,
+          prev24h, change24h, maxBucket,
           dominant: total24h > 0 ? (long24h >= short24h ? 'LONG' : 'SHORT') : null,
           pace: avgPrev > 0 ? +(lastT / avgPrev).toFixed(2) : null, // son 4s, ortalamaya göre hız
           buckets, source: 'coinglass',
@@ -289,6 +299,100 @@ const CoinGlassService = (() => {
       }
     } catch (e) {}
     _setCache(k, result, TTL.taker);
+    return result;
+  }
+
+  // ── OI OHLC (sparkline + trend için; Hobbyist interval ≥4h) ───────
+  async function getOIOhlc(sym) {
+    const k = 'oih_' + sym;
+    const c = _getCached(k); if (c) return c;
+    const coin = _coin(sym);
+    let result = { series: [], source: 'none' };
+    try {
+      if (!CONFIG.enabled) throw new Error('disabled');
+      const data = await _fetch('/api/futures/open-interest/aggregated-history', {
+        symbol: coin, interval: '4h', limit: 12,
+      });
+      if (Array.isArray(data) && data.length) {
+        result = { series: data.map(d => +d.close).filter(Number.isFinite), source: 'coinglass' };
+      }
+    } catch (e) {}
+    _setCache(k, result, TTL.hist);
+    return result;
+  }
+
+  // ── Funding OHLC (OI ağırlıklı; sparkline için) ───────────────────
+  async function getFundingOhlc(sym) {
+    const k = 'frh_' + sym;
+    const c = _getCached(k); if (c) return c;
+    const coin = _coin(sym);
+    let result = { series: [], source: 'none' };
+    try {
+      if (!CONFIG.enabled) throw new Error('disabled');
+      const data = await _fetch('/api/futures/funding-rate/oi-weight-ohlc-history', {
+        symbol: coin, interval: '4h', limit: 12,
+      });
+      if (Array.isArray(data) && data.length) {
+        const series = data.map(d => {
+          let v = +d.close;
+          if (Number.isFinite(v) && Math.abs(v) > 0 && Math.abs(v) < 0.0008) v = v * 100; // ondalık guard
+          return v;
+        }).filter(Number.isFinite);
+        result = { series, source: 'coinglass' };
+      }
+    } catch (e) {}
+    _setCache(k, result, TTL.hist);
+    return result;
+  }
+
+  // ── ORDER BOOK PRESSURE (8. iş) — ±range bandındaki bid/ask derinliği ──
+  // Yanıt şeması savunmacı parse edilir (bid+usd / ask+usd alan adlarından).
+  // Hobbyist history kuralına uygun interval=4h varsayılır (CFG ile değişir).
+  const OB_INTERVAL = '4h';
+  async function getOrderBook(sym, range) {
+    range = range || '1';                       // ±%1 bandı
+    const k = 'ob_' + sym + '_' + range;
+    const c = _getCached(k); if (c) return c;
+    const coin = _coin(sym);
+    let result = { bidsUsd: null, asksUsd: null, bidPct: null, askPct: null, range: range, ts: null, source: 'none' };
+    try {
+      if (!CONFIG.enabled) throw new Error('disabled');
+      const data = await _fetch('/api/futures/orderbook/aggregated-ask-bids-history', {
+        exchange_list: 'Binance,OKX,Bybit', symbol: coin, interval: OB_INTERVAL, limit: 2, range: range,
+      });
+      const last = Array.isArray(data) && data.length ? data[data.length - 1] : null;
+      if (last) {
+        let bids = null, asks = null;
+        Object.keys(last).forEach(key => {
+          const lk = key.toLowerCase();
+          const v = +last[key];
+          if (!Number.isFinite(v)) return;
+          if (lk.indexOf('bid') !== -1 && lk.indexOf('usd') !== -1 && bids == null) bids = v;
+          if (lk.indexOf('ask') !== -1 && lk.indexOf('usd') !== -1 && asks == null) asks = v;
+        });
+        // USD alanı yoksa quantity'ye düş (oran için yeterli)
+        if (bids == null || asks == null) {
+          Object.keys(last).forEach(key => {
+            const lk = key.toLowerCase();
+            const v = +last[key];
+            if (!Number.isFinite(v)) return;
+            if (lk.indexOf('bid') !== -1 && bids == null && lk.indexOf('time') === -1) bids = v;
+            if (lk.indexOf('ask') !== -1 && asks == null && lk.indexOf('time') === -1) asks = v;
+          });
+        }
+        const total = (bids || 0) + (asks || 0);
+        if (total > 0) {
+          result = {
+            bidsUsd: bids, asksUsd: asks,
+            bidPct: +((bids / total) * 100).toFixed(1),
+            askPct: +((asks / total) * 100).toFixed(1),
+            range: range, ts: last.time != null ? +last.time : null,
+            source: 'coinglass',
+          };
+        }
+      }
+    } catch (e) {}
+    _setCache(k, result, TTL.ob);
     return result;
   }
 
@@ -354,6 +458,7 @@ const CoinGlassService = (() => {
     getFundingExtreme, getOI, getLSRatio,
     getLiquidationClusters, getHeatmap,
     getLiquidation24h, getTopTraderRatio, getTakerRatio,
+    getOIOhlc, getFundingOhlc, getOrderBook,
     getCachedFunding, getCachedOI,
     getMarketIntelligence,
   };
