@@ -29,6 +29,29 @@ window.VDAITerminal = (function () {
     try { return !!(window.TelegramDispatcher && window.TelegramDispatcher.hasAdminKey && window.TelegramDispatcher.hasAdminKey()); }
     catch (e) { return false; }
   }
+
+  // ── ELITE erişimi (9. iş): kod oturumlukta tutulur (sessionStorage),
+  //    sunucu her istekte hash'le doğrular. Tam kod localStorage'a YAZILMAZ.
+  const ELITE_SS_KEY = 'vd_at_elite';
+  function _eliteCode() {
+    try { return sessionStorage.getItem(ELITE_SS_KEY) || ''; } catch (e) { return ''; }
+  }
+  function _setEliteCode(c) {
+    try { c ? sessionStorage.setItem(ELITE_SS_KEY, c) : sessionStorage.removeItem(ELITE_SS_KEY); } catch (e) {}
+  }
+  function _canUse() { return _isAdmin() || !!_eliteCode(); }
+
+  // Elite isteği: aynı origin /api/ai-state, x-elite-code başlığıyla
+  async function _eliteFetch(payload) {
+    const r = await fetch('/api/ai-state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-elite-code': _eliteCode() },
+      body: JSON.stringify(payload),
+    });
+    let d = null; try { d = await r.json(); } catch (e) { d = null; }
+    if (r.status === 403) { _setEliteCode(''); return { ok: false, error: 'elite_invalid' }; }
+    return d || { ok: false, error: 'net' };
+  }
   function _lang() {
     try { return /^\/en(\/|$)/i.test(window.location.pathname) ? 'en' : 'tr'; } catch (e) { return 'tr'; }
   }
@@ -72,7 +95,7 @@ window.VDAITerminal = (function () {
     if (_busy) return;
     question = String(question || '').trim();
     if (question.length < 3) return;
-    if (!_isAdmin()) return;
+    if (!_canUse()) return;
 
     _busy = true;
     _msgs.push({ role: 'user', text: question });
@@ -80,12 +103,10 @@ window.VDAITerminal = (function () {
     _setBusy(true);
 
     try {
-      const r = await window.TelegramDispatcher.adminFetch('/api/ai-state', {
-        action: 'ai_chat',
-        question: question,
-        context: _buildContext(),
-        lang: _lang(),
-      });
+      const payload = { action: 'ai_chat', question: question, context: _buildContext(), lang: _lang() };
+      const r = _isAdmin()
+        ? await window.TelegramDispatcher.adminFetch('/api/ai-state', payload)
+        : await _eliteFetch(payload);
       if (r && r.ok && r.text) {
         _msgs.push({ role: 'ai', text: r.text });
       } else {
@@ -94,7 +115,12 @@ window.VDAITerminal = (function () {
           ? _t('at.errNoKey', null, 'Sunucuda ANTHROPIC_API_KEY tanımlı değil — Vercel env\'e ekleyin.')
           : err === 'chat_rate_limited'
           ? _t('at.errRate', null, 'Çok hızlı — bir dakika içinde en çok 10 soru.')
+          : err === 'daily_limit'
+          ? _t('at.errDaily', null, 'Günlük soru limitine ulaşıldı — yarın devam edebilirsin.')
+          : err === 'elite_invalid'
+          ? _t('at.errElite', null, 'Erişim kodu geçersiz veya süresi dolmuş — yeniden gir.')
           : _t('at.errGeneric', null, 'Yanıt alınamadı: ') + err;
+        if (err === 'elite_invalid') setTimeout(_remount, 1200);
         _msgs.push({ role: 'err', text: msg });
       }
     } catch (e) {
@@ -158,7 +184,7 @@ window.VDAITerminal = (function () {
     const btn = document.getElementById('vdAtSend');
     const inp = document.getElementById('vdAtInput');
     if (btn) { btn.disabled = b; btn.textContent = b ? '…' : '➤'; }
-    if (inp) inp.disabled = b || !_isAdmin();
+    if (inp) inp.disabled = b || !_canUse();
   }
 
   // ── Panel HTML ─────────────────────────────────────────────────────
@@ -173,7 +199,7 @@ window.VDAITerminal = (function () {
   }
 
   function _html() {
-    const admin = _isAdmin();
+    const admin = _canUse();
     const sym = window.SYM || 'BTCUSDT';
     return '<div class="vd-at-hdr">' +
         '<div class="vd-at-hdr-l">' +
@@ -185,7 +211,12 @@ window.VDAITerminal = (function () {
       '</div>' +
       '<div class="vd-at-sub">' + _t('at.sub', null, 'Piyasalar hakkında soru sor, analiz iste…') + '</div>' +
       (admin ? '' :
-        '<div class="vd-at-lock">🔒 ' + _t('at.locked', null, 'AI Terminal şu an yönetici önizlemesinde — yakında Elite üyelere açılacak.') + '</div>') +
+        '<div class="vd-at-lock">🔒 ' + _t('at.lockedElite', null, 'AI Terminal — Elite üyelere özel. Erişim kodunla aç:') +
+          '<div class="vd-at-elrow">' +
+            '<input type="password" id="vdAtEliteInp" class="vd-at-elinp" maxlength="64" autocomplete="off" placeholder="' + _t('at.elitePh', null, 'VD-ELITE-… erişim kodun') + '">' +
+            '<button class="vd-at-elbtn" id="vdAtEliteBtn">' + _t('at.eliteOpen', null, 'Aç') + '</button>' +
+          '</div><div class="vd-at-elmsg" id="vdAtEliteMsg"></div>' +
+        '</div>') +
       '<div class="vd-at-grid">' +
         '<div class="vd-at-prompts">' +
           _quickPrompts().map(q => '<button class="vd-at-qp" data-q="' + _esc(q) + '"' + (admin ? '' : ' disabled') + '>' + _esc(q) + '</button>').join('') +
@@ -208,6 +239,36 @@ window.VDAITerminal = (function () {
   }
 
   function _bind(el) {
+    // ── Elite kilit formu (9. iş) ──
+    const elBtn = document.getElementById('vdAtEliteBtn');
+    const elInp = document.getElementById('vdAtEliteInp');
+    const elMsg = document.getElementById('vdAtEliteMsg');
+    async function _eliteTry() {
+      const code = (elInp && elInp.value || '').trim();
+      if (code.length < 8) { if (elMsg) elMsg.textContent = _t('at.eliteShort', null, 'Kod çok kısa.'); return; }
+      if (elMsg) elMsg.textContent = _t('at.eliteChecking', null, 'Doğrulanıyor…');
+      if (elBtn) elBtn.disabled = true;
+      try {
+        const r = await fetch('/api/ai-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-elite-code': code },
+          body: JSON.stringify({ action: 'elite_verify' }),
+        });
+        const d = await r.json().catch(() => null);
+        if (r.ok && d && d.ok) {
+          _setEliteCode(code);
+          if (elMsg) elMsg.textContent = _t('at.eliteOk', null, 'Doğrulandı ✓');
+          setTimeout(_remount, 350);
+          return;
+        }
+        if (r.status === 429) { if (elMsg) elMsg.textContent = _t('at.eliteWait', null, 'Çok fazla deneme — birkaç dakika bekle.'); }
+        else { if (elMsg) elMsg.textContent = _t('at.eliteBad', null, 'Kod geçersiz, süresi dolmuş veya Elite değil.'); }
+      } catch (e) { if (elMsg) elMsg.textContent = _t('at.errNet', null, 'Bağlantı hatası — tekrar deneyin.'); }
+      if (elBtn) elBtn.disabled = false;
+    }
+    if (elBtn) elBtn.addEventListener('click', _eliteTry);
+    if (elInp) elInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') _eliteTry(); });
+
     el.querySelectorAll('.vd-at-qp').forEach(function (b) {
       b.addEventListener('click', function () { _ask(b.getAttribute('data-q')); });
     });
@@ -240,6 +301,16 @@ window.VDAITerminal = (function () {
     return true;
   }
 
+  // ── 9. iş: panel içeriğini tazele (kilit → açık geçişi) ──
+  function _remount() {
+    const el = document.getElementById(PANEL_ID);
+    if (!el) return;
+    el.innerHTML = _html();
+    _bind(el);
+    _renderChat();
+    _renderInsights();
+  }
+
   function mount() {
     if (_mounted) return;
     if (!_ensure()) return;
@@ -247,7 +318,7 @@ window.VDAITerminal = (function () {
     _renderChat();
     _renderInsights();
     _insTimer = setInterval(_renderInsights, 20000);
-    try { console.log('[AITerminal] mount ✓ (admin: ' + _isAdmin() + ')'); } catch (e) {}
+    try { console.log('[AITerminal] mount ✓ (tier: ' + (_isAdmin() ? 'admin' : (_eliteCode() ? 'elite' : 'locked')) + ')'); } catch (e) {}
   }
 
   function unmount() {

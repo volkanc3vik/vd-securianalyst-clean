@@ -35,6 +35,7 @@ window.VDHybridEngine = (function () {
 
   const _cache = new Map();                 // 'SYM|DIR' → { rec, ts }
   const _inflight = new Map();
+  const _requested = new Set();             // bu oturumda Stage-2'ye GİRMİŞ anahtarlar
 
   function verdictOf(score) {
     if (score == null || !Number.isFinite(+score)) return null;
@@ -149,6 +150,7 @@ window.VDHybridEngine = (function () {
   // ── Public ─────────────────────────────────────────────────────────
   async function evaluate(sym, dir, priceScore) {
     const key = sym + '|' + (dir || '');
+    _requested.add(key);
     const c = _cache.get(key);
     if (c && Date.now() - c.ts < CFG.TTL) {
       // taze deriv ile yeni price'ı birleştir (deriv 5 dk geçerli)
@@ -201,5 +203,8 @@ window.VDHybridEngine = (function () {
     };
   }
 
-  return { evaluate, get, verdictOf, payloadFields, CFG };
+  // Bu sym/dir bu oturumda Stage-2 değerlendirmesine girdi mi? (kart durum metni için)
+  function requested(sym, dir) { return _requested.has(sym + '|' + (dir || '')); }
+
+  return { evaluate, get, verdictOf, payloadFields, requested, CFG };
 })();

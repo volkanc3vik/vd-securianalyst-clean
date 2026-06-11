@@ -135,3 +135,19 @@
   .vd-at-qp { flex: 1 1 45%; }
   .vd-at-right { order: 3; }
 }
+
+/* ── 9. iş: Elite kilit formu ── */
+.vd-at-elrow { display: flex; gap: 7px; margin-top: 8px; }
+.vd-at-elinp {
+  flex: 1; min-width: 0; font-size: 11px; color: var(--text, #e8f4ff);
+  background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px; padding: 7px 10px; letter-spacing: 0.08em;
+}
+.vd-at-elinp:focus { outline: none; border-color: var(--cyan, #00d4ff); }
+.vd-at-elbtn {
+  font-size: 11px; font-weight: 800; color: #04141f;
+  background: var(--cyan, #00d4ff); border: none; border-radius: 7px;
+  padding: 7px 16px; cursor: pointer;
+}
+.vd-at-elbtn:disabled { opacity: 0.5; cursor: default; }
+.vd-at-elmsg { font-size: 10px; color: var(--text2, #7aaac8); margin-top: 6px; min-height: 13px; }

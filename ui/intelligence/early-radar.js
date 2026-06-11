@@ -336,21 +336,69 @@
   // ── HYBRID V2 kart bloğu: Price / Derivative / FINAL üçlüsü + faktör rozetleri ──
   function vWord(v){ return v==='CONFIRMED'?_L('hy.conf',null,'Confirmed'):v==='ARMED'?_L('hy.armed',null,'Armed'):v==='WATCH'?_L('hy.watch',null,'Watch'):'—'; }
   function vCol(v){ return v==='CONFIRMED'?'#e8b84b':v==='ARMED'?'#ff8a3d':v==='WATCH'?'#9aa6b8':'#5b6678'; }
+  // ── HYBRID BLOK — ASLA GİZLENMEZ (Volkan kural 6) ──────────────────
+  // 5 durum: FULL (deriv var) · NOT_REQUESTED (top-N dışı) · WARMING
+  // (istendi, bekliyor) · LOW_DATA (<2 faktör) · CG_OFF · ENGINE_MISSING.
+  // Hata bile olsa kart kırılmaz; blok durumunu söyler.
+  var _hyWarned = {};
+  function _hyWarn(code, msg){
+    if(_hyWarned[code]) return; _hyWarned[code]=1;
+    try { console.error('[Hybrid] '+msg); } catch(e){}
+  }
   function hybridBlock(r){
-    var HE=window.VDHybridEngine; if(!HE||!HE.get) return '';
-    var rec=HE.get(r.sym, r.dir);
-    var p=(r.s&&r.s.score!=null)?Math.round(+r.s.score):null;
-    if(rec==null && p==null) return '';
-    var price=rec?rec.price:p, pv=rec?rec.priceVerdict:(HE.verdictOf?HE.verdictOf(price):null);
-    var dAvail=!!(rec&&rec.deriv&&rec.deriv.available);
-    var d=dAvail?rec.deriv.score:null, dv=dAvail?rec.derivVerdict:null;
-    var h=rec?rec.hybrid:price, hv=rec?rec.hybridVerdict:pv;
-    function line(lbl,sc,v,strong){
+    try { return _hybridBlockInner(r); }
+    catch(e){
+      try { console.warn('[Hybrid] blok render hatası:', e); } catch(_e){}
+      return '<div class="er-hy"><div class="er-hy-na">'+_L('hy.naErr',null,'Hybrid blok hatası — konsola bakın')+'</div></div>';
+    }
+  }
+  function _hybridBlockInner(r){
+    var HE=window.VDHybridEngine;
+    var p=(r&&r.s&&r.s.score!=null&&isFinite(+r.s.score))?Math.round(+r.s.score):null;
+
+    function line(lbl,sc,v,strong,tag){
       var c=vCol(v);
       return '<div class="er-hy-line'+(strong?' er-hy-final':'')+'"><span class="er-hy-lbl">'+lbl+'</span>'
         + '<b class="er-hy-sc">'+(sc!=null?sc:'—')+'</b>'
-        + '<span class="er-hy-v" style="color:'+c+';border-color:'+c+'66;background:'+c+'14">'+(strong?'★ ':'')+vWord(v)+'</span></div>';
+        + '<span class="er-hy-v" style="color:'+c+';border-color:'+c+'66;background:'+c+'14">'+(strong?'★ ':'')+vWord(v)+(tag?' <i class="er-hy-fb">'+tag+'</i>':'')+'</span></div>';
     }
+
+    // Motor dosyası yüklenmemiş → blok YİNE görünür + console.error (bir kez)
+    if(!HE || !HE.get){
+      _hyWarn('engine', 'VDHybridEngine yok — engines/intelligence/hybrid-deriv-score.js yüklenmemiş olabilir (404 / script etiketi eksik). Kartlar price-fallback gösteriyor.');
+      var pv0 = p==null?null:(p>=80?'CONFIRMED':p>=65?'ARMED':p>=50?'WATCH':null);
+      return '<div class="er-hy">'
+        + line(_L('hy.price',null,'Price Structure'), p, pv0, false)
+        + line(_L('hy.deriv',null,'Derivative Intel'), null, null, false)
+        + '<div class="er-hy-na">'+_L('hy.naEngine',null,'Hybrid motoru yüklenmedi — konsolu kontrol et')+'</div>'
+        + line(_L('hy.final',null,'FINAL HYBRID'), p, pv0, true, _L('hy.fb',null,'price fallback'))
+        + '</div>';
+    }
+
+    var rec=HE.get(r.sym, r.dir);
+    var price=rec?rec.price:p;
+    var pv=rec?rec.priceVerdict:(HE.verdictOf?HE.verdictOf(price):null);
+    var dAvail=!!(rec&&rec.deriv&&rec.deriv.available);
+    var d=dAvail?rec.deriv.score:null, dv=dAvail?rec.derivVerdict:null;
+    var h=rec?rec.hybrid:price, hv=rec?rec.hybridVerdict:pv;
+
+    // Deriv N/A nedeni — kullanıcı HANGİ durumda olduğunu görür (Volkan kural 3+5)
+    var naMsg='';
+    if(!dAvail){
+      var cgOn=false;
+      try { cgOn=!!(window.CoinGlassService&&window.CoinGlassService.isEnabled&&window.CoinGlassService.isEnabled()); } catch(e){}
+      if(!cgOn){
+        naMsg=_L('hy.naCgOff',null,'CoinGlass kapalı/erişilemez — konsoldaki [CoinGlass] hatasına bak');
+        _hyWarn('cgoff','CoinGlass servis kapalı/erişilemez — DerivScore üretilemiyor (price fallback aktif).');
+      } else if(rec && rec.deriv && rec.deriv.nFactors!=null && HE.CFG && rec.deriv.nFactors < HE.CFG.MIN_FACTORS){
+        naMsg=_L('hy.naLow',{n:rec.deriv.nFactors},'Deriv verisi yetersiz ('+rec.deriv.nFactors+'/4 faktör)');
+      } else if(HE.requested && HE.requested(r.sym, r.dir)){
+        naMsg=_L('hy.naWarm',null,'Deriv verisi ısınıyor — sonraki taramada dolar');
+      } else {
+        naMsg=_L('hy.naNotReq',null,'Deriv bu setup için istenmedi (price top-10 dışı)');
+      }
+    }
+
     var chips='';
     if(dAvail&&rec.deriv.factors){
       var f=rec.deriv.factors, cs=[];
@@ -360,11 +408,12 @@
       if(f.liquidation) cs.push((f.liquidation.context==='CLEAN'?'✓ ':f.liquidation.context==='STORM'?'✗ ':'· ')+_L('hy.fLiq',null,'Liq'));
       chips='<div class="er-hy-chips">'+cs.map(function(t){return '<span class="er-hy-chip'+(t.charAt(0)==='✓'?' ok':t.charAt(0)==='✗'?' bad':'')+'">'+esc(t)+'</span>';}).join('')+'</div>';
     }
+
     return '<div class="er-hy">'
       + line(_L('hy.price',null,'Price Structure'), price, pv, false)
-      + line(_L('hy.deriv',null,'Derivative Intel'), d, dv, false)
-      + (dAvail?'':'<div class="er-hy-na">'+_L('hy.na',null,'Deriv: veri henüz yok (top-10 dışı veya ısınıyor)')+'</div>')
-      + line(_L('hy.final',null,'FINAL HYBRID'), h, hv, true)
+      + line(_L('hy.deriv',null,'Derivative Intel'), d, dv, false, dAvail?null:_L('hy.naTag',null,'N/A'))
+      + (naMsg?'<div class="er-hy-na">'+naMsg+'</div>':'')
+      + line(_L('hy.final',null,'FINAL HYBRID'), h, hv, true, dAvail?null:_L('hy.fb',null,'price fallback'))
       + chips + '</div>';
   }
 
@@ -427,6 +476,7 @@
   + '.vd-radar .er-hy-chip{font-size:8.5px;color:#8b98ac;border:1px solid #223046;border-radius:7px;padding:1px 6px}'
   + '.vd-radar .er-hy-chip.ok{color:#36d399;border-color:#36d39955}'
   + '.vd-radar .er-hy-chip.bad{color:#f87272;border-color:#f8727255}'
+  + '.vd-radar .er-hy-fb{font-style:normal;font-size:7.5px;opacity:.75;font-weight:600}'
   + '.vd-radar .er-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}'
   + '.vd-radar .er-title{font-size:14px;font-weight:800;color:#e6edf6}'
   + '.vd-radar .er-live{font-size:10px;color:#36d399}'

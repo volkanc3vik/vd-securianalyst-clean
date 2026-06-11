@@ -21,7 +21,7 @@ const ALLOWED_ORIGINS = [
 function setCors(req, res) {
   const origin = req.headers.origin || '';
   res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-key, x-elite-code');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 }
 
@@ -68,6 +68,48 @@ async function sbFetch(path, options = {}) {
   return data;
 }
 
+// ── ELITE erişimi (9. iş): access_codes tablosundan SUNUCU doğrulaması ──
+// Kod düz gelir, sha256 hash'i tabloyla eşleştirilir (tablo düz kod TUTMAZ).
+// Pozitif sonuç 5 dk, negatif 60 sn cache'lenir. Brute-force: IP başına
+// 5 dakikada en çok 10 doğrulama denemesi.
+const _eliteCache = new Map();   // hash → { ok, until }
+const ELITE_POS_TTL = 5 * 60_000, ELITE_NEG_TTL = 60_000;
+const ELITE_CODE_RE = /^[A-Za-z0-9-]{8,64}$/;
+
+function _slidingHit(bucket, max, windowMs) {
+  const now = Date.now();
+  const arr = (_rateStore.get(bucket) || []).filter(t => now - t < windowMs);
+  if (arr.length >= max) return false;
+  arr.push(now);
+  _rateStore.set(bucket, arr);
+  return true;
+}
+
+async function verifyEliteCode(code, ip) {
+  if (typeof code !== 'string' || !ELITE_CODE_RE.test(code)) return { ok: false, why: 'format' };
+  const hash = sha256(code);
+  const c = _eliteCache.get(hash);
+  if (c && Date.now() < c.until) return { ok: c.ok, hash };
+  // Brute-force koruması: cache ISKALARI sayılır (geçerli kullanıcı cache'ten döner)
+  if (!_slidingHit(`evrf|${ip}`, 10, 5 * 60_000)) return { ok: false, why: 'verify_rate' };
+  let ok = false;
+  try {
+    const rows = await sbFetch(
+      `/access_codes?code_hash=eq.${hash}&select=plan_id,status,expires_at,is_admin&limit=1`,
+      { method: 'GET' }
+    );
+    const r = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    if (r) {
+      const active = r.status === 'active';
+      const notExpired = !r.expires_at || new Date(r.expires_at).getTime() > Date.now();
+      const eliteTier = String(r.plan_id || '').toLowerCase().startsWith('elite') || r.is_admin === true;
+      ok = active && notExpired && eliteTier;
+    }
+  } catch (e) { ok = false; }
+  _eliteCache.set(hash, { ok, until: Date.now() + (ok ? ELITE_POS_TTL : ELITE_NEG_TTL) });
+  return { ok, hash };
+}
+
 // ── HANDLER ─────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   setCors(req, res);
@@ -81,22 +123,46 @@ module.exports = async function handler(req, res) {
   if (validKeys.length === 0) return res.status(500).json({ ok: false, error: 'server_misconfigured' });
   if (!SB_URL || !SB_KEY) return res.status(500).json({ ok: false, error: 'supabase_env_missing' });
 
-  // Guard 2: x-admin-key
-  const providedKey = req.headers['x-admin-key'];
-  if (typeof providedKey !== 'string' || providedKey.length === 0 || !validKeys.includes(providedKey)) {
-    return res.status(403).json({ ok: false, error: 'unauthorized' });
-  }
-
-  // Guard 3: rate limit
-  const ip = getClientIp(req);
-  const keyHash = sha256(providedKey).slice(0, 12);
-  const rl = rateLimit(ip, keyHash);
-  if (!rl.ok) return res.status(429).json({ ok: false, error: 'rate_limited', retry_in_ms: rl.retryInMs });
-
-  // Body
+  // Body (guard'lardan ÖNCE — action'a göre elite yolu açılır)
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
+
+  // Guard 2: kimlik — admin (x-admin-key) VEYA elite (x-elite-code, yalnız sınırlı action'lar)
+  const providedKey = req.headers['x-admin-key'];
+  const isAdmin = typeof providedKey === 'string' && providedKey.length > 0 && validKeys.includes(providedKey);
+  const ip = getClientIp(req);
+  let keyHash;
+
+  if (isAdmin) {
+    keyHash = sha256(providedKey).slice(0, 12);
+    // Guard 3 (admin): mevcut rate limit AYNEN
+    const rl = rateLimit(ip, keyHash);
+    if (!rl.ok) return res.status(429).json({ ok: false, error: 'rate_limited', retry_in_ms: rl.retryInMs });
+  } else {
+    // ── ELITE YOLU (9. iş): yalnız ai_chat + elite_verify; gerisi 403 ──
+    const ELITE_ACTIONS = ['ai_chat', 'elite_verify'];
+    if (!ELITE_ACTIONS.includes(body.action)) {
+      return res.status(403).json({ ok: false, error: 'unauthorized' });
+    }
+    const v = await verifyEliteCode(req.headers['x-elite-code'], ip);
+    if (v.why === 'verify_rate') return res.status(429).json({ ok: false, error: 'verify_rate_limited' });
+    if (!v.ok) return res.status(403).json({ ok: false, error: 'unauthorized' });   // jenerik — kod sızdırmaz
+    keyHash = 'el_' + v.hash.slice(0, 12);
+    // Elite rate limitleri: 6/dk + 80/gün (kod başına)
+    if (!_slidingHit(`echat_m|${keyHash}`, 6, 60_000))
+      return res.status(429).json({ ok: false, error: 'chat_rate_limited' });
+    if (!_slidingHit(`echat_d|${keyHash}`, 80, 24 * 3600_000))
+      return res.status(429).json({ ok: false, error: 'daily_limit' });
+    if (body.action === 'elite_verify') {
+      return res.status(200).json({ ok: true, tier: 'elite' });
+    }
+  }
+
+  // elite_verify (admin de çağırabilir — UI tek akış kullansın)
+  if (body.action === 'elite_verify') {
+    return res.status(200).json({ ok: true, tier: 'admin' });
+  }
 
   // ════════════════════════════════════════════════════════════════
   // AI CHAT DALI (4. iş — AI Terminal): action:'ai_chat'

@@ -54,7 +54,14 @@ const CoinGlassService = (() => {
     const last = _errLog.get(endpoint) || 0;
     if (Date.now() - last > 300000) {
       _errLog.set(endpoint, Date.now());
-      try { console.warn('[CoinGlass] ' + endpoint + ' → ' + (e && e.message ? e.message : e)); } catch (err) {}
+      try {
+        const m = String(e && e.message ? e.message : e).toLowerCase();
+        let label = 'CoinGlass unavailable';
+        if (m.includes('401') || m.includes('key missing') || m.includes('apikey') || m.includes('api key')) label = 'CoinGlass API key missing';
+        else if (m.includes('429') || m.includes('rate') || m.includes('too many')) label = 'CoinGlass rate limited';
+        else if (m.includes('upgrade') || m.includes('plan')) label = 'CoinGlass plan does not include this endpoint';
+        console.error('[CoinGlass] ' + label + ' · ' + endpoint + ' → ' + (e && e.message ? e.message : e));
+      } catch (err) {}
     }
   }
 
