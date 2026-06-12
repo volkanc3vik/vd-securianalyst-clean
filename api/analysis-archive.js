@@ -402,6 +402,9 @@ export default async function handler(req, res) {
           n: c.n, resolved: c.resolved, confirmed: c.confirmed, invalidated: c.invalidated,
           partial: c.partial, expired: c.expired, recovered: c.recovered, reversed: c.reversed,
           confirmRate: c.resolved > 0 ? Math.round((c.confirmed / c.resolved) * 100) : null,
+          // Opportunity Yield Rate (Volkan): "pencere içinde anlamlı fırsat verdi mi?"
+          // = confirmed (tanım gereği confirm seviyesine ulaştı) + invalidated_then_recovered
+          yieldRate: c.resolved > 0 ? Math.round(((c.confirmed + c.recovered) / c.resolved) * 100) : null,
           avgMfe: c.resolved > 0 ? Math.round((c.mfeSum / c.resolved) * 100) / 100 : null,
           avgMae: c.resolved > 0 ? Math.round((c.maeSum / c.resolved) * 100) / 100 : null,
         };
@@ -432,7 +435,7 @@ export default async function handler(req, res) {
         `/analysis_archive?sample_type=eq.research&select=radar_tier_at_open,outcome_status&limit=2000`,
         { method: 'GET' }
       );
-      const RSCH_COLS = 'id,sym,direction_bias,analysis_score,radar_tier_at_open,outcome_status,review_status,review_due_at,created_at,max_favorable_move_pct,max_adverse_move_pct,market_context';
+      const RSCH_COLS = 'id,sym,direction_bias,analysis_score,radar_tier_at_open,outcome_status,review_status,review_due_at,created_at,max_favorable_move_pct,max_adverse_move_pct,market_context,outcome_quality,window_close_pct,time_to_confirm_min,time_to_invalid_min,hybrid_score,hybrid_verdict';
       const recent = await sbFetch(
         `/analysis_archive?sample_type=eq.research&order=created_at.desc&limit=${limit}&select=${RSCH_COLS}`,
         { method: 'GET' }

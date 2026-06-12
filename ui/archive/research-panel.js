@@ -27,6 +27,7 @@
   function _isAdmin() { return !!(NS.Admin && NS.Admin.isAdmin && NS.Admin.isAdmin()); }
   function _disp() { return window.TelegramDispatcher || null; }
   function _hasKey() { const d = _disp(); return !!(d && d.hasAdminKey && d.hasAdminKey()); }
+  function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
   function _esc(s) { return (U.esc ? U.esc(s) : String(s == null ? '' : s)); }
   function _dirLabel(b) {
     if (U.directionLabel) return U.directionLabel(b);
@@ -109,6 +110,12 @@
       '#aic-research .aic-rsch-move{font-size:12px;color:var(--v4-text-2,#7FA9C9)}' +
       '#aic-research .aic-rsch-move .fav{color:#3fb950;font-weight:600}' +
       '#aic-research .aic-rsch-move .adv{color:#f85149;font-weight:600}' +
+      '#aic-research .aic-rsch-q{font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:6px;border:1px solid;margin-right:4px}' +
+      '#aic-research .aic-rsch-times{font-size:9px;color:var(--v4-text-3,#5b7a94);margin-left:4px}' +
+      '.aic-oi{margin:10px 0 4px;padding:9px 11px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.18);border-radius:9px}' +
+      '.aic-oi-title{font-size:9px;font-weight:800;letter-spacing:.06em;color:#00d4ff;margin-bottom:5px}' +
+      '.aic-oi-row{display:flex;justify-content:space-between;font-size:11px;color:var(--v4-text-2,#7FA9C9);padding:2px 0}' +
+      '.aic-oi-row .v{font-weight:700;font-family:ui-monospace,Menlo,monospace}' +
       '#aic-research .aic-rsch-due{font-size:11.5px;color:var(--v4-text-2,#7FA9C9)}' +
       '#aic-research .aic-rsch-due.ready{color:#E3B341;font-weight:600}' +
       '#aic-research .aic-rsch-ctx{font-size:11px;color:var(--v4-text-3,#4a6a85);font-family:var(--mono,monospace)}';
@@ -155,6 +162,19 @@
     '</div>';
   }
 
+  // Outcome Quality rozeti — 4 etiket (Volkan onaylı)
+  function _qualityBadge(q) {
+    if (!q) return '';
+    const M = {
+      clean_confirmed:            { t: _t('rp.qClean', null, 'Temiz Confirm'),        c: '#36d399' },
+      confirmed_then_reversed:    { t: _t('rp.qReversed', null, 'Confirm → Geri Döndü'), c: '#ff8a3d' },
+      invalidated_then_recovered: { t: _t('rp.qRecovered', null, 'Invalid → Toparladı'), c: '#00d4ff' },
+      clean_invalidated:          { t: _t('rp.qCleanInv', null, 'Temiz Invalid'),     c: '#8b98ac' },
+    };
+    const m = M[q]; if (!m) return '';
+    return '<span class="aic-rsch-q" style="color:' + m.c + ';border-color:' + m.c + '55;background:' + m.c + '14" title="Outcome Quality">' + m.t + '</span> ';
+  }
+
   function _cardHTML(rec) {
     const mc = rec.market_context || {};
     const score = rec.analysis_score != null ? (rec.analysis_score + '/100') : '—';
@@ -169,7 +189,15 @@
     // 5. satır: çözülmüşse hareket sonucu, bekliyorsa sonuç penceresine kalan süre
     let outcomeLine;
     if (resolved) {
-      outcomeLine = '<span class="aic-rsch-move">Lehte <span class="fav">' + _pct(rec.max_favorable_move_pct) + '</span> · Aleyhte <span class="adv">' + _pct(rec.max_adverse_move_pct) + '</span></span>';
+      // ── OUTCOME INTELLIGENCE satırı: MFE/MAE + Kapanış + süreler ──
+      const wc = rec.window_close_pct;
+      const wcCls = (wc != null && wc >= 0) ? 'fav' : 'adv';
+      const wcStr = (wc != null) ? ' · Kapanış <span class="' + wcCls + '">' + _pct(wc) + '</span>' : '';
+      const ttc = rec.time_to_confirm_min, tti = rec.time_to_invalid_min;
+      const tStr = (ttc != null || tti != null)
+        ? '<span class="aic-rsch-times">' + (ttc != null ? '↑' + ttc + 'dk' : '') + (ttc != null && tti != null ? ' · ' : '') + (tti != null ? '↓' + tti + 'dk' : '') + '</span>'
+        : '';
+      outcomeLine = '<span class="aic-rsch-move">' + _qualityBadge(rec.outcome_quality) + 'Lehte <span class="fav">' + _pct(rec.max_favorable_move_pct) + '</span> · Aleyhte <span class="adv">' + _pct(rec.max_adverse_move_pct) + '</span>' + wcStr + ' ' + tStr + '</span>';
     } else {
       const due = rec.review_due_at ? new Date(rec.review_due_at).getTime() : null;
       outcomeLine = (due != null && !isNaN(due) && due <= Date.now())

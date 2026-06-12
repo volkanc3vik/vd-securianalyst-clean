@@ -95,3 +95,6 @@
 .vd-am-li-ev { color: var(--text3, #3a6080); font-style: normal; font-size: 9px; }
 .vd-am-li-early { font-size: 8.5px; font-weight: 700; color: var(--yellow, #ffc107);
   border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 5px; padding: 1px 6px; margin-left: 6px; }
+
+.vd-am-side-y { font-size: 9.5px; color: var(--text2, #7aaac8); margin-top: 3px; }
+.vd-am-side-y b { font-size: 11px; }

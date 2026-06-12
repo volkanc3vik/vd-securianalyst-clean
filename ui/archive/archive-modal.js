@@ -40,6 +40,34 @@
 
   // 3 bağımsız zaman: Analiz (created_at), İnceleme (reviewed_at), Telegram Paylaşım (shared_at).
   // Boş olanın satırı GÖSTERİLMEZ. created_at ASLA reviewed_at yerine kullanılmaz.
+  // ── OUTCOME INTELLIGENCE bloğu (alanlar kayıtta varsa; yoksa hiç görünmez) ──
+  function _oiHTML(rec) {
+    const os = rec.outcome_status;
+    if (!os || os === 'pending') return '';
+    const QM = {
+      clean_confirmed:            { t: _t('rp.qClean', null, 'Temiz Confirm'),           c: '#36d399' },
+      confirmed_then_reversed:    { t: _t('rp.qReversed', null, 'Confirm → Geri Döndü'), c: '#ff8a3d' },
+      invalidated_then_recovered: { t: _t('rp.qRecovered', null, 'Invalid → Toparladı'), c: '#00d4ff' },
+      clean_invalidated:          { t: _t('rp.qCleanInv', null, 'Temiz Invalid'),        c: '#9aa4b2' },
+    };
+    const q = QM[rec.outcome_quality];
+    const pct = (v) => (v != null && !isNaN(Number(v))) ? ((Number(v) >= 0 ? '+' : '') + Number(v).toFixed(2) + '%') : null;
+    const li = (k, v, col) => v != null ? `<div class="aic-oi-row"><span class="k">${k}</span><span class="v"${col ? ` style="color:${col}"` : ''}>${v}</span></div>` : '';
+    const osTxt = os === 'confirmed' ? 'CONFIRMED' : os === 'invalidated' ? 'INVALIDATED' : String(os).toUpperCase();
+    const osCol = os === 'confirmed' ? '#36d399' : os === 'invalidated' ? '#f85149' : 'var(--v4-text-2)';
+    const mae = rec.max_adverse_move_pct;
+    return `<div class="aic-oi" data-aic-oi>
+      <div class="aic-oi-title">${_t('arc.oiTitle', null, 'OUTCOME INTELLIGENCE')}</div>
+      ${li(_t('arc.oiOutcome', null, 'Outcome'), osTxt, osCol)}
+      ${q ? li(_t('arc.oiQuality', null, 'Outcome Quality'), q.t, q.c) : ''}
+      ${li('MFE', pct(rec.max_favorable_move_pct), '#3fb950')}
+      ${li('MAE', mae != null ? pct(-Math.abs(Number(mae))) : null, '#f85149')}
+      ${li(_t('arc.oiClose', null, 'Window Close'), pct(rec.window_close_pct), (rec.window_close_pct != null && rec.window_close_pct >= 0) ? '#3fb950' : '#f85149')}
+      ${li(_t('arc.oiTtc', null, 'Time To Confirm'), rec.time_to_confirm_min != null ? rec.time_to_confirm_min + ' dk' : null)}
+      ${li(_t('arc.oiTti', null, 'Time To Invalid'), rec.time_to_invalid_min != null ? rec.time_to_invalid_min + ' dk' : null)}
+    </div>`;
+  }
+
   function _timesHTML(rec) {
     const row = (icon, label, iso) =>
       `<div class="aic-time-row"><span class="ic">${icon}</span><span class="k">${label}</span><span class="v">${U.esc(_fmtDT(iso))}</span></div>`;
@@ -92,7 +120,7 @@
         </div>
         <div class="aic-modal-body">
           <p class="aic-modal-text">${U.esc(rec.analysis_text || rec.analysis_summary || '—')}</p>
-          ${_timesHTML(rec)}
+          ${_timesHTML(rec)}${_oiHTML(rec)}
           <div class="aic-kv-grid">${kvCells}</div>
           ${aiLearned}
           <!-- Telegram paylaş slotu — Aşama 4'te aktifleşir -->

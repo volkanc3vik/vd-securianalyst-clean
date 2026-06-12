@@ -64,6 +64,7 @@ window.VDAgreementMatrix = (function () {
         '<div class="vd-am-side-t">' + d[1] + '</div>' +
         '<div class="vd-am-side-r ' + cls + '">' + _rateTxt(c) + '</div>' +
         '<div class="vd-am-side-s">' + _t('am.confRateOf', null, 'CONFIRMED doğrulanma') + ' · n=' + (c ? c.resolved : 0) + '</div>' +
+        ((c && c.yieldRate != null && c.resolved >= 5) ? '<div class="vd-am-side-y">' + _t('am.yield', null, 'Fırsat Verimi') + ': <b class="' + _rateCls(c.yieldRate, c.resolved) + '">%' + c.yieldRate + '</b></div>' : '') +
       '</div>';
     }).join('') + '</div>';
   }
@@ -89,7 +90,8 @@ window.VDAgreementMatrix = (function () {
             '<div class="vd-am-cr">' + _rateTxt(c) + '</div>' +
             '<div class="vd-am-cn">n=' + c.resolved + (c.recovered ? ' · ↺' + c.recovered : '') + '</div>' +
             '<div class="vd-am-cm">MFE ' + (c.avgMfe != null ? '+' + c.avgMfe + '%' : '—') +
-              ' · MAE ' + (c.avgMae != null ? '-' + c.avgMae + '%' : '—') + '</div>' +
+              ' · MAE ' + (c.avgMae != null ? '-' + c.avgMae + '%' : '—') +
+              (c.yieldRate != null ? ' · Y%' + c.yieldRate : '') + '</div>' +
           '</div>';
         }
       });
