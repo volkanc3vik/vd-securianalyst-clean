@@ -12,7 +12,7 @@
 //  • ?dry=1 → hesaplar, YAZMAZ.   ?limit=N → max kayıt (varsayılan 25, tavan 50).
 // ═══════════════════════════════════════════════════════════════════
 
-import { runBatch } from '../engines/outcome/outcome-runner.js';
+import { runBatch, runDrain } from '../engines/outcome/outcome-runner.js';
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -32,11 +32,16 @@ export default async function handler(req, res) {
   if (!SB_URL || !SB_KEY) return res.status(500).json({ ok: false, error: 'supabase_env_missing' });
 
   const dry = q.dry === '1' || q.dry === 'true';
+  const drain = q.drain === '1' || q.drain === 'true';
   const limit = Math.max(1, Math.min(parseInt(q.limit || '25', 10) || 25, 50));
   const at = new Date().toISOString();
 
   try {
-    const summary = await runBatch({ limit, dry });
+    // drain=1 → tek çağrıda zaman bütçesi (8sn) dolana dek tekrar tekrar çöz.
+    // Birikmiş yığını eritmek için; sık cron yerine birkaç manuel çağrı yeter.
+    const summary = drain
+      ? await runDrain({ budgetMs: 8000, batchLimit: 40 })
+      : await runBatch({ limit, dry });
     return res.status(200).json({ ok: true, ...summary, at });
   } catch (e) {
     console.error('[review-run] genel hata:', e && e.message);

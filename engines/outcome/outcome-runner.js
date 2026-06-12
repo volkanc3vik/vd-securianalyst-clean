@@ -292,20 +292,58 @@ export async function runBatch({ limit = 25, dry = false } = {}) {
   const list = rows || [];
   summary.fetched = list.length;
 
-  for (const rec of list) {
-    try {
-      const r = await resolveOne(rec, dry);
+  // ── PARALEL ÇÖZÜM: kayıtları küçük gruplar halinde eşzamanlı işle ──
+  // 50 ardışık çağrı ~15-25sn (Vercel 10sn timeout'unu aşar). 8'erli
+  // paralel gruplarla ~3-4sn'ye iner. Binance fapi 1200 req/dk limiti
+  // bizden çok yüksek; 8 eşzamanlı güvenli.
+  const CHUNK = 8;
+  for (let i = 0; i < list.length; i += CHUNK) {
+    const slice = list.slice(i, i + CHUNK);
+    const results = await Promise.all(slice.map(async (rec) => {
+      try {
+        return await resolveOne(rec, dry);
+      } catch (e) {
+        console.error('[outcome-runner] kayıt hatası', rec && rec.id, e && e.message);
+        return { state: 'error' };
+      }
+    }));
+    for (const r of results) {
       if (r.state === 'processed') {
         summary.processed++;
         if (summary[r.status] != null) summary[r.status]++;
+      } else if (r.state === 'error') {
+        summary.errors++;
       } else {
         summary.skipped++;
         summary.skip_reasons[r.reason] = (summary.skip_reasons[r.reason] || 0) + 1;
       }
-    } catch (e) {
-      summary.errors++;
-      console.error('[outcome-runner] kayıt hatası', rec && rec.id, e && e.message);
     }
   }
   return summary;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// runDrain: TEK çağrıda zaman bütçesi dolana dek runBatch döngüsü.
+// Vercel free 10sn timeout → 8sn güvenli bütçe. Birikmiş yığını (binlerce
+// pending) hızla eritmek için. Cron VEYA manuel secret URL ile çağrılır.
+// ════════════════════════════════════════════════════════════════════
+export async function runDrain({ budgetMs = 8000, batchLimit = 40 } = {}) {
+  const t0 = Date.now();
+  const total = {
+    engine: 'first_hit_v1', mode: 'drain', rounds: 0,
+    processed: 0, confirmed: 0, invalidated: 0, partial: 0, expired: 0,
+    skipped: 0, errors: 0, fetched: 0, elapsed_ms: 0,
+  };
+  while (Date.now() - t0 < budgetMs) {
+    const s = await runBatch({ limit: batchLimit, dry: false });
+    total.rounds++;
+    total.processed += s.processed; total.confirmed += s.confirmed;
+    total.invalidated += s.invalidated; total.partial += s.partial;
+    total.expired += s.expired; total.skipped += s.skipped;
+    total.errors += s.errors; total.fetched += s.fetched;
+    if (s.error) { total.error = s.error; break; }
+    if ((s.fetched || 0) === 0) break;          // çözülecek kayıt kalmadı
+  }
+  total.elapsed_ms = Date.now() - t0;
+  return total;
 }
