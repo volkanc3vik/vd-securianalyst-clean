@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     // Ayrı hafif sorgu: yalnız ufuk sonuç kolonları (jsonb İNDİRİLMEZ).
     let checkpointPerf = null;
     try {
-      const cpRows = await sb(`analysis_archive?or=(excluded_from_learning.eq.false,sample_type.eq.research)` +
+      const cpRows = await sb(`analysis_archive?excluded_from_learning=eq.false` +
         `&outcome_status=neq.pending&select=h1_outcome,h4_outcome,h12_outcome,h24_outcome&order=created_at.desc&limit=2000`);
       const agg = {};
       for (const h of ['h1', 'h4', 'h12', 'h24']) {

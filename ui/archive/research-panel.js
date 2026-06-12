@@ -137,6 +137,12 @@
       '.aic-mh-bar{width:24px;border-radius:2px}' +
       '.aic-mh-bw span{font-size:9px;color:var(--v4-text-3,#5b7a94);font-family:ui-monospace,Menlo,monospace}' +
       '.aic-mh-sum{font-size:10.5px;color:var(--v4-text-2,#7fa9c9);margin-top:7px;line-height:1.5}' +
+      '.aic-hz-row{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap}' +
+      '.aic-hz{font-size:8.5px;font-weight:800;font-family:ui-monospace,Menlo,monospace;padding:1px 6px;border-radius:7px;border:1px solid}' +
+      '.aic-hz.hz-c{color:#36d399;border-color:#36d39955;background:#36d39912}' +
+      '.aic-hz.hz-p{color:#d8b45a;border-color:#d8b45a55;background:#d8b45a12}' +
+      '.aic-hz.hz-r{color:#f08585;border-color:#f0858555;background:#f0858512}' +
+      '.aic-hz.hz-w{color:#5b7a94;border-color:#5b7a9444;background:transparent}' +
       '#aic-research .aic-rsch-due{font-size:11.5px;color:var(--v4-text-2,#7FA9C9)}' +
       '#aic-research .aic-rsch-due.ready{color:#E3B341;font-weight:600}' +
       '#aic-research .aic-rsch-ctx{font-size:11px;color:var(--v4-text-3,#4a6a85);font-family:var(--mono,monospace)}';
@@ -227,6 +233,22 @@
         : '<span class="aic-rsch-due">⏳ Sonuç: ' + _esc(_relFuture(rec.review_due_at)) + '</span>';
     }
 
+    // ── V3: mini ufuk çipleri (yalnız çözülmüş kartlarda) ──
+    // 1h ✓ · 4h ✓ · 12h ⏳ ... — modal açmadan hızlı okuma. Geçiş-2
+    // bitmemişse (checkpoints_done_at null) eksik ufuklar ⏳ gösterilir.
+    let hzLine = '';
+    if (resolved) {
+      const HMAP = { confirmed: ['✓', 'hz-c'], partial: ['◐', 'hz-p'], rejected: ['✗', 'hz-r'] };
+      const chips = [['h1', '1h'], ['h4', '4h'], ['h12', '12h'], ['h24', '24h']].map(function (pair) {
+        const v = rec[pair[0] + '_outcome'];
+        const m = v ? HMAP[v] : null;
+        return m
+          ? '<span class="aic-hz ' + m[1] + '">' + pair[1] + ' ' + m[0] + '</span>'
+          : '<span class="aic-hz hz-w">' + pair[1] + ' ⏳</span>';
+      }).join('');
+      hzLine = '<span class="aic-hz-row">' + chips + '</span>';
+    }
+
     // Yapı bekleyen-inceleme kartıyla AYNI (7 satır) → aynı yükseklik/boyut.
     return '' +
       '<div class="aic-pend-card">' +
@@ -237,7 +259,7 @@
         '<span class="aic-pend-meta">auto · ' + _esc(_dirLabel(rec.direction_bias)) + '</span>' +
         '<span class="aic-pend-meta">' + _tierBadge(rec.radar_tier_at_open) + ' · Skor: ' + _esc(score) + '</span>' +
         '<span class="aic-pend-rel">⏱ Açıldı: ' + _esc(_relTime(rec.created_at)) + '</span>' +
-        outcomeLine +
+        outcomeLine + hzLine +
         '<span class="aic-rsch-ctx">rejim: ' + regime + ' · açılışta yaş: ' + ageStr + '</span>' +
         '<span class="aic-pend-date">' + _esc(_fmtDT(rec.created_at)) + '</span>' +
       '</div>';

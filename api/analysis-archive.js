@@ -505,7 +505,7 @@ export default async function handler(req, res) {
         `/analysis_archive?sample_type=eq.research&select=radar_tier_at_open,outcome_status&limit=2000`,
         { method: 'GET' }
       );
-      const RSCH_COLS = 'id,sym,direction_bias,analysis_score,radar_tier_at_open,outcome_status,review_status,review_due_at,created_at,max_favorable_move_pct,max_adverse_move_pct,market_context,outcome_quality,window_close_pct,time_to_confirm_min,time_to_invalid_min,hybrid_score,hybrid_verdict';
+      const RSCH_COLS = 'id,sym,direction_bias,analysis_score,radar_tier_at_open,outcome_status,review_status,review_due_at,created_at,max_favorable_move_pct,max_adverse_move_pct,market_context,outcome_quality,window_close_pct,time_to_confirm_min,time_to_invalid_min,hybrid_score,hybrid_verdict,h1_outcome,h4_outcome,h12_outcome,h24_outcome,checkpoints_done_at';
       const recent = await sbFetch(
         `/analysis_archive?sample_type=eq.research&order=created_at.desc&limit=${limit}&select=${RSCH_COLS}`,
         { method: 'GET' }
