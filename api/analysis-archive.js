@@ -202,6 +202,11 @@ function _numOrNull(v) {
 function _verdictOrNull(v) {
   return (v === 'CONFIRMED' || v === 'ARMED' || v === 'WATCH') ? v : null;
 }
+function _isoOrNull(v) {
+  if (typeof v !== 'string' || v.length < 10 || v.length > 40) return null;
+  const t = Date.parse(v);
+  return Number.isFinite(t) ? new Date(t).toISOString() : null;
+}
 
 
 // ── Handler ─────────────────────────────────────────────────────────
@@ -298,6 +303,13 @@ export default async function handler(req, res) {
         positioning_score: _numOrNull(body.positioning_score),
         liquidation_score: _numOrNull(body.liquidation_score),
         deriv_factors: (body.deriv_factors && typeof body.deriv_factors === 'object') ? body.deriv_factors : null,
+        // 10. iş: verdict-geçiş damgaları + öncülük
+        price_armed_at: _isoOrNull(body.price_armed_at),
+        price_confirmed_at: _isoOrNull(body.price_confirmed_at),
+        deriv_armed_at: _isoOrNull(body.deriv_armed_at),
+        deriv_confirmed_at: _isoOrNull(body.deriv_confirmed_at),
+        deriv_lead_armed_min: _numOrNull(body.deriv_lead_armed_min),
+        deriv_lead_confirmed_min: _numOrNull(body.deriv_lead_confirmed_min),
         research_period: (typeof body.research_period === 'string' && body.research_period.length <= 64) ? body.research_period : null,
       };
       const rows = await sbFetch(`/analysis_archive?select=${RETURN_COLS}`, {
@@ -329,7 +341,7 @@ export default async function handler(req, res) {
     if (action === 'hybrid_matrix') {
       const period = (typeof body.period === 'string' && /^[\w-]{1,64}$/.test(body.period))
         ? body.period : 'hybrid_research_v1';
-      const COLS = 'price_verdict,deriv_verdict,hybrid_verdict,deriv_available,outcome_status,outcome_quality,max_favorable_move_pct,max_adverse_move_pct,deriv_factors';
+      const COLS = 'price_verdict,deriv_verdict,hybrid_verdict,deriv_available,outcome_status,outcome_quality,max_favorable_move_pct,max_adverse_move_pct,deriv_factors,deriv_lead_armed_min,deriv_lead_confirmed_min';
       // Sayfalama: 1000'lik dilimlerle en çok 5000 kayıt
       let rows = [];
       for (let off = 0; off < 5000; off += 1000) {
@@ -356,6 +368,16 @@ export default async function handler(req, res) {
         liq: { clean: cell(), storm: cell(), other: cell() },
       };
       let pending = 0;
+      // 10. iş — Öncülük (lead) agregasyonu: + dk = DERIV ÖNDE
+      const lead = {
+        armed: { n: 0, sum: 0, derivFirst: 0 },
+        confirmed: { n: 0, sum: 0, derivFirst: 0 },
+      };
+      function feedLead(slot, v) {
+        if (v == null || !Number.isFinite(Number(v))) return;
+        const x = Number(v);
+        slot.n++; slot.sum += x; if (x > 0) slot.derivFirst++;
+      }
 
       function feed(c, os, q, mfe, mae) {
         c.n++;
@@ -383,6 +405,8 @@ export default async function handler(req, res) {
         if (pv) feed(sideAgg.price[pv], os, q, mfe, mae);
         if (dv !== 'NA') feed(sideAgg.deriv[dv], os, q, mfe, mae);
         if (hv) feed(sideAgg.hybrid[hv], os, q, mfe, mae);
+        feedLead(lead.armed, r.deriv_lead_armed_min);
+        feedLead(lead.confirmed, r.deriv_lead_confirmed_min);
         const f = r.deriv_factors || {};
         if (f.funding_aligned === true) feed(factors.funding.with, os, q, mfe, mae);
         else if (f.funding_aligned === false) feed(factors.funding.without, os, q, mfe, mae);
@@ -421,6 +445,10 @@ export default async function handler(req, res) {
         matrix: walk(matrix),
         sides: walk(sideAgg),
         factors: walk(factors),
+        lead: {
+          armed: { n: lead.armed.n, avgMin: lead.armed.n ? Math.round(lead.armed.sum / lead.armed.n) : null, derivFirstPct: lead.armed.n ? Math.round((lead.armed.derivFirst / lead.armed.n) * 100) : null },
+          confirmed: { n: lead.confirmed.n, avgMin: lead.confirmed.n ? Math.round(lead.confirmed.sum / lead.confirmed.n) : null, derivFirstPct: lead.confirmed.n ? Math.round((lead.confirmed.derivFirst / lead.confirmed.n) * 100) : null },
+        },
       });
     }
 

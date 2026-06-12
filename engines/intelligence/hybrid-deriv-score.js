@@ -36,6 +36,28 @@ window.VDHybridEngine = (function () {
   const _cache = new Map();                 // 'SYM|DIR' → { rec, ts }
   const _inflight = new Map();
   const _requested = new Set();             // bu oturumda Stage-2'ye GİRMİŞ anahtarlar
+  // ── 10. İŞ: VERDICT-GEÇİŞ ZAMANLARI ──
+  // Bölüm (episode) = tarafın kesintisiz ≥ARMED kaldığı dönem.
+  // armed_at = bölüme giriş anı; confirmed_at = bölüm içinde CONFIRMED'a İLK değiş.
+  // Taraf ARMED altına düşerse bölüm biter, damgalar sıfırlanır (yeni bölüm yeni ölçüm).
+  const _trans = new Map();                 // key → { price:{armed_at,confirmed_at}, deriv:{...} }
+  const _RANK = { CONFIRMED: 3, ARMED: 2, WATCH: 1 };
+  function _stepSide(st, verdict, now) {
+    const r = verdict ? (_RANK[verdict] || 0) : 0;
+    if (r >= 2) {                                  // ≥ARMED: bölüm içi
+      if (st.armed_at == null) st.armed_at = now;  // bölüme giriş
+      if (r >= 3 && st.confirmed_at == null) st.confirmed_at = now;
+    } else {                                        // ARMED altı: bölüm bitti
+      st.armed_at = null; st.confirmed_at = null;
+    }
+  }
+  function _track(key, priceVerdict, derivVerdict, derivAvail, now) {
+    let t = _trans.get(key);
+    if (!t) { t = { price: { armed_at: null, confirmed_at: null }, deriv: { armed_at: null, confirmed_at: null } }; _trans.set(key, t); }
+    _stepSide(t.price, priceVerdict, now);
+    if (derivAvail) _stepSide(t.deriv, derivVerdict, now);  // deriv N/A ise bölümüne DOKUNMA (veri yokluğu ≠ düşüş)
+    return t;
+  }
 
   function verdictOf(score) {
     if (score == null || !Number.isFinite(+score)) return null;
@@ -155,14 +177,20 @@ window.VDHybridEngine = (function () {
     if (c && Date.now() - c.ts < CFG.TTL) {
       // taze deriv ile yeni price'ı birleştir (deriv 5 dk geçerli)
       const rec = _combine(priceScore, c.rec.deriv);
-      if (rec) { _cache.set(key, { rec, ts: c.ts }); return rec; }
+      if (rec) {
+        rec.trans = _track(key, rec.priceVerdict, rec.derivVerdict, rec.deriv && rec.deriv.available, Date.now());
+        _cache.set(key, { rec, ts: c.ts }); return rec;
+      }
       return c.rec;
     }
     if (_inflight.has(key)) { await _inflight.get(key).catch(() => {}); return get(sym, dir) || _combine(priceScore, null); }
     const p = (async () => {
       const deriv = await _calcDeriv(sym, dir);
       const rec = _combine(priceScore, deriv);
-      if (rec) _cache.set(key, { rec, ts: Date.now() });
+      if (rec) {
+        rec.trans = _track(key, rec.priceVerdict, rec.derivVerdict, rec.deriv && rec.deriv.available, Date.now());
+        _cache.set(key, { rec, ts: Date.now() });
+      }
       return rec;
     })();
     _inflight.set(key, p);
@@ -200,7 +228,19 @@ window.VDHybridEngine = (function () {
         n_factors: rec.deriv ? rec.deriv.nFactors : 0,
       },
       research_period: CFG.RESEARCH_PERIOD,
+      // ── 10. İŞ: geçiş damgaları + öncülük (pozitif = DERIV ÖNDE) ──
+      price_armed_at: _iso(rec.trans && rec.trans.price.armed_at),
+      price_confirmed_at: _iso(rec.trans && rec.trans.price.confirmed_at),
+      deriv_armed_at: _iso(rec.trans && rec.trans.deriv.armed_at),
+      deriv_confirmed_at: _iso(rec.trans && rec.trans.deriv.confirmed_at),
+      deriv_lead_armed_min: _leadMin(rec.trans && rec.trans.deriv.armed_at, rec.trans && rec.trans.price.armed_at),
+      deriv_lead_confirmed_min: _leadMin(rec.trans && rec.trans.deriv.confirmed_at, rec.trans && rec.trans.price.confirmed_at),
     };
+  }
+  function _iso(ms) { return (ms != null) ? new Date(ms).toISOString() : null; }
+  function _leadMin(derivMs, priceMs) {
+    if (derivMs == null || priceMs == null) return null;
+    return Math.round((priceMs - derivMs) / 60000);   // + → deriv önce vardı
   }
 
   // Bu sym/dir bu oturumda Stage-2 değerlendirmesine girdi mi? (kart durum metni için)

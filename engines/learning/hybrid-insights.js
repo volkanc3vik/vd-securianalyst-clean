@@ -132,6 +132,27 @@ window.VDHybridInsights = (function () {
     }
     out.insights = out.insights.concat(fIns);
 
+    // 6b) ÖNCÜLÜK — "Deriv daha erken mi?" (10. iş; direktifin son açık sorusu)
+    if (data.lead && data.lead.armed && data.lead.armed.n >= CFG.MIN_N) {
+      const L = data.lead.armed;
+      const ev = 'ort. ' + (L.avgMin >= 0 ? '+' : '') + L.avgMin + ' dk · deriv önde %' + L.derivFirstPct + ' · n=' + L.n;
+      if (L.avgMin >= 5) {
+        out.insights.push({ code: 'LEAD_DERIV', tone: L.avgMin >= 15 ? 'strong' : 'info', key: 'li.leadDeriv',
+          vars: { m: L.avgMin, p: L.derivFirstPct },
+          fallback: 'Derivative, ARMED seviyesine ortalama ' + L.avgMin + ' dk ÖNCE ulaşıyor (önde olma oranı %' + L.derivFirstPct + ') — erken sinyal hipotezi destekleniyor.',
+          evidence: ev });
+      } else if (L.avgMin <= -5) {
+        out.insights.push({ code: 'LEAD_PRICE', tone: 'info', key: 'li.leadPrice',
+          vars: { m: Math.abs(L.avgMin), p: 100 - L.derivFirstPct },
+          fallback: 'Price Structure, ARMED seviyesine ortalama ' + Math.abs(L.avgMin) + ' dk önce ulaşıyor — bu dönemde fiyat tarafı öncü.',
+          evidence: ev });
+      } else {
+        out.insights.push({ code: 'LEAD_NONE', tone: 'info', key: 'li.leadNone', vars: {},
+          fallback: 'İki taraf ARMED seviyesine yaklaşık aynı anda ulaşıyor — belirgin öncülük yok (şimdilik).',
+          evidence: ev });
+      }
+    }
+
     // 7) Kurtulan fırsatlar (Outcome Quality — direktifin "görünmez kalmasın" maddesi)
     let inv = 0, rec = 0;
     ['CONFIRMED', 'ARMED', 'WATCH'].forEach(p => ['CONFIRMED', 'ARMED', 'WATCH', 'NA'].forEach(d => {
