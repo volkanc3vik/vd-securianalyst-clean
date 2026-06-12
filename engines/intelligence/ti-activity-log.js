@@ -14,6 +14,18 @@
 //   - btc/eth      (momentum/dir değişimi)
 // ════════════════════════════════════════════════════════════════════
 window.TIActivityLog = (() => {
+  // ── 11. İŞ: erişim maskesi — tek doğruluk kaynağı VDAccess.canAccessSymbol ──
+  // VDAccess yoksa AÇIK davranır (premium deneyimi yük sırası aksiliklerinde kırılmasın).
+  function _symLocked(sym) {
+    try {
+      if (window.VDAccess && typeof window.VDAccess.canAccessSymbol === 'function') {
+        return !window.VDAccess.canAccessSymbol(sym);
+      }
+    } catch (e) {}
+    return false;
+  }
+  function _maskSym(sym) { return _symLocked(sym) ? '🔒•••' : sym; }
+
   'use strict';
   function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
@@ -75,7 +87,7 @@ window.TIActivityLog = (() => {
           code: 'SETUP_LEADER_NEW',
           severity: 'info',
           category: 'setup',
-          msg: _t('tia.leaderNew',{sym:nextSetup,dir:next.bestSetup.dir,s:next.bestSetup.score},'Yeni lider setup: '+nextSetup+' '+next.bestSetup.dir+' · skor '+next.bestSetup.score),
+          msg: _t('tia.leaderNew',{sym:_maskSym(nextSetup),dir:next.bestSetup.dir,s:next.bestSetup.score},'Yeni lider setup: '+_maskSym(nextSetup)+' '+next.bestSetup.dir+' · skor '+next.bestSetup.score),
         });
       }
     }

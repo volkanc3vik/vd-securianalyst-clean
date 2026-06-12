@@ -3,6 +3,18 @@
 // Score + Tier + Maturity Bar + Confirmed Chips + "What Needs to Happen"
 // ════════════════════════════════════════════════════════════════════
 window.TIBestSetupCard = (() => {
+  // ── 11. İŞ: erişim maskesi — tek doğruluk kaynağı VDAccess.canAccessSymbol ──
+  // VDAccess yoksa AÇIK davranır (premium deneyimi yük sırası aksiliklerinde kırılmasın).
+  function _symLocked(sym) {
+    try {
+      if (window.VDAccess && typeof window.VDAccess.canAccessSymbol === 'function') {
+        return !window.VDAccess.canAccessSymbol(sym);
+      }
+    } catch (e) {}
+    return false;
+  }
+  function _maskSym(sym) { return _symLocked(sym) ? '🔒•••' : sym; }
+
   'use strict';
 
   function _t(k, v, f) { return (window.VDt) ? window.VDt(k, v, f) : (f != null ? f : k); }
@@ -102,12 +114,15 @@ window.TIBestSetupCard = (() => {
     `;
 
     // Setup levels
+    // 11. iş: kilitliyse fiyat seviyeleri maskelenir (fiyattan coin bulunur + seviye sızar)
+    const _lk = _symLocked(setup.sym);
+    const _pv = (v) => _lk ? '•••' : _fmtPrice(v);
     const levelsHtml = (setup.entry || setup.sl || setup.tp1) ? `
       <div class="ti-best-levels">
-        ${setup.entry ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlReference', null, 'Referans')}</span><span class="ti-best-level-val entry">${_fmtPrice(setup.entry)}</span></div>` : ''}
-        ${setup.sl    ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlRiskLimit', null, 'Risk Limiti')}</span><span class="ti-best-level-val sl">${_fmtPrice(setup.sl)}</span></div>` : ''}
-        ${setup.tp1   ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlTarget1', null, 'Hedef Bölge 1')}</span><span class="ti-best-level-val tp1">${_fmtPrice(setup.tp1)}</span></div>` : ''}
-        ${setup.tp2   ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlTarget2', null, 'Hedef Bölge 2')}</span><span class="ti-best-level-val tp2">${_fmtPrice(setup.tp2)}</span></div>` : ''}
+        ${setup.entry ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlReference', null, 'Referans')}</span><span class="ti-best-level-val entry">${_pv(setup.entry)}</span></div>` : ''}
+        ${setup.sl    ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlRiskLimit', null, 'Risk Limiti')}</span><span class="ti-best-level-val sl">${_pv(setup.sl)}</span></div>` : ''}
+        ${setup.tp1   ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlTarget1', null, 'Hedef Bölge 1')}</span><span class="ti-best-level-val tp1">${_pv(setup.tp1)}</span></div>` : ''}
+        ${setup.tp2   ? `<div class="ti-best-level"><span class="ti-best-level-label">${_t('ti.lvlTarget2', null, 'Hedef Bölge 2')}</span><span class="ti-best-level-val tp2">${_pv(setup.tp2)}</span></div>` : ''}
       </div>
     ` : '';
 

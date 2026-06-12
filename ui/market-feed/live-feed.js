@@ -259,6 +259,11 @@ window.VDLiveFeed = (function () {
 
   function mount() {
     if (_mounted) return;
+    // 11. iş: public/free görünümde HİÇ mount edilmez (premium+admin görür).
+    // VDAccess yoksa açık davran — premium deneyimi kırılmasın.
+    try {
+      if (window.VDAccess && typeof window.VDAccess.isPremium === 'function' && !window.VDAccess.isPremium()) return;
+    } catch (e) {}
     _mounted = true;
     _ensurePanel();
     const sym = window.SYM || 'BTCUSDT';

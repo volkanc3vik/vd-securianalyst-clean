@@ -9,6 +9,18 @@
 // API: score(ctx) → { sym, dir, score, tier, factors, ... }
 // ════════════════════════════════════════════════════════════════════
 window.TISetupScorer = (() => {
+  // ── 11. İŞ: erişim maskesi — tek doğruluk kaynağı VDAccess.canAccessSymbol ──
+  // VDAccess yoksa AÇIK davranır (premium deneyimi yük sırası aksiliklerinde kırılmasın).
+  function _symLocked(sym) {
+    try {
+      if (window.VDAccess && typeof window.VDAccess.canAccessSymbol === 'function') {
+        return !window.VDAccess.canAccessSymbol(sym);
+      }
+    } catch (e) {}
+    return false;
+  }
+  function _maskSym(sym) { return _symLocked(sym) ? '🔒•••' : sym; }
+
   'use strict';
   function _t(k,v,f){return (window.VDt)?window.VDt(k,v,f):(f!=null?f:k);}
 
@@ -358,7 +370,8 @@ window.TISetupScorer = (() => {
     else if (phrases.length === 2) combined = phrases[0] + ' + ' + phrases[1];
     else combined = phrases[0] + ', ' + phrases[1] + ' + ' + phrases[2];
 
-    let sentence = _t('tis.rationale',{sym:sym,c:combined},sym+' '+combined+' kombinasyonunu sergiliyor.');
+    const symShown = _maskSym(sym);   // 11. iş: kilitliyse cümlede de maske
+    let sentence = _t('tis.rationale',{sym:symShown,c:combined},symShown+' '+combined+' kombinasyonunu sergiliyor.');
 
     // FBR uyarısı (negatif faktör)
     const fbr = factors.find(f => f.code === 'FBR');
