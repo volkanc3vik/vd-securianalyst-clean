@@ -41,6 +41,7 @@ const LIMITS = {
   list_research: { max: 60, windowMs: 60_000 },
   hybrid_matrix: { max: 20, windowMs: 60_000 },   // Faz 3 — ağır agregasyon, daha sıkı
   track_verdict: { max: 240, windowMs: 60_000 },  // 10. iş — taramada sık çağrılır (admin oturumu), bol limit
+  runner_stats:  { max: 60, windowMs: 60_000 },   // runner istatistik paneli
 };
 function rateLimit(action, ip) {
   const cfg = LIMITS[action];
@@ -78,6 +79,22 @@ async function sbFetch(path, options = {}) {
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!r.ok) throw new Error(`supabase_${r.status}: ${typeof data === 'string' ? data : JSON.stringify(data)}`);
   return data;
+}
+
+// Yalnız SAYIM: Prefer count=exact + Range 0-0 → content-range'ten toplam.
+// sbFetch gövde döndürdüğü için burada ham fetch kullanılır.
+async function sbCount(filterPath) {
+  const url = `${SB_URL.replace(/\/$/, '')}/rest/v1${filterPath}`;
+  const r = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+      'Prefer': 'count=exact', 'Range': '0-0', 'Range-Unit': 'items',
+    },
+  });
+  const cr = r.headers.get('content-range') || '';   // örn: "0-0/3609" veya "*/0"
+  const m = cr.match(/\/(\d+)$/);
+  return m ? parseInt(m[1], 10) : 0;
 }
 
 // ── Doğrulama yardımcıları ──────────────────────────────────────────
@@ -490,6 +507,43 @@ export default async function handler(req, res) {
         shown: (recent || []).length
       });
     }
+    // ════════════════════════════════════════════════════════════════
+    // runner_stats: Review Runner kuyruk sağlığı (admin paneli).
+    // Pending/Due runner'ın DUE sorgusuyla AYNI kapsam (excluded=false
+    // VEYA research) — panel runner'ın gerçekte göreceğini sayar.
+    if (action === 'runner_stats') {
+      const nowIso = new Date().toISOString();
+      const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+      const hourAgo = new Date(Date.now() - 3600_000).toISOString();
+      const scope = `&or=(excluded_from_learning.eq.false,sample_type.eq.research)`;
+      let pending = 0, due = 0, processedToday = 0, processedLastHour = 0;
+      try {
+        [pending, due, processedToday, processedLastHour] = await Promise.all([
+          sbCount(`/analysis_archive?outcome_status=eq.pending${scope}&select=id`),
+          sbCount(`/analysis_archive?outcome_status=eq.pending${scope}&review_due_at=lte.${encodeURIComponent(nowIso)}&select=id`),
+          sbCount(`/analysis_archive?outcome_resolved_at=gte.${encodeURIComponent(dayStart.toISOString())}&select=id`),
+          sbCount(`/analysis_archive?outcome_resolved_at=gte.${encodeURIComponent(hourAgo)}&select=id`),
+        ]);
+      } catch (e) {
+        return res.status(500).json({ ok: false, error: 'count_failed', detail: String(e && e.message).slice(0, 120) });
+      }
+      // ETA: kalan due / son-saat hız (kayıt/saat). Hız 0 ise hesaplanamaz.
+      const etaHours = (due > 0 && processedLastHour > 0) ? +(due / processedLastHour).toFixed(1) : null;
+      // Kuyruk sağlığı: due=0 SAĞLIKLI · eta<6s TEMİZLENİYOR · eta<48s BİRİKME · diğer KRİTİK
+      const health = due === 0 ? 'HEALTHY'
+        : (etaHours != null && etaHours <= 6) ? 'CLEARING'
+        : (etaHours != null && etaHours <= 48) ? 'BACKLOG'
+        : 'CRITICAL';
+      return res.status(200).json({
+        ok: true, at: nowIso,
+        pending, due,
+        processed_today: processedToday,
+        processed_last_hour: processedLastHour,
+        eta_hours: etaHours,
+        health,
+      });
+    }
+
     // ════════════════════════════════════════════════════════════════
     // track_verdict (10. iş düzeltmesi): SUNUCU-TARAFLI geçiş damgası.
     // Tarayıcı her taramada {sym,dir,priceVerdict,derivVerdict,derivAvail}

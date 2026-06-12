@@ -112,6 +112,11 @@
       '#aic-research .aic-rsch-move .adv{color:#f85149;font-weight:600}' +
       '#aic-research .aic-rsch-q{font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:6px;border:1px solid;margin-right:4px}' +
       '#aic-research .aic-rsch-times{font-size:9px;color:var(--v4-text-3,#5b7a94);margin-left:4px}' +
+      '.aic-rs-host{display:block;width:100%}' +
+      '.aic-rs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0 4px;width:100%}' +
+      '.aic-rs-box{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.14);border-radius:9px;padding:8px 10px;text-align:center}' +
+      '.aic-rs-v{font-size:16px;font-weight:800;font-family:ui-monospace,Menlo,monospace;color:var(--v4-text,#dfeefd)}' +
+      '.aic-rs-l{font-size:8.5px;color:var(--v4-text-3,#5b7a94);letter-spacing:.04em;margin-top:3px;text-transform:uppercase}' +
       '.aic-oi{margin:10px 0 4px;padding:9px 11px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.18);border-radius:9px}' +
       '.aic-oi-title{font-size:9px;font-weight:800;letter-spacing:.06em;color:#00d4ff;margin-bottom:5px}' +
       '.aic-oi-row{display:flex;justify-content:space-between;font-size:11px;color:var(--v4-text-2,#7FA9C9);padding:2px 0}' +
@@ -136,6 +141,7 @@
       '<div class="aic-pend">' +
         '<div class="aic-pend-hdr">' +
           '<span class="aic-pend-title">🔬 Araştırma Katmanı <span class="aic-pend-tag">yalnızca admin</span></span>' +
+          '<span id="aicRunnerStatsHost" class="aic-rs-host"></span>' +
           '<button class="aic-pend-refresh" data-rsch-load type="button">Yükle / Yenile</button>' +
         '</div>' +
         keyArea +
@@ -285,6 +291,46 @@
     }
   }
 
+  // ── REVIEW RUNNER İSTATİSTİK ŞERİDİ ─────────────────────────────────
+  // Kuyruk sağlığı: Pending / Due / Bugün / Son Saat / ETA / Sağlık.
+  // runner_stats action'ından gelir; 60 sn'de bir tazelenir.
+  const HEALTH_MAP = {
+    HEALTHY:  { t: 'SAĞLIKLI',     c: '#36d399' },
+    CLEARING: { t: 'TEMİZLENİYOR', c: '#00d4ff' },
+    BACKLOG:  { t: 'BİRİKME',      c: '#ff8a3d' },
+    CRITICAL: { t: 'KRİTİK',       c: '#f85149' },
+  };
+  function _etaTxt(h) {
+    if (h == null) return '—';
+    if (h < 1) return Math.round(h * 60) + ' dk';
+    if (h < 48) return h.toFixed(1) + ' saat';
+    return (h / 24).toFixed(1) + ' gün';
+  }
+  function _statsHTML(d) {
+    const hm = HEALTH_MAP[d.health] || { t: d.health || '—', c: 'var(--v4-text-2)' };
+    const box = (lbl, val, col) =>
+      '<div class="aic-rs-box"><div class="aic-rs-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + val + '</div><div class="aic-rs-l">' + lbl + '</div></div>';
+    return '<div class="aic-rs" id="aicRunnerStats">' +
+      box('Pending', d.pending) +
+      box('Due (süresi dolmuş)', d.due, d.due > 0 ? '#ff8a3d' : '#36d399') +
+      box('Bugün Çözülen', d.processed_today, '#36d399') +
+      box('Son 1 Saat', d.processed_last_hour) +
+      box('Temizlenme (ETA)', _etaTxt(d.eta_hours), d.eta_hours != null && d.eta_hours > 48 ? '#f85149' : null) +
+      box('Kuyruk Sağlığı', '<span style="color:' + hm.c + '">●</span> ' + hm.t, hm.c) +
+      '</div>';
+  }
+  let _rsTimer = null;
+  async function _loadStats(el) {
+    const d = window.TelegramDispatcher;
+    if (!d || typeof d.adminFetch !== 'function') return;
+    try {
+      const r = await d.adminFetch(API, { action: 'runner_stats' });
+      if (!r || !r.ok) return;
+      const host = el.querySelector('#aicRunnerStatsHost');
+      if (host) host.innerHTML = _statsHTML(r);
+    } catch (e) {}
+  }
+
   function mount() {
     const el = document.getElementById(CONTAINER);
     if (!el) return;
@@ -294,6 +340,9 @@
     el.innerHTML = _shell('<div class="aic-pend-empty">"Yükle / Yenile" ile araştırma kayıtlarını getirin.</div>');
     _wire(el);
     if (_hasKey()) _load(el);   // key hazırsa otomatik getir
+    _loadStats(el);
+    if (_rsTimer) clearInterval(_rsTimer);
+    _rsTimer = setInterval(function () { _loadStats(el); }, 60_000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
