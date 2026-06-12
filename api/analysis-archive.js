@@ -341,7 +341,7 @@ export default async function handler(req, res) {
     // ── LIST_PENDING: admin'e özel bekleyen kayıt listesi (service-role, RLS bypass) ──
     // Anon ASLA buraya erişemez (x-admin-key guard). RLS/public feed DEĞİŞMEZ.
     if (action === 'list_pending') {
-      const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 100);
+      const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 300);
       // newest=true → en yeni açılan önce (setup-tracker paneli). Aksi halde mevcut davranış (due en yakın önce).
       const order = body.newest
         ? 'created_at.desc'

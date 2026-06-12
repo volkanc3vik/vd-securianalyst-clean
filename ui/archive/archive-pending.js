@@ -123,7 +123,7 @@
     _busy = true;
     if (body) body.innerHTML = `<div class="aic-pend-empty">Yükleniyor…</div>`;
     try {
-      const r = await d.adminFetch(API, { action: 'list_pending', limit: 50 });
+      const r = await d.adminFetch(API, { action: 'list_pending', limit: 300, newest: true });  // en yeni açılan ÜSTTE, tüm bekleyenler
       if (r && r.ok && Array.isArray(r.rows)) {
         if (!r.rows.length) { if (body) body.innerHTML = `<div class="aic-pend-empty">Bekleyen kayıt yok.</div>`; }
         else if (body) {
