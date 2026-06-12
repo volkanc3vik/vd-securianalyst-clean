@@ -40,6 +40,7 @@ const LIMITS = {
   mark_shared:   { max: 20, windowMs: 60_000 },
   list_research: { max: 60, windowMs: 60_000 },
   hybrid_matrix: { max: 20, windowMs: 60_000 },   // Faz 3 — ağır agregasyon, daha sıkı
+  track_verdict: { max: 240, windowMs: 60_000 },  // 10. iş — taramada sık çağrılır (admin oturumu), bol limit
 };
 function rateLimit(action, ip) {
   const cfg = LIMITS[action];
@@ -489,6 +490,75 @@ export default async function handler(req, res) {
         shown: (recent || []).length
       });
     }
+    // ════════════════════════════════════════════════════════════════
+    // track_verdict (10. iş düzeltmesi): SUNUCU-TARAFLI geçiş damgası.
+    // Tarayıcı her taramada {sym,dir,priceVerdict,derivVerdict,derivAvail}
+    // gönderir; DB ilk ARMED/CONFIRMED anını now() ile damgalar (oturumdan
+    // bağımsız GERÇEK zaman). Yanıt: o ana kadarki gerçek lead (dk).
+    //   + dk = DERIV ÖNDE · - dk = PRICE ÖNDE
+    // verdict_transitions tablosu: (sym,dir) PK, bölüm (episode) durumu.
+    if (action === 'track_verdict') {
+      const sym = body.sym ? String(body.sym).toUpperCase().slice(0, 24) : null;
+      const dir = String(body.dir || '').toUpperCase() === 'SHORT' ? 'SHORT' : 'LONG';
+      if (!sym) return res.status(400).json({ ok: false, error: 'invalid_sym' });
+      const pv = _verdictOrNull(body.priceVerdict);
+      const dv = _verdictOrNull(body.derivVerdict);
+      const derivAvail = body.derivAvail === true;
+      const RANK = { CONFIRMED: 3, ARMED: 2, WATCH: 1 };
+      const pr = pv ? (RANK[pv] || 0) : 0;
+      const dr = dv ? (RANK[dv] || 0) : 0;
+
+      // Mevcut bölüm durumunu oku
+      let row = null;
+      try {
+        const rows = await sbFetch(`/verdict_transitions?sym=eq.${encodeURIComponent(sym)}&dir=eq.${dir}&select=*&limit=1`, { method: 'GET' });
+        row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+      } catch (e) { /* tablo yoksa aşağıda jenerik döneriz */ }
+
+      const nowIso = new Date().toISOString();
+      const cur = row || { sym, dir, price_armed_at: null, price_confirmed_at: null, deriv_armed_at: null, deriv_confirmed_at: null };
+
+      // Price tarafı bölüm makinesi
+      if (pr >= 2) {
+        if (cur.price_armed_at == null) cur.price_armed_at = nowIso;
+        if (pr >= 3 && cur.price_confirmed_at == null) cur.price_confirmed_at = nowIso;
+      } else { cur.price_armed_at = null; cur.price_confirmed_at = null; }
+
+      // Deriv tarafı — N/A ise bölüme DOKUNMA (veri yokluğu ≠ düşüş)
+      if (derivAvail) {
+        if (dr >= 2) {
+          if (cur.deriv_armed_at == null) cur.deriv_armed_at = nowIso;
+          if (dr >= 3 && cur.deriv_confirmed_at == null) cur.deriv_confirmed_at = nowIso;
+        } else { cur.deriv_armed_at = null; cur.deriv_confirmed_at = null; }
+      }
+
+      // Lead hesabı (+ = deriv önde)
+      const leadMin = (dMs, pMs) => (dMs != null && pMs != null) ? Math.round((new Date(pMs).getTime() - new Date(dMs).getTime()) / 60000) : null;
+      const lead_armed = leadMin(cur.deriv_armed_at, cur.price_armed_at);
+      const lead_confirmed = leadMin(cur.deriv_confirmed_at, cur.price_confirmed_at);
+
+      // Upsert (tablo yoksa sessizce geç — deploy sırası SQL'den önce olabilir)
+      try {
+        await sbFetch('/verdict_transitions', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({
+            sym, dir,
+            price_armed_at: cur.price_armed_at, price_confirmed_at: cur.price_confirmed_at,
+            deriv_armed_at: cur.deriv_armed_at, deriv_confirmed_at: cur.deriv_confirmed_at,
+            updated_at: nowIso,
+          }),
+        });
+      } catch (e) { /* tablo henüz yoksa lead yine döndürülür (in-memory hesap) */ }
+
+      return res.status(200).json({
+        ok: true,
+        price_armed_at: cur.price_armed_at, deriv_armed_at: cur.deriv_armed_at,
+        price_confirmed_at: cur.price_confirmed_at, deriv_confirmed_at: cur.deriv_confirmed_at,
+        deriv_lead_armed_min: lead_armed, deriv_lead_confirmed_min: lead_confirmed,
+      });
+    }
+
     const id = body.id;
     if (!id || !UUID_RE.test(String(id))) return res.status(400).json({ ok: false, error: 'invalid_id' });
     const idFilter = `?id=eq.${encodeURIComponent(id)}`;

@@ -37,9 +37,11 @@ window.VDHybridEngine = (function () {
   const _inflight = new Map();
   const _requested = new Set();             // bu oturumda Stage-2'ye GİRMİŞ anahtarlar
   // ── 10. İŞ: VERDICT-GEÇİŞ ZAMANLARI ──
+  // ⚠️ in-memory _trans yalnız OTURUM-İÇİ yedektir; tarayıcı kapanınca uçar
+  // → tek başına lead=0 üretir. GERÇEK damga SUNUCUDA (track_verdict action,
+  // verdict_transitions tablosu, DB now() ile). Sunucu yanıtı _trans'a yazılır;
+  // payloadFields onu kullanır. Böylece lead oturumdan bağımsız ve gerçektir.
   // Bölüm (episode) = tarafın kesintisiz ≥ARMED kaldığı dönem.
-  // armed_at = bölüme giriş anı; confirmed_at = bölüm içinde CONFIRMED'a İLK değiş.
-  // Taraf ARMED altına düşerse bölüm biter, damgalar sıfırlanır (yeni bölüm yeni ölçüm).
   const _trans = new Map();                 // key → { price:{armed_at,confirmed_at}, deriv:{...} }
   const _RANK = { CONFIRMED: 3, ARMED: 2, WATCH: 1 };
   function _stepSide(st, verdict, now) {
@@ -51,6 +53,33 @@ window.VDHybridEngine = (function () {
       st.armed_at = null; st.confirmed_at = null;
     }
   }
+  // Sunucuya geçiş nabzı — gerçek damgayı DB'den al, _trans'a yaz (debounce'lu).
+  // Aynı (key, pv, dv) için tekrar göndermez; yanıt ISO damgaları _trans'a işler.
+  const _lastSent = new Map();   // key → 'pv|dv|avail' son gönderilen imza
+  function _postTrack(sym, dir, priceVerdict, derivVerdict, derivAvail) {
+    try {
+      const key = sym + '|' + (dir || '');
+      const sig = (priceVerdict || '-') + '|' + (derivVerdict || '-') + '|' + (derivAvail ? '1' : '0');
+      if (_lastSent.get(key) === sig) return;   // durum değişmedi → sunucuyu yorma
+      _lastSent.set(key, sig);
+      var disp = (typeof window !== 'undefined') ? window.TelegramDispatcher : null;
+      if (!disp || typeof disp.adminFetch !== 'function' || !(disp.hasAdminKey && disp.hasAdminKey())) return; // yalnız admin oturumu damgalar (kayıtlarla aynı kapı)
+      disp.adminFetch('/api/analysis-archive', {
+        action: 'track_verdict', sym: sym, dir: dir, priceVerdict: priceVerdict, derivVerdict: derivVerdict, derivAvail: !!derivAvail,
+      }).then(function (d) {
+          if (!d || !d.ok) return;
+          // Sunucu GERÇEK damgalarını oturum-içi _trans'a işle (payloadFields kullansın)
+          let t = _trans.get(key);
+          if (!t) { t = { price: { armed_at: null, confirmed_at: null }, deriv: { armed_at: null, confirmed_at: null } }; _trans.set(key, t); }
+          t.price.armed_at = _ms(d.price_armed_at); t.price.confirmed_at = _ms(d.price_confirmed_at);
+          t.deriv.armed_at = _ms(d.deriv_armed_at); t.deriv.confirmed_at = _ms(d.deriv_confirmed_at);
+          t._serverLead = { armed: d.deriv_lead_armed_min, confirmed: d.deriv_lead_confirmed_min };
+        })
+        .catch(function () {});
+    } catch (e) {}
+  }
+  function _ms(iso) { if (!iso) return null; const t = Date.parse(iso); return Number.isFinite(t) ? t : null; }
+
   function _track(key, priceVerdict, derivVerdict, derivAvail, now) {
     let t = _trans.get(key);
     if (!t) { t = { price: { armed_at: null, confirmed_at: null }, deriv: { armed_at: null, confirmed_at: null } }; _trans.set(key, t); }
@@ -179,6 +208,7 @@ window.VDHybridEngine = (function () {
       const rec = _combine(priceScore, c.rec.deriv);
       if (rec) {
         rec.trans = _track(key, rec.priceVerdict, rec.derivVerdict, rec.deriv && rec.deriv.available, Date.now());
+        _postTrack(sym, dir, rec.priceVerdict, rec.derivVerdict, rec.deriv && rec.deriv.available);
         _cache.set(key, { rec, ts: c.ts }); return rec;
       }
       return c.rec;
@@ -189,6 +219,7 @@ window.VDHybridEngine = (function () {
       const rec = _combine(priceScore, deriv);
       if (rec) {
         rec.trans = _track(key, rec.priceVerdict, rec.derivVerdict, rec.deriv && rec.deriv.available, Date.now());
+        _postTrack(sym, dir, rec.priceVerdict, rec.derivVerdict, rec.deriv && rec.deriv.available);  // GERÇEK damga
         _cache.set(key, { rec, ts: Date.now() });
       }
       return rec;
@@ -233,8 +264,13 @@ window.VDHybridEngine = (function () {
       price_confirmed_at: _iso(rec.trans && rec.trans.price.confirmed_at),
       deriv_armed_at: _iso(rec.trans && rec.trans.deriv.armed_at),
       deriv_confirmed_at: _iso(rec.trans && rec.trans.deriv.confirmed_at),
-      deriv_lead_armed_min: _leadMin(rec.trans && rec.trans.deriv.armed_at, rec.trans && rec.trans.price.armed_at),
-      deriv_lead_confirmed_min: _leadMin(rec.trans && rec.trans.deriv.confirmed_at, rec.trans && rec.trans.price.confirmed_at),
+      // Sunucu lead'i (gerçek) öncelikli; yoksa oturum-içi hesaba düş
+      deriv_lead_armed_min: (rec.trans && rec.trans._serverLead && rec.trans._serverLead.armed != null)
+        ? rec.trans._serverLead.armed
+        : _leadMin(rec.trans && rec.trans.deriv.armed_at, rec.trans && rec.trans.price.armed_at),
+      deriv_lead_confirmed_min: (rec.trans && rec.trans._serverLead && rec.trans._serverLead.confirmed != null)
+        ? rec.trans._serverLead.confirmed
+        : _leadMin(rec.trans && rec.trans.deriv.confirmed_at, rec.trans && rec.trans.price.confirmed_at),
     };
   }
   function _iso(ms) { return (ms != null) ? new Date(ms).toISOString() : null; }
