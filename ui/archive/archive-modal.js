@@ -73,6 +73,67 @@
     </div>`;
   }
 
+  // ── V3: ÇOK-UFUKLU GÖRÜNÜM (1h/4h/12h/24h) — onaylı mockup birebir ──
+  function _mhHTML(rec) {
+    const cps = rec.checkpoints;
+    if (!cps || typeof cps !== 'object') return '';
+    const HS = ['h1', 'h4', 'h12', 'h24'];
+    const LBL = { h1: '1h', h4: '4h', h12: '12h', h24: '24h' };
+    const OM = {
+      confirmed: { t: 'CONFIRMED', c: '#36d399' },
+      partial:   { t: 'PARTIAL',   c: '#d8b45a' },
+      rejected:  { t: 'REJECTED',  c: '#f08585' },
+    };
+    const pf = (v) => (v != null && !isNaN(Number(v))) ? ((Number(v) >= 0 ? '+' : '') + Number(v).toFixed(1) + '%') : '—';
+    // Zirve ufku: en yüksek MFE
+    let peak = null, peakMfe = -1;
+    for (const h of HS) { const c = cps[h]; if (c && c.mfe != null && c.mfe > peakMfe) { peakMfe = c.mfe; peak = h; } }
+    let rowsHtml = '', any = false;
+    const moves = [];
+    for (const h of HS) {
+      const c = cps[h];
+      const oc = rec[h + '_outcome'];
+      const om = oc ? OM[oc] : null;
+      const isPeak = h === peak;
+      moves.push({ h: LBL[h], v: c && c.move != null ? c.move : null, peak: isPeak });
+      if (!c) {
+        rowsHtml += `<tr class="aic-mh-r"><td class="aic-mh-h">${LBL[h]}</td><td colspan="3" style="color:var(--v4-text-3,#5b7a94);text-align:center">${_t('arc.mhPending', null, 'henüz hesaplanmadı')}</td><td></td></tr>`;
+        continue;
+      }
+      any = true;
+      rowsHtml += `<tr class="aic-mh-r${isPeak ? ' aic-mh-peak' : ''}">` +
+        `<td class="aic-mh-h">${LBL[h]}</td>` +
+        `<td class="aic-mh-n" style="color:${c.move >= 0 ? '#3fb950' : '#f85149'}">${pf(c.move)}</td>` +
+        `<td class="aic-mh-n" style="color:#3fb950">${pf(c.mfe)}${isPeak ? ' ★' : ''}</td>` +
+        `<td class="aic-mh-n" style="color:#f85149">${c.mae != null ? '-' + Number(c.mae).toFixed(1) + '%' : '—'}</td>` +
+        `<td style="text-align:right">${om ? `<span class="aic-mh-chip" style="color:${om.c};border-color:${om.c}55;background:${om.c}14">${om.t}</span>` : '—'}</td></tr>`;
+    }
+    if (!any) return '';
+    // Mini bar grafik (move)
+    const maxAbs = Math.max(1, ...moves.filter(m => m.v != null).map(m => Math.abs(m.v)));
+    const bars = moves.map(m => {
+      if (m.v == null) return `<div class="aic-mh-bw"><div class="aic-mh-bar" style="height:2px;background:#2a4a6a"></div><span>${m.h}</span></div>`;
+      const hpx = Math.max(4, Math.round(Math.abs(m.v) / maxAbs * 38));
+      const col = m.peak ? '#00d4ff' : (m.v >= 0 ? '#3fb950' : '#f85149');
+      return `<div class="aic-mh-bw"><div class="aic-mh-bar" style="height:${hpx}px;background:${col}"></div><span${m.peak ? ' style="color:#00d4ff"' : ''}>${m.h}</span></div>`;
+    }).join('');
+    // Otomatik yorum (direktif)
+    const fh = rec.first_hit_outcome || rec.outcome_status;
+    const fhTxt = fh ? String(fh).toUpperCase() : '—';
+    let summary = `${_t('arc.mhPeak', null, 'Zirve')}: <span style="color:#00d4ff;font-family:ui-monospace,Menlo,monospace">${peak ? LBL[peak] : '—'}${peakMfe >= 0 ? ' (+' + peakMfe.toFixed(1) + '% MFE)' : ''}</span> · ${_t('arc.mhMain', null, 'Ana sonuç')}: <b>${fhTxt}</b>`;
+    if (fh === 'invalidated' && rec.outcome_quality === 'invalidated_then_recovered' && peak) {
+      summary += ` — ${_t('arc.mhOpp', null, 'fırsat')} ${LBL[peak]} ${_t('arc.mhOppAt', null, 'ufkunda oluştu')}.`;
+    }
+    return `<div class="aic-mh" data-aic-mh>
+      <div class="aic-mh-title">${_t('arc.mhTitle', null, 'ÇOK-UFUKLU GÖRÜNÜM')} <span class="aic-mh-new">${_t('arc.mhTag', null, 'checkpoint')}</span></div>
+      <table class="aic-mh-t"><tr class="aic-mh-head">
+        <td>${_t('arc.mhH', null, 'Ufuk')}</td><td>${_t('arc.mhMove', null, 'Hareket')}</td><td>MFE</td><td>MAE</td><td style="text-align:right">${_t('arc.mhStatus', null, 'Durum')}</td>
+      </tr>${rowsHtml}</table>
+      <div class="aic-mh-bars">${bars}</div>
+      <div class="aic-mh-sum">${summary}</div>
+    </div>`;
+  }
+
   function _timesHTML(rec) {
     const row = (icon, label, iso) =>
       `<div class="aic-time-row"><span class="ic">${icon}</span><span class="k">${label}</span><span class="v">${U.esc(_fmtDT(iso))}</span></div>`;
@@ -125,7 +186,7 @@
         </div>
         <div class="aic-modal-body">
           <p class="aic-modal-text">${U.esc(rec.analysis_text || rec.analysis_summary || '—')}</p>
-          ${_timesHTML(rec)}${_oiHTML(rec)}
+          ${_timesHTML(rec)}${_oiHTML(rec)}${_mhHTML(rec)}
           <div class="aic-kv-grid">${kvCells}</div>
           ${aiLearned}
           <!-- Telegram paylaş slotu — Aşama 4'te aktifleşir -->

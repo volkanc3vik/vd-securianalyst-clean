@@ -153,6 +153,34 @@ window.VDHybridInsights = (function () {
       }
     }
 
+    // 6c) UFUK BULGULARI (V3): "Ne zaman tutuyor?"
+    if (data.horizons) {
+      const HK = ['h1', 'h4', 'h12', 'h24'];
+      const HL = { h1: '1h', h4: '4h', h12: '12h', h24: '24h' };
+      const ranked = HK.map(h => Object.assign({ h }, data.horizons[h])).filter(x => x.n >= 20 && x.confirmRate != null)
+        .sort((a, b) => b.confirmRate - a.confirmRate);
+      if (ranked.length >= 2 && ranked[0].confirmRate - ranked[1].confirmRate >= 6) {
+        const b = ranked[0];
+        out.insights.push({ code: 'HORIZON_BEST', tone: 'info', key: 'li.hzBest',
+          vars: { h: HL[b.h], r: b.confirmRate },
+          fallback: 'Setup' + "'" + 'lar en çok ' + HL[b.h] + ' ufkunda doğrulanıyor (%' + b.confirmRate + ', n=' + b.n + ').',
+          evidence: ranked.map(x => HL[x.h] + ' %' + x.confirmRate).join(' · ') });
+      }
+      if (data.factorHorizons) {
+        const FN = { funding: 'Funding Alignment', oi: 'OI Expansion', positioning: 'Smart Money', liq: 'Temiz Likidite' };
+        for (const f in data.factorHorizons) {
+          const fr = HK.map(h => Object.assign({ h }, data.factorHorizons[f][h])).filter(x => x.n >= 15 && x.confirmRate != null)
+            .sort((a, b) => b.confirmRate - a.confirmRate);
+          if (fr.length >= 2 && fr[0].confirmRate - fr[1].confirmRate >= 8) {
+            out.insights.push({ code: 'HORIZON_FACTOR_' + f.toUpperCase(), tone: 'info', key: 'li.hzFactor',
+              vars: { f: FN[f], h: HL[fr[0].h], r: fr[0].confirmRate },
+              fallback: FN[f] + ' en çok ' + HL[fr[0].h] + ' ufkunda çalışıyor (%' + fr[0].confirmRate + ', n=' + fr[0].n + ').',
+              evidence: fr.map(x => HL[x.h] + ' %' + x.confirmRate).join(' · ') });
+          }
+        }
+      }
+    }
+
     // 7) Kurtulan fırsatlar (Outcome Quality — direktifin "görünmez kalmasın" maddesi)
     let inv = 0, rec = 0;
     ['CONFIRMED', 'ARMED', 'WATCH'].forEach(p => ['CONFIRMED', 'ARMED', 'WATCH', 'NA'].forEach(d => {

@@ -82,6 +82,34 @@ export default async function handler(req, res) {
       `&select=${cols}&order=created_at.desc&limit=2000`);
 
     const reviewed = rows || [];
+
+    // ── V3: Checkpoint Performance (1H/4H/12H/24H ufuk başarıları) ──
+    // Ayrı hafif sorgu: yalnız ufuk sonuç kolonları (jsonb İNDİRİLMEZ).
+    let checkpointPerf = null;
+    try {
+      const cpRows = await sb(`analysis_archive?or=(excluded_from_learning.eq.false,sample_type.eq.research)` +
+        `&outcome_status=neq.pending&select=h1_outcome,h4_outcome,h12_outcome,h24_outcome&order=created_at.desc&limit=2000`);
+      const agg = {};
+      for (const h of ['h1', 'h4', 'h12', 'h24']) {
+        let c = 0, pp = 0, r = 0, pend = 0;
+        for (const row of (cpRows || [])) {
+          const v = row[h + '_outcome'];
+          if (v === 'confirmed') c++;
+          else if (v === 'partial') pp++;
+          else if (v === 'rejected') r++;
+          else pend++;                                  // null → henüz hesaplanmadı
+        }
+        const done = c + pp + r;
+        agg[h] = {
+          confirmed: c, partial: pp, rejected: r, pending: pend, n: done,
+          confirmRate: done ? Math.round((c / done) * 100) : null,
+          partialRate: done ? Math.round((pp / done) * 100) : null,
+          rejectRate:  done ? Math.round((r / done) * 100) : null,
+        };
+      }
+      checkpointPerf = agg;
+    } catch (e) { checkpointPerf = null; }   // kolonlar henüz yoksa sessiz geç
+
     const v = reviewed.filter(r => r.review_status === 'validated').length;
     const p = reviewed.filter(r => r.review_status === 'partially_validated').length;
     const f = reviewed.filter(r => r.review_status === 'not_validated').length;
@@ -257,6 +285,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true, generated_at: new Date().toISOString(),
       overall, byCoin, byStructure, byCoinStrong, byStructureStrong, opportunityMatrix, byConfidence, byRisk, expectation, weekly, academy, timeline, learning,
+      checkpointPerf,
       gaps: {
         structure_persisted: false,
         structure_note: 'Yapı kalıcı kolon değil; rsi/score/yön ile türetiliyor. Tam doğruluk için scanner market_context.structure yazmalı.',

@@ -60,6 +60,52 @@ function mapValidationScore(outcome) {
   return 40; // expired
 }
 
+// ════════════════════════════════════════════════════════════════════
+// OUTCOME V3 — ÇOK-UFUKLU SNAPSHOT (saf fonksiyonlar)
+// Her ufuk (1h/4h/12h/24h) için: move (kesim anı kapanışı, lehte işaretli),
+// mfe, mae. Tek kline geçişinde TÜM ufuklar hesaplanır (ek çağrı yok).
+// Ufuk SONUCU yalnız kesim kapanışına bakar (direktif):
+//   move ≥ confirm → confirmed · ≥ partial → partial · değilse rejected
+// First-Hit ana kararına ASLA dokunmaz.
+// ════════════════════════════════════════════════════════════════════
+export function horizonSnapshots({ bias, entry, klines, startMs, hoursList }) {
+  const e = Number(entry);
+  const b = (bias === 'bearish') ? 'short' : (bias === 'neutral' ? 'neutral' : 'long');
+  const cuts = hoursList.map(h => ({ h, end: startMs + h * 3600_000, mfe: 0, mae: 0, move: null, seen: false }));
+  for (const k of klines) {
+    const t = +k[0], hi = +k[2], lo = +k[3], cl = +k[4];
+    if (isNaN(hi) || isNaN(lo)) continue;
+    const up = (hi - e) / e * 100, dn = (e - lo) / e * 100;
+    let fav, adv;
+    if (b === 'long')       { fav = up; adv = dn; }
+    else if (b === 'short') { fav = dn; adv = up; }
+    else                    { const m = Math.max(up, dn); fav = m; adv = m; }
+    const cls = isNaN(cl) ? null : ((b === 'short') ? (e - cl) / e * 100 : (b === 'neutral') ? Math.max(up, dn) : (cl - e) / e * 100);
+    for (const c of cuts) {
+      if (t < c.end) {
+        c.seen = true;
+        if (fav > c.mfe) c.mfe = fav;
+        if (adv > c.mae) c.mae = adv;
+        if (cls != null) c.move = cls;
+      }
+    }
+  }
+  const out = {};
+  for (const c of cuts) {
+    out['h' + c.h] = c.seen
+      ? { move: r2(c.move), mfe: r2(c.mfe), mae: r2(c.mae) }
+      : null;   // o ufka ait hiç mum yok (henüz erken) → null, uydurma yok
+  }
+  return out;
+}
+
+export function horizonOutcome(snap, confirmPct, partialPct) {
+  if (!snap || snap.move == null) return null;
+  if (snap.move >= confirmPct) return 'confirmed';
+  if (snap.move >= partialPct) return 'partial';
+  return 'rejected';
+}
+
 // ── First-hit çözümleyici (saf fonksiyon) ─────────────────────────────
 // klines: Binance fapi formatı [openTime, open, high, low, close, ...]
 function resolveFirstHit({ bias, entry, klines, confirmPct, invalidPct, partialPct, startMs }) {
@@ -219,9 +265,16 @@ async function resolveOne(rec, dry) {
   const nowIso = new Date().toISOString();
   const resolvedIso = res.resolvedMs ? new Date(res.resolvedMs).toISOString() : nowIso;
 
+  // ── V3: h1 + h4 mevcut 5h mumlarından BEDAVAYA (ek çağrı yok) ──
+  const snaps14 = horizonSnapshots({ bias: rec.direction_bias, entry, klines: kl, startMs, hoursList: [1, 4] });
+
   const patch = {
     // ── YENİ first-hit alanları ──
     outcome_status: res.status,
+    first_hit_outcome: res.status,                               // V3: açık alan (direktif)
+    h1_outcome: horizonOutcome(snaps14.h1, confirmPct, partialPct),
+    h4_outcome: horizonOutcome(snaps14.h4, confirmPct, partialPct),
+    checkpoints: { h1: snaps14.h1, h4: snaps14.h4 },             // h12/h24 Geçiş-2'de
     outcome_first_hit: res.firstHit,
     outcome_resolved_at: resolvedIso,
     outcome_time_to_result_minutes: ttr,
@@ -323,6 +376,103 @@ export async function runBatch({ limit = 25, dry = false } = {}) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// GEÇİŞ-2 (V3): kayıt 24 saati doldurunca TEK kline çağrısıyla (1m×1440)
+// h1/h4/h12/h24 + 24h-geneli MFE/MAE + quality yeniden hesaplanır,
+// checkpoints_done_at damgalanır → kayıt TAM kapanır.
+// First-Hit alanlarına (outcome_status / first_hit) DOKUNULMAZ.
+// ════════════════════════════════════════════════════════════════════
+const CP_HOURS = [1, 4, 12, 24];
+
+async function resolveCheckpoints(rec) {
+  const entry = Number(rec.price_at_analysis);
+  if (isNaN(entry) || entry <= 0) return { state: 'skipped', reason: 'bad_entry' };
+  const startMs = Date.parse(rec.created_at);
+  if (!Number.isFinite(startMs)) return { state: 'skipped', reason: 'bad_created' };
+  const endMs = startMs + 24 * 3600_000;
+  if (Date.now() < endMs) return { state: 'skipped', reason: 'not_due' };
+
+  const sym = String(rec.sym || '').toUpperCase();
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${encodeURIComponent(sym)}&interval=1m&startTime=${startMs}&endTime=${endMs}&limit=1500`;
+  let kr;
+  try { kr = await fetch(url, { headers: { 'Accept': 'application/json' } }); }
+  catch (e) { return { state: 'skipped', reason: 'kline_net' }; }
+  let kl; try { kl = await kr.json(); } catch (e) { return { state: 'skipped', reason: 'bad_price_data' }; }
+  if (!Array.isArray(kl) || !kl.length) {
+    const msg = (kl && kl.msg) ? String(kl.msg).toLowerCase() : '';
+    if (msg.includes('restricted') || msg.includes('eligibility')) return { state: 'skipped', reason: 'geo_blocked' };
+    return { state: 'skipped', reason: 'no_price_data' };
+  }
+
+  const prof = profileFor(rec.timeframe);
+  const confirmPct = (rec.confirm_threshold_pct != null) ? Number(rec.confirm_threshold_pct) : prof.confirm;
+  const invalidPct = (rec.invalid_threshold_pct != null) ? Number(rec.invalid_threshold_pct) : prof.invalid;
+  const partialPct = prof.partial;
+
+  const snaps = horizonSnapshots({ bias: rec.direction_bias, entry, klines: kl, startMs, hoursList: CP_HOURS });
+  const h24 = snaps.h24 || snaps.h12 || snaps.h4 || snaps.h1;
+
+  // 24h-geneli quality (aynı kurallar, geniş pencere): first-hit SABİT.
+  const fh = rec.outcome_status;
+  let quality = rec.outcome_quality || null;
+  if (h24 && (fh === 'confirmed' || fh === 'invalidated')) {
+    if (fh === 'confirmed') quality = (h24.move != null && h24.move < 0) ? 'confirmed_then_reversed' : 'clean_confirmed';
+    else quality = (h24.mfe >= confirmPct || (h24.move != null && h24.move >= partialPct)) ? 'invalidated_then_recovered' : 'clean_invalidated';
+  }
+
+  const patch = {
+    h1_outcome:  horizonOutcome(snaps.h1,  confirmPct, partialPct),
+    h4_outcome:  horizonOutcome(snaps.h4,  confirmPct, partialPct),
+    h12_outcome: horizonOutcome(snaps.h12, confirmPct, partialPct),
+    h24_outcome: horizonOutcome(snaps.h24, confirmPct, partialPct),
+    checkpoints: snaps,
+    checkpoints_done_at: new Date().toISOString(),
+  };
+  if (h24) {
+    patch.max_favorable_move_pct = h24.mfe;   // 24h-geneli zirveler (direktif örneğiyle uyumlu)
+    patch.max_adverse_move_pct = h24.mae;
+    if (quality) patch.outcome_quality = quality;
+  }
+
+  const upd = await sbFetch(
+    `/analysis_archive?id=eq.${encodeURIComponent(rec.id)}&checkpoints_done_at=is.null`,
+    { method: 'PATCH', body: JSON.stringify(patch) }
+  );
+  if (!upd || !upd.length) return { state: 'skipped', reason: 'already_done' };
+  return { state: 'processed' };
+}
+
+export async function runCheckpointBatch({ limit = 25 } = {}) {
+  const summary = { engine: 'checkpoints_v3', processed: 0, skipped: 0, errors: 0, fetched: 0, skip_reasons: {} };
+  if (!SB_URL || !SB_KEY) { summary.error = 'supabase_env_missing'; return summary; }
+  const lim = Math.max(1, Math.min(parseInt(limit, 10) || 25, 50));
+  const dueIso = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const cols = 'id,sym,timeframe,direction_bias,price_at_analysis,created_at,confirm_threshold_pct,invalid_threshold_pct,outcome_status,outcome_quality';
+  let rows;
+  try {
+    rows = await sbFetch(
+      `/analysis_archive?checkpoints_done_at=is.null&outcome_status=neq.pending&or=(excluded_from_learning.eq.false,sample_type.eq.research)` +
+      `&created_at=lte.${encodeURIComponent(dueIso)}&order=created_at.asc&limit=${lim}&select=${cols}`,
+      { method: 'GET' }
+    );
+  } catch (e) { summary.error = String(e && e.message).slice(0, 200); return summary; }
+  const list = rows || [];
+  summary.fetched = list.length;
+  const CHUNK = 8;
+  for (let i = 0; i < list.length; i += CHUNK) {
+    const results = await Promise.all(list.slice(i, i + CHUNK).map(async (rec) => {
+      try { return await resolveCheckpoints(rec); }
+      catch (e) { console.error('[checkpoints] kayıt hatası', rec && rec.id, e && e.message); return { state: 'error' }; }
+    }));
+    for (const r of results) {
+      if (r.state === 'processed') summary.processed++;
+      else if (r.state === 'error') summary.errors++;
+      else { summary.skipped++; summary.skip_reasons[r.reason] = (summary.skip_reasons[r.reason] || 0) + 1; }
+    }
+  }
+  return summary;
+}
+
+// ════════════════════════════════════════════════════════════════════
 // runDrain: TEK çağrıda zaman bütçesi dolana dek runBatch döngüsü.
 // Vercel free 10sn timeout → 8sn güvenli bütçe. Birikmiş yığını (binlerce
 // pending) hızla eritmek için. Cron VEYA manuel secret URL ile çağrılır.
@@ -342,7 +492,15 @@ export async function runDrain({ budgetMs = 8000, batchLimit = 40 } = {}) {
     total.expired += s.expired; total.skipped += s.skipped;
     total.errors += s.errors; total.fetched += s.fetched;
     if (s.error) { total.error = s.error; break; }
-    if ((s.fetched || 0) === 0) break;          // çözülecek kayıt kalmadı
+    if ((s.fetched || 0) === 0) break;          // pass-1 bitti
+  }
+  // V3: kalan bütçeyle Geçiş-2 (24h checkpoint) kuyruğunu da erit
+  total.cp_processed = 0; total.cp_rounds = 0;
+  while (Date.now() - t0 < budgetMs) {
+    const c = await runCheckpointBatch({ limit: batchLimit });
+    total.cp_rounds++;
+    total.cp_processed += c.processed;
+    if (c.error || (c.fetched || 0) === 0) break;
   }
   total.elapsed_ms = Date.now() - t0;
   return total;

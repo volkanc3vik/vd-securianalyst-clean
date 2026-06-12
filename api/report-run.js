@@ -14,7 +14,7 @@
 // DOKUNMAZ: scanner, risk/confidence, premium, referral, telegram-analiz gönderimi, archive doğrulama.
 // ════════════════════════════════════════════════════════════════════
 import { runReport, SUPPORTED_TYPES } from '../engines/report/report-engine.js';
-import { runBatch } from '../engines/outcome/outcome-runner.js';
+import { runBatch, runCheckpointBatch } from '../engines/outcome/outcome-runner.js';
 
 const ADMIN_KEYS  = [process.env.ADMIN_KEY_1, process.env.ADMIN_KEY_2].filter(Boolean);
 const CRON_SECRET = process.env.CRON_SECRET || process.env.TELEGRAM_CRON_SECRET;
@@ -61,6 +61,7 @@ export default async function handler(req, res) {
       try {
         const oc = await runBatch({ limit: 50 });
         console.log('[report-run] outcome runBatch:', JSON.stringify(oc));
+        try { const cp = await runCheckpointBatch({ limit: 50 }); console.log('[report-run] checkpoints:', JSON.stringify(cp)); } catch (e) {}
       } catch (e) {
         console.error('[report-run] outcome runBatch hata:', e && e.message);
       }

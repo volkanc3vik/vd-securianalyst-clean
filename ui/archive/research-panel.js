@@ -121,6 +121,22 @@
       '.aic-oi-title{font-size:9px;font-weight:800;letter-spacing:.06em;color:#00d4ff;margin-bottom:5px}' +
       '.aic-oi-row{display:flex;justify-content:space-between;font-size:11px;color:var(--v4-text-2,#7FA9C9);padding:2px 0}' +
       '.aic-oi-row .v{font-weight:700;font-family:ui-monospace,Menlo,monospace}' +
+      '.aic-mh{margin:10px 0 4px;padding:10px 12px;background:rgba(127,119,221,.05);border:1px solid rgba(127,119,221,.3);border-radius:9px}' +
+      '.aic-mh-title{font-size:9px;font-weight:800;letter-spacing:.06em;color:#afa9ec;margin-bottom:7px}' +
+      '.aic-mh-new{font-size:8px;color:#cecbf6;background:#534ab7;padding:1px 7px;border-radius:8px;margin-left:5px}' +
+      '.aic-mh-t{width:100%;font-size:11px;border-collapse:collapse;table-layout:fixed}' +
+      '.aic-mh-head td{color:var(--v4-text-3,#5b7a94);font-size:9px;letter-spacing:.04em;padding:2px 0}' +
+      '.aic-mh-r td{padding:4px 0;border-top:1px solid rgba(29,52,80,.8)}' +
+      '.aic-mh-h{font-family:ui-monospace,Menlo,monospace;color:var(--v4-text,#dfeefd);width:36px}' +
+      '.aic-mh-n{font-family:ui-monospace,Menlo,monospace;text-align:right;padding-right:8px}' +
+      '.aic-mh-peak{background:rgba(0,212,255,.06)}' +
+      '.aic-mh-peak .aic-mh-h{color:#00d4ff;font-weight:700}' +
+      '.aic-mh-chip{font-size:9px;font-weight:800;padding:1px 7px;border-radius:8px;border:1px solid}' +
+      '.aic-mh-bars{display:flex;align-items:flex-end;gap:14px;height:52px;margin:10px 2px 2px;border-bottom:1px solid rgba(29,52,80,.8)}' +
+      '.aic-mh-bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end}' +
+      '.aic-mh-bar{width:24px;border-radius:2px}' +
+      '.aic-mh-bw span{font-size:9px;color:var(--v4-text-3,#5b7a94);font-family:ui-monospace,Menlo,monospace}' +
+      '.aic-mh-sum{font-size:10.5px;color:var(--v4-text-2,#7fa9c9);margin-top:7px;line-height:1.5}' +
       '#aic-research .aic-rsch-due{font-size:11.5px;color:var(--v4-text-2,#7FA9C9)}' +
       '#aic-research .aic-rsch-due.ready{color:#E3B341;font-weight:600}' +
       '#aic-research .aic-rsch-ctx{font-size:11px;color:var(--v4-text-3,#4a6a85);font-family:var(--mono,monospace)}';

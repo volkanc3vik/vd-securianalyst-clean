@@ -359,7 +359,7 @@ export default async function handler(req, res) {
     if (action === 'hybrid_matrix') {
       const period = (typeof body.period === 'string' && /^[\w-]{1,64}$/.test(body.period))
         ? body.period : 'hybrid_research_v1';
-      const COLS = 'price_verdict,deriv_verdict,hybrid_verdict,deriv_available,outcome_status,outcome_quality,max_favorable_move_pct,max_adverse_move_pct,deriv_factors,deriv_lead_armed_min,deriv_lead_confirmed_min';
+      const COLS = 'price_verdict,deriv_verdict,hybrid_verdict,deriv_available,outcome_status,outcome_quality,max_favorable_move_pct,max_adverse_move_pct,deriv_factors,deriv_lead_armed_min,deriv_lead_confirmed_min,h1_outcome,h4_outcome,h12_outcome,h24_outcome';
       // Sayfalama: 1000'lik dilimlerle en çok 5000 kayıt
       let rows = [];
       for (let off = 0; off < 5000; off += 1000) {
@@ -391,6 +391,14 @@ export default async function handler(req, res) {
         armed: { n: 0, sum: 0, derivFirst: 0 },
         confirmed: { n: 0, sum: 0, derivFirst: 0 },
       };
+      // V3: ufuk performansı — genel + faktör×ufuk (Learning hedefi)
+      const HKEYS = ['h1', 'h4', 'h12', 'h24'];
+      const hzCell = () => ({ n: 0, c: 0 });
+      const horizons = { h1: hzCell(), h4: hzCell(), h12: hzCell(), h24: hzCell() };
+      const factorHz = { funding: {}, oi: {}, positioning: {}, liq: {} };
+      for (const f in factorHz) for (const h of HKEYS) factorHz[f][h] = hzCell();
+      function feedHz(slot, v) { if (v === 'confirmed' || v === 'partial' || v === 'rejected') { slot.n++; if (v === 'confirmed') slot.c++; } }
+
       function feedLead(slot, v) {
         if (v == null || !Number.isFinite(Number(v))) return;
         const x = Number(v);
@@ -423,6 +431,12 @@ export default async function handler(req, res) {
         if (pv) feed(sideAgg.price[pv], os, q, mfe, mae);
         if (dv !== 'NA') feed(sideAgg.deriv[dv], os, q, mfe, mae);
         if (hv) feed(sideAgg.hybrid[hv], os, q, mfe, mae);
+        for (const h of HKEYS) feedHz(horizons[h], r[h + '_outcome']);
+        const ff = r.deriv_factors || {};
+        if (ff.funding && ff.funding.aligned === true)                 for (const h of HKEYS) feedHz(factorHz.funding[h], r[h + '_outcome']);
+        if (ff.oi && ff.oi.expanding === true)                         for (const h of HKEYS) feedHz(factorHz.oi[h], r[h + '_outcome']);
+        if (ff.positioning && ff.positioning.context === 'SMART_WITH') for (const h of HKEYS) feedHz(factorHz.positioning[h], r[h + '_outcome']);
+        if (ff.liquidation && ff.liquidation.context === 'CLEAN')      for (const h of HKEYS) feedHz(factorHz.liq[h], r[h + '_outcome']);
         feedLead(lead.armed, r.deriv_lead_armed_min);
         feedLead(lead.confirmed, r.deriv_lead_confirmed_min);
         const f = r.deriv_factors || {};
@@ -463,6 +477,16 @@ export default async function handler(req, res) {
         matrix: walk(matrix),
         sides: walk(sideAgg),
         factors: walk(factors),
+        horizons: Object.fromEntries(HKEYS.map(h => [h, {
+          n: horizons[h].n,
+          confirmRate: horizons[h].n ? Math.round((horizons[h].c / horizons[h].n) * 100) : null,
+        }])),
+        factorHorizons: Object.fromEntries(Object.keys(factorHz).map(f => [f,
+          Object.fromEntries(HKEYS.map(h => [h, {
+            n: factorHz[f][h].n,
+            confirmRate: factorHz[f][h].n ? Math.round((factorHz[f][h].c / factorHz[f][h].n) * 100) : null,
+          }]))
+        ])),
         lead: {
           armed: { n: lead.armed.n, avgMin: lead.armed.n ? Math.round(lead.armed.sum / lead.armed.n) : null, derivFirstPct: lead.armed.n ? Math.round((lead.armed.derivFirst / lead.armed.n) * 100) : null },
           confirmed: { n: lead.confirmed.n, avgMin: lead.confirmed.n ? Math.round(lead.confirmed.sum / lead.confirmed.n) : null, derivFirstPct: lead.confirmed.n ? Math.round((lead.confirmed.derivFirst / lead.confirmed.n) * 100) : null },

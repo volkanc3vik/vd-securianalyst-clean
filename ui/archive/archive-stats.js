@@ -52,6 +52,45 @@
       _card(_t('arc.mostAnalyzed', null, 'En Çok Analiz'),  (s.top_sym ? U.esc(s.top_sym) : '—'), 'coin', 'var(--v4-text)', true),
       _card(_t('arc.recentValidated', null, 'Son Doğrulanan'), _fmtShortDate(s.last_validated_at), 'tarih', 'var(--v4-text-2)', true),
     ].join('');
+
+    // ── V3: Checkpoint Performance paneli (üst panele DOKUNMADAN, altına) ──
+    try {
+      const cp = s.checkpointPerf;
+      if (cp && (cp.h1 || cp.h24)) {
+        const box = (lbl, d) => {
+          if (!d) return '';
+          const cr = d.confirmRate != null ? '%' + d.confirmRate : '—';
+          return '<div class="aic-cp-box">' +
+            '<div class="aic-cp-h">' + lbl + '</div>' +
+            '<div class="aic-cp-main">' + cr + '</div>' +
+            '<div class="aic-cp-sub">' + _t('arc.cpConfirm', null, 'Doğrulama') + '</div>' +
+            '<div class="aic-cp-rows">' +
+              '<span style="color:#d8b45a">' + _t('arc.cpPartial', null, 'Kısmi') + ' %' + (d.partialRate != null ? d.partialRate : 0) + '</span>' +
+              '<span style="color:#f08585">' + _t('arc.cpReject', null, 'Red') + ' %' + (d.rejectRate != null ? d.rejectRate : 0) + '</span>' +
+              '<span style="color:#5b7a94">' + _t('arc.cpPending', null, 'Bekleyen') + ' ' + d.pending + '</span>' +
+            '</div></div>';
+        };
+        el.insertAdjacentHTML('afterend',
+          '<div class="aic-cp" id="aicCpPerf">' +
+            '<div class="aic-cp-title">⏱ ' + _t('arc.cpTitle', null, 'Checkpoint Performance') + ' <span class="aic-cp-tag">' + _t('arc.cpTag', null, 'ufuk başına doğrulama') + '</span></div>' +
+            '<div class="aic-cp-grid">' + box('1H', cp.h1) + box('4H', cp.h4) + box('12H', cp.h12) + box('24H', cp.h24) + '</div>' +
+          '</div>');
+        if (!document.getElementById('aicCpStyle')) {
+          const st = document.createElement('style'); st.id = 'aicCpStyle';
+          st.textContent =
+            '.aic-cp{margin:14px 0 4px}' +
+            '.aic-cp-title{font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--v4-cyan,#00d4ff);margin-bottom:8px}' +
+            '.aic-cp-tag{font-size:9px;color:var(--v4-text-3,#5b7a94);font-weight:600;margin-left:6px}' +
+            '.aic-cp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}' +
+            '.aic-cp-box{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.16);border-radius:10px;padding:10px 12px;text-align:center}' +
+            '.aic-cp-h{font-size:11px;font-weight:800;color:var(--v4-text-2,#7fa9c9);letter-spacing:.08em}' +
+            '.aic-cp-main{font-size:22px;font-weight:800;font-family:ui-monospace,Menlo,monospace;color:#36d399;margin:4px 0 1px}' +
+            '.aic-cp-sub{font-size:8.5px;color:var(--v4-text-3,#5b7a94);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}' +
+            '.aic-cp-rows{display:flex;justify-content:center;gap:8px;font-size:9.5px;flex-wrap:wrap}';
+          document.head.appendChild(st);
+        }
+      }
+    } catch (e) {}
   }
 
   NS.Stats = { render };
