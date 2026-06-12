@@ -56,6 +56,10 @@
     const osTxt = os === 'confirmed' ? 'CONFIRMED' : os === 'invalidated' ? 'INVALIDATED' : String(os).toUpperCase();
     const osCol = os === 'confirmed' ? '#36d399' : os === 'invalidated' ? '#f85149' : 'var(--v4-text-2)';
     const mae = rec.max_adverse_move_pct;
+    // Opportunity Yield (kayıt başına): confirm seviyesine ULAŞTI mı? (sıra fark etmez)
+    // = outcome confirmed VEYA quality 'invalidated_then_recovered' → matris yieldRate ile birebir tutarlı.
+    const yielded = (os === 'confirmed') || (rec.outcome_quality === 'invalidated_then_recovered');
+    const yieldTxt = '<b style="color:' + (yielded ? '#36d399' : '#9aa4b2') + '">' + (yielded ? _t('arc.oiYes', null, 'YES') : _t('arc.oiNo', null, 'NO')) + '</b>';
     return `<div class="aic-oi" data-aic-oi>
       <div class="aic-oi-title">${_t('arc.oiTitle', null, 'OUTCOME INTELLIGENCE')}</div>
       ${li(_t('arc.oiOutcome', null, 'Outcome'), osTxt, osCol)}
@@ -63,6 +67,7 @@
       ${li('MFE', pct(rec.max_favorable_move_pct), '#3fb950')}
       ${li('MAE', mae != null ? pct(-Math.abs(Number(mae))) : null, '#f85149')}
       ${li(_t('arc.oiClose', null, 'Window Close'), pct(rec.window_close_pct), (rec.window_close_pct != null && rec.window_close_pct >= 0) ? '#3fb950' : '#f85149')}
+      ${li(_t('arc.oiYield', null, 'Opportunity Yield'), yieldTxt)}
       ${li(_t('arc.oiTtc', null, 'Time To Confirm'), rec.time_to_confirm_min != null ? rec.time_to_confirm_min + ' dk' : null)}
       ${li(_t('arc.oiTti', null, 'Time To Invalid'), rec.time_to_invalid_min != null ? rec.time_to_invalid_min + ' dk' : null)}
     </div>`;
